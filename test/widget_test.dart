@@ -1,30 +1,101 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:supercampus_mobile/main.dart';
+import 'package:supercampus_mobile/src/app.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('shows the student login form', (tester) async {
+    await tester.pumpWidget(const SupercampusApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('SuperCampus'), findsOneWidget);
+    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('Email address'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('validates empty login fields', (tester) async {
+    await tester.pumpWidget(const SupercampusApp());
+
+    await tester.tap(find.text('Sign in'));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Enter your email address.'), findsOneWidget);
+    expect(find.text('Enter your password.'), findsOneWidget);
+  });
+
+  testWidgets('signs in and opens the canteen cart', (tester) async {
+    await tester.pumpWidget(const SupercampusApp());
+
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'student@example.com',
+    );
+    await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+    await tester.tap(find.text('Sign in'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Choose a campus service'), findsOneWidget);
+    await tester.tap(find.text('Canteen'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Canteen is open'), findsOneWidget);
+    expect(find.text('Meals'), findsWidgets);
+    expect(find.text('Parotta with Veg Kurma'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Add item').first);
+    await tester.pump();
+
+    expect(find.text('View cart'), findsOneWidget);
+    await tester.tap(find.text('View cart'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your cart'), findsOneWidget);
+    expect(find.text('How will you eat?'), findsOneWidget);
+    expect(find.textContaining('Pay ₹79'), findsOneWidget);
+  });
+
+  testWidgets('opens the order history tab', (tester) async {
+    await tester.pumpWidget(const SupercampusApp());
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'student@example.com',
+    );
+    await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+    await tester.tap(find.text('Sign in'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Canteen'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Orders'));
+    await tester.pump();
+
+    expect(find.text('My orders'), findsOneWidget);
+    expect(find.text('Active'), findsOneWidget);
+    expect(find.text('History'), findsOneWidget);
+  });
+
+  testWidgets('opens the gatepass module and outpass form', (tester) async {
+    await tester.pumpWidget(const SupercampusApp());
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'student@example.com',
+    );
+    await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+    await tester.tap(find.text('Sign in'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Gatepass'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('You are on campus'), findsOneWidget);
+    expect(find.text('Apply outpass'), findsOneWidget);
+    expect(find.text('Invite visitor'), findsOneWidget);
+
+    await tester.tap(find.text('Apply outpass'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Apply for outpass'), findsOneWidget);
+    expect(find.text('Destination'), findsOneWidget);
   });
 }
