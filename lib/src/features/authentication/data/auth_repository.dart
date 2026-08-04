@@ -1,4 +1,4 @@
-enum UserRole { student, security, parent, staff }
+enum UserRole { student, security, parent, staff, timetableAllocator }
 
 extension UserRoleExtension on UserRole {
   String get label => switch (this) {
@@ -6,6 +6,7 @@ extension UserRoleExtension on UserRole {
         UserRole.security => 'Security Officer',
         UserRole.parent => 'Parent / Guardian',
         UserRole.staff => 'Faculty / Staff',
+        UserRole.timetableAllocator => 'Timetable Allocator',
       };
 
   String get defaultEmail => switch (this) {
@@ -13,6 +14,7 @@ extension UserRoleExtension on UserRole {
         UserRole.security => 'security@supercampus.edu',
         UserRole.parent => 'parent@supercampus.edu',
         UserRole.staff => 'faculty@supercampus.edu',
+        UserRole.timetableAllocator => 'allocator@supercampus.edu',
       };
 
   String get defaultName => switch (this) {
@@ -20,6 +22,7 @@ extension UserRoleExtension on UserRole {
         UserRole.security => 'Officer R. Vance',
         UserRole.parent => 'Robert Johnson',
         UserRole.staff => 'Prof. Sarah Jenkins',
+        UserRole.timetableAllocator => 'Dr. Marcus Vance',
       };
 }
 

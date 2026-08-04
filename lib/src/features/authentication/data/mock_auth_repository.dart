@@ -31,6 +31,10 @@ class MockAuthRepository implements AuthRepository {
       UserRole.security => ('SEC-8092', 'Main Gate - North Entrance'),
       UserRole.parent => ('PAR-4410', 'Alex Johnson (CS Dept)'),
       UserRole.staff => ('FAC-1049', 'Dept of Computer Engineering'),
+      UserRole.timetableAllocator => (
+          'ALLOC-9012',
+          'Academic Planning & Operations'
+        ),
     };
 
     return UserSession(

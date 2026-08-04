@@ -374,6 +374,7 @@ class _LoginScreenState extends State<LoginScreen> {
       UserRole.security => const Color(0xFFD9383A),
       UserRole.parent => const Color(0xFF2E7D32),
       UserRole.staff => const Color(0xFF6A1B9A),
+      UserRole.timetableAllocator => const Color(0xFF00695C),
     };
   }
 }
@@ -541,6 +542,10 @@ class _RoleSelector extends StatelessWidget {
       UserRole.security => (Icons.security_outlined, const Color(0xFFD9383A)),
       UserRole.parent => (Icons.family_restroom_outlined, const Color(0xFF2E7D32)),
       UserRole.staff => (Icons.badge_outlined, const Color(0xFF6A1B9A)),
+      UserRole.timetableAllocator => (
+          Icons.table_chart_outlined,
+          const Color(0xFF00695C)
+        ),
     };
   }
 
@@ -550,6 +555,7 @@ class _RoleSelector extends StatelessWidget {
       UserRole.security => 'Gate Control',
       UserRole.parent => 'Ward Approvals',
       UserRole.staff => 'Classes & Leaves',
+      UserRole.timetableAllocator => 'Timetable Control',
     };
   }
 }
@@ -623,6 +629,7 @@ class _QuickDemoBar extends StatelessWidget {
       UserRole.security => Icons.security,
       UserRole.parent => Icons.family_restroom,
       UserRole.staff => Icons.badge,
+      UserRole.timetableAllocator => Icons.table_chart,
     };
   }
 }

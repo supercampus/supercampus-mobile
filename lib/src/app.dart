@@ -10,8 +10,10 @@ import 'features/gatepass/presentation/gatepass_shell.dart';
 import 'features/modules/presentation/module_home_screen.dart';
 import 'features/parent/presentation/parent_portal_screen.dart';
 import 'features/security/presentation/security_portal_screen.dart';
+import 'features/timetable/presentation/timetable_shell.dart';
 
-enum _ActiveStudentModule { modules, canteen, gatepass }
+enum _ActiveStudentModule { modules, canteen, gatepass, timetable }
+enum _ActiveFacultyModule { modules, attendance, timetable }
 
 class SupercampusApp extends StatefulWidget {
   const SupercampusApp({super.key, this.authRepository});
@@ -26,6 +28,7 @@ class _SupercampusAppState extends State<SupercampusApp> {
   late final AuthRepository _authRepository;
   UserSession? _session;
   var _activeStudentModule = _ActiveStudentModule.modules;
+  var _activeFacultyModule = _ActiveFacultyModule.modules;
 
   @override
   void initState() {
@@ -43,6 +46,7 @@ class _SupercampusAppState extends State<SupercampusApp> {
       setState(() {
         _session = newSession;
         _activeStudentModule = _ActiveStudentModule.modules;
+        _activeFacultyModule = _ActiveFacultyModule.modules;
       });
     }
   }
@@ -65,6 +69,7 @@ class _SupercampusAppState extends State<SupercampusApp> {
         onSignedIn: (signedIn) => setState(() {
           _session = signedIn;
           _activeStudentModule = _ActiveStudentModule.modules;
+          _activeFacultyModule = _ActiveFacultyModule.modules;
         }),
       );
     }
@@ -81,8 +86,37 @@ class _SupercampusAppState extends State<SupercampusApp> {
           onSignOut: () => setState(() => _session = null),
           onSwitchRole: _switchRole,
         ),
-      UserRole.staff => FacultyPortalScreen(
+      UserRole.staff => _buildFacultyFlow(session),
+      UserRole.timetableAllocator => TimetableShell(
           session: session,
+          onSignOut: () => setState(() => _session = null),
+          onSwitchRole: _switchRole,
+        ),
+    };
+  }
+
+  Widget _buildFacultyFlow(UserSession session) {
+    return switch (_activeFacultyModule) {
+      _ActiveFacultyModule.modules => ModuleHomeScreen(
+          session: session,
+          onOpenAttendance: () =>
+              setState(() => _activeFacultyModule = _ActiveFacultyModule.attendance),
+          onOpenTimetable: () =>
+              setState(() => _activeFacultyModule = _ActiveFacultyModule.timetable),
+          onOpenCanteen: () {},
+          onOpenGatepass: () {},
+          onSignOut: () => setState(() => _session = null),
+          onSwitchRole: _switchRole,
+        ),
+      _ActiveFacultyModule.attendance => FacultyPortalScreen(
+          session: session,
+          onSignOut: () => setState(() => _session = null),
+          onSwitchRole: _switchRole,
+        ),
+      _ActiveFacultyModule.timetable => TimetableShell(
+          session: session,
+          onExitModule: () =>
+              setState(() => _activeFacultyModule = _ActiveFacultyModule.modules),
           onSignOut: () => setState(() => _session = null),
           onSwitchRole: _switchRole,
         ),
@@ -97,6 +131,8 @@ class _SupercampusAppState extends State<SupercampusApp> {
               setState(() => _activeStudentModule = _ActiveStudentModule.canteen),
           onOpenGatepass: () =>
               setState(() => _activeStudentModule = _ActiveStudentModule.gatepass),
+          onOpenTimetable: () =>
+              setState(() => _activeStudentModule = _ActiveStudentModule.timetable),
           onSignOut: () => setState(() => _session = null),
           onSwitchRole: _switchRole,
         ),
@@ -110,6 +146,13 @@ class _SupercampusAppState extends State<SupercampusApp> {
           session: session,
           onExitModule: () =>
               setState(() => _activeStudentModule = _ActiveStudentModule.modules),
+        ),
+      _ActiveStudentModule.timetable => TimetableShell(
+          session: session,
+          onExitModule: () =>
+              setState(() => _activeStudentModule = _ActiveStudentModule.modules),
+          onSignOut: () => setState(() => _session = null),
+          onSwitchRole: _switchRole,
         ),
     };
   }

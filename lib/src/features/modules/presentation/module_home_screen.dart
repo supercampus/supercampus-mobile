@@ -9,6 +9,8 @@ class ModuleHomeScreen extends StatelessWidget {
     required this.session,
     required this.onOpenCanteen,
     required this.onOpenGatepass,
+    this.onOpenTimetable,
+    this.onOpenAttendance,
     required this.onSignOut,
     this.onSwitchRole,
   });
@@ -16,14 +18,22 @@ class ModuleHomeScreen extends StatelessWidget {
   final StudentSession session;
   final VoidCallback onOpenCanteen;
   final VoidCallback onOpenGatepass;
+  final VoidCallback? onOpenTimetable;
+  final VoidCallback? onOpenAttendance;
   final VoidCallback onSignOut;
   final ValueChanged<UserRole>? onSwitchRole;
 
   @override
   Widget build(BuildContext context) {
+    final portalTitle = switch (session.role) {
+      UserRole.staff => 'SuperCampus Faculty Portal',
+      UserRole.timetableAllocator => 'SuperCampus Admin Portal',
+      _ => 'SuperCampus Student Portal',
+    };
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SuperCampus Student Portal'),
+        title: Text(portalTitle),
         actions: [
           if (onSwitchRole != null)
             PopupMenuButton<UserRole>(
@@ -78,12 +88,33 @@ class ModuleHomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Choose a campus service',
+                  'Choose a campus service module',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyLarge?.copyWith(color: AppColors.muted),
                 ),
                 const SizedBox(height: 28),
+                if (onOpenAttendance != null || session.role == UserRole.staff) ...[
+                  _ModuleTile(
+                    title: 'Faculty Attendance Module',
+                    subtitle: 'Digital swipe attendance, student rosters and leave approvals',
+                    icon: Icons.badge_outlined,
+                    color: const Color(0xFF6A1B9A),
+                    status: 'Active Roster',
+                    onTap: onOpenAttendance ?? () {},
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                _ModuleTile(
+                  title: 'Timetable Management',
+                  subtitle:
+                      'Class schedules, daily teaching periods, and faculty updates',
+                  icon: Icons.table_chart_outlined,
+                  color: const Color(0xFF00695C),
+                  status: 'Active',
+                  onTap: onOpenTimetable ?? () {},
+                ),
+                const SizedBox(height: 12),
                 _ModuleTile(
                   title: 'Canteen',
                   subtitle: 'Browse the menu, pay and track pickup orders',
