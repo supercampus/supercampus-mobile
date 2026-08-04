@@ -117,7 +117,7 @@ class StudentWalletSheet extends StatelessWidget {
                           style: const TextStyle(
                             color: AppColors.primary,
                             fontSize: 25,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -196,7 +196,7 @@ class StudentWalletSheet extends StatelessWidget {
                             color: isCredit
                                 ? AppColors.success
                                 : const Color(0xFFC43B31),
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],

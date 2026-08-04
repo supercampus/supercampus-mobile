@@ -47,7 +47,7 @@ class StudentCanteenProfileScreen extends StatelessWidget {
                     style: const TextStyle(
                       color: AppColors.ink,
                       fontSize: 23,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -61,7 +61,7 @@ class StudentCanteenProfileScreen extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 21,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -83,7 +83,7 @@ class StudentCanteenProfileScreen extends StatelessWidget {
                           'MEC Student',
                           style: TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -137,7 +137,7 @@ class StudentCanteenProfileScreen extends StatelessWidget {
                         formatCurrency(store.walletBalance),
                         style: const TextStyle(
                           fontSize: 23,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],

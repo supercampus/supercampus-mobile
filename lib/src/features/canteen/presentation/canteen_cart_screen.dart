@@ -283,7 +283,7 @@ class _CartLineRow extends StatelessWidget {
                   formatCurrency(line.item.price),
                   style: const TextStyle(
                     color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -320,7 +320,7 @@ class _SummaryRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(child: Text(label, style: style)),
-        Text(value, style: style?.copyWith(fontWeight: FontWeight.w800)),
+        Text(value, style: style?.copyWith(fontWeight: FontWeight.w500)),
       ],
     );
   }

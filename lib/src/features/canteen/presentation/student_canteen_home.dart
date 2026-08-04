@@ -196,7 +196,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppColors.primary,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -224,7 +224,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
               widget.store.user.initials,
               style: const TextStyle(
                 color: AppColors.ink,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -283,7 +283,7 @@ class _CategorySelector extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: isSelected ? Colors.white : AppColors.muted,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -327,7 +327,7 @@ class _OpenStatusBand extends StatelessWidget {
                   'Canteen is open',
                   style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 SizedBox(height: 3),
@@ -420,7 +420,7 @@ class _MenuItemRow extends StatelessWidget {
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontSize: 17,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const Spacer(),
@@ -477,7 +477,7 @@ class _CartBar extends StatelessWidget {
                   '$itemCount',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -487,7 +487,7 @@ class _CartBar extends StatelessWidget {
                   'View cart',
                   style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -495,7 +495,7 @@ class _CartBar extends StatelessWidget {
                 formatCurrency(total),
                 style: const TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(width: 5),

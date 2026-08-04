@@ -26,7 +26,7 @@ class CanteenScannerScreen extends StatelessWidget {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 26,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),

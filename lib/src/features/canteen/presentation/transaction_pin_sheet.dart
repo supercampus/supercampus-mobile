@@ -58,7 +58,7 @@ class _TransactionPinSheetState extends State<TransactionPinSheet> {
                 SizedBox(width: 10),
                 Text(
                   'Enter transaction PIN',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -82,7 +82,7 @@ class _TransactionPinSheetState extends State<TransactionPinSheet> {
                     formatCurrency(widget.amount),
                     style: const TextStyle(
                       fontSize: 28,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -176,7 +176,7 @@ class _PinKey extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.ink,
             fontSize: 26,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),

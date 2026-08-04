@@ -107,7 +107,7 @@ abstract final class AppTheme {
                 : AppColors.muted,
             fontSize: 12,
             fontWeight: states.contains(WidgetState.selected)
-                ? FontWeight.w700
+                ? FontWeight.w500
                 : FontWeight.w500,
           );
         }),

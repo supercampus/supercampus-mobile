@@ -58,7 +58,7 @@ class QuantityControl extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.primary,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),

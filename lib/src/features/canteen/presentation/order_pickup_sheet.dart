@@ -39,7 +39,7 @@ class OrderPickupSheet extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 22,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -57,7 +57,7 @@ class OrderPickupSheet extends StatelessWidget {
                     style: TextStyle(
                       color: AppColors.amber,
                       fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -86,7 +86,7 @@ class OrderPickupSheet extends StatelessWidget {
                         style: TextStyle(
                           color: Colors.white54,
                           fontSize: 11,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -95,7 +95,7 @@ class OrderPickupSheet extends StatelessWidget {
                         style: const TextStyle(
                           color: AppColors.amber,
                           fontSize: 46,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -121,7 +121,7 @@ class OrderPickupSheet extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],

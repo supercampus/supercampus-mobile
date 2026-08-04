@@ -122,7 +122,7 @@ class _OrderCard extends StatelessWidget {
                   order.status.label,
                   style: TextStyle(
                     color: statusColor,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -169,7 +169,7 @@ class _OrderCard extends StatelessWidget {
                   'Token ${order.tokenNumber}',
                   style: const TextStyle(
                     color: AppColors.primary,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -178,7 +178,7 @@ class _OrderCard extends StatelessWidget {
                 formatCurrency(order.total),
                 style: const TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],

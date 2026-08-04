@@ -10,19 +10,53 @@ class ModuleHomeScreen extends StatelessWidget {
     required this.onOpenCanteen,
     required this.onOpenGatepass,
     required this.onSignOut,
+    this.onSwitchRole,
   });
 
   final StudentSession session;
   final VoidCallback onOpenCanteen;
   final VoidCallback onOpenGatepass;
   final VoidCallback onSignOut;
+  final ValueChanged<UserRole>? onSwitchRole;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SuperCampus'),
+        title: const Text('SuperCampus Student Portal'),
         actions: [
+          if (onSwitchRole != null)
+            PopupMenuButton<UserRole>(
+              tooltip: 'Switch Portal Role',
+              icon: const Icon(Icons.swap_horiz),
+              onSelected: onSwitchRole,
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  enabled: false,
+                  child: Text('Switch Role (Demo mode):'),
+                ),
+                ...UserRole.values.map(
+                  (r) => PopupMenuItem(
+                    value: r,
+                    child: Row(
+                      children: [
+                        Icon(
+                          r == session.role
+                              ? Icons.check_circle
+                              : Icons.circle_outlined,
+                          size: 16,
+                          color: r == session.role
+                              ? AppColors.primary
+                              : Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(r.label),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           IconButton(
             tooltip: 'Sign out',
             onPressed: onSignOut,
