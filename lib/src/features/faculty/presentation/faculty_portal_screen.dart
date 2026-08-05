@@ -150,13 +150,15 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                 children: [
                   const Text(
                     'Staff & Faculty Portal',
-                    maxLines: 1,
+                    maxLines: 2,
+                    softWrap: true,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                   ),
                   Text(
                     '${widget.session.displayName} • ${widget.session.departmentOrWard ?? "CS Dept"}',
-                    maxLines: 1,
+                    maxLines: 2,
+                    softWrap: true,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 11, color: Colors.white70),
                   ),

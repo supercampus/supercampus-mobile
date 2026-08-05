@@ -66,7 +66,8 @@ class _TimetableShellState extends State<TimetableShell> {
                     isAllocator
                         ? 'Timetable Allocator Portal'
                         : 'Campus Timetable Management',
-                    maxLines: 1,
+                    maxLines: 2,
+                    softWrap: true,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 16,
@@ -75,7 +76,8 @@ class _TimetableShellState extends State<TimetableShell> {
                   ),
                   Text(
                     '${widget.session.displayName} • ${widget.session.role.label}',
-                    maxLines: 1,
+                    maxLines: 2,
+                    softWrap: true,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 11, color: Colors.white70),
                   ),

@@ -409,8 +409,8 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                   return DataCell(
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
+                        horizontal: 4,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: matching.categoryColor.withValues(alpha: 0.1),
@@ -419,26 +419,35 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                           color: matching.categoryColor.withValues(alpha: 0.4),
                         ),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            matching.subjectCode,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: matching.categoryColor,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              matching.subjectCode,
+                              maxLines: 2,
+                              softWrap: true,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: matching.categoryColor,
+                              ),
                             ),
-                          ),
-                          Text(
-                            matching.className,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              color: AppColors.muted,
+                            Text(
+                              matching.className,
+                              maxLines: 2,
+                              softWrap: true,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 9,
+                                color: AppColors.muted,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   );

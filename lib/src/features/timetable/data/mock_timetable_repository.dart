@@ -808,6 +808,14 @@ class MockTimetableRepository implements TimetableRepository {
   }
 
   @override
+  void updateFacultyQuota(FacultySubjectQuota quota) {
+    final index = _quotas.indexWhere((q) => q.id == quota.id);
+    if (index != -1) {
+      _quotas[index] = quota;
+    }
+  }
+
+  @override
   void deleteFacultyQuota(String id) {
     _quotas.removeWhere((q) => q.id == id);
   }

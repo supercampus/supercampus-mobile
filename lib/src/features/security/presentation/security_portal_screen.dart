@@ -191,13 +191,15 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                 children: [
                   const Text(
                     'Campus Security Portal',
-                    maxLines: 1,
+                    maxLines: 2,
+                    softWrap: true,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                   ),
                   Text(
                     'Gate: ${widget.session.departmentOrWard ?? "Main Gate"}',
-                    maxLines: 1,
+                    maxLines: 2,
+                    softWrap: true,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 11, color: Colors.white70),
                   ),

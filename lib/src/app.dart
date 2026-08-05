@@ -61,8 +61,8 @@ class _SupercampusAppState extends State<SupercampusApp> {
           session: session,
           onOpenCanteen: () =>
               setState(() => _activeModule = _ActiveModule.canteen),
-          onOpenGatepass: () =>
-              setState(() => _activeModule = _ActiveModule.gatepass),
+          onOpenGatepass: () => setState(() => _activeModule = 
+              session.role == UserRole.parent ? _ActiveModule.parent : _ActiveModule.gatepass),
           onOpenTimetable: () =>
               setState(() => _activeModule = _ActiveModule.timetable),
           onOpenAttendance: () =>

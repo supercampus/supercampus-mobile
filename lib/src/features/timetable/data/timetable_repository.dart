@@ -8,6 +8,7 @@ abstract interface class TimetableRepository {
   List<FacultyMember> getFacultyList();
   List<FacultySubjectQuota> getFacultyQuotas();
   void addFacultyQuota(FacultySubjectQuota quota);
+  void updateFacultyQuota(FacultySubjectQuota quota);
   void deleteFacultyQuota(String id);
   void importFacultyQuotas(List<FacultySubjectQuota> quotas);
 

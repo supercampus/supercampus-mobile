@@ -1057,7 +1057,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                         child: Container(
                           width: 120,
                           height: 54,
-                          padding: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                           decoration: BoxDecoration(
                             color: entry.categoryColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
@@ -1065,33 +1065,36 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               color: entry.categoryColor.withValues(alpha: 0.4),
                             ),
                           ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${entry.subjectCode}: ${entry.subjectName}',
-                                maxLines: 2,
-                                softWrap: true,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: entry.categoryColor,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${entry.subjectCode}: ${entry.subjectName}',
+                                  maxLines: 2,
+                                  softWrap: true,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: entry.categoryColor,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Staff: ${entry.facultyName}',
-                                maxLines: 2,
-                                softWrap: true,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: AppColors.ink,
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Staff: ${entry.facultyName}',
+                                  maxLines: 2,
+                                  softWrap: true,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.ink,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -1646,13 +1649,22 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                             color: Color(0xFF00695C),
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                          onPressed: () {
-                            setState(() {
-                              widget.repository.deleteFacultyQuota(quota.id);
-                            });
-                          },
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFF00695C)),
+                              onPressed: () => _showEditQuotaDialog(context, quota),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                              onPressed: () {
+                                setState(() {
+                                  widget.repository.deleteFacultyQuota(quota.id);
+                                });
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -2236,6 +2248,113 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   );
                 },
                 child: const Text('Save Quota'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showEditQuotaDialog(BuildContext context, FacultySubjectQuota quota) {
+    final facultyCtrl = TextEditingController(text: quota.facultyName);
+    final deptCtrl = TextEditingController(text: quota.department);
+    final codeCtrl = TextEditingController(text: quota.subjectCode);
+    final nameCtrl = TextEditingController(text: quota.subjectName);
+    final periodsCtrl = TextEditingController(text: quota.minWeeklyPeriods.toString());
+    bool isLab = quota.isLab;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) {
+          return AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.edit_outlined, color: Color(0xFF00695C)),
+                SizedBox(width: 8),
+                Text('Edit Faculty Quota'),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: facultyCtrl,
+                    decoration: const InputDecoration(labelText: 'Faculty Name'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: deptCtrl,
+                    decoration: const InputDecoration(labelText: 'Department'),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: codeCtrl,
+                          decoration:
+                              const InputDecoration(labelText: 'Subject Code'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: periodsCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration:
+                              const InputDecoration(labelText: 'Min Pds / Wk'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(labelText: 'Subject Name'),
+                  ),
+                  const SizedBox(height: 10),
+                  CheckboxListTile(
+                    title: const Text('Is Practical Lab Session'),
+                    value: isLab,
+                    onChanged: (val) => setDlgState(() => isLab = val ?? false),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF00695C),
+                ),
+                onPressed: () {
+                  final updatedQuota = FacultySubjectQuota(
+                    id: quota.id,
+                    facultyName: facultyCtrl.text.trim(),
+                    department: deptCtrl.text.trim(),
+                    subjectCode: codeCtrl.text.trim(),
+                    subjectName: nameCtrl.text.trim(),
+                    minWeeklyPeriods: int.tryParse(periodsCtrl.text) ?? 3,
+                    isLab: isLab,
+                  );
+                  setState(() {
+                    widget.repository.updateFacultyQuota(updatedQuota);
+                  });
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Faculty workload quota updated!'),
+                      backgroundColor: Color(0xFF00695C),
+                    ),
+                  );
+                },
+                child: const Text('Save Changes'),
               ),
             ],
           );
