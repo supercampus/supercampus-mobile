@@ -20,8 +20,6 @@ class MockTimetableRepository implements TimetableRepository {
     _config = const TimetableConfig(
       academicYear: '2026 - 2027',
       semester: 'Odd Semester 5',
-      department: 'Computer Science & Engineering',
-      programme: 'B.Tech Computer Science',
       batchSection: 'CS-3A',
       workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
       collegeStartTime: '08:30',

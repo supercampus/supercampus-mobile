@@ -12,13 +12,11 @@ class TimetableShell extends StatefulWidget {
     required this.session,
     this.onExitModule,
     required this.onSignOut,
-    this.onSwitchRole,
   });
 
   final UserSession session;
   final VoidCallback? onExitModule;
   final VoidCallback onSignOut;
-  final ValueChanged<UserRole>? onSwitchRole;
 
   @override
   State<TimetableShell> createState() => _TimetableShellState();
@@ -40,7 +38,8 @@ class _TimetableShellState extends State<TimetableShell> {
         foregroundColor: Colors.white,
         leading: widget.onExitModule != null
             ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Modules Home',
+                icon: const Icon(Icons.home),
                 onPressed: widget.onExitModule,
               )
             : null,
@@ -59,59 +58,33 @@ class _TimetableShellState extends State<TimetableShell> {
               ),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isAllocator
-                      ? 'Timetable Allocator Portal'
-                      : 'Campus Timetable Management',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isAllocator
+                        ? 'Timetable Allocator Portal'
+                        : 'Campus Timetable Management',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                Text(
-                  '${widget.session.displayName} • ${widget.session.role.label}',
-                  style: const TextStyle(fontSize: 11, color: Colors.white70),
-                ),
-              ],
+                  Text(
+                    '${widget.session.displayName} • ${widget.session.role.label}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: Colors.white70),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
-          if (widget.onSwitchRole != null)
-            PopupMenuButton<UserRole>(
-              tooltip: 'Switch Portal Role',
-              icon: const Icon(Icons.swap_horiz, color: Colors.white),
-              onSelected: widget.onSwitchRole,
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  enabled: false,
-                  child: Text('Switch Role (Demo mode):'),
-                ),
-                ...UserRole.values.map(
-                  (r) => PopupMenuItem(
-                    value: r,
-                    child: Row(
-                      children: [
-                        Icon(
-                          r == widget.session.role
-                              ? Icons.check_circle
-                              : Icons.circle_outlined,
-                          size: 16,
-                          color: r == widget.session.role
-                              ? AppColors.primary
-                              : Colors.grey,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(r.label),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
           IconButton(
             tooltip: 'Sign Out',
             icon: const Icon(Icons.logout, color: Colors.white),

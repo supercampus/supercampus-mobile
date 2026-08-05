@@ -43,9 +43,9 @@ class GatepassDashboardScreen extends StatelessWidget {
                 title: 'Gatepass',
                 subtitle: '${store.student.residency.label} access',
                 leading: IconButton.filledTonal(
-                  tooltip: 'All modules',
+                  tooltip: 'Modules Home',
                   onPressed: onExitModule,
-                  icon: const Icon(Icons.apps),
+                  icon: const Icon(Icons.home),
                 ),
                 trailing: CircleAvatar(
                   backgroundColor: const Color(0xFFECEAFF),

@@ -725,7 +725,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               Expanded(
                 child: Text(
                   title,
-                  maxLines: 1,
+                  maxLines: 2,
+                  softWrap: true,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 11, color: AppColors.muted),
                 ),
@@ -1070,7 +1071,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                             children: [
                               Text(
                                 '${entry.subjectCode}: ${entry.subjectName}',
-                                maxLines: 1,
+                                maxLines: 2,
+                                softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 11,
@@ -1081,7 +1083,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 'Staff: ${entry.facultyName}',
-                                maxLines: 1,
+                                maxLines: 2,
+                                softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 10,
@@ -1221,7 +1224,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                             children: [
                               Text(
                                 '${disruption.absentFacultyName} on Leave',
-                                maxLines: 1,
+                                maxLines: 2,
+                                softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 15,
@@ -1476,7 +1480,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                             children: [
                               Text(
                                 fac.name,
-                                maxLines: 1,
+                                maxLines: 2,
+                                softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
@@ -1485,7 +1490,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               ),
                               Text(
                                 'Dept: ${fac.department} • Subjects: ${fac.subjectsHandled.join(", ")}',
-                                maxLines: 1,
+                                maxLines: 2,
+                                softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 11,
@@ -1610,7 +1616,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                             children: [
                               Text(
                                 '${quota.facultyName} • ${quota.subjectCode}',
-                                maxLines: 1,
+                                maxLines: 2,
+                                softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
@@ -1619,7 +1626,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               ),
                               Text(
                                 '${quota.subjectName} (${quota.department}) ${quota.isLab ? "• LAB" : ""}',
-                                maxLines: 1,
+                                maxLines: 2,
+                                softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 11,
@@ -1847,7 +1855,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
   void _onGenerateTimetablePressed(BuildContext context) {
     final quotas = widget.repository.getFacultyQuotas();
-    if (quotas.isEmpty) {
+    final config = widget.repository.getConfig();
+
+    if (quotas.isEmpty || config.periodsPerDay == 0 || config.periodDurationMinutes == 0) {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -1861,7 +1871,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
             ],
           ),
           content: const Text(
-            'Faculty roster and minimum weekly period quotas are missing. Please complete the setup in Configuration View before auto-generating matrix schedules.',
+            'Faculty roster, period duration, or minimum weekly period quotas are missing. Please complete the setup in Configuration View before auto-generating matrix schedules.',
           ),
           actions: [
             TextButton(

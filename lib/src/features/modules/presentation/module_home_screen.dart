@@ -7,66 +7,40 @@ class ModuleHomeScreen extends StatelessWidget {
   const ModuleHomeScreen({
     super.key,
     required this.session,
-    required this.onOpenCanteen,
-    required this.onOpenGatepass,
+    this.onOpenCanteen,
+    this.onOpenGatepass,
     this.onOpenTimetable,
     this.onOpenAttendance,
     required this.onSignOut,
-    this.onSwitchRole,
   });
 
-  final StudentSession session;
-  final VoidCallback onOpenCanteen;
-  final VoidCallback onOpenGatepass;
+  final UserSession session;
+  final VoidCallback? onOpenCanteen;
+  final VoidCallback? onOpenGatepass;
   final VoidCallback? onOpenTimetable;
   final VoidCallback? onOpenAttendance;
   final VoidCallback onSignOut;
-  final ValueChanged<UserRole>? onSwitchRole;
 
   @override
   Widget build(BuildContext context) {
-    final portalTitle = switch (session.role) {
+    final role = session.role;
+    final portalTitle = switch (role) {
       UserRole.staff => 'SuperCampus Faculty Portal',
       UserRole.timetableAllocator => 'SuperCampus Admin Portal',
+      UserRole.security => 'SuperCampus Security Portal',
+      UserRole.parent => 'SuperCampus Parent Portal',
       _ => 'SuperCampus Student Portal',
     };
+
+    final showAttendance = role == UserRole.student || role == UserRole.staff;
+    final showTimetable = role == UserRole.student || role == UserRole.staff || role == UserRole.timetableAllocator;
+    final showCanteen = role == UserRole.student || role == UserRole.staff;
+    final showGatepass = role == UserRole.student || role == UserRole.security || role == UserRole.parent;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(portalTitle),
         actions: [
-          if (onSwitchRole != null)
-            PopupMenuButton<UserRole>(
-              tooltip: 'Switch Portal Role',
-              icon: const Icon(Icons.swap_horiz),
-              onSelected: onSwitchRole,
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  enabled: false,
-                  child: Text('Switch Role (Demo mode):'),
-                ),
-                ...UserRole.values.map(
-                  (r) => PopupMenuItem(
-                    value: r,
-                    child: Row(
-                      children: [
-                        Icon(
-                          r == session.role
-                              ? Icons.check_circle
-                              : Icons.circle_outlined,
-                          size: 16,
-                          color: r == session.role
-                              ? AppColors.primary
-                              : Colors.grey,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(r.label),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
           IconButton(
             tooltip: 'Sign out',
             onPressed: onSignOut,
@@ -94,45 +68,56 @@ class ModuleHomeScreen extends StatelessWidget {
                   ).textTheme.bodyLarge?.copyWith(color: AppColors.muted),
                 ),
                 const SizedBox(height: 28),
-                if (onOpenAttendance != null || session.role == UserRole.staff) ...[
+                
+                if (showAttendance && onOpenAttendance != null) ...[
                   _ModuleTile(
-                    title: 'Faculty Attendance Module',
+                    title: role == UserRole.student ? 'Student Attendance' : 'Faculty Attendance Module',
                     subtitle: 'Digital swipe attendance, student rosters and leave approvals',
                     icon: Icons.badge_outlined,
                     color: const Color(0xFF6A1B9A),
-                    status: 'Active Roster',
+                    status: 'Active',
                     onTap: onOpenAttendance ?? () {},
                   ),
                   const SizedBox(height: 12),
                 ],
-                _ModuleTile(
-                  title: 'Timetable Management',
-                  subtitle:
-                      'Class schedules, daily teaching periods, and faculty updates',
-                  icon: Icons.table_chart_outlined,
-                  color: const Color(0xFF00695C),
-                  status: 'Active',
-                  onTap: onOpenTimetable ?? () {},
-                ),
-                const SizedBox(height: 12),
-                _ModuleTile(
-                  title: 'Canteen',
-                  subtitle: 'Browse the menu, pay and track pickup orders',
-                  icon: Icons.restaurant_outlined,
-                  color: AppColors.primary,
-                  status: 'Open now',
-                  onTap: onOpenCanteen,
-                ),
-                const SizedBox(height: 12),
-                _ModuleTile(
-                  title: 'Gatepass',
-                  subtitle: 'Outpasses, campus access and visitor invitations',
-                  icon: Icons.badge_outlined,
-                  color: const Color(0xFF2455A4),
-                  status: 'On campus',
-                  onTap: onOpenGatepass,
-                ),
-                const SizedBox(height: 28),
+                
+                if (showTimetable && onOpenTimetable != null) ...[
+                  _ModuleTile(
+                    title: 'Timetable Management',
+                    subtitle:
+                        'Class schedules, daily teaching periods, and faculty updates',
+                    icon: Icons.table_chart_outlined,
+                    color: const Color(0xFF00695C),
+                    status: 'Active',
+                    onTap: onOpenTimetable ?? () {},
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                
+                if (showCanteen && onOpenCanteen != null) ...[
+                  _ModuleTile(
+                    title: 'Canteen',
+                    subtitle: 'Browse the menu, pay and track pickup orders',
+                    icon: Icons.restaurant_outlined,
+                    color: AppColors.primary,
+                    status: 'Open now',
+                    onTap: onOpenCanteen!,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                
+                if (showGatepass && onOpenGatepass != null) ...[
+                  _ModuleTile(
+                    title: 'Gatepass',
+                    subtitle: 'Outpasses, campus access and visitor invitations',
+                    icon: Icons.badge_outlined,
+                    color: const Color(0xFF2455A4),
+                    status: 'Active',
+                    onTap: onOpenGatepass!,
+                  ),
+                  const SizedBox(height: 28),
+                ],
+
                 Text(
                   'Coming next',
                   style: Theme.of(context).textTheme.titleLarge,

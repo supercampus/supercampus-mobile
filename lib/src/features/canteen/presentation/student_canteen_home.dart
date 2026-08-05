@@ -163,10 +163,10 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
     return Row(
       children: [
         IconButton.filled(
-          tooltip: 'All modules',
+          tooltip: 'Modules Home',
           onPressed: widget.onExitModule,
           style: IconButton.styleFrom(backgroundColor: AppColors.primary),
-          icon: const Icon(Icons.apps),
+          icon: const Icon(Icons.home),
         ),
         const SizedBox(width: 10),
         Expanded(

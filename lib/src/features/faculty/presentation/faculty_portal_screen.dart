@@ -10,12 +10,12 @@ class FacultyPortalScreen extends StatefulWidget {
     super.key,
     required this.session,
     required this.onSignOut,
-    required this.onSwitchRole,
+    this.onExitModule,
   });
 
   final UserSession session;
   final VoidCallback onSignOut;
-  final ValueChanged<UserRole> onSwitchRole;
+  final VoidCallback? onExitModule;
 
   @override
   State<FacultyPortalScreen> createState() => _FacultyPortalScreenState();
@@ -126,6 +126,13 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF4A148C),
         foregroundColor: Colors.white,
+        leading: widget.onExitModule != null
+            ? IconButton(
+                tooltip: 'Modules Home',
+                icon: const Icon(Icons.home),
+                onPressed: widget.onExitModule,
+              )
+            : null,
         title: Row(
           children: [
             Container(
@@ -137,53 +144,28 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
               child: const Icon(Icons.badge, size: 20, color: Colors.white),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Staff & Faculty Portal',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ),
-                Text(
-                  '${widget.session.displayName} • ${widget.session.departmentOrWard ?? "CS Dept"}',
-                  style: const TextStyle(fontSize: 11, color: Colors.white70),
-                ),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Staff & Faculty Portal',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  ),
+                  Text(
+                    '${widget.session.displayName} • ${widget.session.departmentOrWard ?? "CS Dept"}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: Colors.white70),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
-          PopupMenuButton<UserRole>(
-            tooltip: 'Switch Portal Role',
-            icon: const Icon(Icons.swap_horiz, color: Colors.white),
-            onSelected: widget.onSwitchRole,
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                enabled: false,
-                child: Text('Switch Role (Demo mode):'),
-              ),
-              ...UserRole.values.map(
-                (r) => PopupMenuItem(
-                  value: r,
-                  child: Row(
-                    children: [
-                      Icon(
-                        r == widget.session.role
-                            ? Icons.check_circle
-                            : Icons.circle_outlined,
-                        size: 16,
-                        color: r == widget.session.role
-                            ? AppColors.primary
-                            : Colors.grey,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(r.label),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
           IconButton(
             tooltip: 'Sign Out',
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -299,7 +281,8 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                         const SizedBox(height: 4),
                         Text(
                           course.name,
-                          maxLines: 1,
+                          maxLines: 2,
+                          softWrap: true,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 15,

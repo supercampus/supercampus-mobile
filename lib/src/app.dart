@@ -12,8 +12,7 @@ import 'features/parent/presentation/parent_portal_screen.dart';
 import 'features/security/presentation/security_portal_screen.dart';
 import 'features/timetable/presentation/timetable_shell.dart';
 
-enum _ActiveStudentModule { modules, canteen, gatepass, timetable }
-enum _ActiveFacultyModule { modules, attendance, timetable }
+enum _ActiveModule { modules, canteen, gatepass, timetable, attendance, security, parent }
 
 class SupercampusApp extends StatefulWidget {
   const SupercampusApp({super.key, this.authRepository});
@@ -27,28 +26,12 @@ class SupercampusApp extends StatefulWidget {
 class _SupercampusAppState extends State<SupercampusApp> {
   late final AuthRepository _authRepository;
   UserSession? _session;
-  var _activeStudentModule = _ActiveStudentModule.modules;
-  var _activeFacultyModule = _ActiveFacultyModule.modules;
+  var _activeModule = _ActiveModule.modules;
 
   @override
   void initState() {
     super.initState();
     _authRepository = widget.authRepository ?? MockAuthRepository();
-  }
-
-  Future<void> _switchRole(UserRole role) async {
-    final newSession = await _authRepository.signIn(
-      email: role.defaultEmail,
-      password: 'password123',
-      role: role,
-    );
-    if (mounted) {
-      setState(() {
-        _session = newSession;
-        _activeStudentModule = _ActiveStudentModule.modules;
-        _activeFacultyModule = _ActiveFacultyModule.modules;
-      });
-    }
   }
 
   @override
@@ -68,91 +51,58 @@ class _SupercampusAppState extends State<SupercampusApp> {
         authRepository: _authRepository,
         onSignedIn: (signedIn) => setState(() {
           _session = signedIn;
-          _activeStudentModule = _ActiveStudentModule.modules;
-          _activeFacultyModule = _ActiveFacultyModule.modules;
+          _activeModule = _ActiveModule.modules;
         }),
       );
     }
 
-    return switch (session.role) {
-      UserRole.student => _buildStudentFlow(session),
-      UserRole.security => SecurityPortalScreen(
-          session: session,
-          onSignOut: () => setState(() => _session = null),
-          onSwitchRole: _switchRole,
-        ),
-      UserRole.parent => ParentPortalScreen(
-          session: session,
-          onSignOut: () => setState(() => _session = null),
-          onSwitchRole: _switchRole,
-        ),
-      UserRole.staff => _buildFacultyFlow(session),
-      UserRole.timetableAllocator => TimetableShell(
-          session: session,
-          onSignOut: () => setState(() => _session = null),
-          onSwitchRole: _switchRole,
-        ),
-    };
-  }
-
-  Widget _buildFacultyFlow(UserSession session) {
-    return switch (_activeFacultyModule) {
-      _ActiveFacultyModule.modules => ModuleHomeScreen(
-          session: session,
-          onOpenAttendance: () =>
-              setState(() => _activeFacultyModule = _ActiveFacultyModule.attendance),
-          onOpenTimetable: () =>
-              setState(() => _activeFacultyModule = _ActiveFacultyModule.timetable),
-          onOpenCanteen: () {},
-          onOpenGatepass: () {},
-          onSignOut: () => setState(() => _session = null),
-          onSwitchRole: _switchRole,
-        ),
-      _ActiveFacultyModule.attendance => FacultyPortalScreen(
-          session: session,
-          onSignOut: () => setState(() => _session = null),
-          onSwitchRole: _switchRole,
-        ),
-      _ActiveFacultyModule.timetable => TimetableShell(
-          session: session,
-          onExitModule: () =>
-              setState(() => _activeFacultyModule = _ActiveFacultyModule.modules),
-          onSignOut: () => setState(() => _session = null),
-          onSwitchRole: _switchRole,
-        ),
-    };
-  }
-
-  Widget _buildStudentFlow(UserSession session) {
-    return switch (_activeStudentModule) {
-      _ActiveStudentModule.modules => ModuleHomeScreen(
+    return switch (_activeModule) {
+      _ActiveModule.modules => ModuleHomeScreen(
           session: session,
           onOpenCanteen: () =>
-              setState(() => _activeStudentModule = _ActiveStudentModule.canteen),
+              setState(() => _activeModule = _ActiveModule.canteen),
           onOpenGatepass: () =>
-              setState(() => _activeStudentModule = _ActiveStudentModule.gatepass),
+              setState(() => _activeModule = _ActiveModule.gatepass),
           onOpenTimetable: () =>
-              setState(() => _activeStudentModule = _ActiveStudentModule.timetable),
-          onSignOut: () => setState(() => _session = null),
-          onSwitchRole: _switchRole,
-        ),
-      _ActiveStudentModule.canteen => CanteenShell(
-          session: session,
-          onExitModule: () =>
-              setState(() => _activeStudentModule = _ActiveStudentModule.modules),
+              setState(() => _activeModule = _ActiveModule.timetable),
+          onOpenAttendance: () =>
+              setState(() => _activeModule = _ActiveModule.attendance),
           onSignOut: () => setState(() => _session = null),
         ),
-      _ActiveStudentModule.gatepass => GatepassShell(
+      _ActiveModule.canteen => CanteenShell(
           session: session,
           onExitModule: () =>
-              setState(() => _activeStudentModule = _ActiveStudentModule.modules),
-        ),
-      _ActiveStudentModule.timetable => TimetableShell(
-          session: session,
-          onExitModule: () =>
-              setState(() => _activeStudentModule = _ActiveStudentModule.modules),
+              setState(() => _activeModule = _ActiveModule.modules),
           onSignOut: () => setState(() => _session = null),
-          onSwitchRole: _switchRole,
+        ),
+      _ActiveModule.gatepass => GatepassShell(
+          session: session,
+          onExitModule: () =>
+              setState(() => _activeModule = _ActiveModule.modules),
+        ),
+      _ActiveModule.timetable => TimetableShell(
+          session: session,
+          onExitModule: () =>
+              setState(() => _activeModule = _ActiveModule.modules),
+          onSignOut: () => setState(() => _session = null),
+        ),
+      _ActiveModule.attendance => FacultyPortalScreen(
+          session: session,
+          onExitModule: () =>
+              setState(() => _activeModule = _ActiveModule.modules),
+          onSignOut: () => setState(() => _session = null),
+        ),
+      _ActiveModule.security => SecurityPortalScreen(
+          session: session,
+          onExitModule: () =>
+              setState(() => _activeModule = _ActiveModule.modules),
+          onSignOut: () => setState(() => _session = null),
+        ),
+      _ActiveModule.parent => ParentPortalScreen(
+          session: session,
+          onExitModule: () =>
+              setState(() => _activeModule = _ActiveModule.modules),
+          onSignOut: () => setState(() => _session = null),
         ),
     };
   }

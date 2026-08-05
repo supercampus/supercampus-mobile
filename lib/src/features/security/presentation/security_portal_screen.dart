@@ -10,12 +10,12 @@ class SecurityPortalScreen extends StatefulWidget {
     super.key,
     required this.session,
     required this.onSignOut,
-    required this.onSwitchRole,
+    this.onExitModule,
   });
 
   final UserSession session;
   final VoidCallback onSignOut;
-  final ValueChanged<UserRole> onSwitchRole;
+  final VoidCallback? onExitModule;
 
   @override
   State<SecurityPortalScreen> createState() => _SecurityPortalScreenState();
@@ -167,6 +167,13 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E293B),
         foregroundColor: Colors.white,
+        leading: widget.onExitModule != null
+            ? IconButton(
+                tooltip: 'Modules Home',
+                icon: const Icon(Icons.home),
+                onPressed: widget.onExitModule,
+              )
+            : null,
         title: Row(
           children: [
             Container(
@@ -178,53 +185,28 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
               child: const Icon(Icons.security, size: 20, color: Colors.white),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Campus Security Portal',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ),
-                Text(
-                  'Gate: ${widget.session.departmentOrWard ?? "Main Gate"}',
-                  style: const TextStyle(fontSize: 11, color: Colors.white70),
-                ),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Campus Security Portal',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  ),
+                  Text(
+                    'Gate: ${widget.session.departmentOrWard ?? "Main Gate"}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: Colors.white70),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
-          PopupMenuButton<UserRole>(
-            tooltip: 'Switch Portal Role',
-            icon: const Icon(Icons.swap_horiz, color: Colors.white),
-            onSelected: widget.onSwitchRole,
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                enabled: false,
-                child: Text('Switch Role (Demo mode):'),
-              ),
-              ...UserRole.values.map(
-                (r) => PopupMenuItem(
-                  value: r,
-                  child: Row(
-                    children: [
-                      Icon(
-                        r == widget.session.role
-                            ? Icons.check_circle
-                            : Icons.circle_outlined,
-                        size: 16,
-                        color: r == widget.session.role
-                            ? AppColors.primary
-                            : Colors.grey,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(r.label),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
           IconButton(
             tooltip: 'Sign Out',
             icon: const Icon(Icons.logout, color: Colors.white),

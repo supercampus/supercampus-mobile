@@ -134,7 +134,7 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${config.programme} • ${config.semester} (${config.academicYear})',
+                            '${config.semester} (${config.academicYear})',
                             softWrap: true,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,

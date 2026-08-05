@@ -52,8 +52,6 @@ class TimetableConfig {
   const TimetableConfig({
     required this.academicYear,
     required this.semester,
-    required this.department,
-    required this.programme,
     required this.batchSection,
     required this.workingDays,
     required this.collegeStartTime,
@@ -70,8 +68,6 @@ class TimetableConfig {
 
   final String academicYear;
   final String semester;
-  final String department;
-  final String programme;
   final String batchSection;
   final List<String> workingDays;
   final String collegeStartTime;
@@ -88,8 +84,6 @@ class TimetableConfig {
   TimetableConfig copyWith({
     String? academicYear,
     String? semester,
-    String? department,
-    String? programme,
     String? batchSection,
     List<String>? workingDays,
     String? collegeStartTime,
@@ -106,8 +100,6 @@ class TimetableConfig {
     return TimetableConfig(
       academicYear: academicYear ?? this.academicYear,
       semester: semester ?? this.semester,
-      department: department ?? this.department,
-      programme: programme ?? this.programme,
       batchSection: batchSection ?? this.batchSection,
       workingDays: workingDays ?? this.workingDays,
       collegeStartTime: collegeStartTime ?? this.collegeStartTime,
