@@ -2,6 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supercampus_mobile/src/app.dart';
 
+/// Signs in, then scrolls the module carousel to [moduleId] and opens it.
+///
+/// The dashboard is a snap carousel, so the target card may not be built yet —
+/// drag until its button exists, then tap it.
+Future<void> _openModule(WidgetTester tester, String moduleId) async {
+  final button = find.byKey(ValueKey('open-module-$moduleId'));
+
+  for (var attempt = 0; attempt < 8 && !tester.any(button); attempt++) {
+    await tester.drag(find.byType(PageView), const Offset(0, -300));
+    await tester.pumpAndSettle();
+  }
+
+  await tester.ensureVisible(button);
+  await tester.pumpAndSettle();
+  await tester.tap(button);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _signIn(WidgetTester tester) async {
+  await tester.enterText(
+    find.byType(TextFormField).at(0),
+    'student@example.com',
+  );
+  await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+  await tester.ensureVisible(find.text('Enter Student Portal'));
+  await tester.tap(find.text('Enter Student Portal'));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   setUp(() {});
 
@@ -45,19 +74,10 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(const SupercampusApp());
+    await _signIn(tester);
 
-    await tester.enterText(
-      find.byType(TextFormField).at(0),
-      'student@example.com',
-    );
-    await tester.enterText(find.byType(TextFormField).at(1), 'password123');
-    await tester.ensureVisible(find.text('Enter Student Portal'));
-    await tester.tap(find.text('Enter Student Portal'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Choose a campus service'), findsOneWidget);
-    await tester.tap(find.text('Canteen'));
-    await tester.pumpAndSettle();
+    expect(find.textContaining('5 modules'), findsOneWidget);
+    await _openModule(tester, 'canteen');
 
     expect(find.text('Canteen is open'), findsOneWidget);
     expect(find.text('Meals'), findsWidgets);
@@ -82,17 +102,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(const SupercampusApp());
-    await tester.enterText(
-      find.byType(TextFormField).at(0),
-      'student@example.com',
-    );
-    await tester.enterText(find.byType(TextFormField).at(1), 'password123');
-    await tester.ensureVisible(find.text('Enter Student Portal'));
-    await tester.tap(find.text('Enter Student Portal'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Canteen'));
-    await tester.pumpAndSettle();
+    await _signIn(tester);
+    await _openModule(tester, 'canteen');
 
     await tester.tap(find.text('Orders'));
     await tester.pump();
@@ -109,17 +120,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(const SupercampusApp());
-    await tester.enterText(
-      find.byType(TextFormField).at(0),
-      'student@example.com',
-    );
-    await tester.enterText(find.byType(TextFormField).at(1), 'password123');
-    await tester.ensureVisible(find.text('Enter Student Portal'));
-    await tester.tap(find.text('Enter Student Portal'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Gatepass'));
-    await tester.pumpAndSettle();
+    await _signIn(tester);
+    await _openModule(tester, 'gatepass');
 
     expect(find.text('You are on campus'), findsOneWidget);
     expect(find.text('Apply outpass'), findsOneWidget);

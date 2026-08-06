@@ -31,15 +31,34 @@ class UserSession {
     required this.email,
     required this.displayName,
     required this.role,
+    this.roleId,
+    this.roleName,
     this.idNumber,
     this.departmentOrWard,
   });
 
   final String email;
   final String displayName;
+
+  /// Legacy built-in role. Retained only for the screens that still branch on
+  /// it; new code must ask [EffectivePermissions] what the user can do rather
+  /// than what they are.
   final UserRole role;
+
+  /// Identity of an admin-authored role, as created in the access-control
+  /// console. Free-form by design — "Hostel Warden" or "HOD - Mechanical"
+  /// need no code change to exist.
+  final String? roleId;
+  final String? roleName;
+
   final String? idNumber;
   final String? departmentOrWard;
+
+  /// Display label for the role, preferring what the admin named it.
+  String get roleLabel => roleName ?? role.label;
+
+  /// Stable key for the role, preferring the console's id.
+  String get roleKey => roleId ?? role.name;
 }
 
 typedef StudentSession = UserSession;
