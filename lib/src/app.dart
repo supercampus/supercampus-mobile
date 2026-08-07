@@ -10,6 +10,7 @@ import 'features/authentication/data/mock_auth_repository.dart';
 import 'features/authentication/presentation/login_screen.dart';
 import 'features/canteen/presentation/canteen_scanner_screen.dart';
 import 'features/canteen/presentation/canteen_shell.dart';
+import 'features/examination/presentation/examination_shell.dart';
 import 'features/faculty/presentation/faculty_portal_screen.dart';
 import 'features/gatepass/presentation/gatepass_shell.dart';
 import 'features/modules/presentation/module_dashboard_screen.dart';
@@ -132,6 +133,11 @@ class _SupercampusAppState extends State<SupercampusApp> {
     void exit() => setState(() => _openModuleId = null);
 
     return switch (moduleId) {
+      ModuleCatalog.examination => ExaminationShell(
+        session: session,
+        onExitModule: exit,
+        onSignOut: _signOut,
+      ),
       ModuleCatalog.canteen => CanteenShell(
         session: session,
         onExitModule: exit,

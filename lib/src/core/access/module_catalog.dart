@@ -93,6 +93,7 @@ class ModuleDescriptor {
 /// tenant / role / user — arrive from the admin web console and are matched
 /// against this list by id.
 abstract final class ModuleCatalog {
+  static const examination = 'examination';
   static const timetable = 'timetable';
   static const attendance = 'attendance';
   static const canteen = 'canteen';
@@ -101,6 +102,85 @@ abstract final class ModuleCatalog {
   static const academics = 'academics';
 
   static const List<ModuleDescriptor> all = [
+    ModuleDescriptor(
+      id: examination,
+      title: 'Examination System',
+      tagline: 'End-to-end exam lifecycle, marks entry, moderation & transcripts',
+      icon: Icons.assignment_outlined,
+      color: Color(0xFF1B5E20),
+      features: [
+        FeatureDescriptor(
+          id: 'dashboard',
+          label: 'Dashboard',
+          actions: {ModuleActions.read},
+        ),
+        FeatureDescriptor(
+          id: 'config',
+          label: 'Configuration',
+          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update},
+        ),
+        FeatureDescriptor(
+          id: 'scheduling',
+          label: 'Scheduling',
+          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update, ModuleActions.publish},
+        ),
+        FeatureDescriptor(
+          id: 'eligibility',
+          label: 'Eligibility',
+          actions: {ModuleActions.read, ModuleActions.approve},
+        ),
+        FeatureDescriptor(
+          id: 'conduct',
+          label: 'Conduct & Incident',
+          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update},
+        ),
+        FeatureDescriptor(
+          id: 'marks',
+          label: 'Marks Entry',
+          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update},
+        ),
+        FeatureDescriptor(
+          id: 'moderation',
+          label: 'Moderation',
+          actions: {ModuleActions.read, ModuleActions.approve, ModuleActions.update},
+        ),
+        FeatureDescriptor(
+          id: 'grades',
+          label: 'Grades & GPA',
+          actions: {ModuleActions.read, ModuleActions.approve},
+        ),
+        FeatureDescriptor(
+          id: 'degree_audit',
+          label: 'Degree Audit',
+          actions: {ModuleActions.read, ModuleActions.approve},
+        ),
+        FeatureDescriptor(
+          id: 'publishing',
+          label: 'Result Publishing',
+          actions: {ModuleActions.read, ModuleActions.approve, ModuleActions.publish},
+        ),
+        FeatureDescriptor(
+          id: 'revaluation',
+          label: 'Revaluation',
+          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update},
+        ),
+        FeatureDescriptor(
+          id: 'transcript',
+          label: 'Transcripts',
+          actions: {ModuleActions.read, ModuleActions.create},
+        ),
+        FeatureDescriptor(
+          id: 'ai_insights',
+          label: 'AI Exam Insights',
+          actions: {ModuleActions.read},
+        ),
+        FeatureDescriptor(
+          id: 'reports',
+          label: 'Reports & Analytics',
+          actions: {ModuleActions.read},
+        ),
+      ],
+    ),
     ModuleDescriptor(
       id: timetable,
       title: 'Timetable Management',

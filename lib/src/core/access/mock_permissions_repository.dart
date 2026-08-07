@@ -50,6 +50,16 @@ class MockPermissionsRepository implements PermissionsRepository {
             'visitor': ['create', 'read'],
           },
         },
+        ModuleCatalog.examination: {
+          'scope': 'own',
+          'features': {
+            'dashboard': ['read'],
+            'eligibility': ['read'],
+            'publishing': ['read'],
+            'revaluation': ['create', 'read'],
+            'transcript': ['read'],
+          },
+        },
         ModuleCatalog.tuitionFee: {
           'scope': 'own',
           'features': {
@@ -74,6 +84,15 @@ class MockPermissionsRepository implements PermissionsRepository {
             'roster': ['read', 'update'],
             'swipe': ['create', 'read'],
             'leave': ['read', 'approve'],
+          },
+        },
+        ModuleCatalog.examination: {
+          'scope': 'department',
+          'features': {
+            'dashboard': ['read'],
+            'marks': ['create', 'read', 'update'],
+            'moderation': ['read', 'approve'],
+            'conduct': ['create', 'read', 'update'],
           },
         },
         ModuleCatalog.canteen: {
@@ -102,6 +121,25 @@ class MockPermissionsRepository implements PermissionsRepository {
           'features': {
             'roster': ['read'],
             'leave': ['read', 'approve'],
+          },
+        },
+        ModuleCatalog.examination: {
+          'scope': 'institution',
+          'features': {
+            'dashboard': ['read'],
+            'config': ['create', 'read', 'update'],
+            'scheduling': ['create', 'read', 'update', 'publish'],
+            'eligibility': ['read', 'approve'],
+            'conduct': ['create', 'read', 'update'],
+            'marks': ['create', 'read', 'update'],
+            'moderation': ['read', 'approve', 'update'],
+            'grades': ['read', 'approve'],
+            'degree_audit': ['read', 'approve'],
+            'publishing': ['read', 'approve', 'publish'],
+            'revaluation': ['create', 'read', 'update'],
+            'transcript': ['read', 'create'],
+            'ai_insights': ['read'],
+            'reports': ['read'],
           },
         },
         ModuleCatalog.academics: {
