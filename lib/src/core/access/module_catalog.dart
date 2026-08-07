@@ -61,16 +61,24 @@ class ModuleDescriptor {
     required this.icon,
     required this.color,
     required this.features,
+    this.shortTitle,
     this.status = ModuleStatus.available,
   });
 
   final String id;
   final String title;
+
+  /// Set where [title] is too long to read as a single upper-case label.
+  final String? shortTitle;
+
   final String tagline;
   final IconData icon;
   final Color color;
   final List<FeatureDescriptor> features;
   final ModuleStatus status;
+
+  /// What the module is called on compact surfaces.
+  String get displayName => shortTitle ?? title;
 
   FeatureDescriptor? feature(String id) {
     for (final f in features) {
@@ -96,6 +104,7 @@ abstract final class ModuleCatalog {
     ModuleDescriptor(
       id: timetable,
       title: 'Timetable Management',
+      shortTitle: 'Timetable',
       tagline: 'Class schedules, teaching periods and substitutions',
       icon: Icons.table_chart_outlined,
       color: Color(0xFF00695C),

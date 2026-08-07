@@ -22,11 +22,17 @@ class InsightDashboard extends StatefulWidget {
     required this.permissions,
     this.feed = const MockInsightFeed(),
     this.rotation = const Duration(seconds: 6),
+    this.onInsightsChanged,
   });
 
   final EffectivePermissions permissions;
   final InsightFeed feed;
   final Duration rotation;
+
+  /// The full ranked list, emitted on every re-rank. Lets the surrounding
+  /// screen reach the insights the rotating card is not currently showing
+  /// without subscribing to the feed a second time.
+  final ValueChanged<List<Insight>>? onInsightsChanged;
 
   @override
   State<InsightDashboard> createState() => _InsightDashboardState();
@@ -65,6 +71,7 @@ class _InsightDashboardState extends State<InsightDashboard> {
       if (_index >= ranked.length) _index = 0;
     });
     _markCurrentShown();
+    widget.onInsightsChanged?.call(ranked);
   }
 
   void _restartRotation() {
@@ -115,8 +122,6 @@ class _InsightDashboardState extends State<InsightDashboard> {
           child: _InsightCard(
             key: ValueKey('${insight.sourceId}:${insight.signature}'),
             insight: insight,
-            total: _insights.length,
-            active: index,
           ),
         ),
       ),
@@ -125,16 +130,9 @@ class _InsightDashboardState extends State<InsightDashboard> {
 }
 
 class _InsightCard extends StatelessWidget {
-  const _InsightCard({
-    super.key,
-    required this.insight,
-    required this.total,
-    required this.active,
-  });
+  const _InsightCard({super.key, required this.insight});
 
   final Insight insight;
-  final int total;
-  final int active;
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +140,7 @@ class _InsightCard extends StatelessWidget {
     final metric = insight.metric;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.circular(12),
       child: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -156,11 +154,11 @@ class _InsightCard extends StatelessWidget {
             // Soft accent bloom behind the gauge, and a hairline ring for
             // depth — cheap decoration, no blur pass.
             Positioned(
-              right: -54,
-              top: -66,
+              right: -40,
+              top: -58,
               child: Container(
-                width: 210,
-                height: 210,
+                width: 150,
+                height: 150,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
@@ -172,76 +170,47 @@ class _InsightCard extends StatelessWidget {
                 ),
               ),
             ),
-            Positioned(
-              left: -70,
-              bottom: -90,
-              child: Container(
-                width: 190,
-                height: 190,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    width: 1.2,
-                  ),
-                ),
-              ),
-            ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(22, 18, 22, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+              child: Row(
                 children: [
-                  _Eyebrow(
-                    icon: insight.icon,
-                    label: _label(insight.sourceId),
-                    accent: accent,
-                  ),
                   Expanded(
-                    child: Row(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                insight.headline,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w500,
-                                  height: 1.22,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (insight.supporting != null) ...[
-                                const SizedBox(height: 7),
-                                Text(
-                                  insight.supporting!,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.55),
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w300,
-                                    height: 1.35,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ],
+                        Text(
+                          insight.headline,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w500,
+                            height: 1.2,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        if (metric != null) ...[
-                          const SizedBox(width: 16),
-                          _Gauge(metric: metric, accent: accent),
+                        if (insight.supporting != null) ...[
+                          const SizedBox(height: 5),
+                          Text(
+                            insight.supporting!,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.55),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w300,
+                              height: 1.3,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
                       ],
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  _Segments(total: total, active: active, accent: accent),
+                  if (metric != null) ...[
+                    const SizedBox(width: 14),
+                    _Gauge(metric: metric, accent: accent),
+                  ],
                 ],
               ),
             ),
@@ -260,50 +229,6 @@ class _InsightCard extends StatelessWidget {
     InsightTone.neutral => const Color(0xFF6FD3FF),
   };
 
-  String _label(String sourceId) => switch (sourceId) {
-    'attendance_headroom' => 'Attendance',
-    'wallet_balance' => 'Canteen wallet',
-    _ => 'Today',
-  };
-}
-
-class _Eyebrow extends StatelessWidget {
-  const _Eyebrow({
-    required this.icon,
-    required this.label,
-    required this.accent,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 26,
-          height: 26,
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: 0.16),
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: Icon(icon, size: 14, color: accent),
-        ),
-        const SizedBox(width: 9),
-        Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.62),
-            fontSize: 10.5,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 1.3,
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 class _Gauge extends StatelessWidget {
@@ -321,8 +246,8 @@ class _Gauge extends StatelessWidget {
       duration: const Duration(milliseconds: 900),
       curve: Curves.easeOutCubic,
       builder: (context, value, _) => SizedBox(
-        width: 86,
-        height: 86,
+        width: 58,
+        height: 58,
         child: CustomPaint(
           painter: _GaugePainter(value: value, accent: accent),
           child: Center(
@@ -330,7 +255,7 @@ class _Gauge extends StatelessWidget {
               metric.label,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 17,
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
               maxLines: 1,
@@ -350,7 +275,7 @@ class _GaugePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const stroke = 7.0;
+    const stroke = 5.0;
     final arcRect = (Offset.zero & size).deflate(stroke / 2);
 
     canvas.drawArc(
@@ -386,42 +311,6 @@ class _GaugePainter extends CustomPainter {
       oldDelegate.value != value || oldDelegate.accent != accent;
 }
 
-class _Segments extends StatelessWidget {
-  const _Segments({
-    required this.total,
-    required this.active,
-    required this.accent,
-  });
-
-  final int total;
-  final int active;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    if (total < 2) return const SizedBox(height: 4);
-
-    return Row(
-      children: [
-        for (var i = 0; i < total; i++)
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 320),
-            curve: Curves.easeOutCubic,
-            margin: const EdgeInsets.only(right: 6),
-            width: i == active ? 26 : 10,
-            height: 4,
-            decoration: BoxDecoration(
-              color: i == active
-                  ? accent
-                  : Colors.white.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 class _InsightSkeleton extends StatelessWidget {
   const _InsightSkeleton();
 
@@ -436,7 +325,7 @@ class _InsightSkeleton extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [Color(0xFF181C24), Color(0xFF272E3D)],
           ),
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.border.withValues(alpha: 0.2)),
         ),
         child: const SizedBox.expand(),

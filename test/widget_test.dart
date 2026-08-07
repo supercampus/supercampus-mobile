@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supercampus_mobile/src/app.dart';
 
-/// Signs in, then scrolls the module carousel to [moduleId] and opens it.
+/// Expands [moduleId] in the module accordion, then opens it.
 ///
-/// The dashboard is a snap carousel, so the target card may not be built yet —
-/// drag until its button exists, then tap it.
+/// An item carries `module-bar-<id>` while collapsed and `open-module-<id>`
+/// once expanded, so the key names whatever tapping it will do next.
 Future<void> _openModule(WidgetTester tester, String moduleId) async {
-  final button = find.byKey(ValueKey('open-module-$moduleId'));
-
-  for (var attempt = 0; attempt < 8 && !tester.any(button); attempt++) {
-    await tester.drag(find.byType(PageView), const Offset(0, -300));
+  final bar = find.byKey(ValueKey('module-bar-$moduleId'));
+  if (tester.any(bar)) {
+    await tester.ensureVisible(bar);
+    await tester.tap(bar);
     await tester.pumpAndSettle();
   }
 
-  await tester.ensureVisible(button);
-  await tester.pumpAndSettle();
-  await tester.tap(button);
+  final open = find.byKey(ValueKey('open-module-$moduleId'));
+  await tester.ensureVisible(open);
+  await tester.tap(open);
   await tester.pumpAndSettle();
 }
 
@@ -76,7 +76,10 @@ void main() {
     await tester.pumpWidget(const SupercampusApp());
     await _signIn(tester);
 
-    expect(find.textContaining('5 modules'), findsOneWidget);
+    // The granted modules are listed as collapsed accordion bars.
+    expect(find.byKey(const ValueKey('module-bar-canteen')), findsOneWidget);
+    expect(find.byKey(const ValueKey('module-bar-gatepass')), findsOneWidget);
+
     await _openModule(tester, 'canteen');
 
     expect(find.text('Canteen is open'), findsOneWidget);
@@ -95,6 +98,41 @@ void main() {
     expect(find.textContaining('Pay ₹79'), findsOneWidget);
   });
 
+  testWidgets('scrolling steps the expanded module one at a time', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const SupercampusApp());
+    await _signIn(tester);
+
+    // First module in catalog order starts expanded.
+    expect(find.byKey(const ValueKey('open-module-timetable')), findsOneWidget);
+
+    await tester.drag(
+      find.byKey(const ValueKey('module-bar-attendance')),
+      const Offset(0, -90),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('open-module-attendance')), findsOneWidget);
+    expect(find.byKey(const ValueKey('module-bar-timetable')), findsOneWidget);
+
+    // Dragging back returns to the previous module, once the step lock has
+    // expired.
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.drag(
+      find.byKey(const ValueKey('module-bar-timetable')),
+      const Offset(0, 90),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('open-module-timetable')), findsOneWidget);
+  });
+
   testWidgets('opens the order history tab', (tester) async {
     tester.view.physicalSize = const Size(800, 1200);
     tester.view.devicePixelRatio = 1.0;
@@ -111,6 +149,65 @@ void main() {
     expect(find.text('My orders'), findsOneWidget);
     expect(find.text('Active'), findsOneWidget);
     expect(find.text('History'), findsOneWidget);
+  });
+
+  testWidgets('the nav bar avatar opens the account sheet and signs out', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const SupercampusApp());
+    await _signIn(tester);
+
+    await tester.tap(find.byKey(const ValueKey('nav-avatar')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your account'), findsOneWidget);
+    expect(find.text('student@example.com'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('profile-sign-out')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Select Your Campus Portal'), findsOneWidget);
+  });
+
+  testWidgets('search finds a granted module and opens it', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const SupercampusApp());
+    await _signIn(tester);
+
+    await tester.tap(find.byKey(const ValueKey('home-search')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const ValueKey('search-field')), 'cant');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Canteen').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Canteen is open'), findsOneWidget);
+  });
+
+  testWidgets('the scan button opens the scanner', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const SupercampusApp());
+    await _signIn(tester);
+
+    await tester.tap(find.byKey(const ValueKey('nav-center')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Scan counter QR'), findsOneWidget);
   });
 
   testWidgets('opens the gatepass module and outpass form', (tester) async {

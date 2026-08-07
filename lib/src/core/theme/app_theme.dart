@@ -15,6 +15,17 @@ abstract final class AppColors {
   static const gateMagenta = Color(0xFFA600FF);
   static const gateLavender = Color(0xFF776CF5);
   static const gateLime = Color(0xFFDFFF00);
+
+  /// The violet the student home is built on. Same two stops as the gate
+  /// colours — the home screen and the QR surfaces read as one family.
+  static const violet = gateBlue;
+  static const violetBright = gateMagenta;
+
+  static const violetGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [violet, violetBright],
+  );
 }
 
 abstract final class AppTheme {

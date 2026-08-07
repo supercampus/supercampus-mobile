@@ -8,6 +8,7 @@ import 'core/theme/app_theme.dart';
 import 'features/authentication/data/auth_repository.dart';
 import 'features/authentication/data/mock_auth_repository.dart';
 import 'features/authentication/presentation/login_screen.dart';
+import 'features/canteen/presentation/canteen_scanner_screen.dart';
 import 'features/canteen/presentation/canteen_shell.dart';
 import 'features/faculty/presentation/faculty_portal_screen.dart';
 import 'features/gatepass/presentation/gatepass_shell.dart';
@@ -94,10 +95,37 @@ class _SupercampusAppState extends State<SupercampusApp> {
         permissions: permissions,
         onOpenModule: (id) => setState(() => _openModuleId = id),
         onSignOut: _signOut,
+        // The scan button only earns its place in the nav bar if there is
+        // something on campus to scan.
+        onScan:
+            permissions.canSeeModule(ModuleCatalog.canteen) ||
+                permissions.canSeeModule(ModuleCatalog.gatepass)
+            ? _openScanner
+            : null,
       );
     }
 
     return _buildModule(openModuleId, session);
+  }
+
+  void _openScanner(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => Scaffold(
+          backgroundColor: const Color(0xFF070907),
+          body: Stack(
+            children: [
+              const CanteenScannerScreen(),
+              Positioned(
+                top: MediaQuery.paddingOf(context).top + 6,
+                left: 4,
+                child: const BackButton(color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildModule(String moduleId, UserSession session) {

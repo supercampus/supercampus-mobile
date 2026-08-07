@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/focus_carousel.dart';
+import '../../../core/widgets/slice_nav_bar.dart';
 import '../../authentication/data/auth_repository.dart';
+import '../../insights/data/insight.dart';
 import '../../insights/presentation/insight_dashboard.dart';
+import 'module_accordion.dart';
+import 'widgets/home_sheets.dart';
+import 'widgets/home_top_bar.dart';
 
-/// One portal for every user. The card list is a projection of
+/// One portal for every user. The module list is a projection of
 /// [EffectivePermissions] over [ModuleCatalog] — there are no role checks in
-/// this file. Granting a module in the admin console makes a card appear;
-/// changing the granted actions changes the badge and the chips.
+/// this file. Granting a module in the admin console makes a bar appear;
+/// changing the granted actions changes what it says.
+///
+/// The page scrolls under a floating [SliceNavBar], which collapses to the
+/// scan button as you read down and reopens as you come back up.
 class ModuleDashboardScreen extends StatefulWidget {
   const ModuleDashboardScreen({
     super.key,
@@ -18,6 +26,7 @@ class ModuleDashboardScreen extends StatefulWidget {
     required this.permissions,
     required this.onOpenModule,
     required this.onSignOut,
+    this.onScan,
     this.dashboard,
   });
 
@@ -26,8 +35,12 @@ class ModuleDashboardScreen extends StatefulWidget {
   final ValueChanged<String> onOpenModule;
   final VoidCallback onSignOut;
 
-  /// Fills the upper half of the screen. Drop your dashboard widget in here;
-  /// a placeholder is shown until then.
+  /// The scan button in the middle of the nav bar. Hidden when null. Takes
+  /// the caller's context so the owner of navigation can push the scanner
+  /// without this screen knowing what a scanner is.
+  final void Function(BuildContext context)? onScan;
+
+  /// Replaces the insight surface below the greeting.
   final Widget? dashboard;
 
   @override
@@ -35,79 +48,93 @@ class ModuleDashboardScreen extends StatefulWidget {
 }
 
 class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
-  int _current = 0;
+  int _expanded = 0;
+  bool _navCollapsed = false;
+  List<Insight> _insights = const [];
+
+  /// Reading down closes the bar, coming back up reopens it. Driven by the
+  /// gesture direction rather than by the offset, so a short page that only
+  /// scrolls a little still behaves the same as a long one.
+  bool _onScroll(UserScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) return false;
+
+    final collapsed = switch (notification.direction) {
+      ScrollDirection.reverse => true,
+      ScrollDirection.forward => false,
+      ScrollDirection.idle => _navCollapsed,
+    };
+
+    if (collapsed != _navCollapsed) setState(() => _navCollapsed = collapsed);
+    return false;
+  }
+
+  List<Insight> get _alerts => [
+    for (final i in _insights)
+      if (i.tone == InsightTone.caution || i.tone == InsightTone.urgent) i,
+  ];
 
   @override
   Widget build(BuildContext context) {
     final modules = widget.permissions.visibleModules();
-    final focused = modules.isEmpty
-        ? AppColors.primary
-        : modules[_current.clamp(0, modules.length - 1)].color;
+    final accent = modules.isEmpty
+        ? AppColors.violet
+        : modules[_expanded.clamp(0, modules.length - 1)].color;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('SuperCampus'),
-        actions: [
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: widget.onSignOut,
-            icon: const Icon(Icons.logout),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      backgroundColor: AppColors.canvas,
       body: SafeArea(
+        bottom: false,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
             child: Column(
               children: [
-                _Header(
-                  session: widget.session,
-                  moduleCount: modules.length,
-                  accent: focused,
+                HomeTopBar(
+                  onSparkleTap: _openInsights,
+                  onSearchTap: _openSearch,
+                  onAlertsTap: _openAlerts,
+                  hasAlerts: _alerts.isNotEmpty,
                 ),
                 Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final height = constraints.maxHeight;
-                      return Column(
-                        children: [
-                          SizedBox(
-                            height: height * 0.36,
-                            child:
-                                widget.dashboard ??
-                                InsightDashboard(
-                                  permissions: widget.permissions,
-                                ),
+                  child: Stack(
+                    children: [
+                      NotificationListener<UserScrollNotification>(
+                        onNotification: _onScroll,
+                        child: _Feed(
+                          session: widget.session,
+                          permissions: widget.permissions,
+                          modules: modules,
+                          accent: accent,
+                          dashboard: widget.dashboard,
+                          onOpenModule: widget.onOpenModule,
+                          onExpandedChanged: (index) =>
+                              setState(() => _expanded = index),
+                          onInsightsChanged: (insights) {
+                            if (mounted) setState(() => _insights = insights);
+                          },
+                        ),
+                      ),
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: MediaQuery.paddingOf(context).bottom + 10,
+                        child: SliceNavBar(
+                          destinations: _destinations(modules),
+                          selectedId: 'home',
+                          onSelect: (id) {
+                            if (id != 'home') widget.onOpenModule(id);
+                          },
+                          onCenterTap: widget.onScan == null
+                              ? null
+                              : () => widget.onScan!(context),
+                          avatarInitials: initialsOf(
+                            widget.session.displayName,
                           ),
-                          // Leaves the remaining ~12% below the carousel so it
-                          // sits clear of the bottom edge.
-                          SizedBox(
-                            height: height * 0.52,
-                            child: modules.isEmpty
-                                ? const _NoAccessState()
-                                : FocusCarousel(
-                                    itemCount: modules.length,
-                                    itemHeightFraction: 0.80,
-                                    itemGap: 10,
-                                    indicatorColor: focused,
-                                    onPageChanged: (index) =>
-                                        setState(() => _current = index),
-                                    itemBuilder: (context, index, focus) =>
-                                        _ModuleCard(
-                                          module: modules[index],
-                                          permissions: widget.permissions,
-                                          focus: focus,
-                                          onOpen: () => widget.onOpenModule(
-                                            modules[index].id,
-                                          ),
-                                        ),
-                                  ),
-                          ),
-                        ],
-                      );
-                    },
+                          onAvatarTap: _openProfile,
+                          collapsed: _navCollapsed,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -117,281 +144,240 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       ),
     );
   }
+
+  /// Home plus the first few granted modules. Same projection as the
+  /// accordion, so a user who cannot see a module never gets a tab for it.
+  List<SliceNavDestination> _destinations(List<ModuleDescriptor> modules) => [
+    const SliceNavDestination(
+      id: 'home',
+      label: 'Home',
+      icon: Icons.home_rounded,
+    ),
+    for (final m in modules.where((m) => m.status != ModuleStatus.planned).take(
+      3,
+    ))
+      SliceNavDestination(id: m.id, label: m.displayName, icon: m.icon),
+  ];
+
+  void _openSearch() => showHomeSheet(
+    context: context,
+    title: 'Search',
+    expand: true,
+    child: CampusSearchSheet(
+      permissions: widget.permissions,
+      onOpenModule: widget.onOpenModule,
+    ),
+  );
+
+  void _openInsights() => showHomeSheet(
+    context: context,
+    title: 'What matters now',
+    child: InsightListSheet(
+      insights: _insights,
+      emptyText: 'Nothing to report yet — check back after your first class.',
+    ),
+  );
+
+  void _openAlerts() => showHomeSheet(
+    context: context,
+    title: 'Alerts',
+    child: InsightListSheet(
+      insights: _alerts,
+      emptyText: 'You are all clear. Nothing needs attention.',
+    ),
+  );
+
+  void _openProfile() => showHomeSheet(
+    context: context,
+    title: 'Your account',
+    child: ProfileSheet(
+      session: widget.session,
+      permissions: widget.permissions,
+      onSignOut: widget.onSignOut,
+    ),
+  );
 }
 
-class _Header extends StatelessWidget {
-  const _Header({
+class _Feed extends StatelessWidget {
+  const _Feed({
     required this.session,
-    required this.moduleCount,
+    required this.permissions,
+    required this.modules,
     required this.accent,
+    required this.dashboard,
+    required this.onOpenModule,
+    required this.onExpandedChanged,
+    required this.onInsightsChanged,
   });
 
   final UserSession session;
-  final int moduleCount;
+  final EffectivePermissions permissions;
+  final List<ModuleDescriptor> modules;
+  final Color accent;
+  final Widget? dashboard;
+  final ValueChanged<String> onOpenModule;
+  final ValueChanged<int> onExpandedChanged;
+  final ValueChanged<List<Insight>> onInsightsChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    // The accordion never scrolls itself, so it has to be given exactly the
+    // height its bars add up to.
+    final accordionHeight = 158 + (modules.length - 1) * 27.0;
+
+    final planned = [
+      for (final m in ModuleCatalog.all)
+        if (m.status == ModuleStatus.planned && !modules.contains(m)) m,
+    ];
+
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        0,
+        4,
+        0,
+        SliceNavBar.height + MediaQuery.paddingOf(context).bottom + 20,
+      ),
+      children: [
+        _Greeting(session: session, accent: accent),
+        SizedBox(
+          height: 108,
+          child:
+              dashboard ??
+              InsightDashboard(
+                permissions: permissions,
+                onInsightsChanged: onInsightsChanged,
+              ),
+        ),
+        const SizedBox(height: 22),
+        if (modules.isEmpty)
+          const _NoAccessState()
+        else ...[
+          const _SectionLabel('Your modules'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+            child: SizedBox(
+              height: accordionHeight,
+              child: ModuleAccordion(
+                modules: modules,
+                permissions: permissions,
+                onOpenModule: onOpenModule,
+                onExpandedChanged: onExpandedChanged,
+              ),
+            ),
+          ),
+        ],
+        if (planned.isNotEmpty) ...[
+          const SizedBox(height: 26),
+          const _SectionLabel('Coming next'),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                for (final m in planned) ...[
+                  Expanded(child: _PlannedTile(module: m)),
+                  if (m != planned.last) const SizedBox(width: 12),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+      child: Text(
+        text.toUpperCase(),
+        style: const TextStyle(
+          color: AppColors.muted,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+class _PlannedTile extends StatelessWidget {
+  const _PlannedTile({required this.module});
+
+  final ModuleDescriptor module;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 96,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(module.icon, color: AppColors.muted, size: 22),
+          const Spacer(),
+          Text(
+            module.displayName,
+            style: Theme.of(context).textTheme.titleMedium,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            'Coming soon',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Greeting extends StatelessWidget {
+  const _Greeting({required this.session, required this.accent});
+
+  final UserSession session;
   final Color accent;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text.rich(
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 14),
+      child: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(text: 'Good ${_dayPart()}, '),
             TextSpan(
-              children: [
-                TextSpan(text: 'Good ${_dayPart()}, '),
-                TextSpan(
-                  text: session.displayName.split(' ').first,
-                  style: TextStyle(color: accent, fontWeight: FontWeight.w500),
-                ),
-              ],
+              text: session.displayName.split(' ').first,
+              style: TextStyle(color: accent, fontWeight: FontWeight.w500),
             ),
-            style: Theme.of(context).textTheme.titleLarge,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            moduleCount == 0
-                ? '${session.roleLabel} · no modules assigned yet'
-                : '${session.roleLabel} · $moduleCount modules',
-            style: Theme.of(context).textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+          ],
+        ),
+        style: Theme.of(context).textTheme.titleLarge,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
 
   String _dayPart() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'morning';
-    if (hour < 17) return 'afternoon';
-    return 'evening';
-  }
-}
-
-class _ModuleCard extends StatelessWidget {
-  const _ModuleCard({
-    required this.module,
-    required this.permissions,
-    required this.focus,
-    required this.onOpen,
-  });
-
-  final ModuleDescriptor module;
-  final EffectivePermissions permissions;
-
-  /// 1.0 when centred, 0.0 for the neighbouring cards.
-  final double focus;
-
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final level = permissions.accessLevel(module.id);
-    final scope = permissions.scopeFor(module.id);
-    final features = permissions.grantedFeatures(module);
-    final ready = module.status != ModuleStatus.planned;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [_shade(module.color, 1.45), _shade(module.color, 0.74)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: module.color.withValues(alpha: 0.10 + 0.24 * focus),
-            blurRadius: 30,
-            offset: Offset(0, 10 + 8 * focus),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.20),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(module.icon, color: Colors.white, size: 23),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Text(
-                  module.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w500,
-                    height: 1.15,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              _AccessBadge(level: level),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    module.tagline,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.82),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w300,
-                      height: 1.35,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.visibility_outlined,
-                        size: 15,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'Scope · ${scope.label}',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final feature in features)
-                        _FeatureChip(
-                          label: feature.label,
-                          actions: permissions.grantedActions(
-                            module.id,
-                            feature,
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              key: ValueKey('open-module-${module.id}'),
-              onPressed: ready ? onOpen : null,
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: _shade(module.color, 0.8),
-                disabledBackgroundColor: Colors.white.withValues(alpha: 0.28),
-                disabledForegroundColor: Colors.white.withValues(alpha: 0.75),
-                minimumSize: const Size(0, 44),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              icon: Icon(
-                ready ? Icons.arrow_forward : Icons.schedule_outlined,
-                size: 18,
-              ),
-              label: Text(ready ? 'Open module' : 'Coming soon'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Lightness shift in HSL, so each module's gradient stays on its own hue
-/// instead of washing out toward grey the way an alpha blend would.
-Color _shade(Color color, double factor) {
-  final hsl = HSLColor.fromColor(color);
-  return hsl.withLightness((hsl.lightness * factor).clamp(0.0, 1.0)).toColor();
-}
-
-class _AccessBadge extends StatelessWidget {
-  const _AccessBadge({required this.level});
-
-  final AccessLevel level;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.22),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        level.label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-}
-
-class _FeatureChip extends StatelessWidget {
-  const _FeatureChip({required this.label, required this.actions});
-
-  final String label;
-  final List<String> actions;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
-      ),
-      child: Text(
-        '$label · ${actions.join(', ')}',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11.5,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
+    if (hour < 12) return 'Morning';
+    if (hour < 17) return 'Afternoon';
+    return 'Evening';
   }
 }
 
