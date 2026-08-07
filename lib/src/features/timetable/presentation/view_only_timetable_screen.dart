@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/mock_timetable_repository.dart';
 import 'widgets/timetable_grid_view.dart';
+import 'widgets/weekly_date_strip.dart';
+import 'widgets/month_calendar_dialog.dart';
 
 class ViewOnlyTimetableScreen extends StatefulWidget {
   const ViewOnlyTimetableScreen({
@@ -21,7 +24,7 @@ class ViewOnlyTimetableScreen extends StatefulWidget {
 }
 
 class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
-  String _selectedDay = 'Monday';
+  DateTime _selectedDate = DateTime.now();
   late String _targetClass;
 
   @override
@@ -54,9 +57,10 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
   Widget build(BuildContext context) {
     final config = widget.repository.getConfig();
     final entries = widget.repository.getEntriesForClass(_targetClass);
+    final selectedDayStr = DateFormat('EEEE').format(_selectedDate);
     final activeSubs = widget.repository
         .getSubstitutions()
-        .where((s) => s.className == _targetClass && s.status == 'Approved')
+        .where((s) => s.className == _targetClass && s.status == 'Approved' && s.dayOfWeek == selectedDayStr)
         .toList();
 
     return ListView(
@@ -167,66 +171,45 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
 
         const SizedBox(height: 16),
 
-        // Active Faculty Substitutions Banner (if any)
-        if (activeSubs.isNotEmpty) ...[
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.amber.shade300),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Schedule',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.swap_horiz,
-                      color: Colors.amber.shade900,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Active Faculty Substitutions for $_targetClass',
-                        softWrap: true,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.amber.shade900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ...activeSubs.map((sub) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '• ${sub.dayOfWeek} ${sub.timeSlot}: ${sub.subjectName} (${sub.subjectCode}) — ${sub.substituteFaculty} (replacing ${sub.originalFaculty})',
-                      softWrap: true,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.amber.shade900,
-                      ),
-                    ),
-                  );
-                }),
-              ],
+            IconButton.filledTonal(
+              onPressed: () async {
+                final date = await showDialog<DateTime>(
+                  context: context,
+                  builder: (ctx) => MonthCalendarDialog(selectedDate: _selectedDate),
+                );
+                if (date != null) {
+                  setState(() => _selectedDate = date);
+                }
+              },
+              icon: const Icon(Icons.calendar_month_outlined),
             ),
-          ),
-          const SizedBox(height: 16),
-        ],
+          ],
+        ),
+        const SizedBox(height: 12),
+        WeeklyDateStrip(
+          selectedDate: _selectedDate,
+          onDateSelected: (date) => setState(() => _selectedDate = date),
+        ),
+
+        const SizedBox(height: 16),
+
+
 
         // Interactive Schedule Grid View
         TimetableGridView(
           entries: entries,
           workingDays: config.workingDays,
-          selectedDay: _selectedDay,
-          onDaySelected: (day) => setState(() => _selectedDay = day),
+          selectedDay: DateFormat('EEEE').format(_selectedDate),
+          onDaySelected: (_) {},
           isEditable: false,
+          showDayFilterChips: false,
         ),
       ],
     );

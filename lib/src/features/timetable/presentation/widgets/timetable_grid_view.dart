@@ -14,6 +14,7 @@ class TimetableGridView extends StatefulWidget {
     this.onEditEntry,
     this.onDeleteEntry,
     this.onAddEntryForSlot,
+    this.showDayFilterChips = true,
   });
 
   final List<TimetableEntry> entries;
@@ -24,6 +25,7 @@ class TimetableGridView extends StatefulWidget {
   final ValueChanged<TimetableEntry>? onEditEntry;
   final ValueChanged<String>? onDeleteEntry;
   final Function(String day, int periodIndex)? onAddEntryForSlot;
+  final bool showDayFilterChips;
 
   @override
   State<TimetableGridView> createState() => _TimetableGridViewState();
@@ -52,40 +54,42 @@ class _TimetableGridViewState extends State<TimetableGridView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Controls Bar
-        Row(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: widget.workingDays.map((day) {
-                    final isSelected = day == widget.selectedDay;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        selected: isSelected,
-                        label: Text(day),
-                        selectedColor: AppColors.primary,
-                        labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : AppColors.ink,
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w400,
+        if (widget.showDayFilterChips)
+          Row(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: widget.workingDays.map((day) {
+                      final isSelected = day == widget.selectedDay;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          selected: isSelected,
+                          label: Text(day),
+                          selectedColor: AppColors.primary,
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : AppColors.ink,
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w400,
+                          ),
+                          onSelected: (_) => widget.onDaySelected(day),
                         ),
-                        onSelected: (_) => widget.onDaySelected(day),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            IconButton.filledTonal(
-              tooltip: _isWeeklyGrid ? 'List View' : 'Weekly Overview',
-              icon: Icon(_isWeeklyGrid ? Icons.view_agenda : Icons.grid_on),
-              onPressed: () => setState(() => _isWeeklyGrid = !_isWeeklyGrid),
-            ),
-          ],
-        ),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
+                tooltip: _isWeeklyGrid ? 'List View' : 'Weekly Overview',
+                icon: Icon(_isWeeklyGrid ? Icons.view_agenda : Icons.grid_on),
+                onPressed: () => setState(() => _isWeeklyGrid = !_isWeeklyGrid),
+              ),
+            ],
+          ),
+
 
         const SizedBox(height: 12),
 

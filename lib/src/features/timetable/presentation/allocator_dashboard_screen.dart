@@ -23,7 +23,8 @@ class AllocatorDashboardScreen extends StatefulWidget {
 }
 
 class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
-  int _currentNavIndex = 0; // 0: Dashboard, 1: Master Timetable, 2: Substitutions, 3: Configuration
+  int _currentNavIndex =
+      0; // 0: Dashboard, 1: Master Timetable, 2: Substitutions, 3: Configuration
   String _selectedClass = 'CS-3A';
   final String _selectedDay = 'Monday';
 
@@ -84,6 +85,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     children: [
                       Text(
                         'Allocator Portal',
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -91,6 +93,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                       ),
                       Text(
                         'SuperCampus Operations',
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 11, color: AppColors.muted),
                       ),
                     ],
@@ -166,6 +169,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
         ),
         title: Text(
           label,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -174,12 +178,12 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
         ),
         subtitle: Text(
           subtitle,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 10, color: AppColors.muted),
         ),
         trailing: badgeCount > 0
             ? Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.red,
                   borderRadius: BorderRadius.circular(10),
@@ -213,7 +217,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
       type: BottomNavigationBarType.fixed,
       selectedItemColor: const Color(0xFF00695C),
       unselectedItemColor: Colors.grey.shade600,
-      selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+      selectedLabelStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+      ),
       items: [
         const BottomNavigationBarItem(
           icon: Icon(Icons.dashboard_outlined),
@@ -288,7 +295,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        // Class Selector & Current Day Header
         Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -300,9 +306,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               children: [
                 Text(
                   'Today\'s Schedule Analysis',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   'Live operational monitoring for $_selectedDay',
@@ -354,7 +360,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
         const SizedBox(height: 16),
 
-        // Prominent Actionable Shortcut Banner (Disruption Alert)
         if (disruptions.isNotEmpty) ...[
           Container(
             padding: const EdgeInsets.all(16),
@@ -376,8 +381,11 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.warning_amber_rounded,
-                        color: Colors.white, size: 28),
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -425,7 +433,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           const SizedBox(height: 16),
         ],
 
-        // Metrics Row
         LayoutBuilder(
           builder: (context, constraints) {
             return Wrap(
@@ -477,7 +484,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
         const SizedBox(height: 20),
 
-        // Today's Live Schedule Timeline
         Card(
           elevation: 0,
           color: Colors.white,
@@ -499,13 +505,12 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     Text(
                       'Live Day Plan for Class $_selectedClass',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Chip(
                       label: Text(_selectedDay),
-                      backgroundColor:
-                          AppColors.primary.withValues(alpha: 0.1),
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                       labelStyle: const TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
@@ -526,8 +531,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   )
                 else
                   ...todayEntries.map((entry) {
-                    final isCompromised = disruptions
-                        .any((d) => d.periodIndex == entry.periodIndex);
+                    final isCompromised = disruptions.any(
+                      (d) => d.periodIndex == entry.periodIndex,
+                    );
                     final sub = approvedSubs.firstWhere(
                       (s) =>
                           s.timeSlot == entry.timeSlot &&
@@ -553,15 +559,15 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                         color: isCompromised
                             ? Colors.red.shade50
                             : (sub.id.isNotEmpty
-                                ? Colors.amber.shade50
-                                : Colors.grey.shade50),
+                                  ? Colors.amber.shade50
+                                  : Colors.grey.shade50),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isCompromised
                               ? Colors.red.shade300
                               : (sub.id.isNotEmpty
-                                  ? Colors.amber.shade300
-                                  : Colors.grey.shade200),
+                                    ? Colors.amber.shade300
+                                    : Colors.grey.shade200),
                         ),
                       ),
                       child: Column(
@@ -584,8 +590,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                       vertical: 3,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: entry.categoryColor
-                                          .withValues(alpha: 0.15),
+                                      color: entry.categoryColor.withValues(
+                                        alpha: 0.15,
+                                      ),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
@@ -669,21 +676,28 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              const Icon(Icons.person_outline,
-                                  size: 16, color: AppColors.muted),
+                              const Icon(
+                                Icons.person_outline,
+                                size: 16,
+                                color: AppColors.muted,
+                              ),
                               const SizedBox(width: 4),
-                              Text(
-                                sub.id.isNotEmpty
-                                    ? 'Substitute: ${sub.substituteFaculty} (replacing ${entry.facultyName})'
-                                    : 'Faculty: ${entry.facultyName}',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: sub.id.isNotEmpty
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  color: sub.id.isNotEmpty
-                                      ? const Color(0xFF00695C)
-                                      : AppColors.muted,
+                              Expanded(
+                                child: Text(
+                                  sub.id.isNotEmpty
+                                      ? 'Substitute: ${sub.substituteFaculty} (replacing ${entry.facultyName})'
+                                      : 'Faculty: ${entry.facultyName}',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: sub.id.isNotEmpty
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: sub.id.isNotEmpty
+                                        ? const Color(0xFF00695C)
+                                        : AppColors.muted,
+                                  ),
                                 ),
                               ),
                             ],
@@ -736,6 +750,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           const SizedBox(height: 8),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
@@ -758,7 +774,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        // Class Selection Bar & Generator Button
         Wrap(
           spacing: 12,
           runSpacing: 12,
@@ -770,9 +785,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               children: [
                 Text(
                   'Master Timetable Matrix',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   'Weekly calendar matrix for class scheduling (No Room fields)',
@@ -808,7 +823,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
         const SizedBox(height: 16),
 
-        // Class Selection Chips Row
         Card(
           elevation: 0,
           color: Colors.white,
@@ -885,8 +899,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   alignment: WrapAlignment.end,
                   children: [
                     OutlinedButton(
-                      onPressed: () =>
-                          setState(() => _aiPreviewEntries = null),
+                      onPressed: () => setState(() => _aiPreviewEntries = null),
                       child: const Text('Discard'),
                     ),
                     FilledButton(
@@ -900,7 +913,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                         setState(() => _aiPreviewEntries = null);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('AI Candidate applied to master grid!'),
+                            content: Text(
+                              'AI Candidate applied to master grid!',
+                            ),
                             backgroundColor: Color(0xFF2E7D32),
                           ),
                         );
@@ -915,7 +930,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           const SizedBox(height: 16),
         ],
 
-        // Calendar Matrix Grid Layout
         _buildMasterCalendarMatrix(context, entries, config),
       ],
     );
@@ -945,8 +959,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
             headingRowColor: WidgetStateProperty.all(const Color(0xFFF0F4F8)),
             columns: [
               const DataColumn(
-                label: Text('Working Day',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                label: Text(
+                  'Working Day',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
               ...slotInfos.map((slot) {
                 return DataColumn(
@@ -958,8 +974,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                       fontSize: 11,
                       color: slot.isBreak
                           ? (slot.breakType == 'lunch'
-                              ? Colors.deepOrange
-                              : Colors.amber.shade900)
+                                ? Colors.deepOrange
+                                : Colors.amber.shade900)
                           : Colors.black,
                     ),
                   ),
@@ -982,14 +998,16 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     if (slot.isBreak) {
                       return DataCell(
                         Container(
-                          width: 90,
+                          width: 120,
                           height: 54,
                           color: slot.breakType == 'lunch'
                               ? Colors.orange.shade50
                               : Colors.amber.shade50,
                           alignment: Alignment.center,
                           child: Text(
-                            slot.breakType == 'lunch' ? '🍱 LUNCH' : '☕ TEA BREAK',
+                            slot.breakType == 'lunch'
+                                ? '🍱 LUNCH'
+                                : '☕ TEA BREAK',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -1027,14 +1045,16 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                             decoration: BoxDecoration(
                               color: Colors.grey.shade50,
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: Colors.grey.shade200,
-                              ),
+                              border: Border.all(color: Colors.grey.shade200),
                             ),
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.add, size: 14, color: AppColors.muted),
+                                Icon(
+                                  Icons.add,
+                                  size: 14,
+                                  color: AppColors.muted,
+                                ),
                                 SizedBox(width: 2),
                                 Text(
                                   'Assign',
@@ -1057,7 +1077,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                         child: Container(
                           width: 120,
                           height: 54,
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: entry.categoryColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
@@ -1065,36 +1088,31 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               color: entry.categoryColor.withValues(alpha: 0.4),
                             ),
                           ),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${entry.subjectCode}: ${entry.subjectName}',
-                                  maxLines: 2,
-                                  softWrap: true,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: entry.categoryColor,
-                                  ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${entry.subjectCode}: ${entry.subjectName}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: entry.categoryColor,
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Staff: ${entry.facultyName}',
-                                  maxLines: 2,
-                                  softWrap: true,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: AppColors.ink,
-                                  ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Staff: ${entry.facultyName}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.ink,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -1119,17 +1137,20 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Substitutions & Live Leave Tracker',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const Text(
                   'Manage absent staff and auto-suggested replacements',
@@ -1168,7 +1189,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
         const SizedBox(height: 20),
 
-        // Live Disruption Alerts & Smart Auto-Suggestions Section
         const Text(
           'Live Disruption Alerts & Smart Auto-Suggestions',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
@@ -1187,9 +1207,11 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               children: [
                 Icon(Icons.check_circle, color: Color(0xFF2E7D32)),
                 SizedBox(width: 10),
-                Text(
-                  'No active faculty leave disruptions pending review.',
-                  style: TextStyle(fontWeight: FontWeight.w500),
+                Expanded(
+                  child: Text(
+                    'No active faculty leave disruptions pending review.',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
                 ),
               ],
             ),
@@ -1217,8 +1239,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                             color: Colors.orange.shade50,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(Icons.person_off_outlined,
-                              color: Colors.orange.shade900),
+                          child: Icon(
+                            Icons.person_off_outlined,
+                            color: Colors.orange.shade900,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -1228,7 +1252,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               Text(
                                 '${disruption.absentFacultyName} on Leave',
                                 maxLines: 2,
-                                softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 15,
@@ -1252,8 +1275,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     const SizedBox(height: 12),
                     const Text(
                       'Smart Qualified Substitute Suggestions:',
-                      style:
-                          TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -1261,19 +1286,25 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                       runSpacing: 8,
                       children: disruption.suggestedSubstitutes.map((subName) {
                         return ActionChip(
-                          avatar: const Icon(Icons.person_add,
-                              size: 16, color: Color(0xFF00695C)),
+                          avatar: const Icon(
+                            Icons.person_add,
+                            size: 16,
+                            color: Color(0xFF00695C),
+                          ),
                           label: Text('Approve $subName'),
                           backgroundColor: const Color(0xFFE0F2F1),
                           onPressed: () {
                             setState(() {
                               widget.repository.resolveDisruptionAlert(
-                                  disruption.id, subName);
+                                disruption.id,
+                                subName,
+                              );
                             });
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                    'Approved $subName for ${disruption.className} ${disruption.subjectCode}! Live schedule updated.'),
+                                  'Approved $subName for ${disruption.className} ${disruption.subjectCode}! Live schedule updated.',
+                                ),
                                 backgroundColor: const Color(0xFF00695C),
                               ),
                             );
@@ -1289,7 +1320,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
         const SizedBox(height: 24),
 
-        // Approved & Pending Substitutions Log Table
         const Text(
           'All Institution Substitutions Log',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
@@ -1340,8 +1370,12 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   const SizedBox(height: 6),
                   Text(
                     '${sub.dayOfWeek} (${sub.timeSlot}) • Absent: ${sub.originalFaculty} ➔ Substitute: ${sub.substituteFaculty}',
-                    style:
-                        const TextStyle(fontSize: 12, color: AppColors.muted),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.muted,
+                    ),
                   ),
                   if (isPending) ...[
                     const SizedBox(height: 10),
@@ -1393,9 +1427,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
       children: [
         Text(
           'Timetable Configuration & Resource Mapping',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const Text(
           'Global institutional settings and staff/subject mappings',
@@ -1403,7 +1437,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
         ),
         const SizedBox(height: 20),
 
-        // Global Settings Form Component
         TimetableConfigForm(
           config: config,
           onSaveConfig: (newCfg) {
@@ -1416,7 +1449,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
         const SizedBox(height: 24),
 
-        // Resource Mapping (Staff Roster & Leave Status)
         Card(
           elevation: 0,
           color: Colors.white,
@@ -1438,8 +1470,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     Text(
                       'Faculty Resource Mapping & Status Roster',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Chip(
                       label: Text('${facultyList.length} Teachers'),
@@ -1484,7 +1516,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               Text(
                                 fac.name,
                                 maxLines: 2,
-                                softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
@@ -1494,7 +1525,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               Text(
                                 'Dept: ${fac.department} • Subjects: ${fac.subjectsHandled.join(", ")}',
                                 maxLines: 2,
-                                softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 11,
@@ -1504,6 +1534,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                             ],
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -1537,7 +1568,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
         const SizedBox(height: 24),
 
-        // Faculty & Subject Workload Quotas Manager (Document Parsing + Manual Entry)
         Card(
           elevation: 0,
           color: Colors.white,
@@ -1561,13 +1591,15 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                       children: [
                         Text(
                           'Faculty Subject & Weekly Period Quotas',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const Text(
                           'Minimum required weekly period metrics per faculty member (used for AI schedule generation)',
-                          style: TextStyle(fontSize: 12, color: AppColors.muted),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.muted,
+                          ),
                         ),
                       ],
                     ),
@@ -1607,10 +1639,16 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF00695C).withValues(alpha: 0.1),
+                            color: const Color(
+                              0xFF00695C,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(Icons.school, color: Color(0xFF00695C), size: 20),
+                          child: const Icon(
+                            Icons.school,
+                            color: Color(0xFF00695C),
+                            size: 20,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -1620,7 +1658,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               Text(
                                 '${quota.facultyName} • ${quota.subjectCode}',
                                 maxLines: 2,
-                                softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
@@ -1630,7 +1667,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               Text(
                                 '${quota.subjectName} (${quota.department}) ${quota.isLab ? "• LAB" : ""}',
                                 maxLines: 2,
-                                softWrap: true,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 11,
@@ -1653,14 +1689,25 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFF00695C)),
-                              onPressed: () => _showEditQuotaDialog(context, quota),
+                              icon: const Icon(
+                                Icons.edit_outlined,
+                                size: 20,
+                                color: Color(0xFF00695C),
+                              ),
+                              onPressed: () =>
+                                  _showEditQuotaDialog(context, quota),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                size: 20,
+                                color: Colors.red,
+                              ),
                               onPressed: () {
                                 setState(() {
-                                  widget.repository.deleteFacultyQuota(quota.id);
+                                  widget.repository.deleteFacultyQuota(
+                                    quota.id,
+                                  );
                                 });
                               },
                             ),
@@ -1678,7 +1725,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     );
   }
 
-  // Manual Add / Edit Period Entry Dialog
   void _showManualEntryDialog(
     BuildContext context,
     TimetableEntry? entry, {
@@ -1686,16 +1732,21 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     int? initialPeriod,
   }) {
     final isEdit = entry != null;
-    final subjectCodeCtrl =
-        TextEditingController(text: entry?.subjectCode ?? 'CS301');
-    final subjectNameCtrl =
-        TextEditingController(text: entry?.subjectName ?? 'Database Systems');
+    final subjectCodeCtrl = TextEditingController(
+      text: entry?.subjectCode ?? 'CS301',
+    );
+    final subjectNameCtrl = TextEditingController(
+      text: entry?.subjectName ?? 'Database Systems',
+    );
     final facultyCtrl = TextEditingController(
-        text: entry?.facultyName ?? 'Prof. Sarah Jenkins');
-    final timeSlotCtrl =
-        TextEditingController(text: entry?.timeSlot ?? '08:30 - 09:20 AM');
+      text: entry?.facultyName ?? 'Prof. Sarah Jenkins',
+    );
+    final timeSlotCtrl = TextEditingController(
+      text: entry?.timeSlot ?? '08:30 - 09:20 AM',
+    );
     final periodCtrl = TextEditingController(
-        text: (entry?.periodIndex ?? initialPeriod ?? 1).toString());
+      text: (entry?.periodIndex ?? initialPeriod ?? 1).toString(),
+    );
     bool isLab = entry?.isLab ?? false;
     String day = entry?.dayOfWeek ?? initialDay ?? _selectedDay;
 
@@ -1714,89 +1765,101 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 Expanded(
                   child: Text(
                     isEdit ? 'Edit Period Slot' : 'Assign Subject & Staff',
-                    softWrap: true,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: subjectCodeCtrl,
-                          decoration:
-                              const InputDecoration(labelText: 'Subject Code'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: subjectCodeCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Subject Code',
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: subjectNameCtrl,
-                          decoration:
-                              const InputDecoration(labelText: 'Subject Name'),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: subjectNameCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Subject Name',
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: facultyCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Assigned Staff (Faculty)',
-                      prefixIcon: Icon(Icons.person_outline),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: day,
-                          decoration: const InputDecoration(labelText: 'Day'),
-                          items: [
-                            'Monday',
-                            'Tuesday',
-                            'Wednesday',
-                            'Thursday',
-                            'Friday'
-                          ]
-                              .map((d) =>
-                                  DropdownMenuItem(value: d, child: Text(d)))
-                              .toList(),
-                          onChanged: (val) {
-                            if (val != null) setDlgState(() => day = val);
-                          },
-                        ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: facultyCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Assigned Staff (Faculty)',
+                        prefixIcon: Icon(Icons.person_outline),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: periodCtrl,
-                          keyboardType: TextInputType.number,
-                          decoration:
-                              const InputDecoration(labelText: 'Period #'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: timeSlotCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Time Slot (e.g. 08:30 - 09:20 AM)',
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  CheckboxListTile(
-                    title: const Text('Practical Lab Session'),
-                    value: isLab,
-                    onChanged: (val) => setDlgState(() => isLab = val ?? false),
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: day,
+                            decoration: const InputDecoration(labelText: 'Day'),
+                            items:
+                                [
+                                      'Monday',
+                                      'Tuesday',
+                                      'Wednesday',
+                                      'Thursday',
+                                      'Friday',
+                                    ]
+                                    .map(
+                                      (d) => DropdownMenuItem(
+                                        value: d,
+                                        child: Text(d),
+                                      ),
+                                    )
+                                    .toList(),
+                            onChanged: (val) {
+                              if (val != null) setDlgState(() => day = val);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: periodCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Period #',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: timeSlotCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Time Slot (e.g. 08:30 - 09:20 AM)',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    CheckboxListTile(
+                      title: const Text('Practical Lab Session'),
+                      value: isLab,
+                      onChanged: (val) =>
+                          setDlgState(() => isLab = val ?? false),
+                    ),
+                  ],
+                ),
               ),
             ),
             actions: [
@@ -1824,7 +1887,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 ),
                 onPressed: () {
                   final newEntry = TimetableEntry(
-                    id: entry?.id ??
+                    id:
+                        entry?.id ??
                         'ENT-${DateTime.now().millisecondsSinceEpoch % 10000}',
                     subjectCode: subjectCodeCtrl.text.trim(),
                     subjectName: subjectNameCtrl.text.trim(),
@@ -1849,9 +1913,11 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(isEdit
-                          ? 'Period slot updated.'
-                          : 'New period slot added to $_selectedClass.'),
+                      content: Text(
+                        isEdit
+                            ? 'Period slot updated.'
+                            : 'New period slot added to $_selectedClass.',
+                      ),
                       backgroundColor: const Color(0xFF00695C),
                     ),
                   );
@@ -1869,7 +1935,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     final quotas = widget.repository.getFacultyQuotas();
     final config = widget.repository.getConfig();
 
-    if (quotas.isEmpty || config.periodsPerDay == 0 || config.periodDurationMinutes == 0) {
+    if (quotas.isEmpty ||
+        config.periodsPerDay == 0 ||
+        config.periodDurationMinutes == 0) {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -1878,7 +1946,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               Icon(Icons.warning_amber_rounded, color: Colors.orange),
               SizedBox(width: 8),
               Expanded(
-                child: Text('Configuration Incomplete', softWrap: true),
+                child: Text(
+                  'Configuration Incomplete',
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -1915,7 +1986,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
             Icon(Icons.auto_awesome, color: Colors.purple),
             SizedBox(width: 8),
             Expanded(
-              child: Text('Review Metrics & Auto-Generate', softWrap: true),
+              child: Text(
+                'Review Metrics & Auto-Generate',
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -1947,6 +2021,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                             Expanded(
                               child: Text(
                                 '${q.facultyName} — ${q.subjectName} (${q.subjectCode})',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
@@ -2013,7 +2089,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text(
-                      'AI Candidate schedule generated! Review & apply to master grid below.'),
+                    'AI Candidate schedule generated! Review & apply to master grid below.',
+                  ),
                   backgroundColor: Colors.purple,
                 ),
               );
@@ -2039,65 +2116,74 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 Expanded(
                   child: Text(
                     'Smart Document / Image Parsing',
-                    softWrap: true,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
             content: SizedBox(
               width: 520,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Upload Curriculum Matrix (PDF, CSV, Doc, or Scanned Image) to auto-extract Faculty, Subjects, and Weekly Period Quotas.',
-                    style: TextStyle(fontSize: 12, color: AppColors.muted),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00695C).withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFF00695C).withValues(alpha: 0.3),
-                        style: BorderStyle.solid,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Upload Curriculum Matrix (PDF, CSV, Doc, or Scanned Image) to auto-extract Faculty, Subjects, and Weekly Period Quotas.',
+                      style: TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00695C).withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF00695C).withValues(alpha: 0.3),
+                          style: BorderStyle.solid,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.cloud_upload_outlined,
+                            size: 40,
+                            color: Color(0xFF00695C),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Drag & Drop or Select File to Parse',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: const [
+                              Chip(
+                                label: Text(
+                                  'CS_Faculty_Workload_Matrix_2026.csv',
+                                ),
+                                avatar: Icon(Icons.description, size: 14),
+                              ),
+                              Chip(
+                                label: Text('Faculty_Workload.pdf'),
+                                avatar: Icon(Icons.picture_as_pdf, size: 14),
+                              ),
+                              Chip(
+                                label: Text('Scanned_Curriculum.png'),
+                                avatar: Icon(Icons.image, size: 14),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    child: Column(
-                      children: [
-                        const Icon(Icons.cloud_upload_outlined,
-                            size: 40, color: Color(0xFF00695C)),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Drag & Drop or Select File to Parse',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            Chip(
-                              label: const Text('CS_Faculty_Workload_Matrix_2026.csv'),
-                              avatar: const Icon(Icons.description, size: 14),
-                            ),
-                            Chip(
-                              label: const Text('Faculty_Workload.pdf'),
-                              avatar: const Icon(Icons.picture_as_pdf, size: 14),
-                            ),
-                            Chip(
-                              label: const Text('Scanned_Curriculum.png'),
-                              avatar: const Icon(Icons.image, size: 14),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             actions: [
@@ -2134,7 +2220,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text(
-                          'Successfully extracted & imported 2 Faculty Quotas from document!'),
+                        'Successfully extracted & imported 2 Faculty Quotas from document!',
+                      ),
                       backgroundColor: Color(0xFF00695C),
                     ),
                   );
@@ -2166,55 +2253,72 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               children: [
                 Icon(Icons.add_circle_outline, color: Color(0xFF00695C)),
                 SizedBox(width: 8),
-                Text('Add Faculty Subject Quota'),
+                Expanded(
+                  child: Text(
+                    'Add Faculty Subject Quota',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: facultyCtrl,
-                    decoration: const InputDecoration(labelText: 'Faculty Name'),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: deptCtrl,
-                    decoration: const InputDecoration(labelText: 'Department'),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: codeCtrl,
-                          decoration:
-                              const InputDecoration(labelText: 'Subject Code'),
-                        ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: facultyCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Faculty Name',
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: periodsCtrl,
-                          keyboardType: TextInputType.number,
-                          decoration:
-                              const InputDecoration(labelText: 'Min Pds / Wk'),
-                        ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: deptCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Department',
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Subject Name'),
-                  ),
-                  const SizedBox(height: 10),
-                  CheckboxListTile(
-                    title: const Text('Is Practical Lab Session'),
-                    value: isLab,
-                    onChanged: (val) => setDlgState(() => isLab = val ?? false),
-                  ),
-                ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: codeCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Subject Code',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: periodsCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Min Pds / Wk',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Subject Name',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    CheckboxListTile(
+                      title: const Text('Is Practical Lab Session'),
+                      value: isLab,
+                      onChanged: (val) =>
+                          setDlgState(() => isLab = val ?? false),
+                    ),
+                  ],
+                ),
               ),
             ),
             actions: [
@@ -2261,7 +2365,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     final deptCtrl = TextEditingController(text: quota.department);
     final codeCtrl = TextEditingController(text: quota.subjectCode);
     final nameCtrl = TextEditingController(text: quota.subjectName);
-    final periodsCtrl = TextEditingController(text: quota.minWeeklyPeriods.toString());
+    final periodsCtrl = TextEditingController(
+      text: quota.minWeeklyPeriods.toString(),
+    );
     bool isLab = quota.isLab;
 
     showDialog(
@@ -2273,55 +2379,72 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               children: [
                 Icon(Icons.edit_outlined, color: Color(0xFF00695C)),
                 SizedBox(width: 8),
-                Text('Edit Faculty Quota'),
+                Expanded(
+                  child: Text(
+                    'Edit Faculty Quota',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: facultyCtrl,
-                    decoration: const InputDecoration(labelText: 'Faculty Name'),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: deptCtrl,
-                    decoration: const InputDecoration(labelText: 'Department'),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: codeCtrl,
-                          decoration:
-                              const InputDecoration(labelText: 'Subject Code'),
-                        ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: facultyCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Faculty Name',
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: periodsCtrl,
-                          keyboardType: TextInputType.number,
-                          decoration:
-                              const InputDecoration(labelText: 'Min Pds / Wk'),
-                        ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: deptCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Department',
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Subject Name'),
-                  ),
-                  const SizedBox(height: 10),
-                  CheckboxListTile(
-                    title: const Text('Is Practical Lab Session'),
-                    value: isLab,
-                    onChanged: (val) => setDlgState(() => isLab = val ?? false),
-                  ),
-                ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: codeCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Subject Code',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: periodsCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Min Pds / Wk',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Subject Name',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    CheckboxListTile(
+                      title: const Text('Is Practical Lab Session'),
+                      value: isLab,
+                      onChanged: (val) =>
+                          setDlgState(() => isLab = val ?? false),
+                    ),
+                  ],
+                ),
               ),
             ),
             actions: [
@@ -2397,12 +2520,14 @@ List<_SlotInfo> _generateTimeSlots(TimetableConfig config) {
     final endMinutes = currentMinutes + config.periodDurationMinutes;
     final endStr = formatTime(endMinutes);
 
-    slots.add(_SlotInfo(
-      label: 'P$p\n$startStr - $endStr',
-      isBreak: false,
-      breakType: '',
-      periodIndex: p,
-    ));
+    slots.add(
+      _SlotInfo(
+        label: 'P$p\n$startStr - $endStr',
+        isBreak: false,
+        breakType: '',
+        periodIndex: p,
+      ),
+    );
 
     currentMinutes = endMinutes;
 
@@ -2410,12 +2535,14 @@ List<_SlotInfo> _generateTimeSlots(TimetableConfig config) {
       final breakStartStr = formatTime(currentMinutes);
       final breakEndMinutes = currentMinutes + config.teaBreakDurationMinutes;
       final breakEndStr = formatTime(breakEndMinutes);
-      slots.add(_SlotInfo(
-        label: 'TEA BREAK\n$breakStartStr - $breakEndStr',
-        isBreak: true,
-        breakType: 'tea',
-        periodIndex: 0,
-      ));
+      slots.add(
+        _SlotInfo(
+          label: 'TEA BREAK\n$breakStartStr - $breakEndStr',
+          isBreak: true,
+          breakType: 'tea',
+          periodIndex: 0,
+        ),
+      );
       currentMinutes = breakEndMinutes;
     }
 
@@ -2423,12 +2550,14 @@ List<_SlotInfo> _generateTimeSlots(TimetableConfig config) {
       final breakStartStr = formatTime(currentMinutes);
       final breakEndMinutes = currentMinutes + config.lunchBreakDurationMinutes;
       final breakEndStr = formatTime(breakEndMinutes);
-      slots.add(_SlotInfo(
-        label: 'LUNCH BREAK\n$breakStartStr - $breakEndStr',
-        isBreak: true,
-        breakType: 'lunch',
-        periodIndex: 0,
-      ));
+      slots.add(
+        _SlotInfo(
+          label: 'LUNCH BREAK\n$breakStartStr - $breakEndStr',
+          isBreak: true,
+          breakType: 'lunch',
+          periodIndex: 0,
+        ),
+      );
       currentMinutes = breakEndMinutes;
     }
   }

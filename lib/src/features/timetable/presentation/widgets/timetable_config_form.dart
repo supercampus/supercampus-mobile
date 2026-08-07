@@ -54,8 +54,9 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
     _acadYearCtrl = TextEditingController(text: widget.config.academicYear);
     _semesterCtrl = TextEditingController(text: widget.config.semester);
     _batchCtrl = TextEditingController(text: widget.config.batchSection);
-    _periodsCtrl =
-        TextEditingController(text: widget.config.periodsPerDay.toString());
+    _periodsCtrl = TextEditingController(
+      text: widget.config.periodsPerDay.toString(),
+    );
 
     _periodDuration = widget.config.periodDurationMinutes;
     _teaBreakDuration = widget.config.teaBreakDurationMinutes;
@@ -151,9 +152,8 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                     children: [
                       Text(
                         'Class Schedule & Structure Configuration',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const Text(
                         'Configure working days, period durations, and break positions for the class schedule',
@@ -213,14 +213,17 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
             // Section Header: Time & Structure Controls
             Row(
               children: [
-                const Icon(Icons.timer_outlined, size: 18, color: Color(0xFF00695C)),
+                const Icon(
+                  Icons.timer_outlined,
+                  size: 18,
+                  color: Color(0xFF00695C),
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Period & Duration Settings',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -238,22 +241,41 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                     children: [
                       const Text(
                         'Period Duration',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<int>(
                         initialValue: _periodDuration,
                         decoration: const InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                         ),
                         items: const [
-                          DropdownMenuItem(value: 40, child: Text('40 minutes')),
-                          DropdownMenuItem(value: 45, child: Text('45 minutes')),
-                          DropdownMenuItem(value: 50, child: Text('50 minutes')),
-                          DropdownMenuItem(value: 60, child: Text('60 minutes (1 hr)')),
+                          DropdownMenuItem(
+                            value: 40,
+                            child: Text('40 minutes'),
+                          ),
+                          DropdownMenuItem(
+                            value: 45,
+                            child: Text('45 minutes'),
+                          ),
+                          DropdownMenuItem(
+                            value: 50,
+                            child: Text('50 minutes'),
+                          ),
+                          DropdownMenuItem(
+                            value: 60,
+                            child: Text('60 minutes (1 hr)'),
+                          ),
                         ],
                         onChanged: (val) {
-                          if (val != null) setState(() => _periodDuration = val);
+                          if (val != null)
+                            setState(() => _periodDuration = val);
                         },
                       ),
                     ],
@@ -266,15 +288,24 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                     children: [
                       const Text(
                         'Total Periods Per Day',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _periodsCtrl,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          prefixIcon: Icon(Icons.format_list_numbered, size: 18),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.format_list_numbered,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ],
@@ -290,14 +321,17 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
             // Section Header: Break Settings
             Row(
               children: [
-                const Icon(Icons.coffee_outlined, size: 18, color: Colors.orange),
+                const Icon(
+                  Icons.coffee_outlined,
+                  size: 18,
+                  color: Colors.orange,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Break Settings (Tea & Lunch)',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -316,7 +350,11 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                 children: [
                   const Text(
                     '☕ Tea Break Settings',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.amber),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: Colors.amber,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Wrap(
@@ -330,21 +368,37 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                           children: [
                             const Text(
                               'Duration',
-                              style: TextStyle(fontSize: 11, color: AppColors.muted),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<int>(
                               initialValue: _teaBreakDuration,
                               decoration: const InputDecoration(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
                               ),
                               items: const [
-                                DropdownMenuItem(value: 10, child: Text('10 mins')),
-                                DropdownMenuItem(value: 15, child: Text('15 mins')),
-                                DropdownMenuItem(value: 20, child: Text('20 mins')),
+                                DropdownMenuItem(
+                                  value: 10,
+                                  child: Text('10 mins'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 15,
+                                  child: Text('15 mins'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 20,
+                                  child: Text('20 mins'),
+                                ),
                               ],
                               onChanged: (val) {
-                                if (val != null) setState(() => _teaBreakDuration = val);
+                                if (val != null)
+                                  setState(() => _teaBreakDuration = val);
                               },
                             ),
                           ],
@@ -357,13 +411,21 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                           children: [
                             const Text(
                               'Slot Position',
-                              style: TextStyle(fontSize: 11, color: AppColors.muted),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<int>(
-                              initialValue: _teaBreakPosition <= maxPeriods ? _teaBreakPosition : 2,
+                              initialValue: _teaBreakPosition <= maxPeriods
+                                  ? _teaBreakPosition
+                                  : 2,
                               decoration: const InputDecoration(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
                               ),
                               items: List.generate(
                                 (maxPeriods - 1).clamp(1, 10),
@@ -373,7 +435,8 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                                 ),
                               ),
                               onChanged: (val) {
-                                if (val != null) setState(() => _teaBreakPosition = val);
+                                if (val != null)
+                                  setState(() => _teaBreakPosition = val);
                               },
                             ),
                           ],
@@ -400,7 +463,11 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                 children: [
                   const Text(
                     '🍱 Lunch Break Settings',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.deepOrange),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: Colors.deepOrange,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Wrap(
@@ -414,21 +481,37 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                           children: [
                             const Text(
                               'Duration',
-                              style: TextStyle(fontSize: 11, color: AppColors.muted),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<int>(
                               initialValue: _lunchBreakDuration,
                               decoration: const InputDecoration(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
                               ),
                               items: const [
-                                DropdownMenuItem(value: 30, child: Text('30 mins')),
-                                DropdownMenuItem(value: 45, child: Text('45 mins')),
-                                DropdownMenuItem(value: 60, child: Text('60 mins (1 hr)')),
+                                DropdownMenuItem(
+                                  value: 30,
+                                  child: Text('30 mins'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 45,
+                                  child: Text('45 mins'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 60,
+                                  child: Text('60 mins (1 hr)'),
+                                ),
                               ],
                               onChanged: (val) {
-                                if (val != null) setState(() => _lunchBreakDuration = val);
+                                if (val != null)
+                                  setState(() => _lunchBreakDuration = val);
                               },
                             ),
                           ],
@@ -441,13 +524,21 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                           children: [
                             const Text(
                               'Slot Position',
-                              style: TextStyle(fontSize: 11, color: AppColors.muted),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<int>(
-                              initialValue: _lunchBreakPosition <= maxPeriods ? _lunchBreakPosition : 4,
+                              initialValue: _lunchBreakPosition <= maxPeriods
+                                  ? _lunchBreakPosition
+                                  : 4,
                               decoration: const InputDecoration(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
                               ),
                               items: List.generate(
                                 (maxPeriods - 1).clamp(1, 10),
@@ -457,7 +548,8 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                                 ),
                               ),
                               onChanged: (val) {
-                                if (val != null) setState(() => _lunchBreakPosition = val);
+                                if (val != null)
+                                  setState(() => _lunchBreakPosition = val);
                               },
                             ),
                           ],
@@ -476,22 +568,25 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
             // Working Days & Structure
             Text(
               'Working Days Structure:',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
 
-            Row(
+            Wrap(
               children: [
                 ChoiceChip(
                   label: const Text('Mon – Fri (5 Days)'),
                   selected: _workingDaysOption == 'Mon-Fri',
                   selectedColor: const Color(0xFF00695C),
                   labelStyle: TextStyle(
-                    color: _workingDaysOption == 'Mon-Fri' ? Colors.white : AppColors.ink,
-                    fontWeight: _workingDaysOption == 'Mon-Fri' ? FontWeight.bold : FontWeight.normal,
+                    color: _workingDaysOption == 'Mon-Fri'
+                        ? Colors.white
+                        : AppColors.ink,
+                    fontWeight: _workingDaysOption == 'Mon-Fri'
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                   onSelected: (_) => _onWorkingDaysOptionChanged('Mon-Fri'),
                 ),
@@ -501,8 +596,12 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                   selected: _workingDaysOption == 'Mon-Sat',
                   selectedColor: const Color(0xFF00695C),
                   labelStyle: TextStyle(
-                    color: _workingDaysOption == 'Mon-Sat' ? Colors.white : AppColors.ink,
-                    fontWeight: _workingDaysOption == 'Mon-Sat' ? FontWeight.bold : FontWeight.normal,
+                    color: _workingDaysOption == 'Mon-Sat'
+                        ? Colors.white
+                        : AppColors.ink,
+                    fontWeight: _workingDaysOption == 'Mon-Sat'
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                   onSelected: (_) => _onWorkingDaysOptionChanged('Mon-Sat'),
                 ),
@@ -526,7 +625,8 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                   onSelected: (val) {
                     setState(() {
                       if (val) {
-                        if (!_selectedDays.contains(day)) _selectedDays.add(day);
+                        if (!_selectedDays.contains(day))
+                          _selectedDays.add(day);
                       } else {
                         _selectedDays.remove(day);
                       }
