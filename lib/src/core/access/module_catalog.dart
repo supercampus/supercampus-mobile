@@ -105,6 +105,7 @@ abstract final class ModuleCatalog {
     ModuleDescriptor(
       id: examination,
       title: 'Examination System',
+      shortTitle: 'Examinations',
       tagline: 'End-to-end exam lifecycle, marks entry, moderation & transcripts',
       icon: Icons.assignment_outlined,
       color: Color(0xFF1B5E20),

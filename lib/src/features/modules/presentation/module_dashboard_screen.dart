@@ -8,7 +8,7 @@ import '../../../core/widgets/slice_nav_bar.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../insights/data/insight.dart';
 import '../../insights/presentation/insight_dashboard.dart';
-import 'module_accordion.dart';
+import 'module_stack.dart';
 import 'widgets/home_sheets.dart';
 import 'widgets/home_top_bar.dart';
 
@@ -48,7 +48,6 @@ class ModuleDashboardScreen extends StatefulWidget {
 }
 
 class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
-  int _expanded = 0;
   bool _navCollapsed = false;
   List<Insight> _insights = const [];
 
@@ -76,9 +75,6 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final modules = widget.permissions.visibleModules();
-    final accent = modules.isEmpty
-        ? AppColors.violet
-        : modules[_expanded.clamp(0, modules.length - 1)].color;
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
@@ -104,11 +100,8 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                           session: widget.session,
                           permissions: widget.permissions,
                           modules: modules,
-                          accent: accent,
                           dashboard: widget.dashboard,
                           onOpenModule: widget.onOpenModule,
-                          onExpandedChanged: (index) =>
-                              setState(() => _expanded = index),
                           onInsightsChanged: (insights) {
                             if (mounted) setState(() => _insights = insights);
                           },
@@ -203,28 +196,20 @@ class _Feed extends StatelessWidget {
     required this.session,
     required this.permissions,
     required this.modules,
-    required this.accent,
     required this.dashboard,
     required this.onOpenModule,
-    required this.onExpandedChanged,
     required this.onInsightsChanged,
   });
 
   final UserSession session;
   final EffectivePermissions permissions;
   final List<ModuleDescriptor> modules;
-  final Color accent;
   final Widget? dashboard;
   final ValueChanged<String> onOpenModule;
-  final ValueChanged<int> onExpandedChanged;
   final ValueChanged<List<Insight>> onInsightsChanged;
 
   @override
   Widget build(BuildContext context) {
-    // The accordion never scrolls itself, so it has to be given exactly the
-    // height its bars add up to.
-    final accordionHeight = 158 + (modules.length - 1) * 27.0;
-
     final planned = [
       for (final m in ModuleCatalog.all)
         if (m.status == ModuleStatus.planned && !modules.contains(m)) m,
@@ -238,7 +223,7 @@ class _Feed extends StatelessWidget {
         SliceNavBar.height + MediaQuery.paddingOf(context).bottom + 20,
       ),
       children: [
-        _Greeting(session: session, accent: accent),
+        _Greeting(session: session),
         SizedBox(
           height: 108,
           child:
@@ -254,15 +239,11 @@ class _Feed extends StatelessWidget {
         else ...[
           const _SectionLabel('Your modules'),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-            child: SizedBox(
-              height: accordionHeight,
-              child: ModuleAccordion(
-                modules: modules,
-                permissions: permissions,
-                onOpenModule: onOpenModule,
-                onExpandedChanged: onExpandedChanged,
-              ),
+            padding: const EdgeInsets.fromLTRB(20, 0, 8, 0),
+            child: ModuleStack(
+              modules: modules,
+              permissions: permissions,
+              onOpenModule: onOpenModule,
             ),
           ),
         ],
@@ -347,10 +328,9 @@ class _PlannedTile extends StatelessWidget {
 }
 
 class _Greeting extends StatelessWidget {
-  const _Greeting({required this.session, required this.accent});
+  const _Greeting({required this.session});
 
   final UserSession session;
-  final Color accent;
 
   @override
   Widget build(BuildContext context) {
@@ -362,7 +342,10 @@ class _Greeting extends StatelessWidget {
             TextSpan(text: 'Good ${_dayPart()}, '),
             TextSpan(
               text: session.displayName.split(' ').first,
-              style: TextStyle(color: accent, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                color: AppColors.moduleAccent,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),

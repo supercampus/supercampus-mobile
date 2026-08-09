@@ -21,6 +21,13 @@ abstract final class AppColors {
   static const violet = gateBlue;
   static const violetBright = gateMagenta;
 
+  /// The single accent the module list is built on. A wall of per-module
+  /// gradients reads as noise, so hierarchy is carried by lightness inside one
+  /// violet: [moduleSoft] for a resting bar, [moduleAccent] for the open card.
+  static const moduleAccent = Color(0xFF6C5CE7);
+  static const moduleAccentDeep = Color(0xFF5A49D6);
+  static const moduleSoft = Color(0xFFD5CFFA);
+
   static const violetGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,

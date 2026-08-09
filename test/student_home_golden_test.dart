@@ -19,6 +19,15 @@ import 'package:supercampus_mobile/src/features/insights/presentation/insight_da
 void main() {
   setUpAll(_loadFonts);
 
+  // Freezes the module bars' idle drift — otherwise the goldens capture a
+  // different point of the wave on every run.
+  setUp(() {
+    final binding = TestWidgetsFlutterBinding.ensureInitialized();
+    binding.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(binding.platformDispatcher.clearAccessibilityFeaturesTestValue);
+  });
+
   testWidgets('student home', (tester) async {
     await _signIn(tester);
 

@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supercampus_mobile/src/app.dart';
+import 'package:supercampus_mobile/src/features/modules/presentation/module_stack.dart';
 
-/// Expands [moduleId] in the module accordion, then opens it.
+/// Brings [moduleId] into the module frame, then opens it.
 ///
-/// An item carries `module-bar-<id>` while collapsed and `open-module-<id>`
-/// once expanded, so the key names whatever tapping it will do next.
+/// A card carries `module-bar-<id>` while it waits out of frame and
+/// `open-module-<id>` once it is in it, so the key names whatever tapping it
+/// will do next. Only one card is in the frame at a time; the dot rail is the
+/// direct way to any of the others.
 Future<void> _openModule(WidgetTester tester, String moduleId) async {
-  final bar = find.byKey(ValueKey('module-bar-$moduleId'));
-  if (tester.any(bar)) {
-    await tester.ensureVisible(bar);
-    await tester.tap(bar);
+  final open = find.byKey(ValueKey('open-module-$moduleId'));
+
+  if (!tester.any(open)) {
+    final dot = find.byKey(ValueKey('module-dot-$moduleId'));
+    await tester.ensureVisible(dot);
+    await tester.tap(dot);
     await tester.pumpAndSettle();
   }
 
-  final open = find.byKey(ValueKey('open-module-$moduleId'));
   await tester.ensureVisible(open);
   await tester.tap(open);
   await tester.pumpAndSettle();
@@ -32,7 +36,14 @@ Future<void> _signIn(WidgetTester tester) async {
 }
 
 void main() {
-  setUp(() {});
+  // The module bars drift forever while at rest, so `pumpAndSettle` would
+  // never settle. The same accessibility switch a user flips turns it off.
+  setUp(() {
+    final binding = TestWidgetsFlutterBinding.ensureInitialized();
+    binding.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(binding.platformDispatcher.clearAccessibilityFeaturesTestValue);
+  });
 
   testWidgets('shows the student login form', (tester) async {
     tester.view.physicalSize = const Size(800, 1200);
@@ -76,9 +87,9 @@ void main() {
     await tester.pumpWidget(const SupercampusApp());
     await _signIn(tester);
 
-    // The granted modules are listed as collapsed accordion bars.
-    expect(find.byKey(const ValueKey('module-bar-canteen')), findsOneWidget);
-    expect(find.byKey(const ValueKey('module-bar-gatepass')), findsOneWidget);
+    // Every granted module has a dot on the frame's rail, in or out of frame.
+    expect(find.byKey(const ValueKey('module-dot-canteen')), findsOneWidget);
+    expect(find.byKey(const ValueKey('module-dot-gatepass')), findsOneWidget);
 
     await _openModule(tester, 'canteen');
 
@@ -98,7 +109,7 @@ void main() {
     expect(find.textContaining('Pay ₹79'), findsOneWidget);
   });
 
-  testWidgets('scrolling steps the expanded module one at a time', (
+  testWidgets('scrolling steps the front module one at a time', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1200);
@@ -109,28 +120,27 @@ void main() {
     await tester.pumpWidget(const SupercampusApp());
     await _signIn(tester);
 
-    // First module in catalog order starts expanded.
-    expect(find.byKey(const ValueKey('open-module-timetable')), findsOneWidget);
-
-    await tester.drag(
-      find.byKey(const ValueKey('module-bar-attendance')),
-      const Offset(0, -90),
+    // First module in catalog order starts in front of the deck.
+    expect(
+      find.byKey(const ValueKey('open-module-examination')),
+      findsOneWidget,
     );
-    await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('open-module-attendance')), findsOneWidget);
-    expect(find.byKey(const ValueKey('module-bar-timetable')), findsOneWidget);
-
-    // Dragging back returns to the previous module, once the step lock has
-    // expired.
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.drag(
-      find.byKey(const ValueKey('module-bar-timetable')),
-      const Offset(0, 90),
-    );
+    final frame = find.byType(ModuleStack);
+    await tester.fling(frame, const Offset(0, -60), 600);
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('open-module-timetable')), findsOneWidget);
+    expect(find.byKey(const ValueKey('open-module-examination')), findsNothing);
+
+    // Flicking back returns to the previous module.
+    await tester.fling(frame, const Offset(0, 60), 600);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('open-module-examination')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('opens the order history tab', (tester) async {
