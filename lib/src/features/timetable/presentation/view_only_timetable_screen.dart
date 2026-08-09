@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/mock_timetable_repository.dart';
 import 'widgets/timetable_grid_view.dart';
@@ -37,27 +36,12 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
     }
   }
 
-  void _downloadTimetable() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Downloading active timetable PDF for $_targetClass (Odd Sem 2026-27)...',
-        ),
-        backgroundColor: AppColors.primary,
-        action: SnackBarAction(
-          label: 'OPEN',
-          textColor: Colors.white,
-          onPressed: () {},
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final config = widget.repository.getConfig();
     final entries = widget.repository.getEntriesForClass(_targetClass);
     final selectedDayStr = DateFormat('EEEE').format(_selectedDate);
+
     final activeSubs = widget.repository
         .getSubstitutions()
         .where((s) => s.className == _targetClass && s.status == 'Approved' && s.dayOfWeek == selectedDayStr)
@@ -66,110 +50,6 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       children: [
-        // Role & Academic Context Header
-        Card(
-          elevation: 0,
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: AppColors.border),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Wrap(
-              spacing: 14,
-              runSpacing: 14,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.calendar_month_outlined,
-                        color: AppColors.primary,
-                        size: 26,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              Text(
-                                'Class Timetable: $_targetClass',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.shade50,
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Colors.green.shade200),
-                                ),
-                                child: const Text(
-                                  'PUBLISHED',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF2E7D32),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${config.semester} (${config.academicYear})',
-                            softWrap: true,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                  ),
-                  onPressed: _downloadTimetable,
-                  icon: const Icon(Icons.download_outlined, size: 18),
-                  label: const Text('Export PDF'),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
 
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -207,6 +87,8 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
           entries: entries,
           workingDays: config.workingDays,
           selectedDay: DateFormat('EEEE').format(_selectedDate),
+          selectedDate: _selectedDate,
+          activeSubs: activeSubs,
           onDaySelected: (_) {},
           isEditable: false,
           showDayFilterChips: false,

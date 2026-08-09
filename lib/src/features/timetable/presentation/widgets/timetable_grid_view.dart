@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../data/timetable_models.dart';
+
+enum PeriodStatus { present, onDuty, absent, upcoming, cancelled, ongoing }
 
 class TimetableGridView extends StatefulWidget {
   const TimetableGridView({
@@ -15,6 +18,8 @@ class TimetableGridView extends StatefulWidget {
     this.onDeleteEntry,
     this.onAddEntryForSlot,
     this.showDayFilterChips = true,
+    this.selectedDate,
+    this.activeSubs = const [],
   });
 
   final List<TimetableEntry> entries;
@@ -26,6 +31,8 @@ class TimetableGridView extends StatefulWidget {
   final ValueChanged<String>? onDeleteEntry;
   final Function(String day, int periodIndex)? onAddEntryForSlot;
   final bool showDayFilterChips;
+  final DateTime? selectedDate;
+  final List<FacultySubstitution> activeSubs;
 
   @override
   State<TimetableGridView> createState() => _TimetableGridViewState();
@@ -169,7 +176,93 @@ class _TimetableGridViewState extends State<TimetableGridView> {
     );
   }
 
+  PeriodStatus _getMockPeriodStatus(TimetableEntry entry) {
+    if (widget.isEditable || widget.selectedDate == null) return PeriodStatus.upcoming;
+
+    final now = DateTime.now();
+    final selectedDate = widget.selectedDate!;
+    final targetDate = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final today = DateTime(now.year, now.month, now.day);
+
+    bool isPast = false;
+    bool isOngoing = false;
+
+    if (targetDate.isBefore(today)) {
+      isPast = true;
+    } else if (targetDate.isAtSameMomentAs(today)) {
+      try {
+        final parts = entry.timeSlot.split('-');
+        if (parts.length == 2) {
+          String startStr = parts[0].trim();
+          String endStr = parts[1].trim();
+
+          if (!startStr.contains('AM') && !startStr.contains('PM')) {
+            final ampm = endStr.substring(endStr.length - 2);
+            startStr = '$startStr $ampm';
+          }
+
+          final format = DateFormat('hh:mm a');
+          final startTime = format.parse(startStr);
+          final endTime = format.parse(endStr);
+
+          final startDateTime = DateTime(today.year, today.month, today.day, startTime.hour, startTime.minute);
+          final endDateTime = DateTime(today.year, today.month, today.day, endTime.hour, endTime.minute);
+
+          if (now.isAfter(endDateTime)) {
+            isPast = true;
+          } else if (now.isAfter(startDateTime) && now.isBefore(endDateTime)) {
+            isOngoing = true;
+          }
+        }
+      } catch (_) {
+        // Fallback if parsing fails
+        isPast = true;
+      }
+    }
+
+    if (isOngoing) return PeriodStatus.ongoing;
+    if (!isPast) return PeriodStatus.upcoming;
+
+    // Past deterministic status
+    final hash = (entry.periodIndex * 7 + entry.subjectCode.length + widget.selectedDate!.day) % 10;
+    if (hash < 5) return PeriodStatus.present;
+    if (hash == 5) return PeriodStatus.absent;
+    if (hash == 6) return PeriodStatus.onDuty;
+    if (hash == 7) return PeriodStatus.cancelled;
+    return PeriodStatus.present;
+  }
+
+  Color _getStatusColor(PeriodStatus status) {
+    switch (status) {
+      case PeriodStatus.present: return const Color(0xFF4CAF50);
+      case PeriodStatus.onDuty: return const Color(0xFF9C27B0);
+      case PeriodStatus.absent: return const Color(0xFFF44336);
+      case PeriodStatus.upcoming: return const Color(0xFF2196F3);
+      case PeriodStatus.ongoing: return const Color(0xFFFF9800);
+      case PeriodStatus.cancelled: return Colors.grey.shade500;
+    }
+  }
+
+  String _getStatusLabel(PeriodStatus status) {
+    switch (status) {
+      case PeriodStatus.present: return 'Present';
+      case PeriodStatus.onDuty: return 'On-Duty';
+      case PeriodStatus.absent: return 'Absent';
+      case PeriodStatus.upcoming: return 'Upcoming';
+      case PeriodStatus.ongoing: return 'In Progress';
+      case PeriodStatus.cancelled: return 'Cancelled';
+    }
+  }
+
   Widget _buildEntryCard(BuildContext context, TimetableEntry entry) {
+    final status = _getMockPeriodStatus(entry);
+    final statusColor = _getStatusColor(status);
+
+    FacultySubstitution? sub;
+    try {
+      sub = widget.activeSubs.firstWhere((s) => s.subjectCode == entry.subjectCode && s.timeSlot == entry.timeSlot);
+    } catch (_) {}
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
@@ -177,7 +270,7 @@ class _TimetableGridViewState extends State<TimetableGridView> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(
-          color: entry.categoryColor.withValues(alpha: 0.3),
+          color: statusColor.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -186,7 +279,7 @@ class _TimetableGridViewState extends State<TimetableGridView> {
           borderRadius: BorderRadius.circular(14),
           border: Border(
             left: BorderSide(
-              color: entry.categoryColor,
+              color: statusColor,
               width: 5,
             ),
           ),
@@ -212,7 +305,7 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: entry.categoryColor.withValues(alpha: 0.12),
+                        color: statusColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -220,8 +313,8 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                         softWrap: true,
                         style: TextStyle(
                           fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: entry.categoryColor,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor,
                         ),
                       ),
                     ),
@@ -245,37 +338,83 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                           ),
                         ),
                       ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.groups_outlined,
-                        size: 14,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Class: ${entry.className}',
-                        softWrap: true,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.primary,
+                    if (widget.isEditable)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Class: ${entry.className}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
-                    ],
-                  ),
+                  ],
+                ),
+                Wrap(
+                  spacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (sub != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.amber.shade300),
+                        ),
+                        child: Text(
+                          'Substituted',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.amber.shade900,
+                          ),
+                        ),
+                      ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            status == PeriodStatus.present ? Icons.check_circle_outline :
+                            status == PeriodStatus.absent ? Icons.cancel_outlined :
+                            status == PeriodStatus.onDuty ? Icons.work_outline :
+                            status == PeriodStatus.cancelled ? Icons.block :
+                            Icons.schedule,
+                            size: 14,
+                            color: statusColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _getStatusLabel(status),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: statusColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -307,16 +446,40 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                           ),
                           const SizedBox(width: 4),
                           Expanded(
-                            child: Text(
-                              entry.facultyName,
-                              softWrap: true,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.muted,
-                              ),
-                            ),
+                            child: sub != null
+                                ? Wrap(
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    spacing: 6,
+                                    children: [
+                                      Text(
+                                        sub.originalFaculty,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.red,
+                                          decoration: TextDecoration.lineThrough,
+                                        ),
+                                      ),
+                                      const Icon(Icons.arrow_right_alt, size: 16, color: AppColors.muted),
+                                      Text(
+                                        sub.substituteFaculty,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.amber.shade800,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Text(
+                                    entry.facultyName,
+                                    softWrap: true,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.muted,
+                                    ),
+                                  ),
                           ),
                         ],
                       ),

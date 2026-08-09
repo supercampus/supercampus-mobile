@@ -116,25 +116,18 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 ),
                 _sidebarTile(
                   index: 1,
-                  icon: Icons.calendar_view_week_outlined,
-                  activeIcon: Icons.calendar_view_week,
-                  label: 'Master Timetable',
-                  subtitle: 'Calendar Matrix View',
-                ),
-                _sidebarTile(
-                  index: 2,
                   icon: Icons.swap_horiz_outlined,
                   activeIcon: Icons.swap_horiz,
                   label: 'Substitutions',
-                  subtitle: 'Leave & Auto-Suggest',
+                  subtitle: 'Approve & Manage Proxies',
                   badgeCount: activeDisruptions + pendingSubs,
                 ),
                 _sidebarTile(
-                  index: 3,
-                  icon: Icons.settings_outlined,
-                  activeIcon: Icons.settings,
-                  label: 'Configuration',
-                  subtitle: 'Settings & Resources',
+                  index: 2,
+                  icon: Icons.history_outlined,
+                  activeIcon: Icons.history,
+                  label: 'Activity Logs',
+                  subtitle: 'Audit Log & History',
                 ),
               ],
             ),
@@ -203,7 +196,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     );
   }
 
-  // Responsive Bottom Navigation Bar (Mobile)
+  // Minimal 3-Tab Bottom Navigation Bar (Mobile Cleanup)
   Widget _buildBottomNavBar(BuildContext context) {
     final disruptions = widget.repository.getDisruptionAlerts();
     final activeDisruptions = disruptions.where((d) => !d.isResolved).length;
@@ -212,7 +205,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     final totalBadge = activeDisruptions + pendingSubs;
 
     return BottomNavigationBar(
-      currentIndex: _currentNavIndex,
+      currentIndex: _currentNavIndex > 2 ? 0 : _currentNavIndex,
       onTap: (idx) => setState(() => _currentNavIndex = idx),
       type: BottomNavigationBarType.fixed,
       selectedItemColor: const Color(0xFF00695C),
@@ -226,11 +219,6 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           icon: Icon(Icons.dashboard_outlined),
           activeIcon: Icon(Icons.dashboard),
           label: 'Dashboard',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_view_week_outlined),
-          activeIcon: Icon(Icons.calendar_view_week),
-          label: 'Master Matrix',
         ),
         BottomNavigationBarItem(
           icon: Badge(
@@ -246,9 +234,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           label: 'Substitutions',
         ),
         const BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined),
-          activeIcon: Icon(Icons.settings),
-          label: 'Configure',
+          icon: Icon(Icons.history_outlined),
+          activeIcon: Icon(Icons.history),
+          label: 'Activity Logs',
         ),
       ],
     );
@@ -261,10 +249,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
         Expanded(
           child: switch (_currentNavIndex) {
             0 => _buildView1Dashboard(context),
-            1 => _buildView2MasterTimetable(context),
-            2 => _buildView3Substitutions(context),
-            3 => _buildView4Configuration(context),
-            _ => const SizedBox.shrink(),
+            1 => _buildView3Substitutions(context),
+            2 => _buildViewActivityLogs(context),
+            _ => _buildView1Dashboard(context),
           },
         ),
       ],
@@ -2483,6 +2470,89 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildViewActivityLogs(BuildContext context) {
+    final subs = widget.repository.getSubstitutions();
+
+    final logs = <Map<String, dynamic>>[
+      {
+        'title': 'Substitution Approved',
+        'subtitle': 'Prof. Donald Knuth assigned for CS-3A (Operating Systems, Period 2)',
+        'time': '10 mins ago',
+        'icon': Icons.swap_horiz,
+        'color': Colors.green,
+      },
+      {
+        'title': 'Faculty Leave Registered',
+        'subtitle': 'Prof. Alan Turing requested leave for CS Conference',
+        'time': '1 hour ago',
+        'icon': Icons.person_off_outlined,
+        'color': Colors.orange,
+      },
+      {
+        'title': 'Schedule Health Check',
+        'subtitle': 'Auto-validated schedule matrix: 0 conflicts detected',
+        'time': '2 hours ago',
+        'icon': Icons.verified_user_outlined,
+        'color': const Color(0xFF00695C),
+      },
+      {
+        'title': 'Master Matrix Published',
+        'subtitle': 'Odd Sem 2026-27 Initial Published Draft by Dr. Marcus Vance',
+        'time': 'Yesterday',
+        'icon': Icons.publish,
+        'color': Colors.blue,
+      },
+    ];
+
+    for (final s in subs) {
+      logs.add({
+        'title': 'Proxy Request (${s.status})',
+        'subtitle': '${s.className}: ${s.originalFaculty} ➔ ${s.substituteFaculty} (${s.subjectName})',
+        'time': '${s.dayOfWeek}, ${s.timeSlot}',
+        'icon': Icons.swap_horizontal_circle_outlined,
+        'color': s.status == 'Approved' ? Colors.green : Colors.amber.shade800,
+      });
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Operations & Activity Logs',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const Text(
+                  'Real-time audit log of schedule adjustments and proxy approvals',
+                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ...logs.map((log) => Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: (log['color'] as Color).withValues(alpha: 0.12),
+              child: Icon(log['icon'] as IconData, color: log['color'] as Color, size: 22),
+            ),
+            title: Text(log['title'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            subtitle: Text(log['subtitle'] as String, style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+            trailing: Text(log['time'] as String, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          ),
+        )),
+      ],
     );
   }
 }

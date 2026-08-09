@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/mock_timetable_repository.dart';
 import 'allocator_dashboard_screen.dart';
+import 'faculty_dashboard_screen.dart';
 import 'view_only_timetable_screen.dart';
 
 class TimetableShell extends StatefulWidget {
@@ -28,6 +29,7 @@ class _TimetableShellState extends State<TimetableShell> {
   @override
   Widget build(BuildContext context) {
     final isAllocator = widget.session.role == UserRole.timetableAllocator;
+    final isFaculty = widget.session.role == UserRole.staff;
     final primaryColor =
         isAllocator ? const Color(0xFF00695C) : AppColors.primary;
 
@@ -65,7 +67,9 @@ class _TimetableShellState extends State<TimetableShell> {
                   Text(
                     isAllocator
                         ? 'Timetable Allocator Portal'
-                        : 'Campus Timetable Management',
+                        : isFaculty
+                            ? 'Faculty Daily Operations'
+                            : 'Campus Timetable Management',
                     maxLines: 2,
                     softWrap: true,
                     overflow: TextOverflow.ellipsis,
@@ -100,10 +104,15 @@ class _TimetableShellState extends State<TimetableShell> {
               session: widget.session,
               repository: _repository,
             )
-          : ViewOnlyTimetableScreen(
-              session: widget.session,
-              repository: _repository,
-            ),
+          : isFaculty
+              ? FacultyDashboardScreen(
+                  session: widget.session,
+                  repository: _repository,
+                )
+              : ViewOnlyTimetableScreen(
+                  session: widget.session,
+                  repository: _repository,
+                ),
     );
   }
 }

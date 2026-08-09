@@ -216,6 +216,18 @@ class ConflictItem {
   final String severity;
 }
 
+enum SubstitutionTriggerType {
+  allocatorAbsence,
+  facultyInitiated,
+}
+
+extension SubstitutionTriggerTypeExtension on SubstitutionTriggerType {
+  String get label => switch (this) {
+        SubstitutionTriggerType.allocatorAbsence => 'ALLOCATOR_ABSENCE',
+        SubstitutionTriggerType.facultyInitiated => 'FACULTY_INITIATED',
+      };
+}
+
 class FacultySubstitution {
   FacultySubstitution({
     required this.id,
@@ -229,6 +241,9 @@ class FacultySubstitution {
     required this.dayOfWeek,
     required this.reason,
     this.status = 'Pending',
+    this.triggerType = SubstitutionTriggerType.facultyInitiated,
+    this.isPoolBroadcast = false,
+    this.note = '',
   });
 
   final String id;
@@ -242,6 +257,9 @@ class FacultySubstitution {
   final String dayOfWeek;
   final String reason;
   String status;
+  final SubstitutionTriggerType triggerType;
+  final bool isPoolBroadcast;
+  final String note;
 }
 
 class TimetableVersion {
@@ -331,5 +349,171 @@ class FacultySubjectQuota {
   final int minWeeklyPeriods;
   final bool isLab;
 }
+
+/// ---------------------------------------------------------------------------
+/// ATTENDANCE ENGINE & REAL-TIME LOG MODELS
+/// ---------------------------------------------------------------------------
+enum PeriodAttendanceStatus {
+  present,
+  absent,
+  onDuty,
+  upcoming,
+  cancelled,
+}
+
+extension PeriodAttendanceStatusExtension on PeriodAttendanceStatus {
+  String get label => switch (this) {
+        PeriodAttendanceStatus.present => 'PRESENT',
+        PeriodAttendanceStatus.absent => 'ABSENT',
+        PeriodAttendanceStatus.onDuty => 'ON_DUTY',
+        PeriodAttendanceStatus.upcoming => 'UPCOMING',
+        PeriodAttendanceStatus.cancelled => 'CANCELLED',
+      };
+
+  Color get color => switch (this) {
+        PeriodAttendanceStatus.present => const Color(0xFF2E7D32),
+        PeriodAttendanceStatus.absent => const Color(0xFFC62828),
+        PeriodAttendanceStatus.onDuty => const Color(0xFF6A1B9A),
+        PeriodAttendanceStatus.upcoming => const Color(0xFF1565C0),
+        PeriodAttendanceStatus.cancelled => Colors.grey.shade600,
+      };
+}
+
+class PeriodAttendanceRecord {
+  PeriodAttendanceRecord({
+    required this.id,
+    required this.date,
+    required this.className,
+    required this.subjectCode,
+    required this.subjectName,
+    required this.periodIndex,
+    required this.timeSlot,
+    required this.status,
+    required this.markedByFaculty,
+    this.proxyFaculty,
+    required this.timestamp,
+  });
+
+  final String id;
+  final DateTime date;
+  final String className;
+  final String subjectCode;
+  final String subjectName;
+  final int periodIndex;
+  final String timeSlot;
+  PeriodAttendanceStatus status;
+  final String markedByFaculty;
+  final String? proxyFaculty;
+  final DateTime timestamp;
+}
+
+/// ---------------------------------------------------------------------------
+/// LEAVE & ON-DUTY (OD) MANAGEMENT MODELS
+/// ---------------------------------------------------------------------------
+class FacultyLeaveRequest {
+  FacultyLeaveRequest({
+    required this.id,
+    required this.facultyId,
+    required this.facultyName,
+    required this.department,
+    required this.startDate,
+    required this.endDate,
+    required this.reason,
+    this.status = 'Pending',
+    required this.createdAt,
+  });
+
+  final String id;
+  final String facultyId;
+  final String facultyName;
+  final String department;
+  final DateTime startDate;
+  final DateTime endDate;
+  final String reason;
+  String status;
+  final DateTime createdAt;
+}
+
+class StudentOdRequest {
+  StudentOdRequest({
+    required this.id,
+    required this.studentId,
+    required this.studentName,
+    required this.className,
+    required this.date,
+    required this.periodIndexes,
+    required this.reason,
+    this.status = 'Pending',
+    required this.createdAt,
+  });
+
+  final String id;
+  final String studentId;
+  final String studentName;
+  final String className;
+  final DateTime date;
+  final List<int> periodIndexes;
+  final String reason;
+  String status;
+  final DateTime createdAt;
+}
+
+/// ---------------------------------------------------------------------------
+/// NOTIFICATION & COMMUNICATION ENGINE MODELS
+/// ---------------------------------------------------------------------------
+enum NotificationType {
+  peerInvite,
+  allocatorApproval,
+  studentClassUpdate,
+  leaveDisruption,
+}
+
+class AppNotification {
+  AppNotification({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.type,
+    required this.recipientUser,
+    required this.timestamp,
+    this.isRead = false,
+    this.deepLinkRoute,
+    this.metadata,
+  });
+
+  final String id;
+  final String title;
+  final String body;
+  final NotificationType type;
+  final String recipientUser; // Email or Name or "ALL_STUDENTS_CS-3A"
+  final DateTime timestamp;
+  bool isRead;
+  final String? deepLinkRoute;
+  final Map<String, dynamic>? metadata;
+}
+
+/// ---------------------------------------------------------------------------
+/// AUDIT & ACTIVITY LOGGING MODELS
+/// ---------------------------------------------------------------------------
+class AuditLogEntry {
+  AuditLogEntry({
+    required this.id,
+    required this.timestamp,
+    required this.actionType,
+    required this.performedBy,
+    required this.details,
+    required this.affectedClass,
+    this.affectedFaculty,
+  });
+
+  final String id;
+  final DateTime timestamp;
+  final String actionType;
+  final String performedBy;
+  final String details;
+  final String affectedClass;
+  final String? affectedFaculty;
+}
+
 
 

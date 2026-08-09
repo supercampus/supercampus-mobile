@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'timetable_models.dart';
 
 abstract interface class TimetableRepository {
+  // Config & Master Matrix
   TimetableConfig getConfig();
   void updateConfig(TimetableConfig config);
 
@@ -29,6 +31,7 @@ abstract interface class TimetableRepository {
   TimetableVersion publishTimetable(String versionId);
   TimetableVersion saveNewVersion(String title, List<TimetableEntry> entries);
 
+  // Disruption Alerts & Substitutions Engine
   List<DisruptionAlert> getDisruptionAlerts();
   void resolveDisruptionAlert(String alertId, String chosenSubstitute);
 
@@ -36,6 +39,44 @@ abstract interface class TimetableRepository {
   void requestSubstitution(FacultySubstitution sub);
   void approveSubstitution(String subId);
   void rejectSubstitution(String subId);
+  void cancelSubstitution(String subId);
 
   List<TimetableEntry> generateAiCandidate(TimetableConfig config);
+
+  // ---------------------------------------------------------------------------
+  // 1. ATTENDANCE ENGINE SERVICE & DYNAMIC PROXY AUTHORIZATION
+  // ---------------------------------------------------------------------------
+  bool canFacultyMarkAttendance(String facultyName, String className, String timeSlot, DateTime date);
+  void markPeriodAttendance(PeriodAttendanceRecord record);
+  List<PeriodAttendanceRecord> getAttendanceRecords(String className, DateTime date);
+
+  // ---------------------------------------------------------------------------
+  // 2. LEAVE & ON-DUTY (OD) MANAGEMENT PIPELINE
+  // ---------------------------------------------------------------------------
+  void approveFacultyLeave(FacultyLeaveRequest leave);
+  List<FacultyLeaveRequest> getFacultyLeaveRequests();
+  void approveStudentOd(StudentOdRequest od);
+  List<StudentOdRequest> getStudentOdRequests(String className, DateTime date);
+
+  // ---------------------------------------------------------------------------
+  // 3. NOTIFICATION & COMMUNICATION ENGINE
+  // ---------------------------------------------------------------------------
+  List<AppNotification> getNotificationsForUser(String userIdentifier);
+  void markNotificationRead(String notificationId);
+
+  // ---------------------------------------------------------------------------
+  // 4. REAL-TIME DATA SYNCHRONIZATION STREAMS (WebSocket / SSE Simulation)
+  // ---------------------------------------------------------------------------
+  Stream<List<FacultySubstitution>> get substitutionsStream;
+  Stream<List<DisruptionAlert>> get disruptionsStream;
+  Stream<List<PeriodAttendanceRecord>> get attendanceStream;
+  Stream<List<AppNotification>> get notificationsStream;
+  Stream<List<AuditLogEntry>> get auditLogsStream;
+
+  // ---------------------------------------------------------------------------
+  // 5. INFRASTRUCTURE & TECHNICAL ESSENTIALS
+  // ---------------------------------------------------------------------------
+  DateTime getServerTime();
+  List<AuditLogEntry> getAuditLogs();
+  Future<bool> executeOptimisticAction(Future<void> Function() action, void Function() rollback);
 }

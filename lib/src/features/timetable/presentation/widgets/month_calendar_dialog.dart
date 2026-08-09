@@ -25,6 +25,29 @@ class _MonthCalendarDialogState extends State<MonthCalendarDialog> {
     _selectedDay = widget.selectedDate;
   }
 
+  Widget _buildCalendarCell(BuildContext context, DateTime date, {bool isSelected = false, bool isToday = false}) {
+    return Container(
+      margin: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: isSelected ? AppColors.primary : Colors.transparent,
+        shape: BoxShape.circle,
+        border: isToday && !isSelected
+            ? Border.all(color: AppColors.primary, width: 1.5)
+            : null,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '${date.day}',
+        style: TextStyle(
+          color: isSelected
+              ? Colors.white
+              : (isToday ? AppColors.primary : AppColors.ink),
+          fontWeight: isSelected || isToday ? FontWeight.bold : FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -51,22 +74,21 @@ class _MonthCalendarDialogState extends State<MonthCalendarDialog> {
                 formatButtonVisible: false,
                 titleCentered: true,
               ),
-              calendarStyle: CalendarStyle(
-                selectedDecoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                todayDecoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                  backgroundBlendMode: BlendMode.dstATop,
-                ),
+              calendarBuilders: CalendarBuilders(
+                defaultBuilder: (context, date, _) => _buildCalendarCell(context, date),
+                todayBuilder: (context, date, _) => _buildCalendarCell(context, date, isToday: true),
+                selectedBuilder: (context, date, _) => _buildCalendarCell(context, date, isSelected: true),
               ),
             ),
             const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+              ],
             ),
           ],
         ),
