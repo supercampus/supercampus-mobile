@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../data/timetable_models.dart';
+import 'exam_detail_modal.dart';
 
 enum PeriodStatus { present, onDuty, absent, upcoming, cancelled, ongoing }
 
@@ -129,8 +130,180 @@ class _TimetableGridViewState extends State<TimetableGridView> {
         else if (dayEntries.isEmpty)
           _buildEmptyState(context)
         else
-          ...dayEntries.map((entry) => _buildEntryCard(context, entry)),
+          ..._buildDayListWidgets(context, dayEntries),
       ],
+    );
+  }
+
+  List<Widget> _buildDayListWidgets(BuildContext context, List<TimetableEntry> dayEntries) {
+    final list = <Widget>[];
+    final processedPeriodIndexes = <int>{};
+
+    for (final entry in dayEntries) {
+      if (entry.isExam) {
+        final startIdx = entry.startPeriodIndex ?? entry.periodIndex;
+        final endIdx = entry.endPeriodIndex ?? entry.periodIndex;
+
+        if (processedPeriodIndexes.contains(entry.periodIndex)) {
+          continue;
+        }
+
+        for (int p = startIdx; p <= endIdx; p++) {
+          processedPeriodIndexes.add(p);
+        }
+
+        list.add(_buildMergedExamCard(context, entry, startIdx, endIdx));
+      } else {
+        if (processedPeriodIndexes.contains(entry.periodIndex)) {
+          continue;
+        }
+        processedPeriodIndexes.add(entry.periodIndex);
+        list.add(_buildEntryCard(context, entry));
+      }
+    }
+    return list;
+  }
+
+  Widget _buildMergedExamCard(
+    BuildContext context,
+    TimetableEntry entry,
+    int startIdx,
+    int endIdx,
+  ) {
+    final spanText = startIdx == endIdx ? 'Period $startIdx' : 'Periods $startIdx–$endIdx';
+    final examTitle = entry.examTitle ?? 'Official Examination';
+    final dateStr = entry.examDate != null
+        ? DateFormat('EEEE, dd MMM yyyy').format(entry.examDate!)
+        : '${entry.dayOfWeek} (Scheduled Slot)';
+    final durationStr = entry.duration != null ? ' [${entry.duration}]' : '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      child: Material(
+        color: const Color(0xFFF8F9FE),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () => showExamDetailModal(context, entry),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFC7D2FE), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF3730A3).withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Container(
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.all(Radius.circular(16)),
+                border: Border(
+                  left: BorderSide(
+                    color: Color(0xFF3730A3),
+                    width: 5,
+                  ),
+                ),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Exam Category Title Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE0E7FF),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          examTitle.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF3730A3),
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ),
+                      const Row(
+                        children: [
+                          Text(
+                            'Details',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF3730A3),
+                            ),
+                          ),
+                          SizedBox(width: 2),
+                          Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF3730A3)),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // 2. Subject & Code
+                  Text(
+                    '${entry.subjectCode} - ${entry.subjectName}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E1B4B),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // 3. Date of Exam
+                  Row(
+                    children: [
+                      const Icon(Icons.event_note_rounded, size: 15, color: Color(0xFF3730A3)),
+                      const SizedBox(width: 6),
+                      Text(
+                        dateStr,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF3730A3),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  // 4. Duration / Time Slot
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time_rounded, size: 15, color: Color(0xFF4F46E5)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '${entry.timeSlot} ($spanText)$durationStr',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E1B4B),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -274,16 +447,19 @@ class _TimetableGridViewState extends State<TimetableGridView> {
           width: 1.5,
         ),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          border: Border(
-            left: BorderSide(
-              color: statusColor,
-              width: 5,
+      child: InkWell(
+        onTap: () => showClassDetailModal(context, entry, sub: sub),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border(
+              left: BorderSide(
+                color: statusColor,
+                width: 5,
+              ),
             ),
           ),
-        ),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -503,7 +679,8 @@ class _TimetableGridViewState extends State<TimetableGridView> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildWeeklyMatrix(BuildContext context) {

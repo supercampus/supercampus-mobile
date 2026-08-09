@@ -118,7 +118,19 @@ class TimetableConfig {
   }
 }
 
-/// TimetableEntry represents a specific scheduled period for a class.
+enum PeriodType {
+  classType,
+  examType,
+}
+
+extension PeriodTypeExtension on PeriodType {
+  String get label => switch (this) {
+        PeriodType.classType => 'CLASS',
+        PeriodType.examType => 'EXAM',
+      };
+}
+
+/// TimetableEntry represents a specific scheduled period for a class or an exam.
 /// NOTE: Room field is intentionally removed across all models per specifications.
 class TimetableEntry {
   const TimetableEntry({
@@ -133,6 +145,18 @@ class TimetableEntry {
     required this.periodIndex,
     this.isLab = false,
     this.categoryColorValue = 0xFF1976D2,
+    this.periodType = PeriodType.classType,
+    this.examTitle,
+    this.maxMarks,
+    this.hallNumber,
+    this.seatNumber,
+    this.invigilatorName,
+    this.startPeriodIndex,
+    this.endPeriodIndex,
+    this.examDate,
+    this.duration,
+    this.syllabus,
+    this.permittedItems,
   });
 
   final String id;
@@ -147,7 +171,23 @@ class TimetableEntry {
   final bool isLab;
   final int categoryColorValue;
 
-  Color get categoryColor => Color(categoryColorValue);
+  // EXAM Specific Fields
+  final PeriodType periodType;
+  final String? examTitle; // e.g. "Midterm Exam"
+  final int? maxMarks; // e.g. 50, 100
+  final String? hallNumber; // e.g. "Hall 3B"
+  final String? seatNumber; // e.g. "Desk #24"
+  final String? invigilatorName; // e.g. "Prof. Sarah Jenkins"
+  final int? startPeriodIndex; // e.g. 1
+  final int? endPeriodIndex; // e.g. 2
+  final DateTime? examDate;
+  final String? duration; // e.g. "1h 40m"
+  final String? syllabus; // e.g. "Units 1 & 2"
+  final String? permittedItems; // e.g. "Non-programmable calculator"
+
+  bool get isExam => periodType == PeriodType.examType;
+
+  Color get categoryColor => isExam ? const Color(0xFFC62828) : Color(categoryColorValue);
 
   TimetableEntry copyWith({
     String? id,
@@ -161,6 +201,18 @@ class TimetableEntry {
     int? periodIndex,
     bool? isLab,
     int? categoryColorValue,
+    PeriodType? periodType,
+    String? examTitle,
+    int? maxMarks,
+    String? hallNumber,
+    String? seatNumber,
+    String? invigilatorName,
+    int? startPeriodIndex,
+    int? endPeriodIndex,
+    DateTime? examDate,
+    String? duration,
+    String? syllabus,
+    String? permittedItems,
   }) {
     return TimetableEntry(
       id: id ?? this.id,
@@ -174,6 +226,18 @@ class TimetableEntry {
       periodIndex: periodIndex ?? this.periodIndex,
       isLab: isLab ?? this.isLab,
       categoryColorValue: categoryColorValue ?? this.categoryColorValue,
+      periodType: periodType ?? this.periodType,
+      examTitle: examTitle ?? this.examTitle,
+      maxMarks: maxMarks ?? this.maxMarks,
+      hallNumber: hallNumber ?? this.hallNumber,
+      seatNumber: seatNumber ?? this.seatNumber,
+      invigilatorName: invigilatorName ?? this.invigilatorName,
+      startPeriodIndex: startPeriodIndex ?? this.startPeriodIndex,
+      endPeriodIndex: endPeriodIndex ?? this.endPeriodIndex,
+      examDate: examDate ?? this.examDate,
+      duration: duration ?? this.duration,
+      syllabus: syllabus ?? this.syllabus,
+      permittedItems: permittedItems ?? this.permittedItems,
     );
   }
 }
