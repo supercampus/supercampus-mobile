@@ -1,6 +1,7 @@
 import '../../features/authentication/data/auth_repository.dart';
 import 'effective_permissions.dart';
 import 'module_catalog.dart';
+import 'demo_access_control_store.dart';
 import 'permissions_repository.dart';
 
 /// Stand-in for the admin console's permissions endpoint.
@@ -15,10 +16,17 @@ class MockPermissionsRepository implements PermissionsRepository {
   @override
   Future<EffectivePermissions> loadFor(UserSession session) async {
     await Future<void>.delayed(const Duration(milliseconds: 260));
+    final store = DemoAccessControlStore.instance;
+    if (store.users.contains(session.email)) {
+      return EffectivePermissions.fromJson(
+        store.effectiveAppPayload(session.email),
+      );
+    }
     return EffectivePermissions.fromJson(_payloadFor(session.role));
   }
 
   Map<String, dynamic> _payloadFor(UserRole role) => switch (role) {
+    UserRole.admin => _payloadFor(UserRole.timetableAllocator),
     UserRole.student => {
       'modules': {
         ModuleCatalog.timetable: {
@@ -48,6 +56,14 @@ class MockPermissionsRepository implements PermissionsRepository {
           'features': {
             'outpass': ['create', 'read'],
             'visitor': ['create', 'read'],
+          },
+        },
+        ModuleCatalog.library: {
+          'scope': 'own',
+          'features': {
+            'visit_pass': ['create', 'read'],
+            'qr_pass': ['read'],
+            'visit_history': ['read'],
           },
         },
         ModuleCatalog.examination: {
@@ -147,6 +163,16 @@ class MockPermissionsRepository implements PermissionsRepository {
           'features': {
             'programme': ['create', 'read', 'update'],
             'subject': ['create', 'read', 'update'],
+          },
+        },
+        ModuleCatalog.vendorManagement: {
+          'scope': 'institution',
+          'features': {
+            'vendors': ['create', 'read', 'update'],
+            'contracts': ['create', 'read', 'update'],
+            'purchase_orders': ['create', 'read', 'approve'],
+            'payments': ['create', 'read', 'approve'],
+            'work_orders': ['create', 'read', 'update'],
           },
         },
       },

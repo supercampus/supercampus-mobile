@@ -18,12 +18,14 @@ class CanteenShell extends StatefulWidget {
     required this.onExitModule,
     required this.onSignOut,
     this.repository,
+    this.initialAction,
   });
 
   final StudentSession session;
   final VoidCallback onExitModule;
   final VoidCallback onSignOut;
   final CanteenRepository? repository;
+  final String? initialAction;
 
   @override
   State<CanteenShell> createState() => _CanteenShellState();
@@ -45,6 +47,7 @@ class _CanteenShellState extends State<CanteenShell> {
           studentName: widget.session.displayName,
           email: widget.session.email,
         );
+    _selectedIndex = widget.initialAction == 'orders' ? 1 : 0;
     _loadStore();
   }
 
@@ -52,7 +55,14 @@ class _CanteenShellState extends State<CanteenShell> {
     setState(() => _error = null);
     try {
       final store = await _repository.loadStore();
-      if (mounted) setState(() => _store = store);
+      if (mounted) {
+        setState(() => _store = store);
+        if (widget.initialAction == 'wallet') {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _openWallet(context);
+          });
+        }
+      }
     } catch (_) {
       if (mounted) {
         setState(() {

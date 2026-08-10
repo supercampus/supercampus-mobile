@@ -12,7 +12,12 @@ import 'features/canteen/presentation/canteen_scanner_screen.dart';
 import 'features/canteen/presentation/canteen_shell.dart';
 import 'features/examination/presentation/examination_shell.dart';
 import 'features/faculty/presentation/faculty_portal_screen.dart';
+import 'features/feedback/presentation/feedback_shell.dart';
 import 'features/gatepass/presentation/gatepass_shell.dart';
+import 'features/library/presentation/library_shell.dart';
+import 'features/academics/presentation/academic_management_shell.dart';
+import 'features/vendor_management/presentation/vendor_management_shell.dart';
+import 'features/admin_portal/presentation/admin_portal_shell.dart';
 import 'features/modules/presentation/module_dashboard_screen.dart';
 import 'features/parent/presentation/parent_portal_screen.dart';
 import 'features/timetable/presentation/timetable_shell.dart';
@@ -38,6 +43,7 @@ class _SupercampusAppState extends State<SupercampusApp> {
   UserSession? _session;
   EffectivePermissions? _permissions;
   String? _openModuleId;
+  String? _openModuleAction;
 
   @override
   void initState() {
@@ -52,6 +58,7 @@ class _SupercampusAppState extends State<SupercampusApp> {
       _session = session;
       _permissions = null;
       _openModuleId = null;
+      _openModuleAction = null;
     });
 
     final permissions = await _permissionsRepository.loadFor(session);
@@ -63,6 +70,7 @@ class _SupercampusAppState extends State<SupercampusApp> {
     _session = null;
     _permissions = null;
     _openModuleId = null;
+    _openModuleAction = null;
   });
 
   @override
@@ -89,12 +97,26 @@ class _SupercampusAppState extends State<SupercampusApp> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    if (session.role == UserRole.admin) {
+      return AdminPortalShell(session: session, onSignOut: _signOut);
+    }
+
     final openModuleId = _openModuleId;
     if (openModuleId == null) {
       return ModuleDashboardScreen(
         session: session,
         permissions: permissions,
-        onOpenModule: (id) => setState(() => _openModuleId = id),
+        onOpenModule: (id) {
+          if (!permissions.canSeeModule(id)) return;
+          setState(() => _openModuleId = id);
+        },
+        onQuickAction: (moduleId, actionId) {
+          if (!permissions.canSeeModule(moduleId)) return;
+          setState(() {
+            _openModuleId = moduleId;
+            _openModuleAction = actionId;
+          });
+        },
         onSignOut: _signOut,
         // The scan button only earns its place in the nav bar if there is
         // something on campus to scan.
@@ -130,31 +152,54 @@ class _SupercampusAppState extends State<SupercampusApp> {
   }
 
   Widget _buildModule(String moduleId, UserSession session) {
-    void exit() => setState(() => _openModuleId = null);
+    void exit() => setState(() {
+      _openModuleId = null;
+      _openModuleAction = null;
+    });
 
     return switch (moduleId) {
       ModuleCatalog.examination => ExaminationShell(
         session: session,
         onExitModule: exit,
         onSignOut: _signOut,
+        initialAction: _openModuleAction,
       ),
       ModuleCatalog.canteen => CanteenShell(
         session: session,
         onExitModule: exit,
         onSignOut: _signOut,
+        initialAction: _openModuleAction,
       ),
-      ModuleCatalog.gatepass => session.role == UserRole.parent
-          ? ParentPortalScreen(
-              session: session,
-              onExitModule: exit,
-              onSignOut: _signOut,
-            )
-          : GatepassShell(session: session, onExitModule: exit),
+      ModuleCatalog.gatepass =>
+        session.role == UserRole.parent
+            ? ParentPortalScreen(
+                session: session,
+                onExitModule: exit,
+                onSignOut: _signOut,
+              )
+            : GatepassShell(
+                session: session,
+                onExitModule: exit,
+                initialAction: _openModuleAction,
+              ),
+      ModuleCatalog.library => LibraryShell(
+        session: session,
+        onExitModule: exit,
+      ),
+      ModuleCatalog.academics => AcademicManagementShell(
+        session: session,
+        onExitModule: exit,
+      ),
+      ModuleCatalog.vendorManagement => VendorManagementShell(
+        session: session,
+        onExitModule: exit,
+      ),
       ModuleCatalog.timetable => TimetableShell(
         session: session,
         onExitModule: exit,
         onSignOut: _signOut,
       ),
+      'feedback' => FeedbackShell(session: session, onExitModule: exit),
       ModuleCatalog.attendance => FacultyPortalScreen(
         session: session,
         onExitModule: exit,

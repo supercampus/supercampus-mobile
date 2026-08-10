@@ -16,11 +16,13 @@ class GatepassShell extends StatefulWidget {
     required this.session,
     required this.onExitModule,
     this.repository,
+    this.initialAction,
   });
 
   final StudentSession session;
   final VoidCallback onExitModule;
   final GatepassRepository? repository;
+  final String? initialAction;
 
   @override
   State<GatepassShell> createState() => _GatepassShellState();
@@ -41,6 +43,11 @@ class _GatepassShellState extends State<GatepassShell> {
           studentName: widget.session.displayName,
           email: widget.session.email,
         );
+    _selectedIndex = switch (widget.initialAction) {
+      'visitors' => 2,
+      'access' => 3,
+      _ => 0,
+    };
     _load();
   }
 
@@ -48,7 +55,14 @@ class _GatepassShellState extends State<GatepassShell> {
     setState(() => _error = null);
     try {
       final store = await _repository.loadStore();
-      if (mounted) setState(() => _store = store);
+      if (mounted) {
+        setState(() => _store = store);
+        if (widget.initialAction == 'outpass') {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _openApply();
+          });
+        }
+      }
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Gatepass services are unavailable.');

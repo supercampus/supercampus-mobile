@@ -27,15 +27,23 @@ class ModuleHomeScreen extends StatelessWidget {
     final portalTitle = switch (role) {
       UserRole.staff => 'SuperCampus Faculty Portal',
       UserRole.timetableAllocator => 'SuperCampus Admin Portal',
+      UserRole.admin => 'SuperCampus Administrator Portal',
       UserRole.security => 'SuperCampus Security Portal',
       UserRole.parent => 'SuperCampus Parent Portal',
       _ => 'SuperCampus Student Portal',
     };
 
     final showAttendance = role == UserRole.student || role == UserRole.staff;
-    final showTimetable = role == UserRole.student || role == UserRole.staff || role == UserRole.timetableAllocator;
+    final showTimetable =
+        role == UserRole.student ||
+        role == UserRole.staff ||
+        role == UserRole.timetableAllocator ||
+        role == UserRole.admin;
     final showCanteen = role == UserRole.student || role == UserRole.staff;
-    final showGatepass = role == UserRole.student || role == UserRole.security || role == UserRole.parent;
+    final showGatepass =
+        role == UserRole.student ||
+        role == UserRole.security ||
+        role == UserRole.parent;
 
     return Scaffold(
       appBar: AppBar(
@@ -68,11 +76,14 @@ class ModuleHomeScreen extends StatelessWidget {
                   ).textTheme.bodyLarge?.copyWith(color: AppColors.muted),
                 ),
                 const SizedBox(height: 28),
-                
+
                 if (showAttendance && onOpenAttendance != null) ...[
                   _ModuleTile(
-                    title: role == UserRole.student ? 'Student Attendance' : 'Faculty Attendance Module',
-                    subtitle: 'Digital swipe attendance, student rosters and leave approvals',
+                    title: role == UserRole.student
+                        ? 'Student Attendance'
+                        : 'Faculty Attendance Module',
+                    subtitle:
+                        'Digital swipe attendance, student rosters and leave approvals',
                     icon: Icons.badge_outlined,
                     color: const Color(0xFF6A1B9A),
                     status: 'Active',
@@ -80,7 +91,7 @@ class ModuleHomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                 ],
-                
+
                 if (showTimetable && onOpenTimetable != null) ...[
                   _ModuleTile(
                     title: 'Timetable Management',
@@ -93,7 +104,7 @@ class ModuleHomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                 ],
-                
+
                 if (showCanteen && onOpenCanteen != null) ...[
                   _ModuleTile(
                     title: 'Canteen',
@@ -105,11 +116,12 @@ class ModuleHomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                 ],
-                
+
                 if (showGatepass && onOpenGatepass != null) ...[
                   _ModuleTile(
                     title: 'Gatepass',
-                    subtitle: 'Outpasses, campus access and visitor invitations',
+                    subtitle:
+                        'Outpasses, campus access and visitor invitations',
                     icon: Icons.badge_outlined,
                     color: const Color(0xFF2455A4),
                     status: 'Active',

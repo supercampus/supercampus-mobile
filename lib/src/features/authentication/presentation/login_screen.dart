@@ -215,9 +215,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             Text(
                               'Select Your Campus Portal',
                               textAlign: TextAlign.center,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.w500,
                                     color: AppColors.muted,
@@ -241,7 +239,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: Padding(
                                 padding: const EdgeInsets.all(24),
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     Text(
                                       'Sign in as ${_selectedRole.label}',
@@ -249,7 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           .textTheme
                                           .headlineSmall
                                           ?.copyWith(
-                                                 fontWeight: FontWeight.w500,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                     ),
                                     const SizedBox(height: 6),
@@ -271,8 +270,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         prefixIcon: Icon(Icons.mail_outline),
                                       ),
                                       validator: _validateEmail,
-                                      onFieldSubmitted: (_) => _passwordFocusNode
-                                          .requestFocus(),
+                                      onFieldSubmitted: (_) =>
+                                          _passwordFocusNode.requestFocus(),
                                     ),
                                     const SizedBox(height: 16),
                                     TextFormField(
@@ -283,7 +282,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                       decoration: InputDecoration(
                                         labelText: 'Password',
                                         prefixIcon: const Icon(
-                                            Icons.lock_outline),
+                                          Icons.lock_outline,
+                                        ),
                                         suffixIcon: IconButton(
                                           tooltip: _obscurePassword
                                               ? 'Show password'
@@ -295,8 +295,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           icon: Icon(
                                             _obscurePassword
                                                 ? Icons.visibility_outlined
-                                                : Icons
-                                                    .visibility_off_outlined,
+                                                : Icons.visibility_off_outlined,
                                           ),
                                         ),
                                       ),
@@ -323,12 +322,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                     FilledButton(
                                       style: FilledButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(
-                                            vertical: 14),
-                                        backgroundColor:
-                                            _roleColor(_selectedRole),
+                                          vertical: 14,
+                                        ),
+                                        backgroundColor: _roleColor(
+                                          _selectedRole,
+                                        ),
                                       ),
-                                      onPressed:
-                                          _isSubmitting ? null : _submit,
+                                      onPressed: _isSubmitting ? null : _submit,
                                       child: _isSubmitting
                                           ? const SizedBox.square(
                                               dimension: 22,
@@ -375,6 +375,7 @@ class _LoginScreenState extends State<LoginScreen> {
       UserRole.parent => const Color(0xFF2E7D32),
       UserRole.staff => const Color(0xFF6A1B9A),
       UserRole.timetableAllocator => const Color(0xFF00695C),
+      UserRole.admin => const Color(0xFF263238),
     };
   }
 }
@@ -511,8 +512,9 @@ class _RoleSelector extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight:
-                              isSelected ? FontWeight.w500 : FontWeight.w400,
+                          fontWeight: isSelected
+                              ? FontWeight.w500
+                              : FontWeight.w400,
                           color: isSelected ? color : AppColors.ink,
                         ),
                       ),
@@ -540,12 +542,19 @@ class _RoleSelector extends StatelessWidget {
     return switch (role) {
       UserRole.student => (Icons.school_outlined, AppColors.primary),
       UserRole.security => (Icons.security_outlined, const Color(0xFFD9383A)),
-      UserRole.parent => (Icons.family_restroom_outlined, const Color(0xFF2E7D32)),
+      UserRole.parent => (
+        Icons.family_restroom_outlined,
+        const Color(0xFF2E7D32),
+      ),
       UserRole.staff => (Icons.badge_outlined, const Color(0xFF6A1B9A)),
       UserRole.timetableAllocator => (
-          Icons.table_chart_outlined,
-          const Color(0xFF00695C)
-        ),
+        Icons.table_chart_outlined,
+        const Color(0xFF00695C),
+      ),
+      UserRole.admin => (
+        Icons.admin_panel_settings_outlined,
+        const Color(0xFF263238),
+      ),
     };
   }
 
@@ -556,15 +565,13 @@ class _RoleSelector extends StatelessWidget {
       UserRole.parent => 'Ward Approvals',
       UserRole.staff => 'Classes & Leaves',
       UserRole.timetableAllocator => 'Timetable Control',
+      UserRole.admin => 'Access Control',
     };
   }
 }
 
 class _QuickDemoBar extends StatelessWidget {
-  const _QuickDemoBar({
-    required this.activeRole,
-    required this.onDemoSelected,
-  });
+  const _QuickDemoBar({required this.activeRole, required this.onDemoSelected});
 
   final UserRole activeRole;
   final ValueChanged<UserRole> onDemoSelected;
@@ -606,8 +613,9 @@ class _QuickDemoBar extends StatelessWidget {
                   size: 14,
                   color: activeRole == role ? Colors.white : AppColors.primary,
                 ),
-                backgroundColor:
-                    activeRole == role ? AppColors.primary : Colors.blue.shade50,
+                backgroundColor: activeRole == role
+                    ? AppColors.primary
+                    : Colors.blue.shade50,
                 labelStyle: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -630,6 +638,7 @@ class _QuickDemoBar extends StatelessWidget {
       UserRole.parent => Icons.family_restroom,
       UserRole.staff => Icons.badge,
       UserRole.timetableAllocator => Icons.table_chart,
+      UserRole.admin => Icons.admin_panel_settings,
     };
   }
 }

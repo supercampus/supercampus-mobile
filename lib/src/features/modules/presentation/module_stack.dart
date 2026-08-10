@@ -29,12 +29,14 @@ class ModuleStack extends StatefulWidget {
     required this.modules,
     required this.permissions,
     required this.onOpenModule,
+    this.onQuickAction,
     this.onIndexChanged,
   });
 
   final List<ModuleDescriptor> modules;
   final EffectivePermissions permissions;
   final ValueChanged<String> onOpenModule;
+  final void Function(String moduleId, String actionId)? onQuickAction;
   final ValueChanged<int>? onIndexChanged;
 
   /// The frame is a fixed slot — one card plus its glass surround — whatever
@@ -47,7 +49,7 @@ class ModuleStack extends StatefulWidget {
 
 /// A card tall enough for a 52px icon tile, two lines of text and breathing
 /// room — not so tall that it becomes a poster.
-const _cardHeight = 106.0;
+const _cardHeight = 174.0;
 
 /// Glass showing around the card — the same on all four sides — and the
 /// gutter the dot rail sits in beside the frame, outside the glass.
@@ -189,6 +191,7 @@ class _ModuleStackState extends State<ModuleStack> {
                         ),
                         module: widget.modules[i],
                         permissions: widget.permissions,
+                        onQuickAction: widget.onQuickAction,
                         onTap: () => i == _selected
                             ? widget.onOpenModule(widget.modules[i].id)
                             : _goTo(i),
@@ -375,11 +378,13 @@ class _ModuleCard extends StatefulWidget {
     super.key,
     required this.module,
     required this.permissions,
+    this.onQuickAction,
     required this.onTap,
   });
 
   final ModuleDescriptor module;
   final EffectivePermissions permissions;
+  final void Function(String moduleId, String actionId)? onQuickAction;
   final VoidCallback onTap;
 
   @override
@@ -398,6 +403,17 @@ class _ModuleCardState extends State<_ModuleCard> {
     final module = widget.module;
     final ready = module.status != ModuleStatus.planned;
     final level = widget.permissions.accessLevel(module.id);
+    final actions = ready
+        ? [
+            for (final action in _quickActionsFor(module.id))
+              if (widget.permissions.can(
+                module.id,
+                action.featureId,
+                action.requiredAction,
+              ))
+                action,
+          ]
+        : const <_QuickAction>[];
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -432,72 +448,244 @@ class _ModuleCardState extends State<_ModuleCard> {
               ),
             ],
           ),
-          child: Row(
+          child: Column(
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  // Tinted glass rather than a solid white disc — a disc that
-                  // size reads as an app icon, which is what made the card
-                  // look like a game tile.
-                  color: Colors.white.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.22),
-                  ),
-                ),
-                child: Icon(module.icon, color: Colors.white, size: 24),
-              ),
-              const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    // Sentence case at normal tracking. Long names still get
-                    // no good break points, so one shrinks to fit rather than
-                    // folding mid-word.
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        module.displayName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.1,
-                          height: 1.2,
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        // Tinted glass rather than a solid white disc — a disc that
+                        // size reads as an app icon, which is what made the card
+                        // look like a game tile.
+                        color: Colors.white.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.22),
                         ),
-                        maxLines: 1,
-                        softWrap: false,
+                      ),
+                      child: Icon(module.icon, color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Sentence case at normal tracking. Long names still get
+                          // no good break points, so one shrinks to fit rather than
+                          // folding mid-word.
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              module.displayName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.1,
+                                height: 1.2,
+                              ),
+                              maxLines: 1,
+                              softWrap: false,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            ready ? level.label : 'Coming soon',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.72),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w300,
+                              letterSpacing: 0.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      ready ? level.label : 'Coming soon',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.72),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: 0.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    const SizedBox(width: 10),
+                    Icon(
+                      // A chevron says "opens a screen". The play triangle it
+                      // replaces says "starts a level".
+                      ready
+                          ? Icons.chevron_right_rounded
+                          : Icons.schedule_rounded,
+                      color: Colors.white.withValues(alpha: ready ? 0.9 : 0.55),
+                      size: ready ? 26 : 20,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
-              Icon(
-                // A chevron says "opens a screen". The play triangle it
-                // replaces says "starts a level".
-                ready ? Icons.chevron_right_rounded : Icons.schedule_rounded,
-                color: Colors.white.withValues(alpha: ready ? 0.9 : 0.55),
-                size: ready ? 26 : 20,
-              ),
+              if (actions.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    for (final action in actions)
+                      _QuickActionButton(
+                        action: action,
+                        onTap: widget.onQuickAction == null
+                            ? widget.onTap
+                            : () => widget.onQuickAction!(module.id, action.id),
+                      ),
+                  ],
+                ),
+              ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickAction {
+  const _QuickAction(
+    this.id,
+    this.label,
+    this.icon,
+    this.featureId,
+    this.requiredAction,
+  );
+
+  final String id;
+  final String label;
+  final IconData icon;
+  final String featureId;
+  final String requiredAction;
+}
+
+List<_QuickAction> _quickActionsFor(String moduleId) => switch (moduleId) {
+  ModuleCatalog.examination => const [
+    _QuickAction(
+      'schedule',
+      'Schedule',
+      Icons.event_note_outlined,
+      'publishing',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'marks',
+      'Marks',
+      Icons.edit_note_outlined,
+      'marks',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'results',
+      'Results',
+      Icons.insights_outlined,
+      'grades',
+      ModuleActions.read,
+    ),
+  ],
+  ModuleCatalog.timetable => const [
+    _QuickAction(
+      'schedule',
+      'Schedule',
+      Icons.calendar_month_outlined,
+      'schedule',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'substitution',
+      'Substitutions',
+      Icons.swap_horiz_rounded,
+      'substitution',
+      ModuleActions.read,
+    ),
+  ],
+  ModuleCatalog.attendance => const [
+    _QuickAction(
+      'roster',
+      'Roster',
+      Icons.groups_outlined,
+      'roster',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'leave',
+      'Leave',
+      Icons.event_busy_outlined,
+      'leave',
+      ModuleActions.read,
+    ),
+  ],
+  ModuleCatalog.canteen => const [
+    _QuickAction(
+      'menu',
+      'Menu',
+      Icons.restaurant_menu_outlined,
+      'menu',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'orders',
+      'Orders',
+      Icons.receipt_long_outlined,
+      'order',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'wallet',
+      'Wallet',
+      Icons.account_balance_wallet_outlined,
+      'wallet',
+      ModuleActions.read,
+    ),
+  ],
+  ModuleCatalog.gatepass => const [
+    _QuickAction(
+      'outpass',
+      'Outpass',
+      Icons.directions_walk_outlined,
+      'outpass',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'visitors',
+      'Visitors',
+      Icons.people_outline,
+      'visitor',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'access',
+      'Access',
+      Icons.door_front_door_outlined,
+      'access',
+      ModuleActions.read,
+    ),
+  ],
+  _ => const [],
+};
+
+class _QuickActionButton extends StatelessWidget {
+  const _QuickActionButton({required this.action, required this.onTap});
+
+  final _QuickAction action;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: action.label,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.16),
+        shape: const CircleBorder(),
+        child: InkWell(
+          key: ValueKey('quick-action-${action.id}'),
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 52,
+            height: 52,
+            child: Icon(action.icon, color: Colors.white, size: 23),
           ),
         ),
       ),

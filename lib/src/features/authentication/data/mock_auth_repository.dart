@@ -32,9 +32,10 @@ class MockAuthRepository implements AuthRepository {
       UserRole.parent => ('PAR-4410', 'Alex Johnson (CS Dept)'),
       UserRole.staff => ('FAC-1049', 'Dept of Computer Engineering'),
       UserRole.timetableAllocator => (
-          'ALLOC-9012',
-          'Academic Planning & Operations'
-        ),
+        'ALLOC-9012',
+        'Academic Planning & Operations',
+      ),
+      UserRole.admin => ('ADMIN-0001', 'SuperCampus Administration'),
     };
 
     return UserSession(

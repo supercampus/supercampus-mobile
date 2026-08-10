@@ -98,6 +98,8 @@ abstract final class ModuleCatalog {
   static const attendance = 'attendance';
   static const canteen = 'canteen';
   static const gatepass = 'gatepass';
+  static const library = 'library';
+  static const vendorManagement = 'vendor_management';
   static const tuitionFee = 'tuition_fee';
   static const academics = 'academics';
 
@@ -106,7 +108,8 @@ abstract final class ModuleCatalog {
       id: examination,
       title: 'Examination System',
       shortTitle: 'Examinations',
-      tagline: 'End-to-end exam lifecycle, marks entry, moderation & transcripts',
+      tagline:
+          'End-to-end exam lifecycle, marks entry, moderation & transcripts',
       icon: Icons.assignment_outlined,
       color: Color(0xFF1B5E20),
       features: [
@@ -118,12 +121,21 @@ abstract final class ModuleCatalog {
         FeatureDescriptor(
           id: 'config',
           label: 'Configuration',
-          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update},
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.update,
+          },
         ),
         FeatureDescriptor(
           id: 'scheduling',
           label: 'Scheduling',
-          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update, ModuleActions.publish},
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.update,
+            ModuleActions.publish,
+          },
         ),
         FeatureDescriptor(
           id: 'eligibility',
@@ -133,17 +145,29 @@ abstract final class ModuleCatalog {
         FeatureDescriptor(
           id: 'conduct',
           label: 'Conduct & Incident',
-          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update},
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.update,
+          },
         ),
         FeatureDescriptor(
           id: 'marks',
           label: 'Marks Entry',
-          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update},
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.update,
+          },
         ),
         FeatureDescriptor(
           id: 'moderation',
           label: 'Moderation',
-          actions: {ModuleActions.read, ModuleActions.approve, ModuleActions.update},
+          actions: {
+            ModuleActions.read,
+            ModuleActions.approve,
+            ModuleActions.update,
+          },
         ),
         FeatureDescriptor(
           id: 'grades',
@@ -158,12 +182,20 @@ abstract final class ModuleCatalog {
         FeatureDescriptor(
           id: 'publishing',
           label: 'Result Publishing',
-          actions: {ModuleActions.read, ModuleActions.approve, ModuleActions.publish},
+          actions: {
+            ModuleActions.read,
+            ModuleActions.approve,
+            ModuleActions.publish,
+          },
         ),
         FeatureDescriptor(
           id: 'revaluation',
           label: 'Revaluation',
-          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update},
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.update,
+          },
         ),
         FeatureDescriptor(
           id: 'transcript',
@@ -315,6 +347,92 @@ abstract final class ModuleCatalog {
       ],
     ),
     ModuleDescriptor(
+      id: library,
+      title: 'Library',
+      tagline: 'Time-bound QR passes, capacity and library visit history',
+      icon: Icons.local_library_outlined,
+      color: Color(0xFF7B3F98),
+      status: ModuleStatus.available,
+      features: [
+        FeatureDescriptor(
+          id: 'visit_pass',
+          label: 'Visit pass booking',
+          actions: {ModuleActions.create, ModuleActions.read},
+        ),
+        FeatureDescriptor(
+          id: 'qr_pass',
+          label: 'Library QR pass',
+          actions: {ModuleActions.read},
+        ),
+        FeatureDescriptor(
+          id: 'visit_history',
+          label: 'Visit history',
+          actions: {ModuleActions.read},
+        ),
+        FeatureDescriptor(
+          id: 'occupancy',
+          label: 'Occupancy and capacity',
+          actions: {ModuleActions.read},
+        ),
+      ],
+    ),
+    ModuleDescriptor(
+      id: vendorManagement,
+      title: 'Vendor Management',
+      shortTitle: 'Vendors',
+      tagline: 'Vendors, contracts, purchase orders, payments and work orders',
+      icon: Icons.handshake_outlined,
+      color: Color(0xFF8A4B20),
+      status: ModuleStatus.available,
+      features: [
+        FeatureDescriptor(
+          id: 'vendors',
+          label: 'Vendor directory',
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.update,
+          },
+        ),
+        FeatureDescriptor(
+          id: 'contracts',
+          label: 'Contracts and AMCs',
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.update,
+          },
+        ),
+        FeatureDescriptor(
+          id: 'purchase_orders',
+          label: 'Purchase orders',
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.approve,
+          },
+        ),
+        FeatureDescriptor(
+          id: 'payments',
+          label: 'Payments and history',
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.approve,
+          },
+        ),
+        FeatureDescriptor(
+          id: 'work_orders',
+          label: 'Work orders',
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.update,
+          },
+        ),
+      ],
+    ),
+    ModuleDescriptor(
       id: tuitionFee,
       title: 'Tuition Fee',
       tagline: 'Fee structure, dues and payment receipts',
@@ -340,7 +458,7 @@ abstract final class ModuleCatalog {
       tagline: 'Programmes, subjects, batches and weekly hours',
       icon: Icons.school_outlined,
       color: Color(0xFF4A4E9C),
-      status: ModuleStatus.planned,
+      status: ModuleStatus.available,
       features: [
         FeatureDescriptor(
           id: 'programme',

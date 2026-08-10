@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/notifications/exam_alert_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/timetable_models.dart';
@@ -48,10 +49,12 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
 
     final activeSubs = widget.repository
         .getSubstitutions()
-        .where((s) =>
-            s.className == _targetClass &&
-            s.status == 'Approved' &&
-            s.dayOfWeek == selectedDayStr)
+        .where(
+          (s) =>
+              s.className == _targetClass &&
+              s.status == 'Approved' &&
+              s.dayOfWeek == selectedDayStr,
+        )
         .toList();
 
     return ListView(
@@ -110,15 +113,19 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
-                      color: _viewMode == 0 ? AppColors.primary : Colors.transparent,
+                      color: _viewMode == 0
+                          ? AppColors.primary
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(9),
                       boxShadow: _viewMode == 0
                           ? [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.25),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.25,
+                                ),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
-                              )
+                              ),
                             ]
                           : [],
                     ),
@@ -129,7 +136,9 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                         Icon(
                           Icons.calendar_today_rounded,
                           size: 16,
-                          color: _viewMode == 0 ? Colors.white : Colors.grey.shade700,
+                          color: _viewMode == 0
+                              ? Colors.white
+                              : Colors.grey.shade700,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -137,7 +146,9 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: _viewMode == 0 ? Colors.white : Colors.grey.shade700,
+                            color: _viewMode == 0
+                                ? Colors.white
+                                : Colors.grey.shade700,
                           ),
                         ),
                       ],
@@ -152,15 +163,19 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
-                      color: _viewMode == 1 ? const Color(0xFF3730A3) : Colors.transparent,
+                      color: _viewMode == 1
+                          ? const Color(0xFF3730A3)
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(9),
                       boxShadow: _viewMode == 1
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF3730A3).withValues(alpha: 0.25),
+                                color: const Color(
+                                  0xFF3730A3,
+                                ).withValues(alpha: 0.25),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
-                              )
+                              ),
                             ]
                           : [],
                     ),
@@ -171,7 +186,9 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                         Icon(
                           Icons.assignment_turned_in_rounded,
                           size: 16,
-                          color: _viewMode == 1 ? Colors.white : Colors.grey.shade700,
+                          color: _viewMode == 1
+                              ? Colors.white
+                              : Colors.grey.shade700,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -179,7 +196,9 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: _viewMode == 1 ? Colors.white : Colors.grey.shade700,
+                            color: _viewMode == 1
+                                ? Colors.white
+                                : Colors.grey.shade700,
                           ),
                         ),
                       ],
@@ -219,7 +238,9 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
   }
 
   Widget _buildFilteredExamSchedule(
-      BuildContext context, List<TimetableEntry> allEntries) {
+    BuildContext context,
+    List<TimetableEntry> allEntries,
+  ) {
     // 1. Filter entries based on dropdown selection
     final examEntries = allEntries.where((e) {
       if (!e.isExam) return false;
@@ -254,7 +275,11 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.filter_alt_outlined, size: 18, color: Color(0xFF3730A3)),
+                  Icon(
+                    Icons.filter_alt_outlined,
+                    size: 18,
+                    color: Color(0xFF3730A3),
+                  ),
                   SizedBox(width: 6),
                   Text(
                     'Filter Category:',
@@ -266,30 +291,53 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                   ),
                 ],
               ),
-              DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedExamFilter,
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                      size: 20, color: Color(0xFF3730A3)),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF3730A3),
+              // Flexible + isExpanded: the closed dropdown otherwise takes the
+              // width of its longest option ("Practical Evaluation"), which
+              // runs off the right of a narrow phone.
+              Flexible(
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedExamFilter,
+                    isExpanded: true,
+                    alignment: AlignmentDirectional.centerEnd,
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 20,
+                      color: Color(0xFF3730A3),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF3730A3),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'All Exams',
+                        child: Text('All Exams'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Internal Assessment',
+                        child: Text('Internal Assessment'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Midterm Exam',
+                        child: Text('Midterm Exam'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Final Exam',
+                        child: Text('Final Exam'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Practical Evaluation',
+                        child: Text('Practical Evaluation'),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() => _selectedExamFilter = val);
+                      }
+                    },
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'All Exams', child: Text('All Exams')),
-                    DropdownMenuItem(
-                        value: 'Internal Assessment', child: Text('Internal Assessment')),
-                    DropdownMenuItem(value: 'Midterm Exam', child: Text('Midterm Exam')),
-                    DropdownMenuItem(value: 'Final Exam', child: Text('Final Exam')),
-                    DropdownMenuItem(
-                        value: 'Practical Evaluation', child: Text('Practical Evaluation')),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() => _selectedExamFilter = val);
-                    }
-                  },
                 ),
               ),
             ],
@@ -310,11 +358,18 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
             ),
             child: Column(
               children: [
-                Icon(Icons.assignment_outlined, size: 56, color: Colors.grey.shade400),
+                Icon(
+                  Icons.assignment_outlined,
+                  size: 56,
+                  color: Colors.grey.shade400,
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'No ${_selectedExamFilter == "All Exams" ? "" : _selectedExamFilter} Exams Found',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -326,12 +381,53 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
             ),
           )
         else
-          ...examEntries.map((exam) => _buildExamScheduleCard(
-                context,
-                exam,
-                hideCategoryTitle: hideCategoryTitle,
-              )),
+          ...examEntries.map(
+            (exam) => _buildExamScheduleCard(
+              context,
+              exam,
+              hideCategoryTitle: hideCategoryTitle,
+            ),
+          ),
       ],
+    );
+  }
+
+  /// The card's trailing affordance, carrying a bell once the student has an
+  /// alert on this exam — otherwise the only way to tell is to open each one.
+  Widget _viewDetailsRow(TimetableEntry exam) {
+    return ListenableBuilder(
+      listenable: ExamAlertService.instance,
+      builder: (context, _) {
+        final alerted = ExamAlertService.instance.alertFor(exam.id) != null;
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (alerted) ...[
+              const Icon(
+                Icons.notifications_active_rounded,
+                size: 15,
+                color: Color(0xFF15803D),
+              ),
+              const SizedBox(width: 6),
+            ],
+            const Text(
+              'View Details',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF3730A3),
+              ),
+            ),
+            const SizedBox(width: 2),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: Color(0xFF3730A3),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -343,7 +439,13 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
     final dateStr = exam.examDate != null
         ? DateFormat('EEEE, dd MMM yyyy').format(exam.examDate!)
         : '${exam.dayOfWeek} (Scheduled Slot)';
+    final startIdx = exam.startPeriodIndex ?? exam.periodIndex;
+    final endIdx = exam.endPeriodIndex ?? exam.periodIndex;
+    final spanText = startIdx == endIdx
+        ? 'Period $startIdx'
+        : 'Periods $startIdx–$endIdx';
     final examCategory = exam.examTitle ?? 'Official Examination';
+    final durationStr = exam.duration != null ? ' [${exam.duration}]' : '';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
@@ -362,12 +464,15 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (!hideCategoryTitle) ...[
-                // Top Row: 1. Exam Category Title & Detail Arrow Action
+                // Top Row: Exam Category Title & Detail Arrow Action
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE0E7FF),
                         borderRadius: BorderRadius.circular(20),
@@ -382,20 +487,7 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                         ),
                       ),
                     ),
-                    const Row(
-                      children: [
-                        Text(
-                          'View Details',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF3730A3),
-                          ),
-                        ),
-                        SizedBox(width: 2),
-                        Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF3730A3)),
-                      ],
-                    ),
+                    _viewDetailsRow(exam),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -427,20 +519,7 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Row(
-                      children: [
-                        Text(
-                          'View Details',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF3730A3),
-                          ),
-                        ),
-                        SizedBox(width: 2),
-                        Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF3730A3)),
-                      ],
-                    ),
+                    _viewDetailsRow(exam),
                   ],
                 ),
               ],
@@ -450,7 +529,11 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
               // 3. Date of Exam
               Row(
                 children: [
-                  const Icon(Icons.event_note_rounded, size: 15, color: Color(0xFF3730A3)),
+                  const Icon(
+                    Icons.event_note_rounded,
+                    size: 15,
+                    color: Color(0xFF3730A3),
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     dateStr,
@@ -465,14 +548,18 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
 
               const SizedBox(height: 6),
 
-              // 4. Time Duration (Strictly time slot without period metadata)
+              // 4. Duration / Time Slot
               Row(
                 children: [
-                  const Icon(Icons.access_time_rounded, size: 15, color: Color(0xFF4F46E5)),
+                  const Icon(
+                    Icons.access_time_rounded,
+                    size: 15,
+                    color: Color(0xFF4F46E5),
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      exam.timeSlot,
+                      '${exam.timeSlot} ($spanText)$durationStr',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,

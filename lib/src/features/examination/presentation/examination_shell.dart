@@ -19,11 +19,13 @@ class ExaminationShell extends StatefulWidget {
     required this.session,
     this.onExitModule,
     required this.onSignOut,
+    this.initialAction,
   });
 
   final UserSession session;
   final VoidCallback? onExitModule;
   final VoidCallback onSignOut;
+  final String? initialAction;
 
   @override
   State<ExaminationShell> createState() => _ExaminationShellState();
@@ -34,6 +36,17 @@ class _ExaminationShellState extends State<ExaminationShell> {
 
   bool get _isStudent => widget.session.role == UserRole.student;
   bool get _isParent => widget.session.role == UserRole.parent;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeFeatureIndex = switch (widget.initialAction) {
+      'schedule' => 0,
+      'results' => 1,
+      'marks' => _isStudent || _isParent ? 1 : 2,
+      _ => null,
+    };
+  }
 
   String _getFeatureTitle() {
     if (_activeFeatureIndex == null) return 'Examination Dashboard';
@@ -94,12 +107,12 @@ class _ExaminationShellState extends State<ExaminationShell> {
                     onPressed: () => setState(() => _activeFeatureIndex = null),
                   )
                 : (widget.onExitModule != null
-                    ? IconButton(
-                        tooltip: 'Modules Home',
-                        icon: const Icon(Icons.home),
-                        onPressed: widget.onExitModule,
-                      )
-                    : null),
+                      ? IconButton(
+                          tooltip: 'Modules Home',
+                          icon: const Icon(Icons.home),
+                          onPressed: widget.onExitModule,
+                        )
+                      : null),
             title: Row(
               children: [
                 Container(
@@ -132,7 +145,10 @@ class _ExaminationShellState extends State<ExaminationShell> {
                         '${widget.session.displayName} • ${widget.session.role.label}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11, color: Colors.white70),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.white70,
+                        ),
                       ),
                     ],
                   ),

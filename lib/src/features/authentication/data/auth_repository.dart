@@ -1,39 +1,43 @@
 import 'dart:convert';
 
-enum UserRole { student, security, parent, staff, timetableAllocator }
+enum UserRole { student, security, parent, staff, timetableAllocator, admin }
 
 extension UserRoleExtension on UserRole {
   String get label => switch (this) {
-        UserRole.student => 'Student',
-        UserRole.security => 'Security Officer',
-        UserRole.parent => 'Parent / Guardian',
-        UserRole.staff => 'Faculty / Staff',
-        UserRole.timetableAllocator => 'Timetable Allocator',
-      };
+    UserRole.student => 'Student',
+    UserRole.security => 'Security Officer',
+    UserRole.parent => 'Parent / Guardian',
+    UserRole.staff => 'Faculty / Staff',
+    UserRole.timetableAllocator => 'Timetable Allocator',
+    UserRole.admin => 'Administrator',
+  };
 
   String get defaultEmail => switch (this) {
-        UserRole.student => 'student@supercampus.edu',
-        UserRole.security => 'security@supercampus.edu',
-        UserRole.parent => 'parent@supercampus.edu',
-        UserRole.staff => 'faculty@supercampus.edu',
-        UserRole.timetableAllocator => 'allocator@supercampus.edu',
-      };
+    UserRole.student => 'student@supercampus.edu',
+    UserRole.security => 'security@supercampus.edu',
+    UserRole.parent => 'parent@supercampus.edu',
+    UserRole.staff => 'faculty@supercampus.edu',
+    UserRole.timetableAllocator => 'allocator@supercampus.edu',
+    UserRole.admin => 'admin@supercampus.edu',
+  };
 
   String get defaultName => switch (this) {
-        UserRole.student => 'Alex Johnson',
-        UserRole.security => 'Officer R. Vance',
-        UserRole.parent => 'Robert Johnson',
-        UserRole.staff => 'Prof. Sarah Jenkins',
-        UserRole.timetableAllocator => 'Dr. Marcus Vance',
-      };
+    UserRole.student => 'Alex Johnson',
+    UserRole.security => 'Officer R. Vance',
+    UserRole.parent => 'Robert Johnson',
+    UserRole.staff => 'Prof. Sarah Jenkins',
+    UserRole.timetableAllocator => 'Dr. Marcus Vance',
+    UserRole.admin => 'SuperCampus Administrator',
+  };
 
   String get scope => switch (this) {
-        UserRole.student => 'STUDENT',
-        UserRole.security => 'SECURITY',
-        UserRole.parent => 'PARENT',
-        UserRole.staff => 'FACULTY',
-        UserRole.timetableAllocator => 'ALLOCATOR',
-      };
+    UserRole.student => 'STUDENT',
+    UserRole.security => 'SECURITY',
+    UserRole.parent => 'PARENT',
+    UserRole.staff => 'FACULTY',
+    UserRole.timetableAllocator => 'ALLOCATOR',
+    UserRole.admin => 'ADMIN',
+  };
 }
 
 class UserSession {
@@ -65,9 +69,9 @@ class UserSession {
 
   /// Contextual Claims for RBAC & Scope Filtering
   final String? departmentId; // e.g. "DEP-CS"
-  final String? sectionId;    // e.g. "CS-3A" for students
-  final String? staffId;      // e.g. "FAC-101" for faculty
-  final String? jwtToken;     // Signed JWT Token string
+  final String? sectionId; // e.g. "CS-3A" for students
+  final String? staffId; // e.g. "FAC-101" for faculty
+  final String? jwtToken; // Signed JWT Token string
 
   /// Display label for the role
   String get roleLabel => roleName ?? role.label;
@@ -86,7 +90,9 @@ class UserSession {
     String? sectionId,
     String? staffId,
   }) {
-    final header = base64Url.encode(utf8.encode(jsonEncode({'alg': 'HS256', 'typ': 'JWT'})));
+    final header = base64Url.encode(
+      utf8.encode(jsonEncode({'alg': 'HS256', 'typ': 'JWT'})),
+    );
     final payloadMap = {
       'sub': email,
       'scope': role.scope,
@@ -94,10 +100,16 @@ class UserSession {
       'section_id': sectionId ?? 'CS-3A',
       'staff_id': staffId ?? 'FAC-101',
       'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      'exp': DateTime.now().add(const Duration(hours: 24)).millisecondsSinceEpoch ~/ 1000,
+      'exp':
+          DateTime.now()
+              .add(const Duration(hours: 24))
+              .millisecondsSinceEpoch ~/
+          1000,
     };
     final payload = base64Url.encode(utf8.encode(jsonEncode(payloadMap)));
-    final signature = base64Url.encode(utf8.encode('supercampus_secret_key_mock'));
+    final signature = base64Url.encode(
+      utf8.encode('supercampus_secret_key_mock'),
+    );
     return '$header.$payload.$signature';
   }
 
@@ -134,7 +146,9 @@ class UserSession {
     if (action.startsWith('ALLOCATOR_') && userScope != 'ALLOCATOR') {
       return false;
     }
-    if (action.startsWith('FACULTY_') && userScope != 'FACULTY' && userScope != 'ALLOCATOR') {
+    if (action.startsWith('FACULTY_') &&
+        userScope != 'FACULTY' &&
+        userScope != 'ALLOCATOR') {
       return false;
     }
     return true;

@@ -26,6 +26,7 @@ class ModuleDashboardScreen extends StatefulWidget {
     required this.permissions,
     required this.onOpenModule,
     required this.onSignOut,
+    this.onQuickAction,
     this.onScan,
     this.dashboard,
   });
@@ -34,6 +35,7 @@ class ModuleDashboardScreen extends StatefulWidget {
   final EffectivePermissions permissions;
   final ValueChanged<String> onOpenModule;
   final VoidCallback onSignOut;
+  final void Function(String moduleId, String actionId)? onQuickAction;
 
   /// The scan button in the middle of the nav bar. Hidden when null. Takes
   /// the caller's context so the owner of navigation can push the scanner
@@ -102,6 +104,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                           modules: modules,
                           dashboard: widget.dashboard,
                           onOpenModule: widget.onOpenModule,
+                          onQuickAction: widget.onQuickAction,
                           onInsightsChanged: (insights) {
                             if (mounted) setState(() => _insights = insights);
                           },
@@ -112,19 +115,24 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                         right: 0,
                         bottom: MediaQuery.paddingOf(context).bottom + 10,
                         child: SliceNavBar(
-                          destinations: _destinations(modules),
+                          destinations: _destinations(),
                           selectedId: 'home',
                           onSelect: (id) {
-                            if (id != 'home') widget.onOpenModule(id);
+                            if (id == 'home') return;
+                            if (id == 'profile') {
+                              _openProfile();
+                              return;
+                            }
+                            if (id == 'modules') {
+                              _openModules();
+                              return;
+                            }
+                            widget.onOpenModule(id);
                           },
                           onCenterTap: widget.onScan == null
                               ? null
                               : () => widget.onScan!(context),
-                          avatarInitials: initialsOf(
-                            widget.session.displayName,
-                          ),
-                          onAvatarTap: _openProfile,
-                          collapsed: _navCollapsed,
+                          centerTooltip: 'Scanner',
                         ),
                       ),
                     ],
@@ -138,18 +146,24 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
     );
   }
 
-  /// Home plus the first few granted modules. Same projection as the
-  /// accordion, so a user who cannot see a module never gets a tab for it.
-  List<SliceNavDestination> _destinations(List<ModuleDescriptor> modules) => [
-    const SliceNavDestination(
-      id: 'home',
-      label: 'Home',
-      icon: Icons.home_rounded,
+  /// Fixed primary navigation for the student portal.
+  List<SliceNavDestination> _destinations() => const [
+    SliceNavDestination(id: 'home', label: 'Home', icon: Icons.home_rounded),
+    SliceNavDestination(
+      id: ModuleCatalog.academics,
+      label: 'Academics',
+      icon: Icons.school_outlined,
     ),
-    for (final m in modules.where((m) => m.status != ModuleStatus.planned).take(
-      3,
-    ))
-      SliceNavDestination(id: m.id, label: m.displayName, icon: m.icon),
+    SliceNavDestination(
+      id: 'modules',
+      label: 'Modules',
+      icon: Icons.grid_view_rounded,
+    ),
+    SliceNavDestination(
+      id: 'profile',
+      label: 'Profile',
+      icon: Icons.person_outline,
+    ),
   ];
 
   void _openSearch() => showHomeSheet(
@@ -182,11 +196,23 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
 
   void _openProfile() => showHomeSheet(
     context: context,
-    title: 'Your account',
+    title: 'Profile',
+    expand: true,
     child: ProfileSheet(
       session: widget.session,
       permissions: widget.permissions,
+      onOpenModule: widget.onOpenModule,
       onSignOut: widget.onSignOut,
+    ),
+  );
+
+  void _openModules() => showHomeSheet(
+    context: context,
+    title: 'Modules',
+    expand: true,
+    child: ModuleListSheet(
+      permissions: widget.permissions,
+      onOpenModule: widget.onOpenModule,
     ),
   );
 }
@@ -198,6 +224,7 @@ class _Feed extends StatelessWidget {
     required this.modules,
     required this.dashboard,
     required this.onOpenModule,
+    this.onQuickAction,
     required this.onInsightsChanged,
   });
 
@@ -206,6 +233,7 @@ class _Feed extends StatelessWidget {
   final List<ModuleDescriptor> modules;
   final Widget? dashboard;
   final ValueChanged<String> onOpenModule;
+  final void Function(String moduleId, String actionId)? onQuickAction;
   final ValueChanged<List<Insight>> onInsightsChanged;
 
   @override
@@ -244,6 +272,7 @@ class _Feed extends StatelessWidget {
               modules: modules,
               permissions: permissions,
               onOpenModule: onOpenModule,
+              onQuickAction: onQuickAction,
             ),
           ),
         ],
@@ -317,9 +346,9 @@ class _PlannedTile extends StatelessWidget {
           ),
           Text(
             'Coming soon',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontSize: 12,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontSize: 12),
           ),
         ],
       ),

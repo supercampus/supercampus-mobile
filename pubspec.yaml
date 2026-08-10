@@ -37,6 +37,16 @@ dependencies:
   qr_flutter: ^4.1.0
   table_calendar: ^3.2.0
   intl: ^0.20.3
+  flutter_local_notifications: ^22.3.0
+  timezone: ^0.11.1
+
+  # Only here to work around flutter_local_notifications_web 1.0.0, which
+  # registers a web plugin without depending on flutter_web_plugins itself.
+  # The generated web_plugin_registrant.dart then imports a package that is
+  # not in the graph and the web build fails to compile. Drop this once that
+  # package declares the dependency.
+  flutter_web_plugins:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:

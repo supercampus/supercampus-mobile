@@ -20,23 +20,20 @@ class SliceNavDestination {
 /// Two things make it read as "slice" rather than as a Material
 /// [NavigationBar]: it floats over the content instead of sitting in a
 /// docked bar, and it is not static — scrolling the page down shrinks it to
-/// just the scan button and your avatar, scrolling back up grows the tabs
+/// just the scan button, scrolling back up grows the tabs
 /// again. The thumb keeps its primary action at all times while the reading
 /// area gets the space back.
 ///
 /// The morph is one animated width, not a swap between two widgets: the tab
 /// row is always laid out at full width inside an [OverflowBox] and the pill
 /// clips it, so tabs are eaten from the edges inward instead of being
-/// squeezed. The scan button and avatar are positioned against the *live*
-/// pill width, so they ride the edge in as it closes.
+/// squeezed.
 class SliceNavBar extends StatefulWidget {
   const SliceNavBar({
     super.key,
     required this.destinations,
     required this.selectedId,
     required this.onSelect,
-    required this.avatarInitials,
-    required this.onAvatarTap,
     this.onCenterTap,
     this.centerIcon = Icons.qr_code_scanner_rounded,
     this.centerTooltip = 'Scan & pay',
@@ -50,9 +47,6 @@ class SliceNavBar extends StatefulWidget {
   final List<SliceNavDestination> destinations;
   final String? selectedId;
   final ValueChanged<String> onSelect;
-
-  final String avatarInitials;
-  final VoidCallback onAvatarTap;
 
   /// The raised circle in the middle. Omitted entirely when null.
   final VoidCallback? onCenterTap;
@@ -72,7 +66,6 @@ class SliceNavBar extends StatefulWidget {
   static const double height = 86;
 
   static const double _pillHeight = 62;
-  static const double _avatarSize = 42;
   static const double _centerSize = 62;
 
   @override
@@ -111,13 +104,11 @@ class _SliceNavBarState extends State<SliceNavBar>
   Widget build(BuildContext context) {
     final hasCenter = widget.onCenterTap != null;
 
-    // Two either side of the scan button; a fifth tab would crowd the pill
-    // more than it would help.
+    // Two either side of the scan button; the center action is the scanner.
     final destinations = widget.destinations.take(4).toList();
     final split = hasCenter ? (destinations.length + 1) ~/ 2 : 0;
     final left = destinations.take(split).toList();
     final right = destinations.skip(split).toList();
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final expandedWidth = constraints.maxWidth.isFinite
@@ -147,21 +138,6 @@ class _SliceNavBarState extends State<SliceNavBar>
                     left: left,
                     right: right,
                     hasCenter: hasCenter,
-                  ),
-                  // Rides the closing edge of the pill.
-                  Positioned(
-                    bottom:
-                        (SliceNavBar._pillHeight - SliceNavBar._avatarSize) / 2,
-                    child: Transform.translate(
-                      offset: Offset(
-                        width / 2 - SliceNavBar._avatarSize / 2 - 10,
-                        0,
-                      ),
-                      child: _Avatar(
-                        initials: widget.avatarInitials,
-                        onTap: widget.onAvatarTap,
-                      ),
-                    ),
                   ),
                   if (hasCenter)
                     Positioned(
@@ -223,8 +199,6 @@ class _SliceNavBarState extends State<SliceNavBar>
                 if (hasCenter)
                   const SizedBox(width: SliceNavBar._centerSize + 22),
                 Expanded(child: _group(right)),
-                // Keeps a tab from sliding under the avatar.
-                const SizedBox(width: SliceNavBar._avatarSize + 14),
               ],
             ),
           ),
@@ -275,23 +249,21 @@ class _NavTab extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(destination.icon, size: 23, color: color),
-            // Only the current tab is named. Four labels at phone width read
-            // as a row of truncated stubs, and the icon already carries the
-            // meaning for the places you are not.
-            if (selected) ...[
-              const SizedBox(height: 3),
-              Text(
-                destination.label,
+            const SizedBox(height: 3),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                destination.label.toUpperCase(),
                 maxLines: 1,
                 textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: color,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 9,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  letterSpacing: 0,
                 ),
               ),
-            ],
+            ),
           ],
         ),
       ),
@@ -343,39 +315,6 @@ class _CenterButton extends StatelessWidget {
               ),
               child: Icon(icon, color: Colors.white, size: 28),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.initials, required this.onTap});
-
-  final String initials;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      key: const ValueKey('nav-avatar'),
-      onTap: onTap,
-      child: Container(
-        width: SliceNavBar._avatarSize,
-        height: SliceNavBar._avatarSize,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AppColors.ink,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
-        ),
-        child: Text(
-          initials,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
           ),
         ),
       ),
