@@ -170,12 +170,10 @@ class _TimetableGridViewState extends State<TimetableGridView> {
     int startIdx,
     int endIdx,
   ) {
-    final spanText = startIdx == endIdx ? 'Period $startIdx' : 'Periods $startIdx–$endIdx';
     final examTitle = entry.examTitle ?? 'Official Examination';
     final dateStr = entry.examDate != null
         ? DateFormat('EEEE, dd MMM yyyy').format(entry.examDate!)
         : '${entry.dayOfWeek} (Scheduled Slot)';
-    final durationStr = entry.duration != null ? ' [${entry.duration}]' : '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -247,7 +245,6 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 10),
 
                   // 2. Subject & Code
@@ -281,14 +278,14 @@ class _TimetableGridViewState extends State<TimetableGridView> {
 
                   const SizedBox(height: 6),
 
-                  // 4. Duration / Time Slot
+                  // 4. Duration / Time Slot (Strictly time slot without period metadata)
                   Row(
                     children: [
                       const Icon(Icons.access_time_rounded, size: 15, color: Color(0xFF4F46E5)),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          '${entry.timeSlot} ($spanText)$durationStr',
+                          entry.timeSlot,
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -436,6 +433,8 @@ class _TimetableGridViewState extends State<TimetableGridView> {
       sub = widget.activeSubs.firstWhere((s) => s.subjectCode == entry.subjectCode && s.timeSlot == entry.timeSlot);
     } catch (_) {}
 
+    final activeFaculty = sub != null ? sub.substituteFaculty : entry.facultyName;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
@@ -460,227 +459,136 @@ class _TimetableGridViewState extends State<TimetableGridView> {
               ),
             ),
           ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top Row: 1. Primary Period & Time Pill (Left) | 2. Single Attendance Status Badge (Right)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'Period ${entry.periodIndex} • ${entry.timeSlot}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
                       ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'Period ${entry.periodIndex} • ${entry.timeSlot}',
-                        softWrap: true,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          status == PeriodStatus.present ? Icons.check_circle_outline :
+                          status == PeriodStatus.absent ? Icons.cancel_outlined :
+                          status == PeriodStatus.onDuty ? Icons.work_outline :
+                          status == PeriodStatus.cancelled ? Icons.block :
+                          Icons.schedule,
+                          size: 14,
                           color: statusColor,
                         ),
-                      ),
-                    ),
-                    if (entry.isLab)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.purple.shade50,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.purple.shade200),
-                        ),
-                        child: Text(
-                          'LAB',
+                        const SizedBox(width: 4),
+                        Text(
+                          _getStatusLabel(status),
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.purple.shade800,
-                          ),
-                        ),
-                      ),
-                    if (widget.isEditable)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'Class: ${entry.className}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                Wrap(
-                  spacing: 6,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    if (sub != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.amber.shade300),
-                        ),
-                        child: Text(
-                          'Substituted',
-                          style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: Colors.amber.shade900,
-                          ),
-                        ),
-                      ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            status == PeriodStatus.present ? Icons.check_circle_outline :
-                            status == PeriodStatus.absent ? Icons.cancel_outlined :
-                            status == PeriodStatus.onDuty ? Icons.work_outline :
-                            status == PeriodStatus.cancelled ? Icons.block :
-                            Icons.schedule,
-                            size: 14,
                             color: statusColor,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _getStatusLabel(status),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: statusColor,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${entry.subjectCode} - ${entry.subjectName}',
-                        softWrap: true,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.person_outline,
-                            size: 15,
-                            color: AppColors.muted,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: sub != null
-                                ? Wrap(
-                                    crossAxisAlignment: WrapCrossAlignment.center,
-                                    spacing: 6,
-                                    children: [
-                                      Text(
-                                        sub.originalFaculty,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.red,
-                                          decoration: TextDecoration.lineThrough,
-                                        ),
-                                      ),
-                                      const Icon(Icons.arrow_right_alt, size: 16, color: AppColors.muted),
-                                      Text(
-                                        sub.substituteFaculty,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.amber.shade800,
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : Text(
-                                    entry.facultyName,
-                                    softWrap: true,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.muted,
-                                    ),
-                                  ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (widget.isEditable) ...[
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20),
-                    color: AppColors.primary,
-                    onPressed: () => widget.onEditEntry?.call(entry),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 20),
-                    color: Colors.red,
-                    onPressed: () => widget.onDeleteEntry?.call(entry.id),
                   ),
                 ],
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: 10),
+
+              // 3. Subject Code and Title
+              Text(
+                '${entry.subjectCode} - ${entry.subjectName}',
+                softWrap: true,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+              ),
+              const SizedBox(height: 4),
+
+              // 4. Color-Coded Faculty Line (with Substitution Indicator when sub != null)
+              Row(
+                children: [
+                  const Icon(
+                    Icons.person_outline,
+                    size: 15,
+                    color: AppColors.muted,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: sub != null
+                        ? Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 6,
+                            children: [
+                              Text(
+                                sub.originalFaculty,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.red,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                              const Icon(Icons.arrow_right_alt, size: 16, color: AppColors.muted),
+                              Text(
+                                sub.substituteFaculty,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.amber.shade800,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Text(
+                            entry.facultyName,
+                            softWrap: true,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _buildWeeklyMatrix(BuildContext context) {

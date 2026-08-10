@@ -241,64 +241,6 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Exam Schedule Overview Banner (Deep Academic Indigo/Navy Gradient)
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF312E81).withValues(alpha: 0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.school_rounded, color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Term Examinations & Evaluations',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Official Exam Timetable & Seating • $_targetClass',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
         // Dynamic Dropdown Filter Header Bar
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -401,11 +343,7 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
     final dateStr = exam.examDate != null
         ? DateFormat('EEEE, dd MMM yyyy').format(exam.examDate!)
         : '${exam.dayOfWeek} (Scheduled Slot)';
-    final startIdx = exam.startPeriodIndex ?? exam.periodIndex;
-    final endIdx = exam.endPeriodIndex ?? exam.periodIndex;
-    final spanText = startIdx == endIdx ? 'Period $startIdx' : 'Periods $startIdx–$endIdx';
     final examCategory = exam.examTitle ?? 'Official Examination';
-    final durationStr = exam.duration != null ? ' [${exam.duration}]' : '';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
@@ -424,7 +362,7 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (!hideCategoryTitle) ...[
-                // Top Row: Exam Category Title & Detail Arrow Action
+                // Top Row: 1. Exam Category Title & Detail Arrow Action
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -527,14 +465,14 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
 
               const SizedBox(height: 6),
 
-              // 4. Duration / Time Slot
+              // 4. Time Duration (Strictly time slot without period metadata)
               Row(
                 children: [
                   const Icon(Icons.access_time_rounded, size: 15, color: Color(0xFF4F46E5)),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      '${exam.timeSlot} ($spanText)$durationStr',
+                      exam.timeSlot,
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
