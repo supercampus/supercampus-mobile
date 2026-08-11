@@ -74,9 +74,15 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Result Approval & Publishing Panel', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Result Approval & Publishing Panel',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 2),
-                  const Text('Staggered publication, embargo release controls, and recipient notifications.', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+                  const Text(
+                    'Staggered publication, embargo release controls, and recipient notifications.',
+                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                  ),
                 ],
               ),
             ),
@@ -124,7 +130,10 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Pre-Publish Verification Checklist', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const Text(
+            'Pre-Publish Verification Checklist',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 10),
           ListView.separated(
             shrinkWrap: true,
@@ -136,8 +145,18 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
               return ListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.check_circle, color: Colors.green, size: 18),
-                title: Text(c['check'], style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                leading: const Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                  size: 18,
+                ),
+                title: Text(
+                  c['check'],
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12.5,
+                  ),
+                ),
               );
             },
           ),
@@ -157,17 +176,32 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Publishing Release Settings', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const Text(
+            'Publishing Release Settings',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: _selectedScope,
             decoration: const InputDecoration(labelText: 'Release Scope'),
             isExpanded: true,
-            items: [
-              'Programme-wise Staggered Release',
-              'Batch-wide Immediate Release',
-              'Embargo Hold (Scheduled Release)',
-            ].map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis))).toList(),
+            items:
+                [
+                      'Programme-wise Staggered Release',
+                      'Batch-wide Immediate Release',
+                      'Embargo Hold (Scheduled Release)',
+                    ]
+                    .map(
+                      (s) => DropdownMenuItem(
+                        value: s,
+                        child: Text(
+                          s,
+                          style: const TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(),
             onChanged: (val) => setState(() => _selectedScope = val!),
           ),
           const SizedBox(height: 14),
@@ -185,7 +219,11 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
                 Expanded(
                   child: Text(
                     'Rollback Protection: Published results cannot be altered directly. Corrections require Revaluation.',
-                    style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -196,16 +234,27 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
             width: double.infinity,
             child: FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: _isPublished ? Colors.green : AppColors.primary,
+                backgroundColor: _isPublished
+                    ? Colors.green
+                    : AppColors.primary,
               ),
               onPressed: () {
                 setState(() => _isPublished = true);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Results Published! Push notifications sent.')),
+                  const SnackBar(
+                    content: Text(
+                      'Results Published! Push notifications sent.',
+                    ),
+                  ),
                 );
               },
               icon: Icon(_isPublished ? Icons.verified : Icons.send, size: 16),
-              label: Text(_isPublished ? 'Results Published (Live)' : 'Publish Results Now', style: const TextStyle(fontSize: 12)),
+              label: Text(
+                _isPublished
+                    ? 'Results Published (Live)'
+                    : 'Publish Results Now',
+                style: const TextStyle(fontSize: 12),
+              ),
             ),
           ),
         ],
@@ -215,7 +264,11 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
 }
 
 class _StepItem extends StatelessWidget {
-  const _StepItem({required this.step, required this.title, required this.done});
+  const _StepItem({
+    required this.step,
+    required this.title,
+    required this.done,
+  });
   final String step;
   final String title;
   final bool done;
@@ -229,10 +282,19 @@ class _StepItem extends StatelessWidget {
           backgroundColor: done ? Colors.green : Colors.grey.shade300,
           child: done
               ? const Icon(Icons.check, size: 12, color: Colors.white)
-              : Text(step, style: const TextStyle(fontSize: 10, color: Colors.black54)),
+              : Text(
+                  step,
+                  style: const TextStyle(fontSize: 10, color: Colors.black54),
+                ),
         ),
         const SizedBox(height: 4),
-        Text(title, style: TextStyle(fontSize: 10, fontWeight: done ? FontWeight.bold : FontWeight.normal)),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: done ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
       ],
     );
   }

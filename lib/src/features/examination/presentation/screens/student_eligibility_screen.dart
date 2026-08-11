@@ -6,7 +6,8 @@ class StudentEligibilityScreen extends StatefulWidget {
   const StudentEligibilityScreen({super.key});
 
   @override
-  State<StudentEligibilityScreen> createState() => _StudentEligibilityScreenState();
+  State<StudentEligibilityScreen> createState() =>
+      _StudentEligibilityScreenState();
 }
 
 class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
@@ -65,7 +66,8 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
     final filteredStudents = _students.where((s) {
       if (_filter == 'All') return true;
       if (_filter == 'Eligible') return s['status'] == 'ELIGIBLE';
-      if (_filter == 'Blocked') return s['status'] == 'BLOCKED' || s['status'] == 'PENDING FEE';
+      if (_filter == 'Blocked')
+        return s['status'] == 'BLOCKED' || s['status'] == 'PENDING FEE';
       return true;
     }).toList();
 
@@ -105,9 +107,20 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
           children: [
             const Row(
               children: [
-                Icon(Icons.verified_user_outlined, color: AppColors.primary, size: 22),
+                Icon(
+                  Icons.verified_user_outlined,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
                 SizedBox(width: 8),
-                Text('Eligibility & Hall Ticket Gatekeeper', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.ink)),
+                Text(
+                  'Eligibility & Hall Ticket Gatekeeper',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.ink,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -139,8 +152,18 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
         children: [
           Icon(Icons.check_circle_outline, size: 12, color: color),
           const SizedBox(width: 4),
-          Text('$title: ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10)),
-          Text(val, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 10)),
+          Text(
+            '$title: ',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+          ),
+          Text(
+            val,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 10,
+            ),
+          ),
         ],
       ),
     );
@@ -166,7 +189,10 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
     );
   }
 
-  Widget _buildEligibilityContent(List<Map<String, dynamic>> students, bool isMobile) {
+  Widget _buildEligibilityContent(
+    List<Map<String, dynamic>> students,
+    bool isMobile,
+  ) {
     if (isMobile) {
       return ListView.separated(
         shrinkWrap: true,
@@ -192,42 +218,90 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(s['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text(
+                        s['name'],
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
-                          color: (isEligible ? Colors.green : Colors.red).withValues(alpha: 0.12),
+                          color: (isEligible ? Colors.green : Colors.red)
+                              .withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           s['status'],
-                          style: TextStyle(color: isEligible ? Colors.green : Colors.red, fontWeight: FontWeight.bold, fontSize: 10),
+                          style: TextStyle(
+                            color: isEligible ? Colors.green : Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Text('Roll: ${s['roll']} • ${s['programme']}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                  Text(
+                    'Roll: ${s['roll']} • ${s['programme']}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.muted,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Text('Attendance: ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-                      Text('${s['attendance']}%', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: s['attendance'] >= 75 ? Colors.green : Colors.red)),
+                      const Text(
+                        'Attendance: ',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        '${s['attendance']}%',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          color: s['attendance'] >= 75
+                              ? Colors.green
+                              : Colors.red,
+                        ),
+                      ),
                       const Spacer(),
                       if (isEligible)
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                           ),
                           onPressed: () => _showHallTicketDialog(context, s),
-                          icon: const Icon(Icons.qr_code_2, size: 14, color: Colors.white),
-                          label: const Text('Hall Ticket', style: TextStyle(fontSize: 11, color: Colors.white)),
+                          icon: const Icon(
+                            Icons.qr_code_2,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                          label: const Text(
+                            'Hall Ticket',
+                            style: TextStyle(fontSize: 11, color: Colors.white),
+                          ),
                         )
                       else
                         TextButton(
                           onPressed: () {},
-                          child: const Text('Resolve Block', style: TextStyle(color: Colors.red, fontSize: 11)),
+                          child: const Text(
+                            'Resolve Block',
+                            style: TextStyle(color: Colors.red, fontSize: 11),
+                          ),
                         ),
                     ],
                   ),
@@ -261,32 +335,73 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
             final isEligible = s['status'] == 'ELIGIBLE';
             return DataRow(
               cells: [
-                DataCell(Text(s['roll'], style: const TextStyle(fontWeight: FontWeight.bold))),
+                DataCell(
+                  Text(
+                    s['roll'],
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
                 DataCell(Text(s['name'])),
-                DataCell(Text('${s['attendance']}%', style: TextStyle(fontWeight: FontWeight.bold, color: s['attendance'] >= 75 ? Colors.green : Colors.red))),
-                DataCell(Icon(s['feeCleared'] ? Icons.check_circle : Icons.cancel, color: s['feeCleared'] ? Colors.green : Colors.red, size: 18)),
-                DataCell(Icon(s['disciplinaryHold'] ? Icons.warning : Icons.shield, color: s['disciplinaryHold'] ? Colors.red : Colors.green, size: 18)),
-                DataCell(Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: (isEligible ? Colors.green : Colors.red).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
+                DataCell(
+                  Text(
+                    '${s['attendance']}%',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: s['attendance'] >= 75 ? Colors.green : Colors.red,
+                    ),
                   ),
-                  child: Text(
-                    s['status'],
-                    style: TextStyle(color: isEligible ? Colors.green : Colors.red, fontWeight: FontWeight.bold, fontSize: 11),
+                ),
+                DataCell(
+                  Icon(
+                    s['feeCleared'] ? Icons.check_circle : Icons.cancel,
+                    color: s['feeCleared'] ? Colors.green : Colors.red,
+                    size: 18,
                   ),
-                )),
+                ),
+                DataCell(
+                  Icon(
+                    s['disciplinaryHold'] ? Icons.warning : Icons.shield,
+                    color: s['disciplinaryHold'] ? Colors.red : Colors.green,
+                    size: 18,
+                  ),
+                ),
+                DataCell(
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (isEligible ? Colors.green : Colors.red)
+                          .withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      s['status'],
+                      style: TextStyle(
+                        color: isEligible ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ),
                 DataCell(
                   isEligible
                       ? OutlinedButton.icon(
                           onPressed: () => _showHallTicketDialog(context, s),
                           icon: const Icon(Icons.qr_code_2, size: 16),
-                          label: const Text('View Ticket', style: TextStyle(fontSize: 12)),
+                          label: const Text(
+                            'View Ticket',
+                            style: TextStyle(fontSize: 12),
+                          ),
                         )
                       : TextButton(
                           onPressed: () {},
-                          child: const Text('Resolve Block', style: TextStyle(color: Colors.red, fontSize: 12)),
+                          child: const Text(
+                            'Resolve Block',
+                            style: TextStyle(color: Colors.red, fontSize: 12),
+                          ),
                         ),
                 ),
               ],
@@ -297,7 +412,10 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
     );
   }
 
-  void _showHallTicketDialog(BuildContext context, Map<String, dynamic> student) {
+  void _showHallTicketDialog(
+    BuildContext context,
+    Map<String, dynamic> student,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -306,7 +424,13 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
           children: [
             const Icon(Icons.badge, color: AppColors.primary),
             const SizedBox(width: 10),
-            Expanded(child: Text('Digital Hall Ticket — ${student['name']}', overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16))),
+            Expanded(
+              child: Text(
+                'Digital Hall Ticket — ${student['name']}',
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
           ],
         ),
         content: SizedBox(
@@ -326,15 +450,34 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
                     CircleAvatar(
                       radius: 24,
                       backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                      child: Text(student['name'][0], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                      child: Text(
+                        student['name'][0],
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(student['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          Text('Roll: ${student['roll']}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                          Text(
+                            student['name'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            'Roll: ${student['roll']}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.muted,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -348,12 +491,18 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
                 size: 140.0,
               ),
               const SizedBox(height: 6),
-              const Text('Scan at Exam Hall Entrance for Verification', style: TextStyle(fontSize: 10, color: AppColors.muted)),
+              const Text(
+                'Scan at Exam Hall Entrance for Verification',
+                style: TextStyle(fontSize: 10, color: AppColors.muted),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
           FilledButton.icon(
             style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
             onPressed: () {

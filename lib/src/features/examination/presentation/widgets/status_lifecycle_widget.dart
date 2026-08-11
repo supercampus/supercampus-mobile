@@ -13,8 +13,16 @@ enum ExamCanonicalStatus {
   verified('Verified', 'Department verification complete', Colors.deepOrange),
   moderated('Moderated', 'Moderation rules applied', Colors.purple),
   locked('Locked', 'Marks frozen, immutable state', Colors.blueGrey),
-  resultApproved('Result Approved', 'Grades & GPA calculated', Colors.lightGreen),
-  resultPublished('Result Published', 'Results live for students', Colors.green),
+  resultApproved(
+    'Result Approved',
+    'Grades & GPA calculated',
+    Colors.lightGreen,
+  ),
+  resultPublished(
+    'Result Published',
+    'Results live for students',
+    Colors.green,
+  ),
   revaluation('Revaluation', 'Revaluation active', Colors.pink),
   closed('Closed', 'Cycle complete & archived', Colors.brown);
 
@@ -50,7 +58,11 @@ class StatusLifecycleWidget extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.account_tree_outlined, color: AppColors.primary, size: 20),
+              const Icon(
+                Icons.account_tree_outlined,
+                color: AppColors.primary,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               const Text(
                 'Canonical Examination Status Lifecycle',
@@ -58,7 +70,10 @@ class StatusLifecycleWidget extends StatelessWidget {
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: currentStatus.color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
@@ -84,7 +99,9 @@ class StatusLifecycleWidget extends StatelessWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: List.generate(ExamCanonicalStatus.values.length, (index) {
+              children: List.generate(ExamCanonicalStatus.values.length, (
+                index,
+              ) {
                 final status = ExamCanonicalStatus.values[index];
                 final isPassed = index <= currentIndex;
                 final isCurrent = index == currentIndex;
@@ -98,16 +115,21 @@ class StatusLifecycleWidget extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: isCurrent
                           ? status.color
                           : isPassed
-                              ? status.color.withValues(alpha: 0.12)
-                              : Colors.grey.shade100,
+                          ? status.color.withValues(alpha: 0.12)
+                          : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isCurrent ? status.color : (isPassed ? status.color : Colors.grey.shade300),
+                        color: isCurrent
+                            ? status.color
+                            : (isPassed ? status.color : Colors.grey.shade300),
                         width: isCurrent ? 2 : 1,
                       ),
                     ),
@@ -118,26 +140,28 @@ class StatusLifecycleWidget extends StatelessWidget {
                           isCurrent
                               ? Icons.play_circle_fill
                               : isPassed
-                                  ? Icons.check_circle
-                                  : Icons.radio_button_unchecked,
+                              ? Icons.check_circle
+                              : Icons.radio_button_unchecked,
                           size: 14,
                           color: isCurrent
                               ? Colors.white
                               : isPassed
-                                  ? status.color
-                                  : Colors.grey,
+                              ? status.color
+                              : Colors.grey,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           status.label,
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                            fontWeight: isCurrent
+                                ? FontWeight.bold
+                                : FontWeight.w500,
                             color: isCurrent
                                 ? Colors.white
                                 : isPassed
-                                    ? AppColors.ink
-                                    : AppColors.muted,
+                                ? AppColors.ink
+                                : AppColors.muted,
                           ),
                         ),
                       ],

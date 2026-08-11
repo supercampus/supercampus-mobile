@@ -7,10 +7,12 @@ class MergedReportsAnalyticsScreen extends StatefulWidget {
   const MergedReportsAnalyticsScreen({super.key});
 
   @override
-  State<MergedReportsAnalyticsScreen> createState() => _MergedReportsAnalyticsScreenState();
+  State<MergedReportsAnalyticsScreen> createState() =>
+      _MergedReportsAnalyticsScreenState();
 }
 
-class _MergedReportsAnalyticsScreenState extends State<MergedReportsAnalyticsScreen> {
+class _MergedReportsAnalyticsScreenState
+    extends State<MergedReportsAnalyticsScreen> {
   int _selectedSection = 0;
 
   @override
@@ -43,7 +45,8 @@ class _MergedReportsAnalyticsScreenState extends State<MergedReportsAnalyticsScr
                     ),
                   ],
                   selected: {_selectedSection},
-                  onSelectionChanged: (set) => setState(() => _selectedSection = set.first),
+                  onSelectionChanged: (set) =>
+                      setState(() => _selectedSection = set.first),
                 ),
               ),
             ),
@@ -51,10 +54,7 @@ class _MergedReportsAnalyticsScreenState extends State<MergedReportsAnalyticsScr
             Expanded(
               child: IndexedStack(
                 index: _selectedSection,
-                children: const [
-                  ReportsAnalyticsScreen(),
-                  AiInsightsScreen(),
-                ],
+                children: const [ReportsAnalyticsScreen(), AiInsightsScreen()],
               ),
             ),
           ],

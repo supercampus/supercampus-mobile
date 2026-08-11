@@ -10,12 +10,42 @@ class ExamConductScreen extends StatefulWidget {
 
 class _ExamConductScreenState extends State<ExamConductScreen> {
   final List<Map<String, dynamic>> _checklist = [
-    {'step': '1', 'action': 'Seal question papers & verification envelope', 'verifiedBy': 'Examination Controller', 'done': true},
-    {'step': '2', 'action': 'Verify digital exam assets encryption & keys', 'verifiedBy': 'IT Admin', 'done': true},
-    {'step': '3', 'action': 'Confirm hall readiness (seating, CCTV, power)', 'verifiedBy': 'Facilities', 'done': true},
-    {'step': '4', 'action': 'Distribute invigilator briefing & duty roster', 'verifiedBy': 'Examination Admin', 'done': true},
-    {'step': '5', 'action': 'Activate QR ID / Hall Ticket verification system', 'verifiedBy': 'Hall Supervisor', 'done': true},
-    {'step': '6', 'action': 'Enable incident reporting live channel', 'verifiedBy': 'Examination Admin', 'done': true},
+    {
+      'step': '1',
+      'action': 'Seal question papers & verification envelope',
+      'verifiedBy': 'Examination Controller',
+      'done': true,
+    },
+    {
+      'step': '2',
+      'action': 'Verify digital exam assets encryption & keys',
+      'verifiedBy': 'IT Admin',
+      'done': true,
+    },
+    {
+      'step': '3',
+      'action': 'Confirm hall readiness (seating, CCTV, power)',
+      'verifiedBy': 'Facilities',
+      'done': true,
+    },
+    {
+      'step': '4',
+      'action': 'Distribute invigilator briefing & duty roster',
+      'verifiedBy': 'Examination Admin',
+      'done': true,
+    },
+    {
+      'step': '5',
+      'action': 'Activate QR ID / Hall Ticket verification system',
+      'verifiedBy': 'Hall Supervisor',
+      'done': true,
+    },
+    {
+      'step': '6',
+      'action': 'Enable incident reporting live channel',
+      'verifiedBy': 'Examination Admin',
+      'done': true,
+    },
   ];
 
   final List<Map<String, dynamic>> _incidents = [
@@ -78,15 +108,26 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
               const SizedBox(width: 8),
               const Text(
                 'Pre-Exam Secure Release Verification Checklist',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.ink),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.ink,
+                ),
               ),
               const Spacer(),
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
                 onPressed: () {
                   // TODO: Submit pre-exam readiness check POST /api/v1/examination/conduct/pre-check
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Secure release verified. Hall session is now LIVE.')),
+                    const SnackBar(
+                      content: Text(
+                        'Secure release verified. Hall session is now LIVE.',
+                      ),
+                    ),
                   );
                 },
                 icon: const Icon(Icons.lock_open, size: 16),
@@ -118,8 +159,20 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(c['action'], style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
-                          Text('By: ${c['verifiedBy']}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                          Text(
+                            c['action'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            'By: ${c['verifiedBy']}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.muted,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -148,26 +201,40 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
             children: [
               const Icon(Icons.how_to_reg, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
-              const Text('Live Hall Attendance & Desk Verification', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              const Text(
+                'Live Hall Attendance & Desk Verification',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
               const Spacer(),
               Chip(
                 label: const Text('142 / 150 Present'),
                 backgroundColor: Colors.green.withValues(alpha: 0.12),
                 side: BorderSide.none,
-                labelStyle: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11),
+                labelStyle: const TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           ListTile(
-            leading: const CircleAvatar(backgroundColor: AppColors.primary, child: Icon(Icons.qr_code_scanner, color: Colors.white, size: 20)),
+            leading: const CircleAvatar(
+              backgroundColor: AppColors.primary,
+              child: Icon(Icons.qr_code_scanner, color: Colors.white, size: 20),
+            ),
             title: const Text('Scan Student QR / Hall Ticket'),
             subtitle: const Text('Tap to open camera barcode scanner'),
             trailing: OutlinedButton(
               onPressed: () {
                 // TODO: Open QR scanner sheet
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Simulated QR scan: Student 2026CS101 verified at Desk A-14.')),
+                  const SnackBar(
+                    content: Text(
+                      'Simulated QR scan: Student 2026CS101 verified at Desk A-14.',
+                    ),
+                  ),
                 );
               },
               child: const Text('Scan Ticket'),
@@ -191,9 +258,16 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.report_gmailerrorred, color: Colors.red, size: 20),
+              const Icon(
+                Icons.report_gmailerrorred,
+                color: Colors.red,
+                size: 20,
+              ),
               const SizedBox(width: 8),
-              const Text('Incident & Malpractice Logs', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              const Text(
+                'Incident & Malpractice Logs',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.add_circle, color: Colors.red),
@@ -212,15 +286,34 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
               final inc = _incidents[index];
               return ListTile(
                 dense: true,
-                title: Text('${inc['id']} • ${inc['type']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
-                subtitle: Text('${inc['student']} (${inc['hall']}) • ${inc['action']}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                title: Text(
+                  '${inc['id']} • ${inc['type']}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12.5,
+                  ),
+                ),
+                subtitle: Text(
+                  '${inc['student']} (${inc['hall']}) • ${inc['action']}',
+                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                ),
                 trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Text(inc['severity'], style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 10)),
+                  child: Text(
+                    inc['severity'],
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
+                  ),
                 ),
               );
             },
@@ -238,30 +331,48 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const TextField(decoration: InputDecoration(labelText: 'Student Roll No / Hall Ticket ID')),
+            const TextField(
+              decoration: InputDecoration(
+                labelText: 'Student Roll No / Hall Ticket ID',
+              ),
+            ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               initialValue: 'Critical',
               decoration: const InputDecoration(labelText: 'Severity Level'),
-              items: ['Critical', 'High', 'Medium', 'Low'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+              items: [
+                'Critical',
+                'High',
+                'Medium',
+                'Low',
+              ].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
               onChanged: (_) {},
             ),
             const SizedBox(height: 10),
             const TextField(
-              decoration: InputDecoration(labelText: 'Incident Description & Action Taken'),
+              decoration: InputDecoration(
+                labelText: 'Incident Description & Action Taken',
+              ),
               maxLines: 3,
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               // TODO: Log incident POST /api/v1/examination/conduct/incident
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Incident logged and sent to Controller Office.')),
+                const SnackBar(
+                  content: Text(
+                    'Incident logged and sent to Controller Office.',
+                  ),
+                ),
               );
             },
             child: const Text('Submit Incident Report'),

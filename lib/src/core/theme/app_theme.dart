@@ -137,6 +137,19 @@ abstract final class AppTheme {
           );
         }),
       ),
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        margin: EdgeInsets.zero,
+      ),
+      dialogTheme: const DialogThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+      ),
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.ink,
@@ -144,4 +157,64 @@ abstract final class AppTheme {
       ),
     );
   }
+
+  static ThemeData get dark => ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    fontFamily: 'Poppins',
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.violet,
+      brightness: Brightness.dark,
+    ),
+    scaffoldBackgroundColor: Colors.black,
+    canvasColor: Colors.black,
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF1B1E20),
+      foregroundColor: Colors.white,
+    ),
+    cardColor: const Color(0xFF171717),
+    cardTheme: const CardThemeData(
+      color: Color(0xFF171717),
+      surfaceTintColor: Colors.transparent,
+      margin: EdgeInsets.zero,
+    ),
+    dialogTheme: const DialogThemeData(
+      backgroundColor: Color(0xFF171717),
+      surfaceTintColor: Colors.transparent,
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Color(0xFF171717),
+      surfaceTintColor: Colors.transparent,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: const Color(0xFF1E1E1E),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFF3A3A3A)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFF3A3A3A)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: AppColors.amber, width: 1.5),
+      ),
+    ),
+    navigationBarTheme: const NavigationBarThemeData(
+      backgroundColor: Color(0xFF111111),
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: Color(0xFF3A2F00),
+      labelTextStyle: WidgetStatePropertyAll(
+        TextStyle(color: Colors.white70, fontSize: 12),
+      ),
+      iconTheme: WidgetStatePropertyAll(IconThemeData(color: Colors.white70)),
+    ),
+    snackBarTheme: const SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Color(0xFF242424),
+      contentTextStyle: TextStyle(color: Colors.white),
+    ),
+  );
 }

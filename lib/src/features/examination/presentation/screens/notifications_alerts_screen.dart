@@ -5,7 +5,8 @@ class NotificationsAlertsScreen extends StatefulWidget {
   const NotificationsAlertsScreen({super.key});
 
   @override
-  State<NotificationsAlertsScreen> createState() => _NotificationsAlertsScreenState();
+  State<NotificationsAlertsScreen> createState() =>
+      _NotificationsAlertsScreenState();
 }
 
 class _NotificationsAlertsScreenState extends State<NotificationsAlertsScreen> {
@@ -98,14 +99,24 @@ class _NotificationsAlertsScreenState extends State<NotificationsAlertsScreen> {
         padding: EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(Icons.notifications_active_outlined, color: AppColors.primary, size: 28),
+            Icon(
+              Icons.notifications_active_outlined,
+              color: AppColors.primary,
+              size: 28,
+            ),
             SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Event-Driven Exam Notifications & Alerts', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text('Automated alerts dispatched across Portal, Mobile Push, and Email channels.', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                  Text(
+                    'Event-Driven Exam Notifications & Alerts',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Automated alerts dispatched across Portal, Mobile Push, and Email channels.',
+                    style: TextStyle(fontSize: 12, color: AppColors.muted),
+                  ),
                 ],
               ),
             ),
@@ -126,7 +137,10 @@ class _NotificationsAlertsScreenState extends State<NotificationsAlertsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Configured Notification Rules', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          const Text(
+            'Configured Notification Rules',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           ListView.separated(
             shrinkWrap: true,
@@ -137,8 +151,17 @@ class _NotificationsAlertsScreenState extends State<NotificationsAlertsScreen> {
               final ev = _events[index];
               return ListTile(
                 dense: true,
-                title: Text(ev['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: Text('Recipients: ${ev['recipients']}\nChannels: ${ev['channels']}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                title: Text(
+                  ev['title'],
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                subtitle: Text(
+                  'Recipients: ${ev['recipients']}\nChannels: ${ev['channels']}',
+                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                ),
                 trailing: Switch(
                   value: ev['active'],
                   activeTrackColor: AppColors.primary,
@@ -166,7 +189,10 @@ class _NotificationsAlertsScreenState extends State<NotificationsAlertsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Recent Dispatch Audit Log', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          const Text(
+            'Recent Dispatch Audit Log',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           ListView.separated(
             shrinkWrap: true,
@@ -177,10 +203,26 @@ class _NotificationsAlertsScreenState extends State<NotificationsAlertsScreen> {
               final log = _logs[index];
               return ListTile(
                 dense: true,
-                leading: const Icon(Icons.send_outlined, size: 16, color: Colors.blue),
-                title: Text(log['event'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                subtitle: Text('${log['recipient']} • ${log['channel']}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
-                trailing: Text(log['time'], style: const TextStyle(fontSize: 10, color: AppColors.muted)),
+                leading: const Icon(
+                  Icons.send_outlined,
+                  size: 16,
+                  color: Colors.blue,
+                ),
+                title: Text(
+                  log['event'],
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+                subtitle: Text(
+                  '${log['recipient']} • ${log['channel']}',
+                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                ),
+                trailing: Text(
+                  log['time'],
+                  style: const TextStyle(fontSize: 10, color: AppColors.muted),
+                ),
               );
             },
           ),

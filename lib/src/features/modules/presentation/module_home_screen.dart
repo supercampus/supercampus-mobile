@@ -23,6 +23,8 @@ class ModuleHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brandPrimary = Theme.of(context).colorScheme.primary;
+    final brandSecondary = Theme.of(context).colorScheme.secondary;
     final role = session.role;
     final portalTitle = switch (role) {
       UserRole.staff => 'SuperCampus Faculty Portal',
@@ -71,9 +73,9 @@ class ModuleHomeScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   'Choose a campus service module',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyLarge?.copyWith(color: AppColors.muted),
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 28),
 
@@ -85,7 +87,7 @@ class ModuleHomeScreen extends StatelessWidget {
                     subtitle:
                         'Digital swipe attendance, student rosters and leave approvals',
                     icon: Icons.badge_outlined,
-                    color: const Color(0xFF6A1B9A),
+                    color: brandPrimary,
                     status: 'Active',
                     onTap: onOpenAttendance ?? () {},
                   ),
@@ -98,7 +100,7 @@ class ModuleHomeScreen extends StatelessWidget {
                     subtitle:
                         'Class schedules, daily teaching periods, and faculty updates',
                     icon: Icons.table_chart_outlined,
-                    color: const Color(0xFF00695C),
+                    color: brandSecondary,
                     status: 'Active',
                     onTap: onOpenTimetable ?? () {},
                   ),
@@ -110,7 +112,7 @@ class ModuleHomeScreen extends StatelessWidget {
                     title: 'Canteen',
                     subtitle: 'Browse the menu, pay and track pickup orders',
                     icon: Icons.restaurant_outlined,
-                    color: AppColors.primary,
+                    color: brandPrimary,
                     status: 'Open now',
                     onTap: onOpenCanteen!,
                   ),
@@ -123,7 +125,7 @@ class ModuleHomeScreen extends StatelessWidget {
                     subtitle:
                         'Outpasses, campus access and visitor invitations',
                     icon: Icons.badge_outlined,
-                    color: const Color(0xFF2455A4),
+                    color: brandSecondary,
                     status: 'Active',
                     onTap: onOpenGatepass!,
                   ),
@@ -190,10 +192,10 @@ class _ModuleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: Theme.of(context).dividerColor),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
@@ -250,7 +252,10 @@ class _ModuleTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.chevron_right, color: AppColors.muted),
+              Icon(
+                Icons.chevron_right,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ],
           ),
         ),
@@ -271,7 +276,7 @@ class _SmallModule extends StatelessWidget {
       height: 94,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F2F3),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(

@@ -66,6 +66,8 @@ class DepartmentNotice {
     required this.postedAt,
     required this.author,
     required this.targetAudience,
+    this.pdfName,
+    this.pdfUrl,
   });
 
   final String id;
@@ -74,4 +76,6 @@ class DepartmentNotice {
   final DateTime postedAt;
   final String author;
   final String targetAudience;
+  final String? pdfName;
+  final String? pdfUrl;
 }

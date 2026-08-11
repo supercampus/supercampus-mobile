@@ -17,14 +17,14 @@ class StudentExaminationDashboard extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth <= 600;
-        final crossAxisCount = isMobile ? 2 : (constraints.maxWidth <= 900 ? 3 : 4);
+        final crossAxisCount = isMobile ? 1 : 2;
 
         return SingleChildScrollView(
           padding: EdgeInsets.all(isMobile ? 12 : 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildStudentHeaderCard(context, isMobile),
+              _buildPriorityCard(context, isMobile),
               SizedBox(height: isMobile ? 16 : 24),
               const Text(
                 'Student Examination Services',
@@ -36,7 +36,7 @@ class StudentExaminationDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               const Text(
-                'Select a service below to access your exam schedule, academic results, performance analytics, and revaluation.',
+                'Your exam schedule, marks, GPA, reports and academic trends.',
                 style: TextStyle(fontSize: 12, color: AppColors.muted),
               ),
               const SizedBox(height: 16),
@@ -46,21 +46,21 @@ class StudentExaminationDashboard extends StatelessWidget {
                 crossAxisCount: crossAxisCount,
                 crossAxisSpacing: isMobile ? 12 : 16,
                 mainAxisSpacing: isMobile ? 12 : 16,
-                childAspectRatio: isMobile ? 1.05 : 1.25,
+                childAspectRatio: isMobile ? 2.5 : 3.1,
                 children: [
                   _buildServiceCard(
                     context: context,
                     title: 'Exam Schedule',
-                    subtitle: 'Timetable, Hall & Seat',
+                    subtitle: 'Published timetable, venue and seat',
                     icon: Icons.calendar_month_outlined,
                     color: const Color(0xFF1976D2),
-                    badgeText: 'Autumn 2026',
+                    badgeText: 'Published',
                     onTap: () => onNavigateToFeature(0),
                   ),
                   _buildServiceCard(
                     context: context,
                     title: 'Results & Grades',
-                    subtitle: 'Semester Marks & GPA',
+                    subtitle: 'Semester marks, grade and GPA breakdown',
                     icon: Icons.grade_outlined,
                     color: const Color(0xFF7B1FA2),
                     badgeText: 'Published',
@@ -69,20 +69,11 @@ class StudentExaminationDashboard extends StatelessWidget {
                   _buildServiceCard(
                     context: context,
                     title: 'Reports & Analytics',
-                    subtitle: 'My Performance & Trends',
+                    subtitle: 'GPA trends, subject analysis and downloads',
                     icon: Icons.assessment_outlined,
                     color: const Color(0xFF0097A7),
-                    badgeText: 'Personal PDF',
+                    badgeText: '3 reports',
                     onTap: () => onNavigateToFeature(2),
-                  ),
-                  _buildServiceCard(
-                    context: context,
-                    title: 'Revaluation',
-                    subtitle: 'Apply & Track Status',
-                    icon: Icons.find_in_page_outlined,
-                    color: const Color(0xFFE65100),
-                    badgeText: 'Active',
-                    onTap: () => onNavigateToFeature(3),
                   ),
                 ],
               ),
@@ -90,6 +81,47 @@ class StudentExaminationDashboard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildPriorityCard(BuildContext context, bool isMobile) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isMobile ? 16 : 20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1B5E20), Color(0xFF388E3C)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Your academics at a glance',
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Good morning, ${session.displayName}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 21,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: const [
+              _PriorityMetric(label: 'Next exam', value: '15 Oct'),
+              _PriorityMetric(label: 'Current GPA', value: '9.25'),
+              _PriorityMetric(label: 'Attendance', value: '82%'),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -153,7 +185,10 @@ class StudentExaminationDashboard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -212,7 +247,10 @@ class StudentExaminationDashboard extends StatelessWidget {
                     child: Icon(icon, color: color, size: 24),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
@@ -259,4 +297,35 @@ class StudentExaminationDashboard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PriorityMetric extends StatelessWidget {
+  const _PriorityMetric({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .16),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white70, fontSize: 10),
+        ),
+      ],
+    ),
+  );
 }

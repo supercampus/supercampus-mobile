@@ -17,7 +17,9 @@ class ParentExaminationDashboard extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth <= 600;
-        final crossAxisCount = isMobile ? 2 : (constraints.maxWidth <= 900 ? 3 : 3);
+        final crossAxisCount = isMobile
+            ? 2
+            : (constraints.maxWidth <= 900 ? 3 : 3);
 
         return SingleChildScrollView(
           padding: EdgeInsets.all(isMobile ? 12 : 20),
@@ -110,7 +112,11 @@ class ParentExaminationDashboard extends StatelessWidget {
           CircleAvatar(
             radius: isMobile ? 24 : 30,
             backgroundColor: Colors.white.withValues(alpha: 0.25),
-            child: const Icon(Icons.family_restroom, color: Colors.white, size: 28),
+            child: const Icon(
+              Icons.family_restroom,
+              color: Colors.white,
+              size: 28,
+            ),
           ),
           SizedBox(width: isMobile ? 12 : 16),
           Expanded(
@@ -139,7 +145,10 @@ class ParentExaminationDashboard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -198,7 +207,10 @@ class ParentExaminationDashboard extends StatelessWidget {
                     child: Icon(icon, color: color, size: 24),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),

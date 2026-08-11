@@ -63,7 +63,7 @@ class _LibraryShellState extends State<LibraryShell> {
   Widget build(BuildContext context) {
     final pass = _pass;
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: const Color(0xFF6D357F),
         foregroundColor: Colors.white,

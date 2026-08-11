@@ -189,6 +189,7 @@ class _GatepassShellState extends State<GatepassShell> {
       ),
       GatepassRequestsScreen(
         requests: store.requests,
+        workflow: store.workflow,
         onApply: _openApply,
         onCancel: _cancelRequest,
       ),
@@ -198,33 +199,6 @@ class _GatepassShellState extends State<GatepassShell> {
 
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: pages),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) =>
-            setState(() => _selectedIndex = index),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.assignment_outlined),
-            selectedIcon: Icon(Icons.assignment),
-            label: 'Requests',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people),
-            label: 'Visitors',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.qr_code_2),
-            selectedIcon: Icon(Icons.qr_code_2),
-            label: 'Access',
-          ),
-        ],
-      ),
     );
   }
 }

@@ -73,7 +73,7 @@ class _AdminAccessControlScreenState extends State<AdminAccessControlScreen> {
     final email = _userController.text.trim().toLowerCase();
     final assignments = _store.forUser(email, surface: _surface);
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: AppColors.ink,
         foregroundColor: Colors.white,

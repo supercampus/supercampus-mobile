@@ -49,10 +49,30 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
   ];
 
   final List<Map<String, String>> _conflicts = [
-    {'type': 'Student/Subject Conflict', 'desc': 'Student assigned to 2 exams at same slot', 'auto': 'No', 'action': 'Reschedule one exam'},
-    {'type': 'Hall Conflict', 'desc': 'Same hall assigned to 2 exams simultaneously', 'auto': 'Yes', 'action': 'Reallocate hall'},
-    {'type': 'Invigilator Conflict', 'desc': 'Invigilator assigned to multiple halls', 'auto': 'Yes', 'action': 'Reassign invigilator'},
-    {'type': 'Capacity Conflict', 'desc': 'Hall capacity < registered students', 'auto': 'Yes', 'action': 'Split batch / Change hall'},
+    {
+      'type': 'Student/Subject Conflict',
+      'desc': 'Student assigned to 2 exams at same slot',
+      'auto': 'No',
+      'action': 'Reschedule one exam',
+    },
+    {
+      'type': 'Hall Conflict',
+      'desc': 'Same hall assigned to 2 exams simultaneously',
+      'auto': 'Yes',
+      'action': 'Reallocate hall',
+    },
+    {
+      'type': 'Invigilator Conflict',
+      'desc': 'Invigilator assigned to multiple halls',
+      'auto': 'Yes',
+      'action': 'Reassign invigilator',
+    },
+    {
+      'type': 'Capacity Conflict',
+      'desc': 'Hall capacity < registered students',
+      'auto': 'Yes',
+      'action': 'Split batch / Change hall',
+    },
   ];
 
   @override
@@ -85,8 +105,18 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Exam Scheduling & Allocation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.ink)),
-          const Text('Assign date, time slot, venue, and invigilation.', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+          const Text(
+            'Exam Scheduling & Allocation',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.ink,
+            ),
+          ),
+          const Text(
+            'Assign date, time slot, venue, and invigilation.',
+            style: TextStyle(fontSize: 12, color: AppColors.muted),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -94,24 +124,38 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Conflict validation check finished. 1 capacity conflict detected.')),
+                      const SnackBar(
+                        content: Text(
+                          'Conflict validation check finished. 1 capacity conflict detected.',
+                        ),
+                      ),
                     );
                   },
                   icon: const Icon(Icons.rule, size: 16),
-                  label: const Text('Conflict Check', style: TextStyle(fontSize: 12)),
+                  label: const Text(
+                    'Conflict Check',
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                  ),
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Schedule published successfully!')),
+                      const SnackBar(
+                        content: Text('Schedule published successfully!'),
+                      ),
                     );
                   },
                   icon: const Icon(Icons.send, size: 16),
-                  label: const Text('Publish Schedule', style: TextStyle(fontSize: 12)),
+                  label: const Text(
+                    'Publish Schedule',
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ),
               ),
             ],
@@ -126,15 +170,29 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Examination Scheduling & Allocation', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.ink)),
-              Text('Assign date, time slot, venue, and invigilation with automated zero-conflict validation.', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+              Text(
+                'Examination Scheduling & Allocation',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.ink,
+                ),
+              ),
+              Text(
+                'Assign date, time slot, venue, and invigilation with automated zero-conflict validation.',
+                style: TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
             ],
           ),
         ),
         OutlinedButton.icon(
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Conflict validation check finished. 1 capacity conflict detected.')),
+              const SnackBar(
+                content: Text(
+                  'Conflict validation check finished. 1 capacity conflict detected.',
+                ),
+              ),
             );
           },
           icon: const Icon(Icons.rule),
@@ -145,7 +203,11 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
           style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Schedule published successfully to Student & Faculty Portals!')),
+              const SnackBar(
+                content: Text(
+                  'Schedule published successfully to Student & Faculty Portals!',
+                ),
+              ),
             );
           },
           icon: const Icon(Icons.send),
@@ -170,7 +232,11 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
           Expanded(
             child: Text(
               'Active Constraints: Min gap between exams: 24 hrs | Max exams/day: 1 | Hall capacity buffer: 10% | Invigilator ratio: 1:30',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Colors.blue),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Colors.blue,
+              ),
             ),
           ),
         ],
@@ -194,7 +260,14 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
               children: [
                 Icon(Icons.calendar_month, color: AppColors.primary, size: 20),
                 SizedBox(width: 8),
-                Text('Scheduled Examinations Timetable', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.ink)),
+                Text(
+                  'Scheduled Examinations Timetable',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.ink,
+                  ),
+                ),
               ],
             ),
           ),
@@ -215,36 +288,80 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(row['code']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          Text(
+                            row['code']!,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
-                              color: (isConflict ? Colors.red : Colors.green).withValues(alpha: 0.12),
+                              color: (isConflict ? Colors.red : Colors.green)
+                                  .withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               row['status']!,
-                              style: TextStyle(color: isConflict ? Colors.red : Colors.green, fontWeight: FontWeight.bold, fontSize: 11),
+                              style: TextStyle(
+                                color: isConflict ? Colors.red : Colors.green,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 2),
-                      Text(row['subject']!, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                      Text(
+                        row['subject']!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Icon(Icons.event, size: 14, color: AppColors.muted),
+                          const Icon(
+                            Icons.event,
+                            size: 14,
+                            color: AppColors.muted,
+                          ),
                           const SizedBox(width: 4),
-                          Text('${row['date']} • ${row['slot']}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                          Text(
+                            '${row['date']} • ${row['slot']}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.muted,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.room_outlined, size: 14, color: AppColors.muted),
+                          const Icon(
+                            Icons.room_outlined,
+                            size: 14,
+                            color: AppColors.muted,
+                          ),
                           const SizedBox(width: 4),
-                          Expanded(child: Text(row['hall']!, style: const TextStyle(fontSize: 11, color: AppColors.muted), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                          Expanded(
+                            child: Text(
+                              row['hall']!,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -268,29 +385,53 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
                   final isConflict = row['status'] != 'No Conflict';
                   return DataRow(
                     cells: [
-                      DataCell(Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(row['code']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                          Text(row['subject']!, style: const TextStyle(fontSize: 11, color: AppColors.muted)),
-                        ],
-                      )),
+                      DataCell(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              row['code']!,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                            Text(
+                              row['subject']!,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       DataCell(Text(row['date']!)),
                       DataCell(Text(row['slot']!)),
                       DataCell(Text(row['hall']!)),
                       DataCell(Text(row['invigilator']!)),
-                      DataCell(Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: (isConflict ? Colors.red : Colors.green).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
+                      DataCell(
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: (isConflict ? Colors.red : Colors.green)
+                                .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            row['status']!,
+                            style: TextStyle(
+                              color: isConflict ? Colors.red : Colors.green,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
                         ),
-                        child: Text(
-                          row['status']!,
-                          style: TextStyle(color: isConflict ? Colors.red : Colors.green, fontWeight: FontWeight.bold, fontSize: 11),
-                        ),
-                      )),
+                      ),
                     ],
                   );
                 }).toList(),
@@ -315,9 +456,20 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.report_problem_outlined, color: Colors.deepOrange, size: 20),
+              Icon(
+                Icons.report_problem_outlined,
+                color: Colors.deepOrange,
+                size: 20,
+              ),
               SizedBox(width: 8),
-              Text('Conflict Rules & Resolution Matrix', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.ink)),
+              Text(
+                'Conflict Rules & Resolution Matrix',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.ink,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -331,12 +483,26 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
               return ListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                title: Text(c['type']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
-                subtitle: Text('${c['desc']}\nResolution: ${c['action']}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                title: Text(
+                  c['type']!,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12.5,
+                  ),
+                ),
+                subtitle: Text(
+                  '${c['desc']}\nResolution: ${c['action']}',
+                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                ),
                 trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: c['auto'] == 'Yes' ? Colors.blue.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
+                    color: c['auto'] == 'Yes'
+                        ? Colors.blue.withValues(alpha: 0.1)
+                        : Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(

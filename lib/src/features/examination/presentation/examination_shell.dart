@@ -9,9 +9,9 @@ import 'screens/merged_marks_results_screen.dart';
 import 'screens/merged_reports_analytics_screen.dart';
 import 'screens/merged_student_management_screen.dart';
 import 'screens/parent_examination_dashboard.dart';
-import 'screens/revaluation_screen.dart';
 import 'screens/student_examination_dashboard.dart';
 import 'screens/student_reports_analytics_screen.dart';
+import 'screens/student_exam_schedule_screen.dart';
 
 class ExaminationShell extends StatefulWidget {
   const ExaminationShell({
@@ -59,8 +59,6 @@ class _ExaminationShellState extends State<ExaminationShell> {
           return 'Semester Results & GPA';
         case 2:
           return 'My Academic Reports & Analytics';
-        case 3:
-          return 'Revaluation Management';
         default:
           return 'Examination System';
       }
@@ -108,8 +106,8 @@ class _ExaminationShellState extends State<ExaminationShell> {
                   )
                 : (widget.onExitModule != null
                       ? IconButton(
-                          tooltip: 'Modules Home',
-                          icon: const Icon(Icons.home),
+                          tooltip: 'Back',
+                          icon: const Icon(Icons.arrow_back),
                           onPressed: widget.onExitModule,
                         )
                       : null),
@@ -155,14 +153,16 @@ class _ExaminationShellState extends State<ExaminationShell> {
                 ),
               ],
             ),
-            actions: [
-              IconButton(
-                tooltip: 'Sign Out',
-                icon: const Icon(Icons.logout, color: Colors.white),
-                onPressed: widget.onSignOut,
-              ),
-              const SizedBox(width: 6),
-            ],
+            actions: _isStudent || _isParent
+                ? const []
+                : [
+                    IconButton(
+                      tooltip: 'Sign Out',
+                      icon: const Icon(Icons.logout, color: Colors.white),
+                      onPressed: widget.onSignOut,
+                    ),
+                    const SizedBox(width: 6),
+                  ],
           ),
           body: _buildBodyContent(),
         );
@@ -196,7 +196,7 @@ class _ExaminationShellState extends State<ExaminationShell> {
     if (_isStudent) {
       switch (_activeFeatureIndex) {
         case 0:
-          return const ExamSchedulingScreen();
+          return const StudentExamScheduleScreen();
         case 1:
           return const GradeGpaScreen();
         case 2:
@@ -204,8 +204,6 @@ class _ExaminationShellState extends State<ExaminationShell> {
             session: widget.session,
             isParent: false,
           );
-        case 3:
-          return const RevaluationScreen();
         default:
           return StudentExaminationDashboard(
             session: widget.session,

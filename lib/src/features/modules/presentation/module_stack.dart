@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
-import '../../../core/theme/app_theme.dart';
 
 /// One glass frame that every granted module scrolls through, a single card at
 /// a time.
@@ -36,7 +35,13 @@ class ModuleStack extends StatefulWidget {
   final List<ModuleDescriptor> modules;
   final EffectivePermissions permissions;
   final ValueChanged<String> onOpenModule;
-  final void Function(String moduleId, String actionId)? onQuickAction;
+  final void Function(
+    String moduleId,
+    String actionId,
+    String featureId,
+    String requiredAction,
+  )?
+  onQuickAction;
   final ValueChanged<int>? onIndexChanged;
 
   /// The frame is a fixed slot — one card plus its glass surround — whatever
@@ -384,7 +389,13 @@ class _ModuleCard extends StatefulWidget {
 
   final ModuleDescriptor module;
   final EffectivePermissions permissions;
-  final void Function(String moduleId, String actionId)? onQuickAction;
+  final void Function(
+    String moduleId,
+    String actionId,
+    String featureId,
+    String requiredAction,
+  )?
+  onQuickAction;
   final VoidCallback onTap;
 
   @override
@@ -432,10 +443,13 @@ class _ModuleCardState extends State<_ModuleCard> {
             // Two stops of the same violet, a shade apart. Enough to keep the
             // card from reading as a flat swatch, far short of the hue shift
             // that made the old bars look like a paint chart.
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.moduleAccent, AppColors.moduleAccentDeep],
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.primaryContainer,
+              ],
             ),
             borderRadius: BorderRadius.circular(_cardRadius),
             boxShadow: [
@@ -531,7 +545,12 @@ class _ModuleCardState extends State<_ModuleCard> {
                         action: action,
                         onTap: widget.onQuickAction == null
                             ? widget.onTap
-                            : () => widget.onQuickAction!(module.id, action.id),
+                            : () => widget.onQuickAction!(
+                                module.id,
+                                action.id,
+                                action.featureId,
+                                action.requiredAction,
+                              ),
                       ),
                   ],
                 ),
@@ -597,6 +616,29 @@ List<_QuickAction> _quickActionsFor(String moduleId) => switch (moduleId) {
       'Substitutions',
       Icons.swap_horiz_rounded,
       'substitution',
+      ModuleActions.read,
+    ),
+  ],
+  ModuleCatalog.academics => const [
+    _QuickAction(
+      'attendance',
+      'Attendance',
+      Icons.fact_check_outlined,
+      'attendance',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'marks',
+      'Marks',
+      Icons.edit_note_outlined,
+      'marks',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'analysis',
+      'Analysis',
+      Icons.insights_outlined,
+      'analysis',
       ModuleActions.read,
     ),
   ],
@@ -729,8 +771,8 @@ class _DotRail extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Color.lerp(
-                      AppColors.moduleSoft,
-                      AppColors.moduleAccent,
+                      Theme.of(context).colorScheme.primaryContainer,
+                      Theme.of(context).colorScheme.primary,
                       (1 - (position - i).abs()).clamp(0.0, 1.0),
                     ),
                   ),

@@ -106,7 +106,12 @@ class _SliceNavBarState extends State<SliceNavBar>
 
     // Two either side of the scan button; the center action is the scanner.
     final destinations = widget.destinations.take(4).toList();
-    final split = hasCenter ? (destinations.length + 1) ~/ 2 : 0;
+    // Without the scanner there is no center gap, so all tabs belong to the
+    // left group. Keeping the old split made the bar render half-empty and
+    // pushed the navigation into the wrong side of the pill.
+    final split = hasCenter
+        ? (destinations.length + 1) ~/ 2
+        : destinations.length;
     final left = destinations.take(split).toList();
     final right = destinations.skip(split).toList();
     return LayoutBuilder(
@@ -124,7 +129,8 @@ class _SliceNavBarState extends State<SliceNavBar>
             animation: _t,
             builder: (context, _) {
               final t = _t.value;
-              final width = widget.collapsedWidth +
+              final width =
+                  widget.collapsedWidth +
                   (expandedWidth - widget.collapsedWidth) * t;
 
               return Stack(
@@ -165,41 +171,44 @@ class _SliceNavBarState extends State<SliceNavBar>
     required List<SliceNavDestination> right,
     required bool hasCenter,
   }) {
-    return Container(
-      width: width,
-      height: SliceNavBar._pillHeight,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(SliceNavBar._pillHeight / 2),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.10),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      // Laid out at full width whatever the pill is doing, so collapsing
-      // clips the tabs away rather than reflowing them.
-      child: OverflowBox(
-        minWidth: expandedWidth,
-        maxWidth: expandedWidth,
-        alignment: Alignment.center,
-        child: IgnorePointer(
-          ignoring: t < 0.5,
-          child: Opacity(
-            opacity: t,
-            child: Row(
-              children: [
-                Expanded(child: _group(left)),
-                // Wide enough to clear the scan button's collar, so a tab
-                // never ends up underneath it.
-                if (hasCenter)
-                  const SizedBox(width: SliceNavBar._centerSize + 22),
-                Expanded(child: _group(right)),
-              ],
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: width,
+        height: SliceNavBar._pillHeight,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(SliceNavBar._pillHeight / 2),
+          border: Border.all(color: Theme.of(context).dividerColor),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.ink.withValues(alpha: 0.10),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        // Laid out at full width whatever the pill is doing, so collapsing
+        // clips the tabs away rather than reflowing them.
+        child: OverflowBox(
+          minWidth: expandedWidth,
+          maxWidth: expandedWidth,
+          alignment: Alignment.center,
+          child: IgnorePointer(
+            ignoring: t < 0.5,
+            child: Opacity(
+              opacity: t,
+              child: Row(
+                children: [
+                  Expanded(child: _group(left)),
+                  // Wide enough to clear the scan button's collar, so a tab
+                  // never ends up underneath it.
+                  if (hasCenter)
+                    const SizedBox(width: SliceNavBar._centerSize + 22),
+                  Expanded(child: _group(right)),
+                ],
+              ),
             ),
           ),
         ),
@@ -237,7 +246,9 @@ class _NavTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.violet : AppColors.muted;
+    final color = selected
+        ? Theme.of(context).colorScheme.primary
+        : Theme.of(context).colorScheme.onSurfaceVariant;
 
     return InkResponse(
       key: ValueKey('nav-${destination.id}'),
@@ -294,8 +305,8 @@ class _CenterButton extends StatelessWidget {
         child: Container(
           width: SliceNavBar._centerSize + 10,
           height: SliceNavBar._centerSize + 10,
-          decoration: const BoxDecoration(
-            color: AppColors.canvas,
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -303,11 +314,20 @@ class _CenterButton extends StatelessWidget {
               width: SliceNavBar._centerSize,
               height: SliceNavBar._centerSize,
               decoration: BoxDecoration(
-                gradient: AppColors.violetGradient,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.secondary,
+                  ],
+                ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.violet.withValues(alpha: 0.42),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.42),
                     blurRadius: 18,
                     offset: const Offset(0, 6),
                   ),

@@ -10,22 +10,72 @@ class GradeGpaScreen extends StatefulWidget {
 
 class _GradeGpaScreenState extends State<GradeGpaScreen> {
   final List<Map<String, dynamic>> _gradeScheme = [
-    {'range': '90 - 100%', 'grade': 'O (Outstanding)', 'gp': 10, 'result': 'Pass'},
+    {
+      'range': '90 - 100%',
+      'grade': 'O (Outstanding)',
+      'gp': 10,
+      'result': 'Pass',
+    },
     {'range': '80 - 89%', 'grade': 'A+ (Excellent)', 'gp': 9, 'result': 'Pass'},
     {'range': '70 - 79%', 'grade': 'A (Very Good)', 'gp': 8, 'result': 'Pass'},
     {'range': '60 - 69%', 'grade': 'B+ (Good)', 'gp': 7, 'result': 'Pass'},
-    {'range': '55 - 59%', 'grade': 'B (Above Average)', 'gp': 6, 'result': 'Pass'},
+    {
+      'range': '55 - 59%',
+      'grade': 'B (Above Average)',
+      'gp': 6,
+      'result': 'Pass',
+    },
     {'range': '50 - 54%', 'grade': 'C (Average)', 'gp': 5, 'result': 'Pass'},
     {'range': '45 - 49%', 'grade': 'P (Pass)', 'gp': 4, 'result': 'Pass'},
     {'range': '< 45%', 'grade': 'F (Fail)', 'gp': 0, 'result': 'Fail'},
   ];
 
   final List<Map<String, dynamic>> _sampleStudentResults = [
-    {'code': 'CS301', 'name': 'Data Structures', 'credits': 4, 'marks': 93, 'grade': 'O', 'gp': 10, 'earned': 40},
-    {'code': 'CS302', 'name': 'DBMS', 'credits': 4, 'marks': 82, 'grade': 'A+', 'gp': 9, 'earned': 36},
-    {'code': 'CS303', 'name': 'Operating Systems', 'credits': 3, 'marks': 75, 'grade': 'A', 'gp': 8, 'earned': 24},
-    {'code': 'CS304', 'name': 'Computer Networks', 'credits': 3, 'marks': 88, 'grade': 'A+', 'gp': 9, 'earned': 27},
-    {'code': 'CS305', 'name': 'Software Engineering', 'credits': 2, 'marks': 91, 'grade': 'O', 'gp': 10, 'earned': 20},
+    {
+      'code': 'CS301',
+      'name': 'Data Structures',
+      'credits': 4,
+      'marks': 93,
+      'grade': 'O',
+      'gp': 10,
+      'earned': 40,
+    },
+    {
+      'code': 'CS302',
+      'name': 'DBMS',
+      'credits': 4,
+      'marks': 82,
+      'grade': 'A+',
+      'gp': 9,
+      'earned': 36,
+    },
+    {
+      'code': 'CS303',
+      'name': 'Operating Systems',
+      'credits': 3,
+      'marks': 75,
+      'grade': 'A',
+      'gp': 8,
+      'earned': 24,
+    },
+    {
+      'code': 'CS304',
+      'name': 'Computer Networks',
+      'credits': 3,
+      'marks': 88,
+      'grade': 'A+',
+      'gp': 9,
+      'earned': 27,
+    },
+    {
+      'code': 'CS305',
+      'name': 'Software Engineering',
+      'credits': 2,
+      'marks': 91,
+      'grade': 'O',
+      'gp': 10,
+      'earned': 20,
+    },
   ];
 
   @override
@@ -49,7 +99,12 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
             children: [
               _buildTopBanner(isMobile),
               const SizedBox(height: 14),
-              _buildGpaCalculatorCard(gpa, totalCredits, totalPointsEarned, isMobile),
+              _buildGpaCalculatorCard(
+                gpa,
+                totalCredits,
+                totalPointsEarned,
+                isMobile,
+              ),
               const SizedBox(height: 16),
               if (isMobile) ...[
                 _buildStudentBreakdownContent(isMobile),
@@ -59,7 +114,10 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(flex: 3, child: _buildStudentBreakdownContent(isMobile)),
+                    Expanded(
+                      flex: 3,
+                      child: _buildStudentBreakdownContent(isMobile),
+                    ),
                     const SizedBox(width: 16),
                     Expanded(flex: 2, child: _buildGradeSchemeTable()),
                   ],
@@ -90,9 +148,15 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Grade & GPA Calculation Engine', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Grade & GPA Calculation Engine',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 2),
-                  const Text('Automated letter grade mapping and credit weightage product.', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+                  const Text(
+                    'Automated letter grade mapping and credit weightage product.',
+                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                  ),
                 ],
               ),
             ),
@@ -102,7 +166,12 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
     );
   }
 
-  Widget _buildGpaCalculatorCard(double gpa, int credits, int points, bool isMobile) {
+  Widget _buildGpaCalculatorCard(
+    double gpa,
+    int credits,
+    int points,
+    bool isMobile,
+  ) {
     String standing = 'First Class with Distinction';
     Color standingColor = Colors.green;
     if (gpa < 9.0 && gpa >= 7.5) {
@@ -133,7 +202,11 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
                   backgroundColor: standingColor,
                   child: Text(
                     gpa.toStringAsFixed(2),
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -141,8 +214,21 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(standing, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: standingColor)),
-                      Text('Earned Credits: $credits • Points: $points', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                      Text(
+                        standing,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: standingColor,
+                        ),
+                      ),
+                      Text(
+                        'Earned Credits: $credits • Points: $points',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.muted,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -167,7 +253,11 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
             backgroundColor: standingColor,
             child: Text(
               gpa.toStringAsFixed(2),
-              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(width: 20),
@@ -177,19 +267,38 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
               children: [
                 Row(
                   children: [
-                    const Text('Calculated Semester GPA: ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    Text(gpa.toStringAsFixed(2), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: standingColor)),
+                    const Text(
+                      'Calculated Semester GPA: ',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      gpa.toStringAsFixed(2),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: standingColor,
+                      ),
+                    ),
                     const SizedBox(width: 12),
                     Chip(
                       label: Text(standing),
                       backgroundColor: standingColor.withValues(alpha: 0.15),
                       side: BorderSide.none,
-                      labelStyle: TextStyle(color: standingColor, fontWeight: FontWeight.bold, fontSize: 11),
+                      labelStyle: TextStyle(
+                        color: standingColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text('Total Earned Credits: $credits | Points: $points | Equiv: ${(gpa * 10).toStringAsFixed(1)}%'),
+                Text(
+                  'Total Earned Credits: $credits | Points: $points | Equiv: ${(gpa * 10).toStringAsFixed(1)}%',
+                ),
               ],
             ),
           ),
@@ -210,7 +319,10 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
         children: [
           const Padding(
             padding: EdgeInsets.all(14),
-            child: Text('Student Grade Breakdown (Alex Johnson)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Student Grade Breakdown (Alex Johnson)',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
           ),
           if (isMobile) ...[
             ListView.separated(
@@ -228,15 +340,40 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('${r['code']} ${r['name']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                            Text('Credits: ${r['credits']} • Marks: ${r['marks']}%', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                            Text(
+                              '${r['code']} ${r['name']}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              'Credits: ${r['credits']} • Marks: ${r['marks']}%',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                        child: Text('${r['grade']} (${r['gp']} GP)', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${r['grade']} (${r['gp']} GP)',
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -258,16 +395,40 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
                 rows: _sampleStudentResults.map((r) {
                   return DataRow(
                     cells: [
-                      DataCell(Text('${r['code']} ${r['name']}', style: const TextStyle(fontWeight: FontWeight.w600))),
+                      DataCell(
+                        Text(
+                          '${r['code']} ${r['name']}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
                       DataCell(Text(r['credits'].toString())),
                       DataCell(Text('${r['marks']}%')),
-                      DataCell(Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                        child: Text(r['grade'], style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                      )),
+                      DataCell(
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            r['grade'],
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
                       DataCell(Text(r['gp'].toString())),
-                      DataCell(Text(r['earned'].toString(), style: const TextStyle(fontWeight: FontWeight.bold))),
+                      DataCell(
+                        Text(
+                          r['earned'].toString(),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     ],
                   );
                 }).toList(),
@@ -290,7 +451,10 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Institutional Grade Scheme', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const Text(
+            'Institutional Grade Scheme',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 10),
           ListView.separated(
             shrinkWrap: true,
@@ -302,9 +466,25 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
               return ListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                title: Text(g['grade'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                subtitle: Text('Range: ${g['range']}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
-                trailing: Text('GP: ${g['gp']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primary)),
+                title: Text(
+                  g['grade'],
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+                subtitle: Text(
+                  'Range: ${g['range']}',
+                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                ),
+                trailing: Text(
+                  'GP: ${g['gp']}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: AppColors.primary,
+                  ),
+                ),
               );
             },
           ),

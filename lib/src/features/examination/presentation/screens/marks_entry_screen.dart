@@ -10,7 +10,7 @@ class MarksEntryScreen extends StatefulWidget {
 
 class _MarksEntryScreenState extends State<MarksEntryScreen> {
   String _selectedSubject = 'CS301 Data Structures & Algorithms';
-  
+
   final List<Map<String, dynamic>> _marksData = [
     {
       'roll': '2026CS101',
@@ -89,7 +89,10 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
               children: [
                 Icon(Icons.edit_note, color: AppColors.primary, size: 24),
                 SizedBox(width: 8),
-                Text('Faculty Marks Entry Portal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(
+                  'Faculty Marks Entry Portal',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -97,11 +100,19 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
               initialValue: _selectedSubject,
               decoration: const InputDecoration(labelText: 'Assigned Subject'),
               isExpanded: true,
-              items: [
-                'CS301 Data Structures & Algorithms',
-                'CS302 Database Management Systems',
-                'CS303 Operating Systems',
-              ].map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
+              items:
+                  [
+                        'CS301 Data Structures & Algorithms',
+                        'CS302 Database Management Systems',
+                        'CS303 Operating Systems',
+                      ]
+                      .map(
+                        (s) => DropdownMenuItem(
+                          value: s,
+                          child: Text(s, overflow: TextOverflow.ellipsis),
+                        ),
+                      )
+                      .toList(),
               onChanged: (val) => setState(() => _selectedSubject = val!),
             ),
           ],
@@ -124,8 +135,14 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Secure Faculty Marks Entry Portal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text('Role: Subject Evaluator • Real-time validation checks active', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                Text(
+                  'Secure Faculty Marks Entry Portal',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'Role: Subject Evaluator • Real-time validation checks active',
+                  style: TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
               ],
             ),
           ),
@@ -135,11 +152,19 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
             child: DropdownButtonFormField<String>(
               initialValue: _selectedSubject,
               decoration: const InputDecoration(labelText: 'Assigned Subject'),
-              items: [
-                'CS301 Data Structures & Algorithms',
-                'CS302 Database Management Systems',
-                'CS303 Operating Systems',
-              ].map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
+              items:
+                  [
+                        'CS301 Data Structures & Algorithms',
+                        'CS302 Database Management Systems',
+                        'CS303 Operating Systems',
+                      ]
+                      .map(
+                        (s) => DropdownMenuItem(
+                          value: s,
+                          child: Text(s, overflow: TextOverflow.ellipsis),
+                        ),
+                      )
+                      .toList(),
               onChanged: (val) => setState(() => _selectedSubject = val!),
             ),
           ),
@@ -163,7 +188,11 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
           Expanded(
             child: Text(
               'Max IA = 30 | Max External = 70 | Outliers flagged at ±3σ',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.amber.shade900),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Colors.amber.shade900,
+              ),
             ),
           ),
         ],
@@ -189,14 +218,24 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Marks Entry Sheet (65 Students)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Marks Entry Sheet (65 Students)',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     if (!isMobile)
                       Row(
                         children: [
                           OutlinedButton.icon(
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Marks draft saved successfully!')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Marks draft saved successfully!',
+                                  ),
+                                ),
                               );
                             },
                             icon: const Icon(Icons.drafts_outlined, size: 16),
@@ -204,10 +243,16 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
                           ),
                           const SizedBox(width: 10),
                           FilledButton.icon(
-                            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                            ),
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Marks submitted for Verification!')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Marks submitted for Verification!',
+                                  ),
+                                ),
                               );
                             },
                             icon: const Icon(Icons.send),
@@ -225,24 +270,40 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
                         child: OutlinedButton.icon(
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Marks draft saved successfully!')),
+                              const SnackBar(
+                                content: Text(
+                                  'Marks draft saved successfully!',
+                                ),
+                              ),
                             );
                           },
                           icon: const Icon(Icons.drafts_outlined, size: 16),
-                          label: const Text('Save Draft', style: TextStyle(fontSize: 11)),
+                          label: const Text(
+                            'Save Draft',
+                            style: TextStyle(fontSize: 11),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: FilledButton.icon(
-                          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                          ),
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Marks submitted for Verification!')),
+                              const SnackBar(
+                                content: Text(
+                                  'Marks submitted for Verification!',
+                                ),
+                              ),
                             );
                           },
                           icon: const Icon(Icons.send, size: 16),
-                          label: const Text('Submit', style: TextStyle(fontSize: 11)),
+                          label: const Text(
+                            'Submit',
+                            style: TextStyle(fontSize: 11),
+                          ),
                         ),
                       ),
                     ],
@@ -267,13 +328,24 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(row['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          Text(
+                            row['name'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.5,
+                            ),
+                          ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: row['outlier']
                                   ? Colors.purple.withValues(alpha: 0.12)
-                                  : (row['total'] < 40 ? Colors.red.withValues(alpha: 0.12) : Colors.green.withValues(alpha: 0.12)),
+                                  : (row['total'] < 40
+                                        ? Colors.red.withValues(alpha: 0.12)
+                                        : Colors.green.withValues(alpha: 0.12)),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -281,7 +353,9 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
                               style: TextStyle(
                                 color: row['outlier']
                                     ? Colors.purple
-                                    : (row['total'] < 40 ? Colors.red : Colors.green),
+                                    : (row['total'] < 40
+                                          ? Colors.red
+                                          : Colors.green),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 10,
                               ),
@@ -289,7 +363,13 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
                           ),
                         ],
                       ),
-                      Text('Roll: ${row['roll']}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                      Text(
+                        'Roll: ${row['roll']}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.muted,
+                        ),
+                      ),
                       const SizedBox(height: 10),
                       Row(
                         children: [
@@ -297,12 +377,15 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
                             child: TextFormField(
                               initialValue: row['iaMarks'].toString(),
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'IA (30)'),
+                              decoration: const InputDecoration(
+                                labelText: 'IA (30)',
+                              ),
                               onChanged: (val) {
                                 final parsed = int.tryParse(val) ?? 0;
                                 setState(() {
                                   row['iaMarks'] = parsed;
-                                  row['total'] = row['iaMarks'] + row['extMarks'];
+                                  row['total'] =
+                                      row['iaMarks'] + row['extMarks'];
                                 });
                               },
                             ),
@@ -312,12 +395,15 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
                             child: TextFormField(
                               initialValue: row['extMarks'].toString(),
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'External (70)'),
+                              decoration: const InputDecoration(
+                                labelText: 'External (70)',
+                              ),
                               onChanged: (val) {
                                 final parsed = int.tryParse(val) ?? 0;
                                 setState(() {
                                   row['extMarks'] = parsed;
-                                  row['total'] = row['iaMarks'] + row['extMarks'];
+                                  row['total'] =
+                                      row['iaMarks'] + row['extMarks'];
                                 });
                               },
                             ),
@@ -325,8 +411,20 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
                           const SizedBox(width: 10),
                           Column(
                             children: [
-                              const Text('Total', style: TextStyle(fontSize: 10, color: AppColors.muted)),
-                              Text('${row['total']}/100', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              const Text(
+                                'Total',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                              Text(
+                                '${row['total']}/100',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -351,7 +449,12 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
                 rows: _marksData.map((row) {
                   return DataRow(
                     cells: [
-                      DataCell(Text(row['roll'], style: const TextStyle(fontWeight: FontWeight.bold))),
+                      DataCell(
+                        Text(
+                          row['roll'],
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
                       DataCell(Text(row['name'])),
                       DataCell(
                         SizedBox(
@@ -359,7 +462,12 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
                           child: TextFormField(
                             initialValue: row['iaMarks'].toString(),
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
+                            decoration: const InputDecoration(
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
+                            ),
                             onChanged: (val) {
                               final parsed = int.tryParse(val) ?? 0;
                               setState(() {
@@ -376,7 +484,12 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
                           child: TextFormField(
                             initialValue: row['extMarks'].toString(),
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
+                            decoration: const InputDecoration(
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
+                            ),
                             onChanged: (val) {
                               final parsed = int.tryParse(val) ?? 0;
                               setState(() {
@@ -387,26 +500,40 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
                           ),
                         ),
                       ),
-                      DataCell(Text('${row['total']} / 100', style: const TextStyle(fontWeight: FontWeight.bold))),
-                      DataCell(Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: row['outlier']
-                              ? Colors.purple.withValues(alpha: 0.12)
-                              : (row['total'] < 40 ? Colors.red.withValues(alpha: 0.12) : Colors.green.withValues(alpha: 0.12)),
-                          borderRadius: BorderRadius.circular(8),
+                      DataCell(
+                        Text(
+                          '${row['total']} / 100',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        child: Text(
-                          row['status'],
-                          style: TextStyle(
+                      ),
+                      DataCell(
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
                             color: row['outlier']
-                                ? Colors.purple
-                                : (row['total'] < 40 ? Colors.red : Colors.green),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
+                                ? Colors.purple.withValues(alpha: 0.12)
+                                : (row['total'] < 40
+                                      ? Colors.red.withValues(alpha: 0.12)
+                                      : Colors.green.withValues(alpha: 0.12)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            row['status'],
+                            style: TextStyle(
+                              color: row['outlier']
+                                  ? Colors.purple
+                                  : (row['total'] < 40
+                                        ? Colors.red
+                                        : Colors.green),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
                           ),
                         ),
-                      )),
+                      ),
                     ],
                   );
                 }).toList(),

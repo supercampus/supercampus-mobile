@@ -9,11 +9,13 @@ class GatepassRequestsScreen extends StatelessWidget {
   const GatepassRequestsScreen({
     super.key,
     required this.requests,
+    required this.workflow,
     required this.onApply,
     required this.onCancel,
   });
 
   final List<GatepassRequest> requests;
+  final GatepassWorkflowDefinition workflow;
   final VoidCallback onApply;
   final Future<void> Function(GatepassRequest request) onCancel;
 
@@ -54,7 +56,11 @@ class GatepassRequestsScreen extends StatelessWidget {
                 for (final request in requests)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: _RequestCard(request: request, onCancel: onCancel),
+                    child: _RequestCard(
+                      request: request,
+                      workflow: workflow,
+                      onCancel: onCancel,
+                    ),
                   ),
             ],
           ),
@@ -65,13 +71,24 @@ class GatepassRequestsScreen extends StatelessWidget {
 }
 
 class _RequestCard extends StatelessWidget {
-  const _RequestCard({required this.request, required this.onCancel});
+  const _RequestCard({
+    required this.request,
+    required this.workflow,
+    required this.onCancel,
+  });
 
   final GatepassRequest request;
+  final GatepassWorkflowDefinition workflow;
   final Future<void> Function(GatepassRequest request) onCancel;
 
   @override
   Widget build(BuildContext context) {
+    final completed =
+        workflow.states
+            .takeWhile((state) => state.id != request.workflowState)
+            .map((state) => state.id)
+            .toSet()
+          ..add(request.workflowState);
     return GatepassSurface(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -125,6 +142,20 @@ class _RequestCard extends StatelessWidget {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ],
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final state in workflow.states)
+                if (state.status != WorkflowStateStatus.draft)
+                  _WorkflowChip(
+                    label: state.label,
+                    active: state.id == request.workflowState,
+                    completed: completed.contains(state.id),
+                  ),
+            ],
+          ),
           if (request.status == ApprovalStatus.pending) ...[
             const SizedBox(height: 12),
             Align(
@@ -136,6 +167,43 @@ class _RequestCard extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _WorkflowChip extends StatelessWidget {
+  const _WorkflowChip({
+    required this.label,
+    required this.active,
+    required this.completed,
+  });
+
+  final String label;
+  final bool active;
+  final bool completed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final foreground = active
+        ? scheme.onPrimary
+        : completed
+        ? AppColors.gateBlue
+        : scheme.onSurfaceVariant;
+    final background = active
+        ? AppColors.gateBlue
+        : completed
+        ? AppColors.gateBlue.withValues(alpha: 0.1)
+        : scheme.surfaceContainerHighest;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Text(label, style: TextStyle(color: foreground, fontSize: 12)),
       ),
     );
   }

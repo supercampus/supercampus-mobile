@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
 
 /// Sparkle · search · bell, the strip that sits above everything on the home
 /// screen. The search field is a button rather than a live [TextField] — the
@@ -33,7 +32,9 @@ class HomeTopBar extends StatelessWidget {
         children: [
           _Sparkle(onTap: onSparkleTap),
           const SizedBox(width: 12),
-          Expanded(child: _SearchField(hint: hint, onTap: onSearchTap)),
+          Expanded(
+            child: _SearchField(hint: hint, onTap: onSearchTap),
+          ),
           const SizedBox(width: 8),
           _Bell(onTap: onAlertsTap, showDot: hasAlerts),
         ],
@@ -54,7 +55,7 @@ class _Sparkle extends StatelessWidget {
       tooltip: 'What matters now',
       onPressed: onTap,
       icon: const Icon(Icons.auto_awesome, size: 26),
-      color: AppColors.violet,
+      color: Theme.of(context).colorScheme.primary,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints.tightFor(width: 40, height: 40),
     );
@@ -70,7 +71,7 @@ class _SearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFEFF1F3),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(24),
       child: InkWell(
         key: const ValueKey('home-search'),
@@ -86,14 +87,18 @@ class _SearchField extends StatelessWidget {
                   hint,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.muted,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 14,
                     fontWeight: FontWeight.w300,
                   ),
                 ),
               ),
-              const Icon(Icons.search, size: 20, color: AppColors.muted),
+              Icon(
+                Icons.search,
+                size: 20,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(width: 14),
             ],
           ),
@@ -119,7 +124,7 @@ class _Bell extends StatelessWidget {
           tooltip: 'Alerts',
           onPressed: onTap,
           icon: const Icon(Icons.notifications_outlined, size: 26),
-          color: AppColors.violet,
+          color: Theme.of(context).colorScheme.primary,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints.tightFor(width: 40, height: 40),
         ),
@@ -133,7 +138,10 @@ class _Bell extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFE53935),
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.canvas, width: 1.5),
+                border: Border.all(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  width: 1.5,
+                ),
               ),
             ),
           ),

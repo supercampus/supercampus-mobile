@@ -54,9 +54,20 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(flex: 3, child: _buildRequirementsChecklist(isMobile)),
+                    Expanded(
+                      flex: 3,
+                      child: _buildRequirementsChecklist(isMobile),
+                    ),
                     const SizedBox(width: 16),
-                    Expanded(flex: 2, child: _buildCreditProgressCard(earned, requiredC, progress, isMobile)),
+                    Expanded(
+                      flex: 2,
+                      child: _buildCreditProgressCard(
+                        earned,
+                        requiredC,
+                        progress,
+                        isMobile,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -83,7 +94,10 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
               children: [
                 Icon(Icons.school, color: AppColors.primary, size: 24),
                 SizedBox(width: 8),
-                Text('Degree Audit Gatekeeper', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(
+                  'Degree Audit Gatekeeper',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -116,8 +130,14 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Automated Degree Audit Gatekeeper', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text('Verify academic progress, mandatory/elective credits, CGPA threshold, and clearance holds.', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                Text(
+                  'Automated Degree Audit Gatekeeper',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'Verify academic progress, mandatory/elective credits, CGPA threshold, and clearance holds.',
+                  style: TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
               ],
             ),
           ),
@@ -154,8 +174,18 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_auditResult['eligibilityDecision'], style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
-                Text('${_auditResult['name']} ($_searchRoll)', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                Text(
+                  _auditResult['eligibilityDecision'],
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  '${_auditResult['name']} ($_searchRoll)',
+                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                ),
               ],
             ),
           ),
@@ -166,12 +196,36 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
 
   Widget _buildRequirementsChecklist(bool isMobile) {
     final checks = [
-      {'title': 'Mandatory Core Courses', 'desc': 'All core subject credits earned (120/120)', 'status': true},
-      {'title': 'Elective Requirement', 'desc': 'Minimum elective credits earned (44/40)', 'status': true},
-      {'title': 'Total Credits Threshold', 'desc': 'Total credits >= Minimum (164/160)', 'status': true},
-      {'title': 'Minimum CGPA Check', 'desc': 'CGPA >= 5.00 Threshold (Current: 9.15)', 'status': true},
-      {'title': 'Disciplinary Clearance', 'desc': 'No active disciplinary holds on record', 'status': true},
-      {'title': 'Fee Clearance Check', 'desc': 'All institutional dues cleared', 'status': true},
+      {
+        'title': 'Mandatory Core Courses',
+        'desc': 'All core subject credits earned (120/120)',
+        'status': true,
+      },
+      {
+        'title': 'Elective Requirement',
+        'desc': 'Minimum elective credits earned (44/40)',
+        'status': true,
+      },
+      {
+        'title': 'Total Credits Threshold',
+        'desc': 'Total credits >= Minimum (164/160)',
+        'status': true,
+      },
+      {
+        'title': 'Minimum CGPA Check',
+        'desc': 'CGPA >= 5.00 Threshold (Current: 9.15)',
+        'status': true,
+      },
+      {
+        'title': 'Disciplinary Clearance',
+        'desc': 'No active disciplinary holds on record',
+        'status': true,
+      },
+      {
+        'title': 'Fee Clearance Check',
+        'desc': 'All institutional dues cleared',
+        'status': true,
+      },
     ];
 
     return Container(
@@ -184,7 +238,10 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Audit Component Verification', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const Text(
+            'Audit Component Verification',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 10),
           ListView.separated(
             shrinkWrap: true,
@@ -196,9 +253,22 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
               return ListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                leading: Icon((c['status'] as bool) ? Icons.check_circle : Icons.cancel, color: (c['status'] as bool) ? Colors.green : Colors.red, size: 18),
-                title: Text(c['title'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
-                subtitle: Text(c['desc'] as String, style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                leading: Icon(
+                  (c['status'] as bool) ? Icons.check_circle : Icons.cancel,
+                  color: (c['status'] as bool) ? Colors.green : Colors.red,
+                  size: 18,
+                ),
+                title: Text(
+                  c['title'] as String,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12.5,
+                  ),
+                ),
+                subtitle: Text(
+                  c['desc'] as String,
+                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                ),
               );
             },
           ),
@@ -207,7 +277,12 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
     );
   }
 
-  Widget _buildCreditProgressCard(int earned, int req, double progress, bool isMobile) {
+  Widget _buildCreditProgressCard(
+    int earned,
+    int req,
+    double progress,
+    bool isMobile,
+  ) {
     return Container(
       padding: EdgeInsets.all(isMobile ? 14 : 16),
       decoration: BoxDecoration(
@@ -218,7 +293,10 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Programme Credit Progress', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const Text(
+            'Programme Credit Progress',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 14),
           Center(
             child: Stack(
@@ -231,21 +309,35 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
                     value: progress,
                     strokeWidth: 10,
                     backgroundColor: Colors.grey.shade200,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
                   ),
                 ),
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('$earned / $req', style: TextStyle(fontSize: isMobile ? 15 : 18, fontWeight: FontWeight.bold)),
-                    const Text('Credits', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+                    Text(
+                      '$earned / $req',
+                      style: TextStyle(
+                        fontSize: isMobile ? 15 : 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Text(
+                      'Credits',
+                      style: TextStyle(fontSize: 11, color: AppColors.muted),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
           const SizedBox(height: 14),
-          const Text('Academic CGPA Overview', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          const Text(
+            'Academic CGPA Overview',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          ),
           const SizedBox(height: 4),
           LinearProgressIndicator(
             value: (_auditResult['cgpa'] as double) / 10.0,
@@ -254,7 +346,10 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
             minHeight: 8,
           ),
           const SizedBox(height: 4),
-          Text('CGPA: ${_auditResult['cgpa']} / 10.00', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+          Text(
+            'CGPA: ${_auditResult['cgpa']} / 10.00',
+            style: const TextStyle(fontSize: 11, color: AppColors.muted),
+          ),
         ],
       ),
     );

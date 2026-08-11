@@ -36,11 +36,12 @@ class MockPermissionsRepository implements PermissionsRepository {
             'publication': ['read'],
           },
         },
-        ModuleCatalog.attendance: {
+        ModuleCatalog.academics: {
           'scope': 'own',
           'features': {
-            'swipe': ['read'],
-            'leave': ['create', 'read'],
+            'attendance': ['read'],
+            'marks': ['read'],
+            'analysis': ['read'],
           },
         },
         ModuleCatalog.canteen: {

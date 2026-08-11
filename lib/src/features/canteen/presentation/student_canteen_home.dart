@@ -214,21 +214,6 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
           }),
           icon: Icon(_isSearching ? Icons.close : Icons.search),
         ),
-        IconButton(
-          tooltip: 'Open profile',
-          onPressed: widget.onOpenProfile,
-          icon: CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.amberSoft,
-            child: Text(
-              widget.store.user.initials,
-              style: const TextStyle(
-                color: AppColors.ink,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }

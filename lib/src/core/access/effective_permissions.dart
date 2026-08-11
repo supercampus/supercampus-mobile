@@ -22,15 +22,18 @@ class EffectivePermissions {
   const EffectivePermissions({
     required Set<String> grants,
     Map<String, PermissionScope> scopes = const {},
+    this.tenantBrand = const {},
   }) : _grants = grants,
        _scopes = scopes;
 
   const EffectivePermissions.empty()
     : _grants = const {},
-      _scopes = const {};
+      _scopes = const {},
+      tenantBrand = const {};
 
   final Set<String> _grants;
   final Map<String, PermissionScope> _scopes;
+  final Map<String, dynamic> tenantBrand;
 
   /// Accepts either shape the admin console may emit.
   ///
@@ -86,14 +89,28 @@ class EffectivePermissions {
       }
     }
 
-    return EffectivePermissions(grants: grants, scopes: scopes);
+    final rawBrand = json['tenantBrand'];
+    return EffectivePermissions(
+      grants: grants,
+      scopes: scopes,
+      tenantBrand: rawBrand is Map
+          ? Map<String, dynamic>.from(rawBrand)
+          : const {},
+    );
   }
 
   /// The single authorization predicate. Everything else is sugar over it.
-  bool can(String moduleId, String featureId, String action) =>
-      _grants.contains('$moduleId.$featureId.$action');
+  bool can(String moduleId, String featureId, String action) {
+    final permission = '$moduleId.$featureId.$action';
+    return _grants.contains('*') ||
+        _grants.contains(permission) ||
+        _grants.contains('$moduleId.*') ||
+        _grants.contains('$moduleId.$featureId.*');
+  }
 
   bool canSeeModule(String moduleId) =>
+      _grants.contains('*') ||
+      _grants.contains('$moduleId.*') ||
       _grants.any((g) => g.startsWith('$moduleId.'));
 
   PermissionScope scopeFor(String moduleId) =>
@@ -121,6 +138,7 @@ class EffectivePermissions {
     var writes = false;
     var any = false;
     for (final g in _grants) {
+      if (g == '*' || g == '$moduleId.*') return AccessLevel.full;
       if (!g.startsWith(prefix)) continue;
       any = true;
       final action = g.split('.').last;

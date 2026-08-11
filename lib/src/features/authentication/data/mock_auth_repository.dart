@@ -22,7 +22,9 @@ class MockAuthRepository implements AuthRepository {
         .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
         .join(' ');
 
-    if (displayName.isEmpty || displayName.toLowerCase() == role.name) {
+    if (role == UserRole.student) {
+      displayName = 'Vishnu Sudharshan';
+    } else if (displayName.isEmpty || displayName.toLowerCase() == role.name) {
       displayName = role.defaultName;
     }
 

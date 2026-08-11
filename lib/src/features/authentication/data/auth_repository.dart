@@ -12,15 +12,6 @@ extension UserRoleExtension on UserRole {
     UserRole.admin => 'Administrator',
   };
 
-  String get defaultEmail => switch (this) {
-    UserRole.student => 'student@supercampus.edu',
-    UserRole.security => 'security@supercampus.edu',
-    UserRole.parent => 'parent@supercampus.edu',
-    UserRole.staff => 'faculty@supercampus.edu',
-    UserRole.timetableAllocator => 'allocator@supercampus.edu',
-    UserRole.admin => 'admin@supercampus.edu',
-  };
-
   String get defaultName => switch (this) {
     UserRole.student => 'Alex Johnson',
     UserRole.security => 'Officer R. Vance',

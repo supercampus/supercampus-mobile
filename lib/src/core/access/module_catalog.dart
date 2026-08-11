@@ -27,6 +27,8 @@ extension PermissionScopeX on PermissionScope {
   };
 
   static PermissionScope parse(String? raw) => switch (raw) {
+    'all' => PermissionScope.institution,
+    'assigned' => PermissionScope.section,
     'section' => PermissionScope.section,
     'department' => PermissionScope.department,
     'institution' => PermissionScope.institution,
@@ -460,6 +462,21 @@ abstract final class ModuleCatalog {
       color: Color(0xFF4A4E9C),
       status: ModuleStatus.available,
       features: [
+        FeatureDescriptor(
+          id: 'attendance',
+          label: 'Attendance',
+          actions: {ModuleActions.read},
+        ),
+        FeatureDescriptor(
+          id: 'marks',
+          label: 'Marks',
+          actions: {ModuleActions.read},
+        ),
+        FeatureDescriptor(
+          id: 'analysis',
+          label: 'Analysis',
+          actions: {ModuleActions.read},
+        ),
         FeatureDescriptor(
           id: 'programme',
           label: 'Programmes',

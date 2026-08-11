@@ -12,14 +12,46 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
   String _selectedReport = 'Examination Schedule';
 
   final List<Map<String, String>> _reportsList = [
-    {'name': 'Examination Schedule', 'desc': 'Date-wise exam timetable export', 'formats': 'PDF, Excel'},
-    {'name': 'Student Eligibility', 'desc': 'Eligible / Ineligible student roster', 'formats': 'Excel, PDF'},
-    {'name': 'Marks Summary', 'desc': 'Subject-wise marks distribution grid', 'formats': 'Excel, CSV'},
-    {'name': 'Moderation Summary', 'desc': 'Grace marks & scaling audit log', 'formats': 'Excel, PDF'},
-    {'name': 'Pass/Fail Analysis', 'desc': 'Programme & subject-wise pass rates', 'formats': 'PDF, Chart'},
-    {'name': 'Grade Distribution', 'desc': 'Histogram breakdown of letter grades', 'formats': 'PDF, Chart'},
-    {'name': 'GPA/CGPA Analysis', 'desc': 'Class ranking & academic standing report', 'formats': 'Excel, PDF'},
-    {'name': 'Degree Audit Report', 'desc': 'Pending degree requirements by student', 'formats': 'Excel, PDF'},
+    {
+      'name': 'Examination Schedule',
+      'desc': 'Date-wise exam timetable export',
+      'formats': 'PDF, Excel',
+    },
+    {
+      'name': 'Student Eligibility',
+      'desc': 'Eligible / Ineligible student roster',
+      'formats': 'Excel, PDF',
+    },
+    {
+      'name': 'Marks Summary',
+      'desc': 'Subject-wise marks distribution grid',
+      'formats': 'Excel, CSV',
+    },
+    {
+      'name': 'Moderation Summary',
+      'desc': 'Grace marks & scaling audit log',
+      'formats': 'Excel, PDF',
+    },
+    {
+      'name': 'Pass/Fail Analysis',
+      'desc': 'Programme & subject-wise pass rates',
+      'formats': 'PDF, Chart',
+    },
+    {
+      'name': 'Grade Distribution',
+      'desc': 'Histogram breakdown of letter grades',
+      'formats': 'PDF, Chart',
+    },
+    {
+      'name': 'GPA/CGPA Analysis',
+      'desc': 'Class ranking & academic standing report',
+      'formats': 'Excel, PDF',
+    },
+    {
+      'name': 'Degree Audit Report',
+      'desc': 'Pending degree requirements by student',
+      'formats': 'Excel, PDF',
+    },
   ];
 
   @override
@@ -45,7 +77,10 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(flex: 2, child: _buildReportTemplateSelector(isMobile)),
+                    Expanded(
+                      flex: 2,
+                      child: _buildReportTemplateSelector(isMobile),
+                    ),
                     const SizedBox(width: 16),
                     Expanded(flex: 3, child: _buildReportPreviewCard(isMobile)),
                   ],
@@ -70,15 +105,25 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
         padding: EdgeInsets.all(isMobile ? 12 : 16),
         child: Row(
           children: [
-            const Icon(Icons.assessment_outlined, color: AppColors.primary, size: 28),
+            const Icon(
+              Icons.assessment_outlined,
+              color: AppColors.primary,
+              size: 28,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Reporting & Export Engine', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Reporting & Export Engine',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 2),
-                  const Text('Extract institutional compliance reports, marks grids, and degree analytics.', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+                  const Text(
+                    'Extract institutional compliance reports, marks grids, and degree analytics.',
+                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                  ),
                 ],
               ),
             ),
@@ -98,7 +143,11 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.filter_alt_outlined, color: AppColors.muted, size: 18),
+          const Icon(
+            Icons.filter_alt_outlined,
+            color: AppColors.muted,
+            size: 18,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: SingleChildScrollView(
@@ -139,7 +188,10 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Available Report Templates', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const Text(
+            'Available Report Templates',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 10),
           ListView.separated(
             shrinkWrap: true,
@@ -154,9 +206,24 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 6),
                 selected: isSelected,
                 selectedTileColor: AppColors.primary.withValues(alpha: 0.1),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                title: Text(r['name']!, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.w600, fontSize: 12.5, color: isSelected ? AppColors.primary : AppColors.ink)),
-                subtitle: Text(r['desc']!, style: const TextStyle(fontSize: 10.5, color: AppColors.muted)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                title: Text(
+                  r['name']!,
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    fontSize: 12.5,
+                    color: isSelected ? AppColors.primary : AppColors.ink,
+                  ),
+                ),
+                subtitle: Text(
+                  r['desc']!,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    color: AppColors.muted,
+                  ),
+                ),
                 onTap: () => setState(() => _selectedReport = r['name']!),
               );
             },
@@ -179,19 +246,37 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
         children: [
           Row(
             children: [
-              Expanded(child: Text(_selectedReport, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              Expanded(
+                child: Text(
+                  _selectedReport,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               OutlinedButton.icon(
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Exporting Report to Excel...')),
+                    const SnackBar(
+                      content: Text('Exporting Report to Excel...'),
+                    ),
                   );
                 },
-                icon: const Icon(Icons.table_chart, size: 14, color: Colors.green),
+                icon: const Icon(
+                  Icons.table_chart,
+                  size: 14,
+                  color: Colors.green,
+                ),
                 label: const Text('Excel', style: TextStyle(fontSize: 11)),
               ),
               const SizedBox(width: 6),
               FilledButton.icon(
-                style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                ),
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Exporting Report to PDF...')),
@@ -216,9 +301,18 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
               children: [
                 const Icon(Icons.table_rows, size: 40, color: AppColors.muted),
                 const SizedBox(height: 10),
-                Text('Data Ready for $_selectedReport', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                Text(
+                  'Data Ready for $_selectedReport',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                const Text('65 Records Loaded • Autumn Semester 2026', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+                const Text(
+                  '65 Records Loaded • Autumn Semester 2026',
+                  style: TextStyle(fontSize: 11, color: AppColors.muted),
+                ),
               ],
             ),
           ),

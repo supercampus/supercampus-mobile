@@ -10,7 +10,8 @@ class MergedMarksResultsScreen extends StatefulWidget {
   const MergedMarksResultsScreen({super.key});
 
   @override
-  State<MergedMarksResultsScreen> createState() => _MergedMarksResultsScreenState();
+  State<MergedMarksResultsScreen> createState() =>
+      _MergedMarksResultsScreenState();
 }
 
 class _MergedMarksResultsScreenState extends State<MergedMarksResultsScreen> {
@@ -61,7 +62,8 @@ class _MergedMarksResultsScreenState extends State<MergedMarksResultsScreen> {
                     ),
                   ],
                   selected: {_selectedSection},
-                  onSelectionChanged: (set) => setState(() => _selectedSection = set.first),
+                  onSelectionChanged: (set) =>
+                      setState(() => _selectedSection = set.first),
                 ),
               ),
             ),

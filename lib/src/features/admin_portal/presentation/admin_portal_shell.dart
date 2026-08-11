@@ -35,7 +35,7 @@ class _AdminPortalShellState extends State<AdminPortalShell> {
       const _AdminEmergencyPage(),
     ];
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: IndexedStack(index: _selected, children: pages),
       ),

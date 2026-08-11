@@ -41,7 +41,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
       _workOrderList(),
     ];
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: const Color(0xFF8A4B20),
         foregroundColor: Colors.white,
@@ -58,28 +58,6 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
         ],
       ),
       body: IndexedStack(index: _tab, children: pages),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (value) => setState(() => _tab = value),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.storefront_outlined),
-            label: 'Vendors',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            label: 'Orders',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.payments_outlined),
-            label: 'Payments',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.build_outlined),
-            label: 'Work orders',
-          ),
-        ],
-      ),
     );
   }
 

@@ -104,13 +104,16 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: visitPersonCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Person/Dept to Visit'),
+                decoration: const InputDecoration(
+                  labelText: 'Person/Dept to Visit',
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: purposeCtrl,
-                decoration: const InputDecoration(labelText: 'Purpose of Visit'),
+                decoration: const InputDecoration(
+                  labelText: 'Purpose of Visit',
+                ),
               ),
             ],
           ),
@@ -129,7 +132,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                 final newLog = VisitorPassLog(
                   id: 'VIS-${DateTime.now().millisecondsSinceEpoch % 1000}',
                   visitorName: nameCtrl.text,
-                  phone: phoneCtrl.text.isEmpty ? '+1 555-0000' : phoneCtrl.text,
+                  phone: phoneCtrl.text.isEmpty
+                      ? '+1 555-0000'
+                      : phoneCtrl.text,
                   personToVisit: visitPersonCtrl.text.isEmpty
                       ? 'Administration'
                       : visitPersonCtrl.text,
@@ -148,7 +153,8 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                        'Visitor ${newLog.visitorName} issued badge ${newLog.badgeNumber}'),
+                      'Visitor ${newLog.visitorName} issued badge ${newLog.badgeNumber}',
+                    ),
                   ),
                 );
               }
@@ -226,35 +232,6 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
           _buildSecurityAlertsTab(),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentTab,
-        onDestinationSelected: (index) => setState(() => _currentTab = index),
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.qr_code_scanner),
-            label: 'Gate Verify',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              label: Text('${_activeOutpasses.length}'),
-              child: const Icon(Icons.exit_to_app),
-            ),
-            label: 'Active Passes',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              label: Text(
-                  '${_visitorLogs.where((v) => v.isCheckedIn).length}'),
-              child: const Icon(Icons.badge_outlined),
-            ),
-            label: 'Visitors',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.warning_amber_rounded),
-            label: 'Emergency Desk',
-          ),
-        ],
-      ),
     );
   }
 
@@ -281,8 +258,11 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.qr_code_scanner,
-                              color: Color(0xFFD9383A), size: 28),
+                          Icon(
+                            Icons.qr_code_scanner,
+                            color: Color(0xFFD9383A),
+                            size: 28,
+                          ),
                           SizedBox(width: 10),
                           Expanded(
                             child: Column(
@@ -298,7 +278,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                                 Text(
                                   'Scan QR payload or enter Gate Pass ID / Roll Number',
                                   style: TextStyle(
-                                      fontSize: 12, color: AppColors.muted),
+                                    fontSize: 12,
+                                    color: AppColors.muted,
+                                  ),
                                 ),
                               ],
                             ),
@@ -324,7 +306,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                             style: FilledButton.styleFrom(
                               backgroundColor: const Color(0xFF1E293B),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 16),
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
                             ),
                             onPressed: _isSearching
                                 ? null
@@ -356,8 +340,11 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                         spacing: 8,
                         children: [
                           ActionChip(
-                            avatar: const Icon(Icons.check_circle,
-                                size: 16, color: Colors.green),
+                            avatar: const Icon(
+                              Icons.check_circle,
+                              size: 16,
+                              color: Colors.green,
+                            ),
                             label: const Text('Valid Pass (Alex)'),
                             onPressed: () {
                               _lookupController.text = 'GP-2026-881';
@@ -365,8 +352,11 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                             },
                           ),
                           ActionChip(
-                            avatar: const Icon(Icons.timer_off,
-                                size: 16, color: Colors.amber),
+                            avatar: const Icon(
+                              Icons.timer_off,
+                              size: 16,
+                              color: Colors.amber,
+                            ),
                             label: const Text('Expired Pass (Rohan)'),
                             onPressed: () {
                               _lookupController.text = 'GP-EXPIRED';
@@ -374,8 +364,11 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                             },
                           ),
                           ActionChip(
-                            avatar: const Icon(Icons.block,
-                                size: 16, color: Colors.red),
+                            avatar: const Icon(
+                              Icons.block,
+                              size: 16,
+                              color: Colors.red,
+                            ),
                             label: const Text('Restricted Pass (Vikram)'),
                             onPressed: () {
                               _lookupController.text = 'GP-RESTRICT';
@@ -402,25 +395,25 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
   Widget _buildVerificationCard(GateVerificationResult res) {
     final (statusColor, statusIcon, statusTitle) = switch (res.status) {
       PassVerificationStatus.valid => (
-          const Color(0xFF2E7D32),
-          Icons.verified,
-          'ENTRY / EXIT APPROVED'
-        ),
+        const Color(0xFF2E7D32),
+        Icons.verified,
+        'ENTRY / EXIT APPROVED',
+      ),
       PassVerificationStatus.expired => (
-          Colors.orange.shade800,
-          Icons.error_outline,
-          'EXPIRED GATE PASS'
-        ),
+        Colors.orange.shade800,
+        Icons.error_outline,
+        'EXPIRED GATE PASS',
+      ),
       PassVerificationStatus.restricted => (
-          const Color(0xFFD9383A),
-          Icons.block,
-          'RESTRICTED / BLOCKED PASS'
-        ),
+        const Color(0xFFD9383A),
+        Icons.block,
+        'RESTRICTED / BLOCKED PASS',
+      ),
       PassVerificationStatus.invalid => (
-          Colors.red.shade900,
-          Icons.cancel,
-          'INVALID CODE'
-        ),
+        Colors.red.shade900,
+        Icons.cancel,
+        'INVALID CODE',
+      ),
     };
 
     return Card(
@@ -436,8 +429,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             decoration: BoxDecoration(
               color: statusColor,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(14)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(14),
+              ),
             ),
             child: Row(
               children: [
@@ -547,8 +541,8 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                             foregroundColor: const Color(0xFF2E7D32),
                             side: const BorderSide(color: Color(0xFF2E7D32)),
                           ),
-                          onPressed: () => _approveGateMovement(
-                              res.passId, 'OUTPASS EXIT'),
+                          onPressed: () =>
+                              _approveGateMovement(res.passId, 'OUTPASS EXIT'),
                           icon: const Icon(Icons.logout),
                           label: const Text('Log Student Exit'),
                         ),
@@ -560,8 +554,8 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             backgroundColor: const Color(0xFF2E7D32),
                           ),
-                          onPressed: () => _approveGateMovement(
-                              res.passId, 'OUTPASS ENTRY'),
+                          onPressed: () =>
+                              _approveGateMovement(res.passId, 'OUTPASS ENTRY'),
                           icon: const Icon(Icons.login),
                           label: const Text('Log Student Entry'),
                         ),
@@ -580,7 +574,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                     child: const Text(
                       'Action Required: Inform student to contact Warden / Chief Warden for clearance.',
                       style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w500),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -686,12 +682,16 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                             Text(
                               pass.studentName,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.w500, fontSize: 15),
+                                fontWeight: FontWeight.w500,
+                                fontSize: 15,
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: pass.isOverdue
                                     ? const Color(0xFFD9383A)
@@ -713,7 +713,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                         Text(
                           '${pass.rollNumber} • ${pass.passType} to ${pass.destination}',
                           style: const TextStyle(
-                              fontSize: 12, color: AppColors.muted),
+                            fontSize: 12,
+                            color: AppColors.muted,
+                          ),
                         ),
                       ],
                     ),
@@ -801,18 +803,24 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                         Text(
                           log.visitorName,
                           style: const TextStyle(
-                              fontWeight: FontWeight.w500, fontSize: 15),
+                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           'Visiting: ${log.personToVisit} (${log.relationship})',
                           style: const TextStyle(
-                              fontSize: 12, color: AppColors.muted),
+                            fontSize: 12,
+                            color: AppColors.muted,
+                          ),
                         ),
                         Text(
                           'Purpose: ${log.purpose} • Phone: ${log.phone}',
                           style: const TextStyle(
-                              fontSize: 11, color: AppColors.muted),
+                            fontSize: 11,
+                            color: AppColors.muted,
+                          ),
                         ),
                       ],
                     ),
@@ -827,8 +835,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                         _refreshData();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content:
-                                Text('Visitor ${log.visitorName} checked out.'),
+                            content: Text(
+                              'Visitor ${log.visitorName} checked out.',
+                            ),
                           ),
                         );
                       },
@@ -837,7 +846,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                   ] else ...[
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade200,
                         borderRadius: BorderRadius.circular(6),
@@ -845,7 +856,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                       child: const Text(
                         'Checked Out',
                         style: TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.w500),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
@@ -900,7 +913,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                       Text(
                         'Trigger instant campus perimeter alert or gate lockdown.',
                         style: TextStyle(
-                            fontSize: 12, color: Color(0xFFBE123C)),
+                          fontSize: 12,
+                          color: Color(0xFFBE123C),
+                        ),
                       ),
                     ],
                   ),
@@ -941,14 +956,18 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
             child: ListTile(
               leading: const CircleAvatar(
                 backgroundColor: Color(0xFFF1F5F9),
-                child: Icon(Icons.notifications_active_outlined,
-                    color: Color(0xFF475569)),
+                child: Icon(
+                  Icons.notifications_active_outlined,
+                  color: Color(0xFF475569),
+                ),
               ),
               title: Text(
                 alert.title,
                 style: const TextStyle(fontWeight: FontWeight.w500),
               ),
-              subtitle: Text('${alert.description}\nLocation: ${alert.location}'),
+              subtitle: Text(
+                '${alert.description}\nLocation: ${alert.location}',
+              ),
               trailing: Text(
                 alert.severity,
                 style: TextStyle(

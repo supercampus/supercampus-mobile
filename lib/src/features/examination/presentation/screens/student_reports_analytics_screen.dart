@@ -40,12 +40,17 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
                   children: [
                     Expanded(flex: 3, child: _buildGpaTrendCard(isMobile)),
                     const SizedBox(width: 16),
-                    Expanded(flex: 2, child: _buildInternalVsExternalCard(isMobile)),
+                    Expanded(
+                      flex: 2,
+                      child: _buildInternalVsExternalCard(isMobile),
+                    ),
                   ],
                 ),
               ],
               const SizedBox(height: 16),
               _buildSubjectBreakdownCard(isMobile),
+              const SizedBox(height: 18),
+              _buildDownloadsCard(context),
             ],
           ),
         );
@@ -70,7 +75,11 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
               color: const Color(0xFF1B5E20).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.analytics, color: Color(0xFF1B5E20), size: 28),
+            child: const Icon(
+              Icons.analytics,
+              color: Color(0xFF1B5E20),
+              size: 28,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -78,8 +87,14 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isParent ? "$studentName's Academic Report" : 'My Performance Analytics',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.ink),
+                  isParent
+                      ? "$studentName's Academic Report"
+                      : 'My Performance Analytics',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.ink,
+                  ),
                 ),
                 Text(
                   'Roll: $rollNo • B.Tech Computer Science (Sem 5)',
@@ -88,27 +103,112 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
               ],
             ),
           ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1B5E20),
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 14, vertical: 8),
-            ),
-            onPressed: () {},
-            icon: const Icon(Icons.picture_as_pdf, size: 16),
-            label: Text(isMobile ? 'PDF' : 'Download PDF', style: const TextStyle(fontSize: 12)),
-          ),
         ],
       ),
     );
   }
 
+  Widget _buildDownloadsCard(BuildContext context) {
+    final reports = [
+      ('Semester marksheet', Icons.grade_outlined),
+      ('Attendance report', Icons.fact_check_outlined),
+      ('GPA / CGPA transcript', Icons.insights_outlined),
+      ('Subject performance analysis', Icons.analytics_outlined),
+      ('Academic progress summary', Icons.timeline_outlined),
+    ];
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Download academic reports',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Available inside the report section for offline use.',
+              style: TextStyle(fontSize: 11, color: AppColors.muted),
+            ),
+            const SizedBox(height: 10),
+            for (final report in reports)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(report.$2, color: AppColors.primary),
+                title: Text(report.$1, style: const TextStyle(fontSize: 13)),
+                trailing: Wrap(
+                  spacing: 6,
+                  children: [
+                    _downloadButton(
+                      context,
+                      report.$1,
+                      'PDF',
+                      Icons.picture_as_pdf_outlined,
+                    ),
+                    _downloadButton(
+                      context,
+                      report.$1,
+                      'Word',
+                      Icons.description_outlined,
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _downloadButton(
+    BuildContext context,
+    String report,
+    String format,
+    IconData icon,
+  ) => OutlinedButton.icon(
+    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$report ($format) download started')),
+    ),
+    icon: Icon(icon, size: 14),
+    label: Text(format, style: const TextStyle(fontSize: 10)),
+    style: OutlinedButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      minimumSize: Size.zero,
+    ),
+  );
+
   Widget _buildOverallSummaryGrid(bool isMobile) {
     final stats = [
-      {'title': 'Cumulative CGPA', 'val': '9.15 / 10.0', 'sub': 'Rank #3 in Class', 'icon': Icons.stars, 'color': Colors.green},
-      {'title': 'Current Sem GPA', 'val': '9.25', 'sub': 'Semester 5', 'icon': Icons.grade, 'color': Colors.blue},
-      {'title': 'Total Credits', 'val': '164 Earned', 'sub': 'Required: 160', 'icon': Icons.school, 'color': Colors.purple},
-      {'title': 'Pass Percentage', 'val': '100%', 'sub': '0 Backlogs', 'icon': Icons.verified, 'color': Colors.teal},
+      {
+        'title': 'Cumulative CGPA',
+        'val': '9.15 / 10.0',
+        'sub': 'Rank #3 in Class',
+        'icon': Icons.stars,
+        'color': Colors.green,
+      },
+      {
+        'title': 'Current Sem GPA',
+        'val': '9.25',
+        'sub': 'Semester 5',
+        'icon': Icons.grade,
+        'color': Colors.blue,
+      },
+      {
+        'title': 'Total Credits',
+        'val': '164 Earned',
+        'sub': 'Required: 160',
+        'icon': Icons.school,
+        'color': Colors.purple,
+      },
+      {
+        'title': 'Pass Percentage',
+        'val': '100%',
+        'sub': '0 Backlogs',
+        'icon': Icons.verified,
+        'color': Colors.teal,
+      },
     ];
 
     if (isMobile) {
@@ -124,7 +224,16 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
     }
 
     return Row(
-      children: stats.map((s) => Expanded(child: Padding(padding: const EdgeInsets.only(right: 12), child: _buildStatCard(s)))).toList(),
+      children: stats
+          .map(
+            (s) => Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: _buildStatCard(s),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -145,12 +254,29 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
             children: [
               Icon(s['icon'] as IconData, color: color, size: 18),
               const SizedBox(width: 6),
-              Expanded(child: Text(s['title'] as String, style: const TextStyle(fontSize: 11, color: AppColors.muted), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              Expanded(
+                child: Text(
+                  s['title'] as String,
+                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(s['val'] as String, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-          Text(s['sub'] as String, style: const TextStyle(fontSize: 10, color: AppColors.muted)),
+          Text(
+            s['val'] as String,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            s['sub'] as String,
+            style: const TextStyle(fontSize: 10, color: AppColors.muted),
+          ),
         ],
       ),
     );
@@ -175,7 +301,10 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('GPA & CGPA Trend Across Semesters', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const Text(
+            'GPA & CGPA Trend Across Semesters',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           Column(
             children: sems.map((s) {
@@ -184,7 +313,16 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   children: [
-                    SizedBox(width: 50, child: Text(s['sem'] as String, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600))),
+                    SizedBox(
+                      width: 50,
+                      child: Text(
+                        s['sem'] as String,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                     Expanded(
                       child: LinearProgressIndicator(
                         value: gpa / 10.0,
@@ -195,7 +333,13 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Text(gpa.toStringAsFixed(2), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text(
+                      gpa.toStringAsFixed(2),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -217,7 +361,10 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Internal vs External Marks (Sem 5)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const Text(
+            'Internal vs External Marks (Sem 5)',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           _buildCompRow('CS301 Data Structures', 28, 30, 65, 70),
           _buildCompRow('CS302 Database Systems', 24, 30, 58, 70),
@@ -233,7 +380,12 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(sub, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(
+            sub,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           const SizedBox(height: 2),
           Row(
             children: [
@@ -247,7 +399,10 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text('IA: $ia/$iaMax | Ext: $ext/$extMax', style: const TextStyle(fontSize: 10, color: AppColors.muted)),
+              Text(
+                'IA: $ia/$iaMax | Ext: $ext/$extMax',
+                style: const TextStyle(fontSize: 10, color: AppColors.muted),
+              ),
             ],
           ),
         ],
@@ -257,10 +412,42 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
 
   Widget _buildSubjectBreakdownCard(bool isMobile) {
     final subjects = [
-      {'code': 'CS301', 'name': 'Data Structures & Algorithms', 'credits': 4, 'ia': '28/30', 'ext': '65/70', 'total': '93/100', 'grade': 'O'},
-      {'code': 'CS302', 'name': 'Database Management Systems', 'credits': 4, 'ia': '24/30', 'ext': '58/70', 'total': '82/100', 'grade': 'A+'},
-      {'code': 'CS303', 'name': 'Operating Systems', 'credits': 3, 'ia': '26/30', 'ext': '60/70', 'total': '86/100', 'grade': 'A+'},
-      {'code': 'CS304', 'name': 'Computer Networks', 'credits': 3, 'ia': '27/30', 'ext': '61/70', 'total': '88/100', 'grade': 'A+'},
+      {
+        'code': 'CS301',
+        'name': 'Data Structures & Algorithms',
+        'credits': 4,
+        'ia': '28/30',
+        'ext': '65/70',
+        'total': '93/100',
+        'grade': 'O',
+      },
+      {
+        'code': 'CS302',
+        'name': 'Database Management Systems',
+        'credits': 4,
+        'ia': '24/30',
+        'ext': '58/70',
+        'total': '82/100',
+        'grade': 'A+',
+      },
+      {
+        'code': 'CS303',
+        'name': 'Operating Systems',
+        'credits': 3,
+        'ia': '26/30',
+        'ext': '60/70',
+        'total': '86/100',
+        'grade': 'A+',
+      },
+      {
+        'code': 'CS304',
+        'name': 'Computer Networks',
+        'credits': 3,
+        'ia': '27/30',
+        'ext': '61/70',
+        'total': '88/100',
+        'grade': 'A+',
+      },
     ];
 
     return Container(
@@ -273,7 +460,10 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Subject-wise Performance Breakdown', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const Text(
+            'Subject-wise Performance Breakdown',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 10),
           if (isMobile) ...[
             ListView.separated(
@@ -291,15 +481,40 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('${s['code']} ${s['name']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
-                            Text('IA: ${s['ia']} • Ext: ${s['ext']} • Total: ${s['total']}', style: const TextStyle(fontSize: 10.5, color: AppColors.muted)),
+                            Text(
+                              '${s['code']} ${s['name']}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                            Text(
+                              'IA: ${s['ia']} • Ext: ${s['ext']} • Total: ${s['total']}',
+                              style: const TextStyle(
+                                fontSize: 10.5,
+                                color: AppColors.muted,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                        child: Text(s['grade'] as String, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          s['grade'] as String,
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -321,16 +536,40 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
                 rows: subjects.map((s) {
                   return DataRow(
                     cells: [
-                      DataCell(Text('${s['code']} ${s['name']}', style: const TextStyle(fontWeight: FontWeight.bold))),
+                      DataCell(
+                        Text(
+                          '${s['code']} ${s['name']}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
                       DataCell(Text(s['credits'].toString())),
                       DataCell(Text(s['ia'] as String)),
                       DataCell(Text(s['ext'] as String)),
-                      DataCell(Text(s['total'] as String, style: const TextStyle(fontWeight: FontWeight.bold))),
-                      DataCell(Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                        child: Text(s['grade'] as String, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                      )),
+                      DataCell(
+                        Text(
+                          s['total'] as String,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      DataCell(
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            s['grade'] as String,
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   );
                 }).toList(),

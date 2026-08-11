@@ -1,11 +1,36 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supercampus_mobile/src/core/access/effective_permissions.dart';
+import 'package:supercampus_mobile/src/core/access/module_catalog.dart';
 import 'package:supercampus_mobile/src/features/insights/data/insight.dart';
 import 'package:supercampus_mobile/src/features/insights/data/insight_engine.dart';
 import 'package:supercampus_mobile/src/features/insights/data/sources/attendance_headroom_source.dart';
 import 'package:supercampus_mobile/src/features/insights/data/sources/wallet_balance_source.dart';
 
 void main() {
+  test('effective permissions accept backend wildcard grants and scopes', () {
+    final permissions = EffectivePermissions.fromJson({
+      'grants': ['gatepass.*', 'library.visit_pass.read'],
+      'scopes': {
+        'gatepass.outpass.read': 'all',
+        'library.visit_pass.read': 'assigned',
+      },
+    });
+
+    expect(permissions.canSeeModule(ModuleCatalog.gatepass), isTrue);
+    expect(
+      permissions.can(ModuleCatalog.gatepass, 'outpass', ModuleActions.approve),
+      isTrue,
+    );
+    expect(
+      permissions.scopeFor('gatepass.outpass.read'),
+      PermissionScope.institution,
+    );
+    expect(
+      permissions.scopeFor('library.visit_pass.read'),
+      PermissionScope.section,
+    );
+  });
+
   const attendanceSource = AttendanceHeadroomSource();
   const walletSource = WalletBalanceSource();
 
@@ -74,9 +99,7 @@ void main() {
 
   group('wallet balance', () {
     test('ranks a low balance higher near lunchtime', () {
-      final morning = walletSource.evaluate(
-        contextWith(balance: 90, hour: 9),
-      )!;
+      final morning = walletSource.evaluate(contextWith(balance: 90, hour: 9))!;
       final lunch = walletSource.evaluate(contextWith(balance: 90, hour: 12))!;
 
       expect(lunch.relevance, greaterThan(morning.relevance));

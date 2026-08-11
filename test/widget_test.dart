@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supercampus_mobile/src/app.dart';
+import 'package:supercampus_mobile/src/core/access/mock_permissions_repository.dart';
+import 'package:supercampus_mobile/src/features/authentication/data/mock_auth_repository.dart';
 import 'package:supercampus_mobile/src/features/modules/presentation/module_stack.dart';
+
+Widget _testApp() => SupercampusApp(
+  authRepository: MockAuthRepository(),
+  permissionsRepository: const MockPermissionsRepository(),
+);
 
 /// Brings [moduleId] into the module frame, then opens it.
 ///
@@ -30,8 +37,8 @@ Future<void> _signIn(WidgetTester tester) async {
     'student@example.com',
   );
   await tester.enterText(find.byType(TextFormField).at(1), 'password123');
-  await tester.ensureVisible(find.text('Enter Student Portal'));
-  await tester.tap(find.text('Enter Student Portal'));
+  await tester.ensureVisible(find.text('Sign in'));
+  await tester.tap(find.text('Sign in'));
   await tester.pumpAndSettle();
 }
 
@@ -51,13 +58,13 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const SupercampusApp());
+    await tester.pumpWidget(_testApp());
 
     expect(find.text('SuperCampus'), findsOneWidget);
-    expect(find.text('Select Your Campus Portal'), findsOneWidget);
+    expect(find.text('SuperCampus'), findsOneWidget);
     expect(find.text('Email address'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
-    expect(find.text('Enter Student Portal'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
   });
 
   testWidgets('validates empty login fields', (tester) async {
@@ -66,12 +73,12 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const SupercampusApp());
+    await tester.pumpWidget(_testApp());
 
     await tester.enterText(find.byType(TextFormField).at(0), '');
     await tester.enterText(find.byType(TextFormField).at(1), '');
-    await tester.ensureVisible(find.text('Enter Student Portal'));
-    await tester.tap(find.text('Enter Student Portal'));
+    await tester.ensureVisible(find.text('Sign in'));
+    await tester.tap(find.text('Sign in'));
     await tester.pump();
 
     expect(find.text('Enter your email address.'), findsOneWidget);
@@ -84,7 +91,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const SupercampusApp());
+    await tester.pumpWidget(_testApp());
     await _signIn(tester);
 
     // Every granted module has a dot on the frame's rail, in or out of frame.
@@ -109,15 +116,13 @@ void main() {
     expect(find.textContaining('Pay ₹79'), findsOneWidget);
   });
 
-  testWidgets('scrolling steps the front module one at a time', (
-    tester,
-  ) async {
+  testWidgets('scrolling steps the front module one at a time', (tester) async {
     tester.view.physicalSize = const Size(800, 1200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const SupercampusApp());
+    await tester.pumpWidget(_testApp());
     await _signIn(tester);
 
     // First module in catalog order starts in front of the deck.
@@ -149,7 +154,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const SupercampusApp());
+    await tester.pumpWidget(_testApp());
     await _signIn(tester);
     await _openModule(tester, 'canteen');
 
@@ -169,7 +174,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const SupercampusApp());
+    await tester.pumpWidget(_testApp());
     await _signIn(tester);
 
     await tester.tap(find.byKey(const ValueKey('nav-avatar')));
@@ -181,7 +186,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('profile-sign-out')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Select Your Campus Portal'), findsOneWidget);
+    expect(find.text('SuperCampus'), findsOneWidget);
   });
 
   testWidgets('search finds a granted module and opens it', (tester) async {
@@ -190,7 +195,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const SupercampusApp());
+    await tester.pumpWidget(_testApp());
     await _signIn(tester);
 
     await tester.tap(find.byKey(const ValueKey('home-search')));
@@ -205,13 +210,31 @@ void main() {
     expect(find.text('Canteen is open'), findsOneWidget);
   });
 
+  testWidgets('modules sheet hides modules without grants', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_testApp());
+    await _signIn(tester);
+
+    await tester.tap(find.byKey(const ValueKey('nav-modules')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Modules'), findsWidgets);
+    expect(find.text('Canteen'), findsOneWidget);
+    expect(find.text('Vendor Management'), findsNothing);
+    expect(find.text('Not enabled for your account'), findsNothing);
+  });
+
   testWidgets('the scan button opens the scanner', (tester) async {
     tester.view.physicalSize = const Size(800, 1200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const SupercampusApp());
+    await tester.pumpWidget(_testApp());
     await _signIn(tester);
 
     await tester.tap(find.byKey(const ValueKey('nav-center')));
@@ -226,7 +249,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const SupercampusApp());
+    await tester.pumpWidget(_testApp());
     await _signIn(tester);
     await _openModule(tester, 'gatepass');
 

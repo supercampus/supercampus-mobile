@@ -43,6 +43,7 @@ class MockGatepassRepository implements GatepassRepository {
       guardianPhone: draft.guardianPhone.trim(),
       status: ApprovalStatus.pending,
       submittedAt: DateTime.now(),
+      workflowVersion: store.workflow.version,
     );
     _store = store.copyWith(requests: [request, ...store.requests]);
     return request;
@@ -110,6 +111,7 @@ class MockGatepassRepository implements GatepassRepository {
         room: 'B-214',
         isOnCampus: true,
       ),
+      workflow: _workflowForEmail(),
       dailyPass: DailyAccessPass(
         id: 'DAY-${today.year}${today.month.toString().padLeft(2, '0')}${today.day.toString().padLeft(2, '0')}-48',
         validOn: today,
@@ -131,6 +133,7 @@ class MockGatepassRepository implements GatepassRepository {
           submittedAt: today.subtract(const Duration(hours: 5)),
           approver: 'Dr. Priya, HOD',
           qrPayload: 'supercampus://gate/outpass/GP-240803',
+          workflowState: _approvedWorkflowState(),
         ),
         GatepassRequest(
           id: 'GP-240731',
@@ -148,6 +151,7 @@ class MockGatepassRepository implements GatepassRepository {
           submittedAt: today.subtract(const Duration(days: 5)),
           approver: 'Dr. Priya, HOD',
           qrPayload: 'supercampus://gate/outpass/GP-240731',
+          workflowState: 'completed',
         ),
         GatepassRequest(
           id: 'GP-240725',
@@ -165,6 +169,7 @@ class MockGatepassRepository implements GatepassRepository {
           submittedAt: today.subtract(const Duration(days: 10)),
           approver: 'Hostel warden',
           reviewNote: 'Requests must be submitted before 3 PM.',
+          workflowState: 'rejected',
         ),
       ],
       visitors: [
@@ -198,6 +203,134 @@ class MockGatepassRepository implements GatepassRepository {
               .add(const Duration(hours: 16, minutes: 8)),
           gate: 'Main gate',
           method: 'Outpass QR',
+        ),
+      ],
+    );
+  }
+
+  GatepassWorkflowDefinition _workflowForEmail() {
+    if (_email.toLowerCase().contains('college1') ||
+        _email.toLowerCase().contains('tenant-a')) {
+      return _collegeOneWorkflow();
+    }
+    return _collegeTwoWorkflow();
+  }
+
+  String _approvedWorkflowState() =>
+      _workflowForEmail().state('parent_approved') == null
+      ? 'warden_approved'
+      : 'parent_approved';
+
+  GatepassWorkflowDefinition _collegeOneWorkflow() {
+    return GatepassWorkflowDefinition(
+      tenantId: 'college_1',
+      version: 1,
+      initialState: 'draft',
+      terminalStates: const ['rejected', 'completed'],
+      states: const [
+        GatepassWorkflowState(
+          id: 'draft',
+          label: 'Draft',
+          status: WorkflowStateStatus.draft,
+        ),
+        GatepassWorkflowState(
+          id: 'submitted',
+          label: 'Student submitted',
+          status: WorkflowStateStatus.pending,
+        ),
+        GatepassWorkflowState(
+          id: 'parent_approved',
+          label: 'Parent approved',
+          status: WorkflowStateStatus.approved,
+        ),
+        GatepassWorkflowState(
+          id: 'warden_approved',
+          label: 'Warden approved',
+          status: WorkflowStateStatus.approved,
+        ),
+        GatepassWorkflowState(
+          id: 'security_verified',
+          label: 'Security verified',
+          status: WorkflowStateStatus.completed,
+        ),
+        GatepassWorkflowState(
+          id: 'rejected',
+          label: 'Rejected',
+          status: WorkflowStateStatus.rejected,
+        ),
+        GatepassWorkflowState(
+          id: 'completed',
+          label: 'Exit completed',
+          status: WorkflowStateStatus.completed,
+        ),
+      ],
+      transitions: const [
+        GatepassWorkflowTransition(
+          from: 'submitted',
+          to: 'parent_approved',
+          action: 'approve',
+          requiredPermission: 'gatepass.outpass.approve',
+          requiredRole: 'parent',
+          label: 'Parent approve',
+        ),
+        GatepassWorkflowTransition(
+          from: 'parent_approved',
+          to: 'warden_approved',
+          action: 'approve',
+          requiredPermission: 'gatepass.outpass.approve',
+          requiredRole: 'warden',
+          label: 'Warden approve',
+        ),
+      ],
+    );
+  }
+
+  GatepassWorkflowDefinition _collegeTwoWorkflow() {
+    return const GatepassWorkflowDefinition(
+      tenantId: 'college_2',
+      version: 1,
+      initialState: 'draft',
+      terminalStates: ['rejected', 'completed'],
+      states: [
+        GatepassWorkflowState(
+          id: 'draft',
+          label: 'Draft',
+          status: WorkflowStateStatus.draft,
+        ),
+        GatepassWorkflowState(
+          id: 'submitted',
+          label: 'Student submitted',
+          status: WorkflowStateStatus.pending,
+        ),
+        GatepassWorkflowState(
+          id: 'warden_approved',
+          label: 'Warden approved',
+          status: WorkflowStateStatus.approved,
+        ),
+        GatepassWorkflowState(
+          id: 'security_verified',
+          label: 'Security verified',
+          status: WorkflowStateStatus.completed,
+        ),
+        GatepassWorkflowState(
+          id: 'rejected',
+          label: 'Rejected',
+          status: WorkflowStateStatus.rejected,
+        ),
+        GatepassWorkflowState(
+          id: 'completed',
+          label: 'Exit completed',
+          status: WorkflowStateStatus.completed,
+        ),
+      ],
+      transitions: [
+        GatepassWorkflowTransition(
+          from: 'submitted',
+          to: 'warden_approved',
+          action: 'approve',
+          requiredPermission: 'gatepass.outpass.approve',
+          requiredRole: 'warden',
+          label: 'Warden approve',
         ),
       ],
     );

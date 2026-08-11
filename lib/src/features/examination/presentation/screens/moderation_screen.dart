@@ -90,9 +90,15 @@ class _ModerationScreenState extends State<ModerationScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Moderation & Verification Queue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Moderation & Verification Queue',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 2),
-                  const Text('Ensure academic fairness through grace marks, scaling, and L1-L4 sign-offs.', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+                  const Text(
+                    'Ensure academic fairness through grace marks, scaling, and L1-L4 sign-offs.',
+                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                  ),
                 ],
               ),
             ),
@@ -113,18 +119,41 @@ class _ModerationScreenState extends State<ModerationScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Verification Hierarchy Levels', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const Text(
+            'Verification Hierarchy Levels',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 10),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 _buildLevelBadge('L1 — Faculty', 'Self Entry', Colors.blue),
-                const Icon(Icons.arrow_forward, size: 14, color: AppColors.muted),
-                _buildLevelBadge('L2 — Department', 'HoD Review', Colors.indigo),
-                const Icon(Icons.arrow_forward, size: 14, color: AppColors.muted),
-                _buildLevelBadge('L3 — Exam Office', 'Compliance', Colors.purple),
-                const Icon(Icons.arrow_forward, size: 14, color: AppColors.muted),
+                const Icon(
+                  Icons.arrow_forward,
+                  size: 14,
+                  color: AppColors.muted,
+                ),
+                _buildLevelBadge(
+                  'L2 — Department',
+                  'HoD Review',
+                  Colors.indigo,
+                ),
+                const Icon(
+                  Icons.arrow_forward,
+                  size: 14,
+                  color: AppColors.muted,
+                ),
+                _buildLevelBadge(
+                  'L3 — Exam Office',
+                  'Compliance',
+                  Colors.purple,
+                ),
+                const Icon(
+                  Icons.arrow_forward,
+                  size: 14,
+                  color: AppColors.muted,
+                ),
                 _buildLevelBadge('L4 — Controller', 'Final Lock', Colors.green),
               ],
             ),
@@ -145,8 +174,18 @@ class _ModerationScreenState extends State<ModerationScreen> {
       ),
       child: Column(
         children: [
-          Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: color)),
-          Text(desc, style: const TextStyle(fontSize: 10, color: AppColors.muted)),
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+              color: color,
+            ),
+          ),
+          Text(
+            desc,
+            style: const TextStyle(fontSize: 10, color: AppColors.muted),
+          ),
         ],
       ),
     );
@@ -163,9 +202,15 @@ class _ModerationScreenState extends State<ModerationScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Moderation Policy Controls', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          const Text(
+            'Moderation Policy Controls',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
-          Text('Max Grace Marks: ${_graceMarksLimit.toInt()} Marks', style: const TextStyle(fontSize: 12)),
+          Text(
+            'Max Grace Marks: ${_graceMarksLimit.toInt()} Marks',
+            style: const TextStyle(fontSize: 12),
+          ),
           Slider(
             value: _graceMarksLimit,
             min: 0,
@@ -175,7 +220,10 @@ class _ModerationScreenState extends State<ModerationScreen> {
             onChanged: (val) => setState(() => _graceMarksLimit = val),
           ),
           const SizedBox(height: 8),
-          Text('Batch Scaling Percentage: ${_scalingFactor.toInt()}%', style: const TextStyle(fontSize: 12)),
+          Text(
+            'Batch Scaling Percentage: ${_scalingFactor.toInt()}%',
+            style: const TextStyle(fontSize: 12),
+          ),
           Slider(
             value: _scalingFactor,
             min: -5,
@@ -186,14 +234,22 @@ class _ModerationScreenState extends State<ModerationScreen> {
           ),
           const SizedBox(height: 12),
           ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Moderation rules preview applied.')),
+                const SnackBar(
+                  content: Text('Moderation rules preview applied.'),
+                ),
               );
             },
             icon: const Icon(Icons.calculate, size: 16),
-            label: const Text('Apply Moderation Rules', style: TextStyle(fontSize: 12)),
+            label: const Text(
+              'Apply Moderation Rules',
+              style: TextStyle(fontSize: 12),
+            ),
           ),
         ],
       ),
@@ -206,41 +262,70 @@ class _ModerationScreenState extends State<ModerationScreen> {
       decoration: BoxDecoration(
         color: _isLocked ? Colors.red.shade50 : Colors.green.shade50,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _isLocked ? Colors.red.shade200 : Colors.green.shade200),
+        border: Border.all(
+          color: _isLocked ? Colors.red.shade200 : Colors.green.shade200,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(_isLocked ? Icons.lock : Icons.lock_open, color: _isLocked ? Colors.red : Colors.green, size: 22),
+              Icon(
+                _isLocked ? Icons.lock : Icons.lock_open,
+                color: _isLocked ? Colors.red : Colors.green,
+                size: 22,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   _isLocked ? 'Marks Locked (Immutable)' : 'Marks Unlocked',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: _isLocked ? Colors.red : Colors.green),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: _isLocked ? Colors.red : Colors.green,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
-            _isLocked ? 'Marks frozen by Controller. No modifications allowed.' : 'Lock marks to freeze evaluation and trigger GPA Engine.',
-            style: TextStyle(fontSize: 11, color: _isLocked ? Colors.red.shade900 : Colors.green.shade900),
+            _isLocked
+                ? 'Marks frozen by Controller. No modifications allowed.'
+                : 'Lock marks to freeze evaluation and trigger GPA Engine.',
+            style: TextStyle(
+              fontSize: 11,
+              color: _isLocked ? Colors.red.shade900 : Colors.green.shade900,
+            ),
           ),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: _isLocked ? Colors.red : Colors.green),
+              style: FilledButton.styleFrom(
+                backgroundColor: _isLocked ? Colors.red : Colors.green,
+              ),
               onPressed: () {
                 setState(() => _isLocked = !_isLocked);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(_isLocked ? 'Marks locked permanently!' : 'Marks unlocked.')),
+                  SnackBar(
+                    content: Text(
+                      _isLocked
+                          ? 'Marks locked permanently!'
+                          : 'Marks unlocked.',
+                    ),
+                  ),
                 );
               },
-              icon: Icon(_isLocked ? Icons.lock_clock : Icons.lock_open, size: 16),
-              label: Text(_isLocked ? 'Unlock (Override)' : 'Approve & Lock Marks', style: const TextStyle(fontSize: 12)),
+              icon: Icon(
+                _isLocked ? Icons.lock_clock : Icons.lock_open,
+                size: 16,
+              ),
+              label: Text(
+                _isLocked ? 'Unlock (Override)' : 'Approve & Lock Marks',
+                style: const TextStyle(fontSize: 12),
+              ),
             ),
           ),
         ],
@@ -260,7 +345,10 @@ class _ModerationScreenState extends State<ModerationScreen> {
         children: [
           const Padding(
             padding: EdgeInsets.all(14),
-            child: Text('Department Verification Queue', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Department Verification Queue',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            ),
           ),
           if (isMobile) ...[
             ListView.separated(
@@ -278,18 +366,43 @@ class _ModerationScreenState extends State<ModerationScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(q['subject'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          Text(
+                            q['subject'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.5,
+                            ),
+                          ),
                           Chip(
                             label: Text('${q['outliersCount']} Outliers'),
-                            backgroundColor: Colors.purple.withValues(alpha: 0.1),
+                            backgroundColor: Colors.purple.withValues(
+                              alpha: 0.1,
+                            ),
                             side: BorderSide.none,
-                            labelStyle: const TextStyle(color: Colors.purple, fontSize: 10, fontWeight: FontWeight.bold),
+                            labelStyle: const TextStyle(
+                              color: Colors.purple,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
-                      Text('Evaluator: ${q['evaluator']}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                      Text(
+                        'Evaluator: ${q['evaluator']}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.muted,
+                        ),
+                      ),
                       const SizedBox(height: 6),
-                      Text('Status: ${q['l4Status']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                      Text(
+                        'Status: ${q['l4Status']}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
                     ],
                   ),
                 );
@@ -311,13 +424,39 @@ class _ModerationScreenState extends State<ModerationScreen> {
                 rows: _queue.map((q) {
                   return DataRow(
                     cells: [
-                      DataCell(Text(q['subject'], style: const TextStyle(fontWeight: FontWeight.bold))),
+                      DataCell(
+                        Text(
+                          q['subject'],
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
                       DataCell(Text(q['evaluator'])),
-                      DataCell(Text(q['l1Status'], style: const TextStyle(color: Colors.green))),
-                      DataCell(Text(q['l2Status'], style: const TextStyle(color: Colors.indigo))),
+                      DataCell(
+                        Text(
+                          q['l1Status'],
+                          style: const TextStyle(color: Colors.green),
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          q['l2Status'],
+                          style: const TextStyle(color: Colors.indigo),
+                        ),
+                      ),
                       DataCell(Text(q['l3Status'])),
-                      DataCell(Text(q['l4Status'], style: const TextStyle(fontWeight: FontWeight.bold))),
-                      DataCell(Chip(label: Text('${q['outliersCount']} Outliers'), backgroundColor: Colors.purple.withValues(alpha: 0.1), side: BorderSide.none)),
+                      DataCell(
+                        Text(
+                          q['l4Status'],
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      DataCell(
+                        Chip(
+                          label: Text('${q['outliersCount']} Outliers'),
+                          backgroundColor: Colors.purple.withValues(alpha: 0.1),
+                          side: BorderSide.none,
+                        ),
+                      ),
                     ],
                   );
                 }).toList(),

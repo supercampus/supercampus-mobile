@@ -122,7 +122,9 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Child: ${_ward.name}'),
-            Text('Current Balance: ₹${_ward.canteenBalance.toStringAsFixed(2)}'),
+            Text(
+              'Current Balance: ₹${_ward.canteenBalance.toStringAsFixed(2)}',
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: amountCtrl,
@@ -176,8 +178,9 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pendingCount =
-        _outpassRequests.where((r) => r.status.contains('Pending')).length;
+    final pendingCount = _outpassRequests
+        .where((r) => r.status.contains('Pending'))
+        .length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
@@ -199,8 +202,11 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                 color: const Color(0xFF2D6A4F),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.family_restroom,
-                  size: 20, color: Colors.white),
+              child: const Icon(
+                Icons.family_restroom,
+                size: 20,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -242,32 +248,6 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
           _buildOutpassApprovalsTab(),
           _buildFeesAndWalletTab(),
           _buildAcademicsTab(),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentTab,
-        onDestinationSelected: (index) => setState(() => _currentTab = index),
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            label: 'Ward Overview',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: pendingCount > 0,
-              label: Text('$pendingCount'),
-              child: const Icon(Icons.approval),
-            ),
-            label: 'Outpass Approvals',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            label: 'Fees & Wallet',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.school_outlined),
-            label: 'Academics',
-          ),
         ],
       ),
     );
@@ -317,12 +297,16 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                           Text(
                             '${_ward.department} • ${_ward.semester}',
                             style: const TextStyle(
-                                fontSize: 13, color: AppColors.muted),
+                              fontSize: 13,
+                              color: AppColors.muted,
+                            ),
                           ),
                           Text(
                             '${_ward.hostelName}, ${_ward.roomNumber}',
                             style: const TextStyle(
-                                fontSize: 12, color: AppColors.muted),
+                              fontSize: 12,
+                              color: AppColors.muted,
+                            ),
                           ),
                         ],
                       ),
@@ -342,9 +326,13 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Campus Location',
-                                style: TextStyle(
-                                    fontSize: 11, color: AppColors.muted)),
+                            const Text(
+                              'Campus Location',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               _ward.campusStatus,
@@ -369,9 +357,13 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Overall Attendance',
-                                style: TextStyle(
-                                    fontSize: 11, color: AppColors.muted)),
+                            const Text(
+                              'Overall Attendance',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.muted,
+                              ),
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               '${_ward.overallAttendancePercentage}%',
@@ -466,7 +458,9 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: isPending
                               ? Colors.amber.shade100
@@ -488,7 +482,9 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                       Text(
                         '#${req.id}',
                         style: const TextStyle(
-                            fontSize: 12, color: AppColors.muted),
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
                       ),
                     ],
                   ),
@@ -496,15 +492,21 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                   Text(
                     req.requestType,
                     style: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w500),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text('Destination: ${req.destination}'),
                   Text('Reason: ${req.reason}'),
                   if (req.parentComment != null)
-                    Text('Parent Note: ${req.parentComment}',
-                        style: const TextStyle(
-                            fontSize: 12, fontStyle: FontStyle.italic)),
+                    Text(
+                      'Parent Note: ${req.parentComment}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   const SizedBox(height: 16),
                   if (isPending) ...[
                     SizedBox(
@@ -542,8 +544,11 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                const Icon(Icons.account_balance_wallet,
-                    color: Colors.white, size: 36),
+                const Icon(
+                  Icons.account_balance_wallet,
+                  color: Colors.white,
+                  size: 36,
+                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -597,13 +602,16 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                 style: const TextStyle(fontWeight: FontWeight.w500),
               ),
               subtitle: Text(
-                  'Due Date: ${fee.dueDate.day}/${fee.dueDate.month}/${fee.dueDate.year}'),
+                'Due Date: ${fee.dueDate.day}/${fee.dueDate.month}/${fee.dueDate.year}',
+              ),
               trailing: fee.isPaid
                   ? const Chip(
                       label: Text('Paid'),
                       backgroundColor: Color(0xFFE8F5E9),
                       labelStyle: TextStyle(
-                          color: Color(0xFF2E7D32), fontWeight: FontWeight.w500),
+                        color: Color(0xFF2E7D32),
+                        fontWeight: FontWeight.w500,
+                      ),
                     )
                   : FilledButton(
                       style: FilledButton.styleFrom(
@@ -667,7 +675,9 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                       Text(
                         '${sub.subjectCode} - ${sub.subjectName}',
                         style: const TextStyle(
-                            fontWeight: FontWeight.w500, fontSize: 14),
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
                       ),
                       Text(
                         '${pct.toStringAsFixed(1)}%',
@@ -682,7 +692,10 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Faculty: ${sub.facultyName} • Attended: ${sub.attendedClasses}/${sub.totalClasses} classes',
-                    style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.muted,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   LinearProgressIndicator(
@@ -737,12 +750,15 @@ class _QuickActionCard extends StatelessWidget {
               child: Icon(icon, color: color),
             ),
             const SizedBox(height: 12),
-            Text(title,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+            ),
             const SizedBox(height: 2),
-            Text(subtitle,
-                style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+            Text(
+              subtitle,
+              style: const TextStyle(fontSize: 11, color: AppColors.muted),
+            ),
           ],
         ),
       ),

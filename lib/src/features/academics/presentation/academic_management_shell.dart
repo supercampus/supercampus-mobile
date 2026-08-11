@@ -26,7 +26,7 @@ class _AcademicManagementShellState extends State<AcademicManagementShell> {
   Widget build(BuildContext context) {
     final pages = [_programmes(), _subjects(), _batches()];
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: const Color(0xFF4A4E9C),
         foregroundColor: Colors.white,
@@ -38,24 +38,6 @@ class _AcademicManagementShellState extends State<AcademicManagementShell> {
         actions: [IconButton(onPressed: _add, icon: const Icon(Icons.add))],
       ),
       body: IndexedStack(index: _tab, children: pages),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (value) => setState(() => _tab = value),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.school_outlined),
-            label: 'Programmes',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            label: 'Subjects',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.groups_outlined),
-            label: 'Batches',
-          ),
-        ],
-      ),
     );
   }
 

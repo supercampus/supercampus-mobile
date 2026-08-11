@@ -66,6 +66,31 @@ void main() {
     expect(invitation.status, ApprovalStatus.pending);
     expect(invitation.visitorName, 'Parent Name');
   });
+
+  test(
+    'loads tenant-specific outpass workflows without app code changes',
+    () async {
+      final collegeOne = await MockGatepassRepository(
+        studentName: 'College One Student',
+        email: 'student@college1.example',
+      ).loadStore();
+      final collegeTwo = await MockGatepassRepository(
+        studentName: 'College Two Student',
+        email: 'student@college2.example',
+      ).loadStore();
+
+      expect(collegeOne.workflow.state('parent_approved'), isNotNull);
+      expect(collegeTwo.workflow.state('parent_approved'), isNull);
+      expect(
+        collegeOne.workflow.transition('submitted', 'approve')?.to,
+        'parent_approved',
+      );
+      expect(
+        collegeTwo.workflow.transition('submitted', 'approve')?.to,
+        'warden_approved',
+      );
+    },
+  );
 }
 
 GatepassRequestDraft _validRequestDraft() {

@@ -7,10 +7,12 @@ class MergedStudentManagementScreen extends StatefulWidget {
   const MergedStudentManagementScreen({super.key});
 
   @override
-  State<MergedStudentManagementScreen> createState() => _MergedStudentManagementScreenState();
+  State<MergedStudentManagementScreen> createState() =>
+      _MergedStudentManagementScreenState();
 }
 
-class _MergedStudentManagementScreenState extends State<MergedStudentManagementScreen> {
+class _MergedStudentManagementScreenState
+    extends State<MergedStudentManagementScreen> {
   int _selectedSection = 0;
 
   @override
@@ -43,7 +45,8 @@ class _MergedStudentManagementScreenState extends State<MergedStudentManagementS
                     ),
                   ],
                   selected: {_selectedSection},
-                  onSelectionChanged: (set) => setState(() => _selectedSection = set.first),
+                  onSelectionChanged: (set) =>
+                      setState(() => _selectedSection = set.first),
                 ),
               ),
             ),

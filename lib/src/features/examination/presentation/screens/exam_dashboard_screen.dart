@@ -3,10 +3,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../widgets/status_lifecycle_widget.dart';
 
 class ExamDashboardScreen extends StatefulWidget {
-  const ExamDashboardScreen({
-    super.key,
-    required this.onNavigateToTab,
-  });
+  const ExamDashboardScreen({super.key, required this.onNavigateToTab});
 
   final ValueChanged<int> onNavigateToTab;
 
@@ -29,12 +26,17 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
           const SizedBox(height: 16),
           StatusLifecycleWidget(
             currentStatus: _selectedStatus,
-            onStatusSelected: (status) => setState(() => _selectedStatus = status),
+            onStatusSelected: (status) =>
+                setState(() => _selectedStatus = status),
           ),
           const SizedBox(height: 20),
           const Text(
             'Quick Statistics & KPIs',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.ink),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.ink,
+            ),
           ),
           const SizedBox(height: 12),
           _buildKpiGrid(),
@@ -87,12 +89,19 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
               children: [
                 const Text(
                   'SuperCampus Examination System',
-                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Autumn Semester 2026 • End-to-End Assessment Lifecycle',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -101,7 +110,9 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF1B5E20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () => widget.onNavigateToTab(2), // Jump to Scheduling
             icon: const Icon(Icons.calendar_month_outlined, size: 18),
@@ -114,17 +125,61 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
 
   Widget _buildKpiGrid() {
     final kpis = [
-      _KpiItem('Active Exams', '14', 'Scheduled & In Progress', Icons.event_note, Colors.blue, 2),
-      _KpiItem('Pending Marks Entry', '08', 'Subjects awaiting marks', Icons.edit_note, Colors.orange, 5),
-      _KpiItem('Moderation Queue', '03', 'Outliers & grace marks review', Icons.fact_check, Colors.purple, 6),
-      _KpiItem('Hall Tickets Issued', '1,420', 'Eligible students verified', Icons.qr_code, Colors.teal, 3),
-      _KpiItem('Results Published', '92%', 'Autumn 2026 Batch', Icons.verified, Colors.green, 9),
-      _KpiItem('Pending Revaluation', '05', 'Applications under review', Icons.find_in_page, Colors.amber, 10),
+      _KpiItem(
+        'Active Exams',
+        '14',
+        'Scheduled & In Progress',
+        Icons.event_note,
+        Colors.blue,
+        2,
+      ),
+      _KpiItem(
+        'Pending Marks Entry',
+        '08',
+        'Subjects awaiting marks',
+        Icons.edit_note,
+        Colors.orange,
+        5,
+      ),
+      _KpiItem(
+        'Moderation Queue',
+        '03',
+        'Outliers & grace marks review',
+        Icons.fact_check,
+        Colors.purple,
+        6,
+      ),
+      _KpiItem(
+        'Hall Tickets Issued',
+        '1,420',
+        'Eligible students verified',
+        Icons.qr_code,
+        Colors.teal,
+        3,
+      ),
+      _KpiItem(
+        'Results Published',
+        '92%',
+        'Autumn 2026 Batch',
+        Icons.verified,
+        Colors.green,
+        9,
+      ),
+      _KpiItem(
+        'Pending Revaluation',
+        '05',
+        'Applications under review',
+        Icons.find_in_page,
+        Colors.amber,
+        10,
+      ),
     ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 800 ? 3 : (constraints.maxWidth > 500 ? 2 : 1);
+        final crossAxisCount = constraints.maxWidth > 800
+            ? 3
+            : (constraints.maxWidth > 500 ? 2 : 1);
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -190,7 +245,10 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
                           ),
                           Text(
                             item.subtitle,
-                            style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.muted,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -251,18 +309,29 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.pending_actions, color: AppColors.primary, size: 20),
+              const Icon(
+                Icons.pending_actions,
+                color: AppColors.primary,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               const Text(
                 'Pending Workflow Actions & Approvals',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.ink),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.ink,
+                ),
               ),
               const Spacer(),
               Chip(
                 label: Text('${actions.length} Actionable'),
                 backgroundColor: AppColors.amberSoft,
                 side: BorderSide.none,
-                labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                labelStyle: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -275,21 +344,40 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
             itemBuilder: (context, index) {
               final act = actions[index];
               return ListTile(
-                contentPadding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-                title: Text(act.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
-                subtitle: Text(act.subtitle, style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 4,
+                  horizontal: 4,
+                ),
+                title: Text(
+                  act.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
+                  ),
+                ),
+                subtitle: Text(
+                  act.subtitle,
+                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: act.badgeColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         act.badge,
-                        style: TextStyle(color: act.badgeColor, fontSize: 11, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: act.badgeColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -309,10 +397,30 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
 
   Widget _buildRecentActivityTimeline() {
     final activities = [
-      _Activity('Hall Tickets generated for 450 CS Students', '10 mins ago', Icons.qr_code, Colors.teal),
-      _Activity('Marks locked for Subject EE201 Electrical Eng', '45 mins ago', Icons.lock, Colors.purple),
-      _Activity('Incident reported in Room 204 during CS101 exam', '2 hrs ago', Icons.warning_amber, Colors.red),
-      _Activity('Schedule Published for End-Sem Autumn 2026', 'Yesterday', Icons.publish, Colors.blue),
+      _Activity(
+        'Hall Tickets generated for 450 CS Students',
+        '10 mins ago',
+        Icons.qr_code,
+        Colors.teal,
+      ),
+      _Activity(
+        'Marks locked for Subject EE201 Electrical Eng',
+        '45 mins ago',
+        Icons.lock,
+        Colors.purple,
+      ),
+      _Activity(
+        'Incident reported in Room 204 during CS101 exam',
+        '2 hrs ago',
+        Icons.warning_amber,
+        Colors.red,
+      ),
+      _Activity(
+        'Schedule Published for End-Sem Autumn 2026',
+        'Yesterday',
+        Icons.publish,
+        Colors.blue,
+      ),
     ];
 
     return Container(
@@ -331,7 +439,11 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
               SizedBox(width: 8),
               Text(
                 'Recent Exam Log',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.ink),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.ink,
+                ),
               ),
             ],
           ),
@@ -357,8 +469,20 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(act.title, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500)),
-                          Text(act.time, style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                          Text(
+                            act.title,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            act.time,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.muted,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -374,7 +498,14 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
 }
 
 class _KpiItem {
-  _KpiItem(this.title, this.value, this.subtitle, this.icon, this.color, this.targetTab);
+  _KpiItem(
+    this.title,
+    this.value,
+    this.subtitle,
+    this.icon,
+    this.color,
+    this.targetTab,
+  );
   final String title;
   final String value;
   final String subtitle;
@@ -384,7 +515,13 @@ class _KpiItem {
 }
 
 class _ActionItem {
-  _ActionItem(this.title, this.subtitle, this.badge, this.badgeColor, this.targetTab);
+  _ActionItem(
+    this.title,
+    this.subtitle,
+    this.badge,
+    this.badgeColor,
+    this.targetTab,
+  );
   final String title;
   final String subtitle;
   final String badge;

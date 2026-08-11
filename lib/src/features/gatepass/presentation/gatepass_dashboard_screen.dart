@@ -62,7 +62,11 @@ class GatepassDashboardScreen extends StatelessWidget {
               _CampusStatusCard(student: store.student),
               const SizedBox(height: 12),
               if (active != null) ...[
-                _ActiveRequestCard(request: active, onTap: onOpenRequests),
+                _ActiveRequestCard(
+                  request: active,
+                  workflow: store.workflow,
+                  onTap: onOpenRequests,
+                ),
                 const SizedBox(height: 12),
               ],
               Row(
@@ -208,13 +212,23 @@ class _CampusStatusCard extends StatelessWidget {
 }
 
 class _ActiveRequestCard extends StatelessWidget {
-  const _ActiveRequestCard({required this.request, required this.onTap});
+  const _ActiveRequestCard({
+    required this.request,
+    required this.workflow,
+    required this.onTap,
+  });
 
   final GatepassRequest request;
+  final GatepassWorkflowDefinition workflow;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final currentState = workflow.state(request.workflowState);
+    final next =
+        workflow.transition(request.workflowState, 'approve') ??
+        workflow.transition(request.workflowState, 'verify') ??
+        workflow.transition(request.workflowState, 'complete');
     return GatepassSurface(
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
@@ -237,6 +251,14 @@ class _ActiveRequestCard extends StatelessWidget {
                     Text(
                       '${formatShortDate(request.departureAt)} • ${request.destination}',
                     ),
+                    if (currentState != null) ...[
+                      const SizedBox(height: 4),
+                      Text(currentState.label),
+                    ],
+                    if (next != null) ...[
+                      const SizedBox(height: 4),
+                      Text('Next: ${next.label}'),
+                    ],
                   ],
                 ),
               ),

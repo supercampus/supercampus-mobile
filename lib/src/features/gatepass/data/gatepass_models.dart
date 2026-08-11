@@ -28,6 +28,72 @@ extension ApprovalStatusLabel on ApprovalStatus {
   };
 }
 
+enum WorkflowStateStatus { draft, pending, approved, rejected, completed }
+
+class GatepassWorkflowState {
+  const GatepassWorkflowState({
+    required this.id,
+    required this.label,
+    required this.status,
+  });
+
+  final String id;
+  final String label;
+  final WorkflowStateStatus status;
+}
+
+class GatepassWorkflowTransition {
+  const GatepassWorkflowTransition({
+    required this.from,
+    required this.to,
+    required this.action,
+    required this.requiredPermission,
+    required this.label,
+    this.requiredRole,
+  });
+
+  final String from;
+  final String to;
+  final String action;
+  final String requiredPermission;
+  final String label;
+  final String? requiredRole;
+}
+
+class GatepassWorkflowDefinition {
+  const GatepassWorkflowDefinition({
+    required this.tenantId,
+    required this.version,
+    required this.initialState,
+    required this.terminalStates,
+    required this.states,
+    required this.transitions,
+  });
+
+  final String tenantId;
+  final int version;
+  final String initialState;
+  final List<String> terminalStates;
+  final List<GatepassWorkflowState> states;
+  final List<GatepassWorkflowTransition> transitions;
+
+  GatepassWorkflowState? state(String id) {
+    for (final state in states) {
+      if (state.id == id) return state;
+    }
+    return null;
+  }
+
+  GatepassWorkflowTransition? transition(String from, String action) {
+    for (final transition in transitions) {
+      if (transition.from == from && transition.action == action) {
+        return transition;
+      }
+    }
+    return null;
+  }
+}
+
 class GatepassStudent {
   const GatepassStudent({
     required this.name,
@@ -70,6 +136,8 @@ class GatepassRequest {
     this.approver,
     this.reviewNote,
     this.qrPayload,
+    this.workflowState = 'submitted',
+    this.workflowVersion = 1,
   });
 
   final String id;
@@ -84,6 +152,8 @@ class GatepassRequest {
   final String? approver;
   final String? reviewNote;
   final String? qrPayload;
+  final String workflowState;
+  final int workflowVersion;
 }
 
 class VisitorInvitation {
@@ -147,6 +217,7 @@ class DailyAccessPass {
 class GatepassStore {
   const GatepassStore({
     required this.student,
+    required this.workflow,
     required this.dailyPass,
     required this.requests,
     required this.visitors,
@@ -154,6 +225,7 @@ class GatepassStore {
   });
 
   final GatepassStudent student;
+  final GatepassWorkflowDefinition workflow;
   final DailyAccessPass dailyPass;
   final List<GatepassRequest> requests;
   final List<VisitorInvitation> visitors;
@@ -165,6 +237,7 @@ class GatepassStore {
   }) {
     return GatepassStore(
       student: student,
+      workflow: workflow,
       dailyPass: dailyPass,
       requests: requests ?? this.requests,
       visitors: visitors ?? this.visitors,

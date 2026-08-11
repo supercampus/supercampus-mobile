@@ -50,6 +50,7 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
   void _createNoticeDialog() {
     final titleCtrl = TextEditingController();
     final contentCtrl = TextEditingController();
+    final pdfUrlCtrl = TextEditingController();
     String target = 'All CS Students & Parents';
 
     showDialog(
@@ -76,6 +77,16 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                 maxLines: 3,
                 decoration: const InputDecoration(labelText: 'Notice Content'),
               ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: pdfUrlCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'PDF URL (optional)',
+                  hintText: 'Paste the uploaded PDF link',
+                  prefixIcon: Icon(Icons.picture_as_pdf_outlined),
+                ),
+                keyboardType: TextInputType.url,
+              ),
             ],
           ),
         ),
@@ -97,6 +108,12 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                   postedAt: DateTime.now(),
                   author: widget.session.displayName,
                   targetAudience: target,
+                  pdfUrl: pdfUrlCtrl.text.trim().isEmpty
+                      ? null
+                      : pdfUrlCtrl.text.trim(),
+                  pdfName: pdfUrlCtrl.text.trim().isEmpty
+                      ? null
+                      : 'Attached notice PDF',
                 );
                 _repository.addNotice(newNotice);
                 _refreshData();
@@ -118,8 +135,9 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pendingCount =
-        _leaveRequests.where((l) => l.status == 'Pending').length;
+    final pendingCount = _leaveRequests
+        .where((l) => l.status == 'Pending')
+        .length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
@@ -185,40 +203,16 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
           _buildStudentDirectoryTab(),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentTab,
-        onDestinationSelected: (index) => setState(() => _currentTab = index),
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.swipe_outlined),
-            label: 'Attendance',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: pendingCount > 0,
-              label: Text('$pendingCount'),
-              child: const Icon(Icons.assignment_turned_in_outlined),
-            ),
-            label: 'Leave Approvals',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.campaign_outlined),
-            label: 'Noticeboard',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.people_alt_outlined),
-            label: 'Student Directory',
-          ),
-        ],
-      ),
     );
   }
 
   Widget _buildClassesAndAttendanceTab() {
-    final presentCount =
-        _activeRoster.where((i) => i.attendanceStatus == 'Present').length;
-    final absentCount =
-        _activeRoster.where((i) => i.attendanceStatus == 'Absent').length;
+    final presentCount = _activeRoster
+        .where((i) => i.attendanceStatus == 'Present')
+        .length;
+    final absentCount = _activeRoster
+        .where((i) => i.attendanceStatus == 'Absent')
+        .length;
     final odCount = _activeRoster
         .where((i) => i.attendanceStatus.contains('OD'))
         .length;
@@ -325,8 +319,11 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.touch_app_outlined,
-                      size: 18, color: Color(0xFF4A148C)),
+                  Icon(
+                    Icons.touch_app_outlined,
+                    size: 18,
+                    color: Color(0xFF4A148C),
+                  ),
                   SizedBox(width: 8),
                   Text(
                     'Interactive Swipe Attendance Controls:',
@@ -344,7 +341,9 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 6),
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.red.shade50,
                         borderRadius: BorderRadius.circular(6),
@@ -352,8 +351,11 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.arrow_forward,
-                              size: 14, color: Colors.red.shade700),
+                          Icon(
+                            Icons.arrow_forward,
+                            size: 14,
+                            color: Colors.red.shade700,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -373,7 +375,9 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 6),
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.amber.shade50,
                         borderRadius: BorderRadius.circular(6),
@@ -381,8 +385,11 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.arrow_back,
-                              size: 14, color: Colors.amber.shade800),
+                          Icon(
+                            Icons.arrow_back,
+                            size: 14,
+                            color: Colors.amber.shade800,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -415,9 +422,17 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
             ),
             Row(
               children: [
-                _counterBadge('Present', '$presentCount', const Color(0xFF2E7D32)),
+                _counterBadge(
+                  'Present',
+                  '$presentCount',
+                  const Color(0xFF2E7D32),
+                ),
                 const SizedBox(width: 6),
-                _counterBadge('Absent', '$absentCount', const Color(0xFFD9383A)),
+                _counterBadge(
+                  'Absent',
+                  '$absentCount',
+                  const Color(0xFFD9383A),
+                ),
                 const SizedBox(width: 6),
                 _counterBadge('OD', '$odCount', Colors.amber.shade800),
               ],
@@ -449,7 +464,8 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                    'Attendance submitted for $_selectedCourseCode! ($presentCount Present, $absentCount Absent, $odCount OD)'),
+                  'Attendance submitted for $_selectedCourseCode! ($presentCount Present, $absentCount Absent, $odCount OD)',
+                ),
                 backgroundColor: const Color(0xFF4A148C),
               ),
             );
@@ -520,13 +536,17 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                       Text(
                         req.studentName,
                         style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w500),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         '(${req.rollNumber})',
                         style: const TextStyle(
-                            fontSize: 12, color: AppColors.muted),
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
                       ),
                       const Spacer(),
                       Chip(
@@ -649,14 +669,19 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.campaign,
-                          color: Color(0xFF6A1B9A), size: 20),
+                      const Icon(
+                        Icons.campaign,
+                        color: Color(0xFF6A1B9A),
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           notice.title,
                           style: const TextStyle(
-                              fontWeight: FontWeight.w500, fontSize: 16),
+                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ],
@@ -666,7 +691,10 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                   const SizedBox(height: 12),
                   Text(
                     'Posted by ${notice.author} • Target: ${notice.targetAudience}',
-                    style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.muted,
+                    ),
                   ),
                 ],
               ),
@@ -719,7 +747,9 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                 child: Text(
                   st.studentName.substring(0, 1),
                   style: const TextStyle(
-                      color: Color(0xFF6A1B9A), fontWeight: FontWeight.w500),
+                    color: Color(0xFF6A1B9A),
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
               title: Text(
@@ -731,7 +761,9 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Student profile loaded for ${st.studentName}'),
+                    content: Text(
+                      'Student profile loaded for ${st.studentName}',
+                    ),
                   ),
                 );
               },
@@ -828,7 +860,8 @@ class _SwipeableStudentCard extends StatelessWidget {
                 duration: const Duration(milliseconds: 1200),
                 backgroundColor: Colors.amber.shade800,
                 content: Text(
-                    '👈 ${item.studentName} marked ON DUTY - OD Consented (Yellow)'),
+                  '👈 ${item.studentName} marked ON DUTY - OD Consented (Yellow)',
+                ),
               ),
             );
           }
@@ -866,8 +899,9 @@ class _SwipeableStudentCard extends StatelessWidget {
                   Row(
                     children: [
                       CircleAvatar(
-                        backgroundColor:
-                            _statusColor(item.attendanceStatus).withValues(alpha: 0.15),
+                        backgroundColor: _statusColor(
+                          item.attendanceStatus,
+                        ).withValues(alpha: 0.15),
                         child: Text(
                           item.studentName.substring(0, 1),
                           style: TextStyle(
@@ -905,7 +939,9 @@ class _SwipeableStudentCard extends StatelessWidget {
                     const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.amber.shade50,
                         borderRadius: BorderRadius.circular(8),
@@ -913,8 +949,11 @@ class _SwipeableStudentCard extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.verified,
-                              size: 16, color: Colors.amber.shade900),
+                          Icon(
+                            Icons.verified,
+                            size: 16,
+                            color: Colors.amber.shade900,
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
@@ -942,16 +981,16 @@ class _SwipeableStudentCard extends StatelessWidget {
   Widget _statusPill(StudentAttendanceItem item) {
     final (label, color, icon) = switch (item.attendanceStatus) {
       'Present' => (
-          'PRESENT',
-          const Color(0xFF2E7D32),
-          Icons.check_circle_outline
-        ),
+        'PRESENT',
+        const Color(0xFF2E7D32),
+        Icons.check_circle_outline,
+      ),
       'Absent' => ('ABSENT', const Color(0xFFD9383A), Icons.cancel_outlined),
       _ => (
-          item.isODConsented ? 'OD CONSENTED' : 'OD APPROVED',
-          Colors.amber.shade800,
-          Icons.verified_outlined
-        ),
+        item.isODConsented ? 'OD CONSENTED' : 'OD APPROVED',
+        Colors.amber.shade800,
+        Icons.verified_outlined,
+      ),
     };
 
     return Container(

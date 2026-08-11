@@ -17,7 +17,9 @@ class AdminExaminationDashboard extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth <= 600;
-        final crossAxisCount = isMobile ? 2 : (constraints.maxWidth <= 900 ? 3 : 4);
+        final crossAxisCount = isMobile
+            ? 2
+            : (constraints.maxWidth <= 900 ? 3 : 4);
 
         return SingleChildScrollView(
           padding: EdgeInsets.all(isMobile ? 12 : 20),
@@ -149,7 +151,10 @@ class AdminExaminationDashboard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.amber.withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(12),
@@ -208,7 +213,10 @@ class AdminExaminationDashboard extends StatelessWidget {
                     child: Icon(icon, color: color, size: 24),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),

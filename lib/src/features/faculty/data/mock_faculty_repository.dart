@@ -1,6 +1,13 @@
 import 'faculty_models.dart';
 
 class MockFacultyRepository {
+  static final MockFacultyRepository _shared =
+      MockFacultyRepository._internal();
+
+  factory MockFacultyRepository() => _shared;
+
+  MockFacultyRepository._internal();
+
   final List<FacultyCourse> _courses = [
     const FacultyCourse(
       id: 'CRS-101',
@@ -85,10 +92,14 @@ class MockFacultyRepository {
     DepartmentNotice(
       id: 'NOT-301',
       title: 'Mid-Semester Exam Schedule Revision',
-      content: 'The CS301 exam will now take place on Friday at 09:00 AM in LH-302.',
+      content:
+          'The CS301 exam will now take place on Friday at 09:00 AM in LH-302.',
       postedAt: DateTime.now().subtract(const Duration(hours: 4)),
       author: 'Prof. Sarah Jenkins',
       targetAudience: 'CS Dept Students',
+      pdfName: 'mid_semester_exam_schedule.pdf',
+      pdfUrl:
+          'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
     ),
   ];
 
@@ -117,7 +128,8 @@ class MockFacultyRepository {
         ];
   }
 
-  List<FacultyAcademicLeaveRequest> getLeaveRequests() => List.unmodifiable(_leaveRequests);
+  List<FacultyAcademicLeaveRequest> getLeaveRequests() =>
+      List.unmodifiable(_leaveRequests);
   List<DepartmentNotice> getNotices() => List.unmodifiable(_notices);
 
   void reviewLeave(String id, bool approve) {

@@ -16,7 +16,7 @@ Future<T?> showHomeSheet<T>({
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.white,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
     ),
@@ -214,31 +214,37 @@ class ModuleListSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final modules = ModuleCatalog.all;
+    final modules = [
+      for (final module in permissions.visibleModules())
+        if (module.status != ModuleStatus.planned &&
+            permissions.grantedFeatures(module).isNotEmpty)
+          module,
+    ];
+
+    if (modules.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+        child: Text(
+          'No modules assigned',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      );
+    }
+
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
       itemCount: modules.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final module = modules[index];
-        final available =
-            module.status != ModuleStatus.planned &&
-            permissions.canSeeModule(module.id);
-        final hasAccess = permissions.canSeeModule(module.id);
         return _ModuleListCard(
           module: module,
-          available: available,
-          subtitle: module.status == ModuleStatus.planned
-              ? 'Coming soon'
-              : hasAccess
-              ? module.tagline
-              : 'Not enabled for your account',
-          onTap: available
-              ? () {
-                  Navigator.of(context).pop();
-                  onOpenModule(module.id);
-                }
-              : null,
+          available: true,
+          subtitle: module.tagline,
+          onTap: () {
+            Navigator.of(context).pop();
+            onOpenModule(module.id);
+          },
         );
       },
     );
@@ -262,27 +268,28 @@ class _ModuleListCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = available ? module.color : AppColors.muted;
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          constraints: const BoxConstraints(minHeight: 92),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
-            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Theme.of(context).dividerColor),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(module.icon, color: color, size: 24),
+                child: Icon(module.icon, color: color, size: 23),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -291,15 +298,21 @@ class _ModuleListCard extends StatelessWidget {
                   children: [
                     Text(
                       module.title,
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontSize: 12.5,
+                        height: 1.25,
                         color: available
-                            ? AppColors.muted
-                            : AppColors.muted.withValues(alpha: 0.8),
+                            ? Theme.of(context).colorScheme.onSurfaceVariant
+                            : Theme.of(context).colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.8),
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -309,7 +322,10 @@ class _ModuleListCard extends StatelessWidget {
               ),
               Icon(
                 available ? Icons.chevron_right : Icons.lock_outline,
-                color: AppColors.muted,
+                color: available
+                    ? AppColors.muted
+                    : AppColors.muted.withValues(alpha: .75),
+                size: 21,
               ),
             ],
           ),
@@ -409,12 +425,14 @@ class ProfileSheet extends StatelessWidget {
     required this.permissions,
     required this.onOpenModule,
     required this.onSignOut,
+    required this.onThemeModeChanged,
   });
 
   final UserSession session;
   final EffectivePermissions permissions;
   final ValueChanged<String> onOpenModule;
   final VoidCallback onSignOut;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -424,7 +442,9 @@ class ProfileSheet extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
         _ProfileIdentityCard(session: session, modules: modules.length),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        const _ProfileSectionTitle('Details'),
+        const SizedBox(height: 10),
         _ProfileAction(
           icon: Icons.badge_outlined,
           title: 'Digital ID card',
@@ -544,6 +564,9 @@ class ProfileSheet extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 6),
+        const _ProfileSectionTitle('Settings'),
+        const SizedBox(height: 10),
         _ProfileAction(
           icon: Icons.notifications_outlined,
           title: 'Notifications',
@@ -563,6 +586,12 @@ class ProfileSheet extends StatelessWidget {
           onTap: () {},
         ),
         _ProfileAction(
+          icon: Icons.palette_outlined,
+          title: 'Customization',
+          subtitle: 'Theme, appearance and display preferences',
+          onTap: () => _openCustomization(context, onThemeModeChanged),
+        ),
+        _ProfileAction(
           icon: Icons.feedback_outlined,
           title: 'Feedback',
           subtitle: 'Share feedback or raise a concern',
@@ -577,19 +606,99 @@ class ProfileSheet extends StatelessWidget {
           subtitle: 'Create and track a campus support ticket',
           onTap: () => _openHelpdesk(context),
         ),
-        const SizedBox(height: 14),
-        OutlinedButton.icon(
-          key: const ValueKey('profile-sign-out'),
-          onPressed: () {
+        _ProfileAction(
+          icon: Icons.logout,
+          title: 'Sign out',
+          subtitle: 'Sign out of this device and end your session',
+          onTap: () {
             Navigator.of(context).pop();
             onSignOut();
           },
-          icon: const Icon(Icons.logout),
-          label: const Text('Sign out'),
         ),
       ],
     );
   }
+}
+
+void _openCustomization(
+  BuildContext context,
+  ValueChanged<ThemeMode> onThemeModeChanged,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    builder: (context) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Customization',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Personalize how SuperCampus looks and behaves.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 14),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const CircleAvatar(
+                child: Icon(Icons.brightness_6_outlined),
+              ),
+              title: const Text('Theme'),
+              subtitle: const Text('Dark, light or follow device settings'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _openThemePicker(context, onThemeModeChanged),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+void _openThemePicker(
+  BuildContext context,
+  ValueChanged<ThemeMode> onThemeModeChanged,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    builder: (context) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Theme', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            for (final option in const [
+              (ThemeMode.light, 'Light', Icons.light_mode_outlined),
+              (ThemeMode.dark, 'Dark', Icons.dark_mode_outlined),
+              (ThemeMode.system, 'System', Icons.settings_brightness_outlined),
+            ])
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(option.$3),
+                title: Text(option.$2),
+                onTap: () {
+                  onThemeModeChanged(option.$1);
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                },
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 void _openHelpdesk(BuildContext context) => showHomeSheet(
@@ -639,7 +748,7 @@ class _HelpdeskSheetState extends State<_HelpdeskSheet> {
     final ticket = await showModalBottomSheet<_SupportTicket>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (_) => const _CreateSupportTicketSheet(),
     );
     if (ticket != null && mounted) setState(() => _tickets.insert(0, ticket));
@@ -867,7 +976,7 @@ class _StudentLeaveSheetState extends State<_StudentLeaveSheet> {
     final request = await showModalBottomSheet<_StudentLeaveRequest>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (_) => const _CreateLeaveSheet(),
     );
     if (request != null && mounted) {
@@ -1097,13 +1206,17 @@ class _ProfileDetailSheet extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.canvas,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: Theme.of(context).dividerColor),
           ),
           child: Row(
             children: [
-              Icon(icon, color: AppColors.violet, size: 22),
+              Icon(
+                icon,
+                color: Theme.of(context).colorScheme.primary,
+                size: 22,
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -1140,10 +1253,13 @@ class _ProfileIdentityCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.violet, AppColors.violetBright],
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.secondary,
+          ],
         ),
         borderRadius: BorderRadius.circular(18),
       ),
@@ -1248,7 +1364,7 @@ class _ProfileAction extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
@@ -1256,7 +1372,7 @@ class _ProfileAction extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: Theme.of(context).dividerColor),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
@@ -1265,10 +1381,16 @@ class _ProfileAction extends StatelessWidget {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: AppColors.violet.withValues(alpha: 0.08),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.08),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, color: AppColors.violet, size: 21),
+                  child: Icon(
+                    icon,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 21,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1294,6 +1416,24 @@ class _ProfileAction extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ProfileSectionTitle extends StatelessWidget {
+  const _ProfileSectionTitle(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title.toUpperCase(),
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.2,
       ),
     );
   }

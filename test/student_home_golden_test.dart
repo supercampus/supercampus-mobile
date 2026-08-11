@@ -7,7 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supercampus_mobile/src/app.dart';
+import 'package:supercampus_mobile/src/core/access/mock_permissions_repository.dart';
+import 'package:supercampus_mobile/src/features/authentication/data/mock_auth_repository.dart';
 import 'package:supercampus_mobile/src/features/insights/presentation/insight_dashboard.dart';
+
+Widget _testApp() => SupercampusApp(
+  authRepository: MockAuthRepository(),
+  permissionsRepository: const MockPermissionsRepository(),
+);
 
 /// Renders the student home at phone size so the layout can be eyeballed —
 /// `flutter test --update-goldens test/student_home_golden_test.dart` writes
@@ -57,15 +64,15 @@ Future<void> _signIn(WidgetTester tester) async {
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
-  await tester.pumpWidget(const SupercampusApp());
+  await tester.pumpWidget(_testApp());
 
   await tester.enterText(
     find.byType(TextFormField).at(0),
     'student@example.com',
   );
   await tester.enterText(find.byType(TextFormField).at(1), 'password123');
-  await tester.ensureVisible(find.text('Enter Student Portal'));
-  await tester.tap(find.text('Enter Student Portal'));
+  await tester.ensureVisible(find.text('Sign in'));
+  await tester.tap(find.text('Sign in'));
   await tester.pumpAndSettle();
 }
 
@@ -96,9 +103,7 @@ Future<void> _loadBytes(String family, List<List<int>> fonts) async {
   final loader = FontLoader(family);
   for (final bytes in fonts) {
     loader.addFont(
-      Future.value(
-        ByteData.view(Uint8List.fromList(bytes).buffer),
-      ),
+      Future.value(ByteData.view(Uint8List.fromList(bytes).buffer)),
     );
   }
   await loader.load();
