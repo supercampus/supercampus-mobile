@@ -412,6 +412,24 @@ class _ModuleCardState extends State<_ModuleCard> {
   @override
   Widget build(BuildContext context) {
     final module = widget.module;
+    final scheme = Theme.of(context).colorScheme;
+    final brandColors = _sortedBrandColors(
+      widget.permissions.tenantBrand,
+      scheme,
+    );
+    final cardGradientStart = brandColors[0];
+    final cardGradientEnd = brandColors[1];
+    final moduleIconColor = _tenantBrandColor(
+      widget.permissions.tenantBrand,
+      'secondary',
+      scheme.secondary,
+    );
+    final actionIconColor = _tenantBrandColor(
+      widget.permissions.tenantBrand,
+      'surface',
+      scheme.surface,
+    );
+    final cardForeground = _readableForeground(cardGradientStart);
     final ready = module.status != ModuleStatus.planned;
     final level = widget.permissions.accessLevel(module.id);
     final actions = ready
@@ -440,16 +458,13 @@ class _ModuleCardState extends State<_ModuleCard> {
           height: _cardHeight,
           padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
-            // Two stops of the same violet, a shade apart. Enough to keep the
-            // card from reading as a flat swatch, far short of the hue shift
-            // that made the old bars look like a paint chart.
+            // Use two strong logo-derived tones. A light/white surface color
+            // is intentionally excluded so the card keeps visual weight.
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primaryContainer,
-              ],
+              colors: [cardGradientStart, cardGradientEnd],
+              stops: const [0.08, 0.92],
             ),
             borderRadius: BorderRadius.circular(_cardRadius),
             boxShadow: [
@@ -474,13 +489,17 @@ class _ModuleCardState extends State<_ModuleCard> {
                         // Tinted glass rather than a solid white disc — a disc that
                         // size reads as an app icon, which is what made the card
                         // look like a game tile.
-                        color: Colors.white.withValues(alpha: 0.16),
+                        color: actionIconColor.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(15),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.22),
+                          color: actionIconColor.withValues(alpha: 0.32),
                         ),
                       ),
-                      child: Icon(module.icon, color: Colors.white, size: 24),
+                      child: Icon(
+                        module.icon,
+                        color: moduleIconColor,
+                        size: 24,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -496,8 +515,8 @@ class _ModuleCardState extends State<_ModuleCard> {
                             alignment: Alignment.centerLeft,
                             child: Text(
                               module.displayName,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: cardForeground,
                                 fontSize: 17,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: 0.1,
@@ -511,7 +530,7 @@ class _ModuleCardState extends State<_ModuleCard> {
                           Text(
                             ready ? level.label : 'Coming soon',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.72),
+                              color: cardForeground.withValues(alpha: 0.72),
                               fontSize: 12,
                               fontWeight: FontWeight.w300,
                               letterSpacing: 0.2,
@@ -529,7 +548,9 @@ class _ModuleCardState extends State<_ModuleCard> {
                       ready
                           ? Icons.chevron_right_rounded
                           : Icons.schedule_rounded,
-                      color: Colors.white.withValues(alpha: ready ? 0.9 : 0.55),
+                      color: cardForeground.withValues(
+                        alpha: ready ? 0.9 : 0.55,
+                      ),
                       size: ready ? 26 : 20,
                     ),
                   ],
@@ -543,6 +564,7 @@ class _ModuleCardState extends State<_ModuleCard> {
                     for (final action in actions)
                       _QuickActionButton(
                         action: action,
+                        iconColor: actionIconColor,
                         onTap: widget.onQuickAction == null
                             ? widget.onTap
                             : () => widget.onQuickAction!(
@@ -708,9 +730,14 @@ List<_QuickAction> _quickActionsFor(String moduleId) => switch (moduleId) {
 };
 
 class _QuickActionButton extends StatelessWidget {
-  const _QuickActionButton({required this.action, required this.onTap});
+  const _QuickActionButton({
+    required this.action,
+    required this.iconColor,
+    required this.onTap,
+  });
 
   final _QuickAction action;
+  final Color iconColor;
   final VoidCallback onTap;
 
   @override
@@ -718,7 +745,7 @@ class _QuickActionButton extends StatelessWidget {
     return Tooltip(
       message: action.label,
       child: Material(
-        color: Colors.white.withValues(alpha: 0.16),
+        color: iconColor.withValues(alpha: 0.18),
         shape: const CircleBorder(),
         child: InkWell(
           key: ValueKey('quick-action-${action.id}'),
@@ -727,12 +754,37 @@ class _QuickActionButton extends StatelessWidget {
           child: SizedBox(
             width: 52,
             height: 52,
-            child: Icon(action.icon, color: Colors.white, size: 23),
+            child: Icon(action.icon, color: iconColor, size: 23),
           ),
         ),
       ),
     );
   }
+}
+
+Color _tenantBrandColor(
+  Map<String, dynamic> brand,
+  String key,
+  Color fallback,
+) {
+  final value = brand[key];
+  if (value is! String) return fallback;
+  final normalized = value.trim().replaceFirst('#', '');
+  final hex = normalized.length == 6 ? 'FF$normalized' : normalized;
+  final parsed = int.tryParse(hex, radix: 16);
+  return parsed == null ? fallback : Color(parsed);
+}
+
+Color _readableForeground(Color background) =>
+    background.computeLuminance() > 0.48 ? Colors.black87 : Colors.white;
+
+List<Color> _sortedBrandColors(Map<String, dynamic> brand, ColorScheme scheme) {
+  final colors = [
+    _tenantBrandColor(brand, 'primary', scheme.primary),
+    _tenantBrandColor(brand, 'secondary', scheme.secondary),
+    _tenantBrandColor(brand, 'surface', scheme.surface),
+  ]..sort((a, b) => a.computeLuminance().compareTo(b.computeLuminance()));
+  return colors;
 }
 
 /// Which card is in the frame, and how many are waiting. Reads the same

@@ -2,6 +2,9 @@ import 'auth_repository.dart';
 
 class MockAuthRepository implements AuthRepository {
   @override
+  Future<UserSession> refresh(UserSession session) async => session;
+
+  @override
   Future<UserSession> signIn({
     required String email,
     required String password,

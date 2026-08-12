@@ -36,7 +36,13 @@ class BackendPermissionsRepository implements PermissionsRepository {
         'accept': 'application/json',
       },
     );
-    if (response.statusCode == 401 || response.statusCode == 403) {
+    if (response.statusCode == 401) {
+      throw const PermissionsException(
+        'Your session has expired. Sign in again.',
+        sessionExpired: true,
+      );
+    }
+    if (response.statusCode == 403) {
       throw const PermissionsException('This session cannot load app access.');
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -57,18 +63,24 @@ class BackendPermissionsRepository implements PermissionsRepository {
 
 Uri _normalizeBaseUri(String baseUrl) {
   final uri = Uri.parse(baseUrl.replaceFirst(RegExp(r'/$'), ''));
+  if (kIsWeb && _isLoopbackHost(uri.host) && _isLoopbackHost(Uri.base.host)) {
+    return uri.replace(host: Uri.base.host);
+  }
   if (!kIsWeb &&
       defaultTargetPlatform == TargetPlatform.android &&
-      (uri.host == '127.0.0.1' || uri.host == 'localhost')) {
+      _isLoopbackHost(uri.host)) {
     return uri.replace(host: '10.0.2.2');
   }
   return uri;
 }
 
+bool _isLoopbackHost(String host) => host == '127.0.0.1' || host == 'localhost';
+
 class PermissionsException implements Exception {
-  const PermissionsException(this.message);
+  const PermissionsException(this.message, {this.sessionExpired = false});
 
   final String message;
+  final bool sessionExpired;
 
   @override
   String toString() => message;

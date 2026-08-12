@@ -417,7 +417,7 @@ Color toneColor(InsightTone tone) => switch (tone) {
   InsightTone.neutral => AppColors.violet,
 };
 
-/// Who you are signed in as, and the way out.
+/// The first profile level: identity card, Details, and Settings only.
 class ProfileSheet extends StatelessWidget {
   const ProfileSheet({
     super.key,
@@ -441,183 +441,612 @@ class ProfileSheet extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
+        const _ProfileSectionTitle('Profile card'),
+        const SizedBox(height: 10),
         _ProfileIdentityCard(session: session, modules: modules.length),
         const SizedBox(height: 20),
-        const _ProfileSectionTitle('Details'),
-        const SizedBox(height: 10),
         _ProfileAction(
           icon: Icons.badge_outlined,
-          title: 'Digital ID card',
-          subtitle: 'Your campus identity and credentials',
-          onTap: () => _openProfileDetail(
-            context,
-            title: 'Digital ID card',
-            icon: Icons.badge_outlined,
-            items: [
-              _ProfileDetailItem('Name', session.displayName),
-              _ProfileDetailItem('Student ID', session.idNumber ?? 'SC2600142'),
-              _ProfileDetailItem('Email', session.email),
-              _ProfileDetailItem(
-                'Department',
-                session.departmentOrWard ?? 'Computer Science',
-              ),
-              const _ProfileDetailItem('Status', 'Active student'),
-            ],
+          title: 'Details',
+          subtitle: 'Identity, academics, documents and health information',
+          onTap: () => showHomeSheet(
+            context: context,
+            title: 'Details',
+            expand: true,
+            child: _ProfileDetailsSheet(session: session),
           ),
         ),
         _ProfileAction(
-          icon: Icons.school_outlined,
-          title: 'Academic history',
-          subtitle: 'Programme, semester and performance',
-          onTap: () => _openProfileDetail(
-            context,
-            title: 'Academic history',
-            icon: Icons.school_outlined,
-            items: const [
-              _ProfileDetailItem('Programme', 'B.Tech Computer Science'),
-              _ProfileDetailItem('Current semester', 'Semester 6'),
-              _ProfileDetailItem('Section', 'CS-3A'),
-              _ProfileDetailItem('Academic year', '2025–2026'),
-              _ProfileDetailItem('Current CGPA', '8.42'),
-            ],
+          icon: Icons.settings_outlined,
+          title: 'Settings',
+          subtitle: 'Notifications, security and account preferences',
+          onTap: () => showHomeSheet(
+            context: context,
+            title: 'Settings',
+            expand: true,
+            child: _ProfileSettingsSheet(
+              onOpenModule: onOpenModule,
+              onSignOut: onSignOut,
+              onThemeModeChanged: onThemeModeChanged,
+            ),
           ),
-        ),
-        _ProfileAction(
-          icon: Icons.folder_copy_outlined,
-          title: 'Documents and certificates',
-          subtitle: 'Submitted documents and generated certificates',
-          onTap: () => _openProfileDetail(
-            context,
-            title: 'Documents and certificates',
-            icon: Icons.folder_copy_outlined,
-            items: const [
-              _ProfileDetailItem(
-                'Bonafide certificate',
-                'Available to generate',
-              ),
-              _ProfileDetailItem('Transfer certificate', 'Verified'),
-              _ProfileDetailItem('Semester 5 marksheet', 'Verified'),
-              _ProfileDetailItem('Student ID proof', 'Verified'),
-            ],
-          ),
-        ),
-        _ProfileAction(
-          icon: Icons.contact_emergency_outlined,
-          title: 'Emergency contacts',
-          subtitle: 'People to contact in an emergency',
-          onTap: () => _openProfileDetail(
-            context,
-            title: 'Emergency contacts',
-            icon: Icons.contact_emergency_outlined,
-            items: const [
-              _ProfileDetailItem('Primary contact', 'Robert Johnson'),
-              _ProfileDetailItem('Relationship', 'Parent'),
-              _ProfileDetailItem('Phone', '+91 98765 43210'),
-              _ProfileDetailItem('Address', 'Bengaluru, Karnataka'),
-            ],
-          ),
-        ),
-        _ProfileAction(
-          icon: Icons.family_restroom_outlined,
-          title: 'Parents details',
-          subtitle: 'Parent and guardian information',
-          onTap: () => _openProfileDetail(
-            context,
-            title: 'Parents details',
-            icon: Icons.family_restroom_outlined,
-            items: const [
-              _ProfileDetailItem('Parent / guardian', 'Robert Johnson'),
-              _ProfileDetailItem('Email', 'robert.johnson@example.com'),
-              _ProfileDetailItem('Mobile', '+91 98765 43210'),
-              _ProfileDetailItem('Portal access', 'Enabled'),
-            ],
-          ),
-        ),
-        _ProfileAction(
-          icon: Icons.medical_information_outlined,
-          title: 'Medical information',
-          subtitle: 'Health details shared with the institution',
-          onTap: () => _openProfileDetail(
-            context,
-            title: 'Medical information',
-            icon: Icons.medical_information_outlined,
-            items: const [
-              _ProfileDetailItem('Blood group', 'O positive'),
-              _ProfileDetailItem('Allergies', 'None reported'),
-              _ProfileDetailItem('Insurance', 'Campus coverage active'),
-              _ProfileDetailItem('Emergency note', 'No special instructions'),
-            ],
-          ),
-        ),
-        _ProfileAction(
-          icon: Icons.history,
-          title: 'Activity history',
-          subtitle: 'Recent module access and updates',
-          onTap: () => _openProfileDetail(
-            context,
-            title: 'Activity history',
-            icon: Icons.history,
-            items: const [
-              _ProfileDetailItem('Today', 'Library pass created'),
-              _ProfileDetailItem('Yesterday', 'Canteen order placed'),
-              _ProfileDetailItem('08 Aug 2026', 'Gatepass request submitted'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 6),
-        const _ProfileSectionTitle('Settings'),
-        const SizedBox(height: 10),
-        _ProfileAction(
-          icon: Icons.notifications_outlined,
-          title: 'Notifications',
-          subtitle: 'Alerts, reminders and announcements',
-          onTap: () {},
-        ),
-        _ProfileAction(
-          icon: Icons.event_available_outlined,
-          title: 'Leave applications',
-          subtitle: 'Apply for leave and track approval status',
-          onTap: () => _openLeaveApplications(context),
-        ),
-        _ProfileAction(
-          icon: Icons.lock_outline,
-          title: 'Privacy and security',
-          subtitle: 'Password, sessions and account safety',
-          onTap: () {},
-        ),
-        _ProfileAction(
-          icon: Icons.palette_outlined,
-          title: 'Customization',
-          subtitle: 'Theme, appearance and display preferences',
-          onTap: () => _openCustomization(context, onThemeModeChanged),
-        ),
-        _ProfileAction(
-          icon: Icons.feedback_outlined,
-          title: 'Feedback',
-          subtitle: 'Share feedback or raise a concern',
-          onTap: () {
-            Navigator.of(context).pop();
-            onOpenModule('feedback');
-          },
-        ),
-        _ProfileAction(
-          icon: Icons.help_outline,
-          title: 'Help and support',
-          subtitle: 'Create and track a campus support ticket',
-          onTap: () => _openHelpdesk(context),
-        ),
-        _ProfileAction(
-          icon: Icons.logout,
-          title: 'Sign out',
-          subtitle: 'Sign out of this device and end your session',
-          onTap: () {
-            Navigator.of(context).pop();
-            onSignOut();
-          },
         ),
       ],
     );
   }
+}
+
+class _ProfileDetailsSheet extends StatelessWidget {
+  const _ProfileDetailsSheet({required this.session});
+
+  final UserSession session;
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+    children: [
+      _ProfileAction(
+        icon: Icons.badge_outlined,
+        title: 'Digital ID card',
+        subtitle: 'Your campus identity and credentials',
+        onTap: () => _openProfileDetail(
+          context,
+          title: 'Digital ID card',
+          icon: Icons.badge_outlined,
+          items: [
+            _ProfileDetailItem('Name', session.displayName),
+            _ProfileDetailItem('Student ID', session.idNumber ?? 'SC2600142'),
+            _ProfileDetailItem('Email', session.email),
+            _ProfileDetailItem(
+              'Department',
+              session.departmentOrWard ?? 'Computer Science',
+            ),
+            const _ProfileDetailItem('Status', 'Active student'),
+          ],
+        ),
+      ),
+      _ProfileAction(
+        icon: Icons.school_outlined,
+        title: 'Academic history',
+        subtitle: 'Programme, semester and performance',
+        onTap: () => _openProfileDetail(
+          context,
+          title: 'Academic history',
+          icon: Icons.school_outlined,
+          items: const [
+            _ProfileDetailItem('Programme', 'B.Tech Computer Science'),
+            _ProfileDetailItem('Current semester', 'Semester 6'),
+            _ProfileDetailItem('Section', 'CS-3A'),
+            _ProfileDetailItem('Academic year', '2025-2026'),
+            _ProfileDetailItem('Current CGPA', '8.42'),
+          ],
+        ),
+      ),
+      _ProfileAction(
+        icon: Icons.folder_copy_outlined,
+        title: 'Documents and certificates',
+        subtitle: 'Submitted documents and generated certificates',
+        onTap: () => _openProfileDetail(
+          context,
+          title: 'Documents and certificates',
+          icon: Icons.folder_copy_outlined,
+          items: const [
+            _ProfileDetailItem('Bonafide certificate', 'Available to generate'),
+            _ProfileDetailItem('Transfer certificate', 'Verified'),
+            _ProfileDetailItem('Semester 5 marksheet', 'Verified'),
+            _ProfileDetailItem('Student ID proof', 'Verified'),
+          ],
+        ),
+      ),
+      _ProfileAction(
+        icon: Icons.contact_emergency_outlined,
+        title: 'Emergency contacts',
+        subtitle: 'People to contact in an emergency',
+        onTap: () => _openProfileDetail(
+          context,
+          title: 'Emergency contacts',
+          icon: Icons.contact_emergency_outlined,
+          items: const [
+            _ProfileDetailItem('Primary contact', 'Robert Johnson'),
+            _ProfileDetailItem('Relationship', 'Parent'),
+            _ProfileDetailItem('Phone', '+91 98765 43210'),
+            _ProfileDetailItem('Address', 'Bengaluru, Karnataka'),
+          ],
+        ),
+      ),
+      _ProfileAction(
+        icon: Icons.family_restroom_outlined,
+        title: 'Parents details',
+        subtitle: 'Parent and guardian information',
+        onTap: () => _openProfileDetail(
+          context,
+          title: 'Parents details',
+          icon: Icons.family_restroom_outlined,
+          items: const [
+            _ProfileDetailItem('Parent / guardian', 'Robert Johnson'),
+            _ProfileDetailItem('Email', 'robert.johnson@example.com'),
+            _ProfileDetailItem('Mobile', '+91 98765 43210'),
+            _ProfileDetailItem('Portal access', 'Enabled'),
+          ],
+        ),
+      ),
+      _ProfileAction(
+        icon: Icons.medical_information_outlined,
+        title: 'Medical information',
+        subtitle: 'Health details shared with the institution',
+        onTap: () => _openProfileDetail(
+          context,
+          title: 'Medical information',
+          icon: Icons.medical_information_outlined,
+          items: const [
+            _ProfileDetailItem('Blood group', 'O positive'),
+            _ProfileDetailItem('Allergies', 'None reported'),
+            _ProfileDetailItem('Insurance', 'Campus coverage active'),
+            _ProfileDetailItem('Emergency note', 'No special instructions'),
+          ],
+        ),
+      ),
+      _ProfileAction(
+        icon: Icons.history,
+        title: 'Activity history',
+        subtitle: 'Recent module access and updates',
+        onTap: () => _openProfileDetail(
+          context,
+          title: 'Activity history',
+          icon: Icons.history,
+          items: const [
+            _ProfileDetailItem('Today', 'Library pass created'),
+            _ProfileDetailItem('Yesterday', 'Canteen order placed'),
+            _ProfileDetailItem('08 Aug 2026', 'Gatepass request submitted'),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class _ProfileSettingsSheet extends StatelessWidget {
+  const _ProfileSettingsSheet({
+    required this.onOpenModule,
+    required this.onSignOut,
+    required this.onThemeModeChanged,
+  });
+
+  final ValueChanged<String> onOpenModule;
+  final VoidCallback onSignOut;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+    children: [
+      _ProfileAction(
+        icon: Icons.notifications_outlined,
+        title: 'Notifications',
+        subtitle: 'Alerts, reminders and announcements',
+        onTap: () => _openNotifications(context),
+      ),
+      _ProfileAction(
+        icon: Icons.event_available_outlined,
+        title: 'Leave applications',
+        subtitle: 'Apply for leave and track approval status',
+        onTap: () => _openLeaveApplications(context),
+      ),
+      _ProfileAction(
+        icon: Icons.lock_outline,
+        title: 'Privacy and security',
+        subtitle: 'Password, sessions and account safety',
+        onTap: () => _openPrivacySecurity(context),
+      ),
+      _ProfileAction(
+        icon: Icons.palette_outlined,
+        title: 'Customization',
+        subtitle: 'Theme, appearance and display preferences',
+        onTap: () => _openCustomization(context, onThemeModeChanged),
+      ),
+      _ProfileAction(
+        icon: Icons.feedback_outlined,
+        title: 'Feedback',
+        subtitle: 'Share feedback or raise a concern',
+        onTap: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).pop();
+          onOpenModule('feedback');
+        },
+      ),
+      _ProfileAction(
+        icon: Icons.help_outline,
+        title: 'Help and support',
+        subtitle: 'Create and track a campus support ticket',
+        onTap: () => _openHelpdesk(context),
+      ),
+      _ProfileAction(
+        icon: Icons.logout,
+        title: 'Sign out',
+        subtitle: 'Sign out of this device and end your session',
+        onTap: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).pop();
+          onSignOut();
+        },
+      ),
+    ],
+  );
+}
+
+/// Legacy combined content retained below while older callers transition.
+class _LegacyProfileOptionsSheet extends StatelessWidget {
+  const _LegacyProfileOptionsSheet({
+    super.key,
+    required this.session,
+    required this.permissions,
+    required this.onOpenModule,
+    required this.onSignOut,
+    required this.onThemeModeChanged,
+  });
+
+  final UserSession session;
+  final EffectivePermissions permissions;
+  final ValueChanged<String> onOpenModule;
+  final VoidCallback onSignOut;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final modules = permissions.visibleModules();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const _ProfileSectionTitle('Profile card'),
+              const SizedBox(height: 10),
+              _ProfileIdentityCard(session: session, modules: modules.length),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            children: [
+              const _ProfileSectionTitle('Details'),
+              const SizedBox(height: 10),
+              _ProfileAction(
+                icon: Icons.badge_outlined,
+                title: 'Digital ID card',
+                subtitle: 'Your campus identity and credentials',
+                onTap: () => _openProfileDetail(
+                  context,
+                  title: 'Digital ID card',
+                  icon: Icons.badge_outlined,
+                  items: [
+                    _ProfileDetailItem('Name', session.displayName),
+                    _ProfileDetailItem(
+                      'Student ID',
+                      session.idNumber ?? 'SC2600142',
+                    ),
+                    _ProfileDetailItem('Email', session.email),
+                    _ProfileDetailItem(
+                      'Department',
+                      session.departmentOrWard ?? 'Computer Science',
+                    ),
+                    const _ProfileDetailItem('Status', 'Active student'),
+                  ],
+                ),
+              ),
+              _ProfileAction(
+                icon: Icons.school_outlined,
+                title: 'Academic history',
+                subtitle: 'Programme, semester and performance',
+                onTap: () => _openProfileDetail(
+                  context,
+                  title: 'Academic history',
+                  icon: Icons.school_outlined,
+                  items: const [
+                    _ProfileDetailItem('Programme', 'B.Tech Computer Science'),
+                    _ProfileDetailItem('Current semester', 'Semester 6'),
+                    _ProfileDetailItem('Section', 'CS-3A'),
+                    _ProfileDetailItem('Academic year', '2025–2026'),
+                    _ProfileDetailItem('Current CGPA', '8.42'),
+                  ],
+                ),
+              ),
+              _ProfileAction(
+                icon: Icons.folder_copy_outlined,
+                title: 'Documents and certificates',
+                subtitle: 'Submitted documents and generated certificates',
+                onTap: () => _openProfileDetail(
+                  context,
+                  title: 'Documents and certificates',
+                  icon: Icons.folder_copy_outlined,
+                  items: const [
+                    _ProfileDetailItem(
+                      'Bonafide certificate',
+                      'Available to generate',
+                    ),
+                    _ProfileDetailItem('Transfer certificate', 'Verified'),
+                    _ProfileDetailItem('Semester 5 marksheet', 'Verified'),
+                    _ProfileDetailItem('Student ID proof', 'Verified'),
+                  ],
+                ),
+              ),
+              _ProfileAction(
+                icon: Icons.contact_emergency_outlined,
+                title: 'Emergency contacts',
+                subtitle: 'People to contact in an emergency',
+                onTap: () => _openProfileDetail(
+                  context,
+                  title: 'Emergency contacts',
+                  icon: Icons.contact_emergency_outlined,
+                  items: const [
+                    _ProfileDetailItem('Primary contact', 'Robert Johnson'),
+                    _ProfileDetailItem('Relationship', 'Parent'),
+                    _ProfileDetailItem('Phone', '+91 98765 43210'),
+                    _ProfileDetailItem('Address', 'Bengaluru, Karnataka'),
+                  ],
+                ),
+              ),
+              _ProfileAction(
+                icon: Icons.family_restroom_outlined,
+                title: 'Parents details',
+                subtitle: 'Parent and guardian information',
+                onTap: () => _openProfileDetail(
+                  context,
+                  title: 'Parents details',
+                  icon: Icons.family_restroom_outlined,
+                  items: const [
+                    _ProfileDetailItem('Parent / guardian', 'Robert Johnson'),
+                    _ProfileDetailItem('Email', 'robert.johnson@example.com'),
+                    _ProfileDetailItem('Mobile', '+91 98765 43210'),
+                    _ProfileDetailItem('Portal access', 'Enabled'),
+                  ],
+                ),
+              ),
+              _ProfileAction(
+                icon: Icons.medical_information_outlined,
+                title: 'Medical information',
+                subtitle: 'Health details shared with the institution',
+                onTap: () => _openProfileDetail(
+                  context,
+                  title: 'Medical information',
+                  icon: Icons.medical_information_outlined,
+                  items: const [
+                    _ProfileDetailItem('Blood group', 'O positive'),
+                    _ProfileDetailItem('Allergies', 'None reported'),
+                    _ProfileDetailItem('Insurance', 'Campus coverage active'),
+                    _ProfileDetailItem(
+                      'Emergency note',
+                      'No special instructions',
+                    ),
+                  ],
+                ),
+              ),
+              _ProfileAction(
+                icon: Icons.history,
+                title: 'Activity history',
+                subtitle: 'Recent module access and updates',
+                onTap: () => _openProfileDetail(
+                  context,
+                  title: 'Activity history',
+                  icon: Icons.history,
+                  items: const [
+                    _ProfileDetailItem('Today', 'Library pass created'),
+                    _ProfileDetailItem('Yesterday', 'Canteen order placed'),
+                    _ProfileDetailItem(
+                      '08 Aug 2026',
+                      'Gatepass request submitted',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              const _ProfileSectionTitle('Settings'),
+              const SizedBox(height: 10),
+              _ProfileAction(
+                icon: Icons.notifications_outlined,
+                title: 'Notifications',
+                subtitle: 'Alerts, reminders and announcements',
+                onTap: () => _openNotifications(context),
+              ),
+              _ProfileAction(
+                icon: Icons.event_available_outlined,
+                title: 'Leave applications',
+                subtitle: 'Apply for leave and track approval status',
+                onTap: () => _openLeaveApplications(context),
+              ),
+              _ProfileAction(
+                icon: Icons.lock_outline,
+                title: 'Privacy and security',
+                subtitle: 'Password, sessions and account safety',
+                onTap: () => _openPrivacySecurity(context),
+              ),
+              _ProfileAction(
+                icon: Icons.palette_outlined,
+                title: 'Customization',
+                subtitle: 'Theme, appearance and display preferences',
+                onTap: () => _openCustomization(context, onThemeModeChanged),
+              ),
+              _ProfileAction(
+                icon: Icons.feedback_outlined,
+                title: 'Feedback',
+                subtitle: 'Share feedback or raise a concern',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onOpenModule('feedback');
+                },
+              ),
+              _ProfileAction(
+                icon: Icons.help_outline,
+                title: 'Help and support',
+                subtitle: 'Create and track a campus support ticket',
+                onTap: () => _openHelpdesk(context),
+              ),
+              _ProfileAction(
+                icon: Icons.logout,
+                title: 'Sign out',
+                subtitle: 'Sign out of this device and end your session',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onSignOut();
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+void _openNotifications(BuildContext context) => showHomeSheet(
+  context: context,
+  title: 'Notifications',
+  expand: true,
+  child: const _NotificationsSheet(),
+);
+
+class _NotificationsSheet extends StatefulWidget {
+  const _NotificationsSheet();
+
+  @override
+  State<_NotificationsSheet> createState() => _NotificationsSheetState();
+}
+
+class _NotificationsSheetState extends State<_NotificationsSheet> {
+  final _notifications = <({String title, String detail, IconData icon})>[
+    (
+      title: 'Exam schedule updated',
+      detail: 'Mid-Semester exam schedule revision is available.',
+      icon: Icons.campaign_outlined,
+    ),
+    (
+      title: 'Leave application reviewed',
+      detail: 'Your personal leave request is pending approval.',
+      icon: Icons.event_available_outlined,
+    ),
+    (
+      title: 'Library pass ready',
+      detail: 'Your library QR pass is available for today.',
+      icon: Icons.local_library_outlined,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+    children: [
+      Align(
+        alignment: Alignment.centerRight,
+        child: TextButton(
+          onPressed: _notifications.isEmpty
+              ? null
+              : () => setState(() => _notifications.clear()),
+          child: const Text('Mark all as read'),
+        ),
+      ),
+      if (_notifications.isEmpty)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 48),
+          child: Center(child: Text('You are all caught up.')),
+        )
+      else
+        for (final notification in _notifications)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(12),
+              shape: RoundedRectangleBorder(
+                side: BorderSide(color: Theme.of(context).dividerColor),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              leading: CircleAvatar(
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.1),
+                child: Icon(
+                  notification.icon,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              title: Text(notification.title),
+              subtitle: Text(notification.detail),
+            ),
+          ),
+    ],
+  );
+}
+
+void _openPrivacySecurity(BuildContext context) => showHomeSheet(
+  context: context,
+  title: 'Privacy and security',
+  child: const _PrivacySecuritySheet(),
+);
+
+class _PrivacySecuritySheet extends StatelessWidget {
+  const _PrivacySecuritySheet();
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+    children: [
+      _SecurityRow(
+        icon: Icons.password_outlined,
+        title: 'Password',
+        subtitle: 'Change your account password',
+        onTap: () => _showUnavailableMessage(context, 'Password changes'),
+      ),
+      _SecurityRow(
+        icon: Icons.devices_outlined,
+        title: 'Active sessions',
+        subtitle: 'Review devices signed in to your account',
+        onTap: () => _showUnavailableMessage(context, 'Session management'),
+      ),
+      _SecurityRow(
+        icon: Icons.verified_user_outlined,
+        title: 'Account safety',
+        subtitle: 'Your campus account is protected by institution sign-in',
+      ),
+      const SizedBox(height: 12),
+      Text(
+        'Never share your password or verification codes with anyone.',
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+    ],
+  );
+}
+
+class _SecurityRow extends StatelessWidget {
+  const _SecurityRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    contentPadding: const EdgeInsets.symmetric(vertical: 4),
+    leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+    title: Text(title),
+    subtitle: Text(subtitle),
+    trailing: onTap == null ? null : const Icon(Icons.chevron_right),
+    onTap: onTap,
+  );
+}
+
+void _showUnavailableMessage(BuildContext context, String feature) {
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text('$feature will be available soon.')));
 }
 
 void _openCustomization(

@@ -46,7 +46,7 @@ class _SupercampusAppState extends State<SupercampusApp>
     with WidgetsBindingObserver {
   static const _backendBaseUrl = String.fromEnvironment(
     'SUPERCAMPUS_API_BASE_URL',
-    defaultValue: 'http://127.0.0.1:4000',
+    defaultValue: 'http://localhost:4000',
   );
   static const _useMockData = bool.fromEnvironment('SUPERCAMPUS_USE_MOCK_DATA');
   static const _permissionRefreshInterval = Duration(seconds: 3);
@@ -60,6 +60,7 @@ class _SupercampusAppState extends State<SupercampusApp>
   String? _openModuleAction;
   ThemeMode _themeMode = ThemeMode.system;
   Timer? _permissionRefreshTimer;
+  bool _permissionRefreshInProgress = false;
 
   @override
   void initState() {
@@ -124,26 +125,40 @@ class _SupercampusAppState extends State<SupercampusApp>
   }
 
   Future<void> _refreshPermissions() async {
-    final session = _session;
-    if (session == null || _useMockData) return;
+    var session = _session;
+    if (session == null || _useMockData || _permissionRefreshInProgress) return;
+    _permissionRefreshInProgress = true;
     try {
-      final permissions = await _permissionsRepository.loadFor(session);
+      if (_shouldRefreshSession(session)) {
+        session = await _renewSession(session);
+      }
+
+      EffectivePermissions permissions;
+      try {
+        permissions = await _permissionsRepository.loadFor(session);
+      } on PermissionsException catch (error) {
+        if (!error.sessionExpired) rethrow;
+        session = await _renewSession(session);
+        permissions = await _permissionsRepository.loadFor(session);
+      }
+
+      if (!mounted || !identical(_session, session)) return;
+      _applyPermissions(permissions);
+    } on AuthenticationException {
       if (!mounted) return;
+      _expireSession();
+    } on PermissionsException catch (error) {
+      if (!mounted) return;
+      if (error.sessionExpired) {
+        _expireSession();
+        return;
+      }
+
+      // Access is fail-closed: a stale grant must not survive a failed refresh.
       setState(() {
-        _permissions = permissions;
-        final openModuleId = _openModuleId;
-        if (openModuleId != null && !permissions.canSeeModule(openModuleId)) {
-          _openModuleId = null;
-          _openModuleAction = null;
-        } else if (openModuleId != null &&
-            _openModuleAction != null &&
-            !_canOpenModuleAction(
-              permissions,
-              openModuleId,
-              _openModuleAction!,
-            )) {
-          _openModuleAction = null;
-        }
+        _permissions = const EffectivePermissions.empty();
+        _openModuleId = null;
+        _openModuleAction = null;
       });
     } catch (_) {
       // Access is fail-closed: a stale grant must not survive a failed refresh.
@@ -153,7 +168,53 @@ class _SupercampusAppState extends State<SupercampusApp>
         _openModuleId = null;
         _openModuleAction = null;
       });
+    } finally {
+      _permissionRefreshInProgress = false;
     }
+  }
+
+  bool _shouldRefreshSession(UserSession session) {
+    final expiresAt = session.accessTokenExpiresAt;
+    if (expiresAt == null) return false;
+    return expiresAt.isBefore(DateTime.now().add(const Duration(seconds: 30)));
+  }
+
+  Future<UserSession> _renewSession(UserSession session) async {
+    final refreshed = await _authRepository.refresh(session);
+    if (!mounted || !identical(_session, session)) {
+      throw const AuthenticationException('The session is no longer active.');
+    }
+    setState(() => _session = refreshed);
+    return refreshed;
+  }
+
+  void _expireSession() {
+    _permissionRefreshTimer?.cancel();
+    setState(() {
+      _session = null;
+      _permissions = null;
+      _openModuleId = null;
+      _openModuleAction = null;
+    });
+  }
+
+  void _applyPermissions(EffectivePermissions permissions) {
+    setState(() {
+      _permissions = permissions;
+      final openModuleId = _openModuleId;
+      if (openModuleId != null && !permissions.canSeeModule(openModuleId)) {
+        _openModuleId = null;
+        _openModuleAction = null;
+      } else if (openModuleId != null &&
+          _openModuleAction != null &&
+          !_canOpenModuleAction(
+            permissions,
+            openModuleId,
+            _openModuleAction!,
+          )) {
+        _openModuleAction = null;
+      }
+    });
   }
 
   @override

@@ -44,6 +44,7 @@ class UserSession {
     this.sectionId,
     this.staffId,
     this.jwtToken,
+    this.accessTokenExpiresAt,
   });
 
   final String email;
@@ -63,6 +64,7 @@ class UserSession {
   final String? sectionId; // e.g. "CS-3A" for students
   final String? staffId; // e.g. "FAC-101" for faculty
   final String? jwtToken; // Signed JWT Token string
+  final DateTime? accessTokenExpiresAt;
 
   /// Display label for the role
   String get roleLabel => roleName ?? role.label;
@@ -154,6 +156,8 @@ abstract interface class AuthRepository {
     required String password,
     required UserRole role,
   });
+
+  Future<UserSession> refresh(UserSession session);
 
   Future<void> sendPasswordReset(String email);
 }

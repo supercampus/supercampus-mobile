@@ -3,12 +3,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'auth_http_client.dart';
 import 'auth_repository.dart';
 
 class BackendAuthRepository implements AuthRepository {
   BackendAuthRepository({required String baseUrl, http.Client? client})
     : _baseUri = _normalizeBaseUri(baseUrl),
-      _client = client ?? http.Client();
+      _client = client ?? createAuthHttpClient();
 
   final Uri _baseUri;
   final http.Client _client;
@@ -40,12 +41,53 @@ class BackendAuthRepository implements AuthRepository {
       throw AuthenticationException(_errorMessage(response));
     }
 
+    return _sessionFromResponse(
+      response,
+      fallbackEmail: email,
+      fallbackRole: role,
+    );
+  }
+
+  @override
+  Future<UserSession> refresh(UserSession session) async {
+    late final http.Response response;
+    try {
+      response = await _client.post(
+        _uri('/api/auth/refresh'),
+        headers: const {'content-type': 'application/json'},
+      );
+    } on http.ClientException {
+      throw const AuthenticationException(
+        'The SuperCampus API is unavailable. Sign in again.',
+      );
+    }
+    if (response.statusCode == 401) {
+      throw const AuthenticationException(
+        'Your session has expired. Sign in again.',
+      );
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw AuthenticationException(_errorMessage(response));
+    }
+
+    return _sessionFromResponse(
+      response,
+      fallbackEmail: session.email,
+      fallbackRole: session.role,
+    );
+  }
+
+  UserSession _sessionFromResponse(
+    http.Response response, {
+    required String fallbackEmail,
+    required UserRole fallbackRole,
+  }) {
     final Map<String, dynamic> body;
     try {
       body = jsonDecode(response.body) as Map<String, dynamic>;
     } on FormatException {
       throw const AuthenticationException(
-        'The API returned an unreadable login response.',
+        'The API returned an unreadable session response.',
       );
     }
     final data = body['data'];
@@ -65,17 +107,20 @@ class BackendAuthRepository implements AuthRepository {
         .toList();
     final primaryRole = roles.isNotEmpty
         ? roles.first
-        : (student['role']?.toString() ?? role.name);
+        : (student['role']?.toString() ?? fallbackRole.name);
 
     return UserSession(
-      email: student['email']?.toString() ?? email,
-      displayName: student['name']?.toString() ?? email,
-      role: _roleFromBackend(primaryRole, fallback: role),
+      email: student['email']?.toString() ?? fallbackEmail,
+      displayName: student['name']?.toString() ?? fallbackEmail,
+      role: _roleFromBackend(primaryRole, fallback: fallbackRole),
       roleId: primaryRole,
       roleName: _humanize(primaryRole),
       idNumber: student['roll']?.toString(),
       departmentOrWard: student['dept']?.toString(),
       jwtToken: data['accessToken']?.toString(),
+      accessTokenExpiresAt: DateTime.tryParse(
+        data['expiresAt']?.toString() ?? '',
+      ),
     );
   }
 
@@ -93,13 +138,18 @@ class BackendAuthRepository implements AuthRepository {
 
 Uri _normalizeBaseUri(String baseUrl) {
   final uri = Uri.parse(baseUrl.replaceFirst(RegExp(r'/$'), ''));
+  if (kIsWeb && _isLoopbackHost(uri.host) && _isLoopbackHost(Uri.base.host)) {
+    return uri.replace(host: Uri.base.host);
+  }
   if (!kIsWeb &&
       defaultTargetPlatform == TargetPlatform.android &&
-      (uri.host == '127.0.0.1' || uri.host == 'localhost')) {
+      _isLoopbackHost(uri.host)) {
     return uri.replace(host: '10.0.2.2');
   }
   return uri;
 }
+
+bool _isLoopbackHost(String host) => host == '127.0.0.1' || host == 'localhost';
 
 String _errorMessage(http.Response response) {
   try {

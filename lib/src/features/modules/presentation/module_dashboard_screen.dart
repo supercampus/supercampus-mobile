@@ -270,7 +270,7 @@ class _Feed extends StatelessWidget {
       children: [
         _Greeting(session: session),
         SizedBox(
-          height: 166,
+          height: 154,
           child:
               dashboard ??
               _PriorityDashboardCard(
@@ -466,7 +466,7 @@ class _DashboardOverview extends StatelessWidget {
               crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 1.58,
+              mainAxisExtent: 140,
             ),
             itemBuilder: (context, index) {
               final item = items[index];
@@ -538,6 +538,8 @@ class _OverviewCard extends StatelessWidget {
                   color: item.color,
                   fontWeight: FontWeight.w600,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               Text(
                 item.detail,
@@ -576,34 +578,118 @@ class _PriorityDashboardCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final notices = MockFacultyRepository().getNotices();
     final notice = notices.isEmpty ? null : notices.first;
+    final scheme = Theme.of(context).colorScheme;
+    final postedAt = notice?.postedAt.toLocal();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.primaryContainer,
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
+      child: Material(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.72),
+        clipBehavior: Clip.none,
+        child: InkWell(
+          onTap: notice == null ? null : () => _openNoticePdf(context, notice),
+          child: Row(
+            children: [
+              Container(
+                width: 64,
+                height: double.infinity,
+                color: scheme.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.campaign_outlined,
+                      color: scheme.onPrimary,
+                      size: 20,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      postedAt == null
+                          ? 'NEW'
+                          : postedAt.day.toString().padLeft(2, '0'),
+                      style: TextStyle(
+                        color: scheme.onPrimary,
+                        fontSize: 18,
+                        height: 1,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      postedAt == null ? 'UPDATE' : _monthName(postedAt.month),
+                      style: TextStyle(
+                        color: scheme.onPrimary.withValues(alpha: 0.76),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        notice?.title ?? 'No new announcements',
+                        style: TextStyle(
+                          color: scheme.onSurface,
+                          fontSize: 16,
+                          height: 1.15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        notice?.content ??
+                            'You are all caught up. New notices will appear here.',
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 12,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          Text(
+                            notice?.pdfUrl == null
+                                ? 'View update'
+                                : 'View details',
+                            style: TextStyle(
+                              color: scheme.primary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            color: scheme.primary,
+                            size: 14,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.18),
-              blurRadius: 16,
-              offset: Offset(0, 7),
-            ),
-          ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 16, 16, 15),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      ),
+    );
+  }
+}
+
+/* Legacy announcement layout removed.
               const Text(
                 'ANNOUNCEMENT',
                 style: TextStyle(
@@ -697,11 +783,24 @@ class _PriorityDashboardCard extends StatelessWidget {
     );
   }
 }
-
 String _formatNoticeDate(DateTime date) {
-  final local = date.toLocal();
-  return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
-}
+*/
+
+String _monthName(int month) => const [
+  '',
+  'JAN',
+  'FEB',
+  'MAR',
+  'APR',
+  'MAY',
+  'JUN',
+  'JUL',
+  'AUG',
+  'SEP',
+  'OCT',
+  'NOV',
+  'DEC',
+][month.clamp(1, 12).toInt()];
 
 Future<void> _openNoticePdf(
   BuildContext context,
