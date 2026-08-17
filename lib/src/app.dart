@@ -27,6 +27,7 @@ import 'features/modules/presentation/module_dashboard_screen.dart';
 import 'features/modules/presentation/module_navigation_host.dart';
 import 'features/parent/presentation/parent_portal_screen.dart';
 import 'features/timetable/presentation/timetable_shell.dart';
+import 'features/hostel/presentation/hostel_shell.dart';
 
 class SupercampusApp extends StatefulWidget {
   const SupercampusApp({
@@ -374,6 +375,13 @@ class _SupercampusAppState extends State<SupercampusApp>
       (ModuleCatalog.gatepass, 'outpass') => ('outpass', ModuleActions.read),
       (ModuleCatalog.gatepass, 'visitors') => ('visitor', ModuleActions.read),
       (ModuleCatalog.gatepass, 'access') => ('access', ModuleActions.read),
+      (ModuleCatalog.hostel, 'residency') => ('residency', ModuleActions.read),
+      (ModuleCatalog.hostel, 'outpass') => ('outpass', ModuleActions.read),
+      (ModuleCatalog.hostel, 'mess') => ('mess', ModuleActions.read),
+      (ModuleCatalog.hostel, 'complaints') => ('complaints', ModuleActions.read),
+      (ModuleCatalog.hostel, 'room_change') => ('room_change', ModuleActions.read),
+      (ModuleCatalog.hostel, 'visitors') => ('visitors', ModuleActions.read),
+      (ModuleCatalog.hostel, 'clearance') => ('clearance', ModuleActions.read),
       _ => null,
     };
 
@@ -387,6 +395,11 @@ class _SupercampusAppState extends State<SupercampusApp>
     });
 
     final module = switch (moduleId) {
+      ModuleCatalog.hostel => HostelShell(
+        session: session,
+        onExitModule: exit,
+        initialAction: _openModuleAction,
+      ),
       ModuleCatalog.examination => ExaminationShell(
         session: session,
         onExitModule: exit,

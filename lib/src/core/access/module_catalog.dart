@@ -104,6 +104,7 @@ abstract final class ModuleCatalog {
   static const vendorManagement = 'vendor_management';
   static const tuitionFee = 'tuition_fee';
   static const academics = 'academics';
+  static const hostel = 'hostel';
 
   static const List<ModuleDescriptor> all = [
     ModuleDescriptor(
@@ -494,6 +495,67 @@ abstract final class ModuleCatalog {
             ModuleActions.read,
             ModuleActions.update,
           },
+        ),
+      ],
+    ),
+    ModuleDescriptor(
+      id: hostel,
+      title: 'Hostel Management',
+      shortTitle: 'Hostel',
+      tagline: 'Residency lifecycle, outpass, room allotment, mess and clearance',
+      icon: Icons.night_shelter_outlined,
+      color: Color(0xFF2E4057),
+      status: ModuleStatus.available,
+      features: [
+        FeatureDescriptor(
+          id: 'residency',
+          label: 'Hostel Residency',
+          actions: {ModuleActions.read, ModuleActions.create, ModuleActions.update},
+        ),
+        FeatureDescriptor(
+          id: 'application',
+          label: 'Accommodation Application',
+          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.approve},
+        ),
+        FeatureDescriptor(
+          id: 'inventory',
+          label: 'Inventory & Bed Allotment',
+          actions: {ModuleActions.read, ModuleActions.update, ModuleActions.create},
+        ),
+        FeatureDescriptor(
+          id: 'outpass',
+          label: 'Leave & Outpass',
+          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.approve, ModuleActions.update},
+        ),
+        FeatureDescriptor(
+          id: 'movement',
+          label: 'Movement & Gate Logging',
+          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update},
+        ),
+        FeatureDescriptor(
+          id: 'mess',
+          label: 'Mess & Meal Pass',
+          actions: {ModuleActions.read, ModuleActions.update},
+        ),
+        FeatureDescriptor(
+          id: 'complaints',
+          label: 'Complaints & Maintenance',
+          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update},
+        ),
+        FeatureDescriptor(
+          id: 'room_change',
+          label: 'Room Change',
+          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.approve},
+        ),
+        FeatureDescriptor(
+          id: 'visitors',
+          label: 'Visitor Pass',
+          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.approve},
+        ),
+        FeatureDescriptor(
+          id: 'clearance',
+          label: 'Vacating & Clearance',
+          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.approve, ModuleActions.update},
         ),
       ],
     ),
