@@ -9,6 +9,7 @@ class MockAuthRepository implements AuthRepository {
     required String email,
     required String password,
     required UserRole role,
+    required String tenantDomain,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 650));
 

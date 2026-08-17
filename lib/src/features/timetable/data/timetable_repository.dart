@@ -18,11 +18,15 @@ abstract interface class TimetableRepository {
   TimetableVersion? getActiveVersion(String className);
 
   List<TimetableEntry> getEntriesForClass(String className);
-  List<TimetableEntry> getEntriesForFaculty(String facultyName);
+  List<TimetableEntry> getEntriesForFaculty(
+    String facultyName, {
+    String? facultyId,
+  });
 
   void addEntry(TimetableEntry entry);
   void updateEntry(TimetableEntry entry);
   void deleteEntry(String entryId);
+  void replaceClassSchedule(String className, List<TimetableEntry> entries);
 
   List<ConflictItem> getConflicts();
   List<ConflictItem> runConflictDetection(List<TimetableEntry> entries);
@@ -46,9 +50,17 @@ abstract interface class TimetableRepository {
   // ---------------------------------------------------------------------------
   // 1. ATTENDANCE ENGINE SERVICE & DYNAMIC PROXY AUTHORIZATION
   // ---------------------------------------------------------------------------
-  bool canFacultyMarkAttendance(String facultyName, String className, String timeSlot, DateTime date);
+  bool canFacultyMarkAttendance(
+    String facultyName,
+    String className,
+    String timeSlot,
+    DateTime date,
+  );
   void markPeriodAttendance(PeriodAttendanceRecord record);
-  List<PeriodAttendanceRecord> getAttendanceRecords(String className, DateTime date);
+  List<PeriodAttendanceRecord> getAttendanceRecords(
+    String className,
+    DateTime date,
+  );
 
   // ---------------------------------------------------------------------------
   // 2. LEAVE & ON-DUTY (OD) MANAGEMENT PIPELINE
@@ -78,5 +90,8 @@ abstract interface class TimetableRepository {
   // ---------------------------------------------------------------------------
   DateTime getServerTime();
   List<AuditLogEntry> getAuditLogs();
-  Future<bool> executeOptimisticAction(Future<void> Function() action, void Function() rollback);
+  Future<bool> executeOptimisticAction(
+    Future<void> Function() action,
+    void Function() rollback,
+  );
 }

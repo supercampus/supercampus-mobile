@@ -11,11 +11,13 @@ class TimetableShell extends StatefulWidget {
   const TimetableShell({
     super.key,
     required this.session,
+    required this.canConfigure,
     this.onExitModule,
     required this.onSignOut,
   });
 
   final UserSession session;
+  final bool canConfigure;
   final VoidCallback? onExitModule;
   final VoidCallback onSignOut;
 
@@ -24,14 +26,15 @@ class TimetableShell extends StatefulWidget {
 }
 
 class _TimetableShellState extends State<TimetableShell> {
-  final _repository = MockTimetableRepository();
+  final _repository = MockTimetableRepository.shared;
 
   @override
   Widget build(BuildContext context) {
-    final isAllocator = widget.session.role == UserRole.timetableAllocator;
+    final isAllocator = widget.canConfigure;
     final isFaculty = widget.session.role == UserRole.staff;
-    final primaryColor =
-        isAllocator ? const Color(0xFF00695C) : AppColors.primary;
+    final primaryColor = isAllocator
+        ? const Color(0xFF00695C)
+        : AppColors.primary;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
@@ -68,8 +71,8 @@ class _TimetableShellState extends State<TimetableShell> {
                     isAllocator
                         ? 'Timetable Allocator Portal'
                         : isFaculty
-                            ? 'Faculty Daily Operations'
-                            : 'Campus Timetable Management',
+                        ? 'Faculty Daily Operations'
+                        : 'Campus Timetable Management',
                     maxLines: 2,
                     softWrap: true,
                     overflow: TextOverflow.ellipsis,
@@ -105,14 +108,14 @@ class _TimetableShellState extends State<TimetableShell> {
               repository: _repository,
             )
           : isFaculty
-              ? FacultyDashboardScreen(
-                  session: widget.session,
-                  repository: _repository,
-                )
-              : ViewOnlyTimetableScreen(
-                  session: widget.session,
-                  repository: _repository,
-                ),
+          ? FacultyDashboardScreen(
+              session: widget.session,
+              repository: _repository,
+            )
+          : ViewOnlyTimetableScreen(
+              session: widget.session,
+              repository: _repository,
+            ),
     );
   }
 }

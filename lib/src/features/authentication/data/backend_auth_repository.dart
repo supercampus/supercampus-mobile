@@ -19,12 +19,16 @@ class BackendAuthRepository implements AuthRepository {
     required String email,
     required String password,
     required UserRole role,
+    required String tenantDomain,
   }) async {
     late final http.Response response;
     try {
       response = await _client.post(
         _uri('/api/auth/login'),
-        headers: const {'content-type': 'application/json'},
+        headers: {
+          'content-type': 'application/json',
+          'x-tenant-id': tenantDomain,
+        },
         body: jsonEncode({'email': email, 'password': password}),
       );
     } on http.ClientException {
@@ -108,19 +112,37 @@ class BackendAuthRepository implements AuthRepository {
     final primaryRole = roles.isNotEmpty
         ? roles.first
         : (student['role']?.toString() ?? fallbackRole.name);
+    final portalFamilies = (student['portalFamilies'] as List? ?? const [])
+        .map((value) => _portalFamilyFromBackend(value.toString()))
+        .whereType<PortalFamily>()
+        .toSet()
+        .toList();
+    final activePortalFamily = portalFamilies.isEmpty
+        ? _portalFamilyForLegacyRole(
+            _roleFromBackend(primaryRole, fallback: fallbackRole),
+          )
+        : portalFamilies.first;
 
     return UserSession(
       email: student['email']?.toString() ?? fallbackEmail,
       displayName: student['name']?.toString() ?? fallbackEmail,
-      role: _roleFromBackend(primaryRole, fallback: fallbackRole),
+      role: _roleForPortalFamily(activePortalFamily, primaryRole),
       roleId: primaryRole,
       roleName: _humanize(primaryRole),
       idNumber: student['roll']?.toString(),
       departmentOrWard: student['dept']?.toString(),
+      departmentId: student['departmentId']?.toString(),
+      sectionId:
+          student['sectionId']?.toString() ?? student['section']?.toString(),
+      staffId: student['staffId']?.toString(),
       jwtToken: data['accessToken']?.toString(),
       accessTokenExpiresAt: DateTime.tryParse(
         data['expiresAt']?.toString() ?? '',
       ),
+      portalFamilies: portalFamilies.isEmpty
+          ? [activePortalFamily]
+          : portalFamilies,
+      activePortalFamily: activePortalFamily,
     );
   }
 
@@ -178,6 +200,33 @@ UserRole _roleFromBackend(String role, {required UserRole fallback}) {
   if (normalized.contains('student')) return UserRole.student;
   return fallback;
 }
+
+PortalFamily? _portalFamilyFromBackend(String value) =>
+    switch (value.trim().toLowerCase()) {
+      'student' => PortalFamily.student,
+      'parent' => PortalFamily.parent,
+      'staff' => PortalFamily.staff,
+      'admin' => PortalFamily.admin,
+      _ => null,
+    };
+
+PortalFamily _portalFamilyForLegacyRole(UserRole role) => switch (role) {
+  UserRole.student => PortalFamily.student,
+  UserRole.parent => PortalFamily.parent,
+  UserRole.admin => PortalFamily.admin,
+  _ => PortalFamily.staff,
+};
+
+UserRole _roleForPortalFamily(PortalFamily family, String backendRole) =>
+    switch (family) {
+      PortalFamily.student => UserRole.student,
+      PortalFamily.parent => UserRole.parent,
+      PortalFamily.admin => UserRole.admin,
+      PortalFamily.staff => _roleFromBackend(
+        backendRole,
+        fallback: UserRole.staff,
+      ),
+    };
 
 String _humanize(String value) {
   return value

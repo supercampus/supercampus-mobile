@@ -429,6 +429,27 @@ class _SupercampusAppState extends State<SupercampusApp>
       ),
       ModuleCatalog.timetable => TimetableShell(
         session: session,
+        canConfigure:
+            _permissions!.can(
+              ModuleCatalog.timetable,
+              'config',
+              ModuleActions.create,
+            ) ||
+            _permissions!.can(
+              ModuleCatalog.timetable,
+              'config',
+              ModuleActions.update,
+            ) ||
+            _permissions!.can(
+              ModuleCatalog.timetable,
+              'schedule',
+              ModuleActions.create,
+            ) ||
+            _permissions!.can(
+              ModuleCatalog.timetable,
+              'schedule',
+              ModuleActions.update,
+            ),
         onExitModule: exit,
         onSignOut: _signOut,
       ),

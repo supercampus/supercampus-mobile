@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/auth_repository.dart';
 
+enum _AuthView { welcome, institution, signIn, resetPassword }
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
     super.key,
@@ -19,25 +21,25 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _institutionFormKey = GlobalKey<FormState>();
+  final _resetFormKey = GlobalKey<FormState>();
+  final _institutionController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _emailFocusNode = FocusNode();
+  final _resetEmailController = TextEditingController();
   final _passwordFocusNode = FocusNode();
 
+  _AuthView _view = _AuthView.welcome;
   bool _obscurePassword = true;
   bool _isSubmitting = false;
   String? _errorMessage;
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   void dispose() {
     _emailController.dispose();
+    _institutionController.dispose();
     _passwordController.dispose();
-    _emailFocusNode.dispose();
+    _resetEmailController.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
   }
@@ -57,6 +59,44 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
+  String? _validateInstitution(String? value) {
+    final institution = value?.trim().toLowerCase() ?? '';
+    if (institution.isEmpty) return 'Enter your institution domain.';
+    if (!RegExp(
+      r'^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$',
+    ).hasMatch(institution)) {
+      return 'Use only letters, numbers, or hyphens.';
+    }
+    return null;
+  }
+
+  void _showInstitution() {
+    setState(() {
+      _view = _AuthView.institution;
+      _errorMessage = null;
+    });
+  }
+
+  void _showSignIn() {
+    FocusScope.of(context).unfocus();
+    if (!_institutionFormKey.currentState!.validate()) return;
+    _institutionController.text = _institutionController.text
+        .trim()
+        .toLowerCase();
+    setState(() {
+      _view = _AuthView.signIn;
+      _errorMessage = null;
+    });
+  }
+
+  void _showResetPassword() {
+    _resetEmailController.text = _emailController.text.trim();
+    setState(() {
+      _view = _AuthView.resetPassword;
+      _errorMessage = null;
+    });
+  }
+
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     setState(() => _errorMessage = null);
@@ -68,6 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
         role: UserRole.student,
+        tenantDomain: _institutionController.text,
       );
       if (mounted) widget.onSignedIn(session);
     } on AuthenticationException catch (error) {
@@ -83,308 +124,756 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _showPasswordReset() async {
-    final controller = TextEditingController(
-      text: _emailController.text.trim(),
-    );
-    final resetFormKey = GlobalKey<FormState>();
+  Future<void> _sendPasswordReset() async {
+    FocusScope.of(context).unfocus();
+    if (!_resetFormKey.currentState!.validate()) return;
 
-    final email = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reset password'),
-        content: Form(
-          key: resetFormKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Enter your registered email and we will send you a reset link.',
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+    final email = _resetEmailController.text.trim();
+    try {
+      await widget.authRepository.sendPasswordReset(email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('A reset link has been sent to $email.')),
+      );
+      _emailController.text = email;
+      _showSignIn();
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'We could not send the reset link. Please try again.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: AppTheme.light,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 280),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: switch (_view) {
+              _AuthView.welcome => _WelcomeView(
+                key: const ValueKey('welcome'),
+                onContinue: _showInstitution,
               ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: controller,
-                autofocus: true,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(
-                  labelText: 'Email address',
-                  prefixIcon: Icon(Icons.mail_outline),
-                ),
-                validator: _validateEmail,
-                onFieldSubmitted: (_) {
-                  if (resetFormKey.currentState!.validate()) {
-                    Navigator.of(context).pop(controller.text.trim());
-                  }
-                },
+              _AuthView.institution => _InstitutionView(
+                key: const ValueKey('institution'),
+                formKey: _institutionFormKey,
+                controller: _institutionController,
+                validateInstitution: _validateInstitution,
+                onBack: () => setState(() => _view = _AuthView.welcome),
+                onContinue: _showSignIn,
               ),
-            ],
+              _AuthView.signIn => _SignInView(
+                key: const ValueKey('sign-in'),
+                formKey: _formKey,
+                emailController: _emailController,
+                passwordController: _passwordController,
+                passwordFocusNode: _passwordFocusNode,
+                obscurePassword: _obscurePassword,
+                isSubmitting: _isSubmitting,
+                errorMessage: _errorMessage,
+                validateEmail: _validateEmail,
+                validatePassword: _validatePassword,
+                onBack: () => setState(() => _view = _AuthView.institution),
+                onTogglePassword: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
+                onForgotPassword: _showResetPassword,
+                onSubmit: _submit,
+              ),
+              _AuthView.resetPassword => _ResetPasswordView(
+                key: const ValueKey('reset-password'),
+                formKey: _resetFormKey,
+                emailController: _resetEmailController,
+                isSubmitting: _isSubmitting,
+                errorMessage: _errorMessage,
+                validateEmail: _validateEmail,
+                onBack: _showSignIn,
+                onSubmit: _sendPasswordReset,
+              ),
+            },
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+      ),
+    );
+  }
+}
+
+class _WelcomeView extends StatelessWidget {
+  const _WelcomeView({super.key, required this.onContinue});
+
+  final VoidCallback onContinue;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxHeight < 700;
+        return Column(
+          children: [
+            Expanded(
+              flex: compact ? 5 : 6,
+              child: _CampusCanvas(compact: compact),
+            ),
+            Expanded(
+              flex: compact ? 4 : 5,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(28, compact ? 22 : 34, 28, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _BrandLockup(centered: false),
+                    const Spacer(),
+                    Text(
+                      'Your campus, in one place.',
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            fontSize: compact ? 27 : 31,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0,
+                          ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Academics, attendance and campus services connected to your institution account.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        height: 1.55,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                    const Spacer(),
+                    FilledButton(
+                      key: const ValueKey('start-sign-in'),
+                      onPressed: onContinue,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.ink,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(54),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Continue to sign in'),
+                          SizedBox(width: 10),
+                          Icon(Icons.arrow_forward_rounded, size: 19),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CampusCanvas extends StatelessWidget {
+  const _CampusCanvas({required this.compact});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipPath(
+      clipper: _CanvasClipper(),
+      child: ColoredBox(
+        color: const Color(0xFF10182B),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const CustomPaint(painter: _CampusGridPainter()),
+            Center(
+              child: Transform.translate(
+                offset: Offset(0, compact ? 0 : 8),
+                child: const _CampusIllustration(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CampusIllustration extends StatelessWidget {
+  const _CampusIllustration();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 270,
+      height: 210,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 156,
+            height: 156,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white24),
+            ),
           ),
-          FilledButton(
-            onPressed: () {
-              if (resetFormKey.currentState!.validate()) {
-                Navigator.of(context).pop(controller.text.trim());
-              }
-            },
-            child: const Text('Send link'),
+          Container(
+            width: 112,
+            height: 112,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.account_balance_rounded,
+              size: 49,
+              color: Color(0xFF10182B),
+            ),
+          ),
+          const Positioned(
+            left: 17,
+            top: 38,
+            child: _OrbitIcon(icon: Icons.school_outlined),
+          ),
+          const Positioned(
+            right: 12,
+            top: 54,
+            child: _OrbitIcon(icon: Icons.badge_outlined),
+          ),
+          const Positioned(
+            left: 34,
+            bottom: 18,
+            child: _OrbitIcon(icon: Icons.calendar_month_outlined),
+          ),
+          const Positioned(
+            right: 31,
+            bottom: 10,
+            child: _OrbitIcon(icon: Icons.qr_code_rounded),
           ),
         ],
       ),
     );
-    controller.dispose();
-
-    if (email == null || !mounted) return;
-    await widget.authRepository.sendPasswordReset(email);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('A reset link has been sent to $email.')),
-    );
   }
+}
+
+class _OrbitIcon extends StatelessWidget {
+  const _OrbitIcon({required this.icon});
+
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight - 40,
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1D2942),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Icon(icon, size: 21, color: Colors.white),
+    );
+  }
+}
+
+class _InstitutionView extends StatelessWidget {
+  const _InstitutionView({
+    super.key,
+    required this.formKey,
+    required this.controller,
+    required this.validateInstitution,
+    required this.onBack,
+    required this.onContinue,
+  });
+
+  final GlobalKey<FormState> formKey;
+  final TextEditingController controller;
+  final String? Function(String?) validateInstitution;
+  final VoidCallback onBack;
+  final VoidCallback onContinue;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AuthPage(
+      onBack: onBack,
+      child: Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 54),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                width: 52,
+                height: 52,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF0F2F6),
+                  shape: BoxShape.circle,
                 ),
-                child: Center(
-                  child: SizedBox(
-                    width: 480,
-                    child: AutofillGroup(
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const _BrandHeader(),
-                            const SizedBox(height: 24),
-                            Card(
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                side: BorderSide(
-                                  color: Colors.grey.withValues(alpha: 0.2),
-                                ),
-                              ),
-                              color: Colors.white,
-                              child: Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Text(
-                                      'Institution login',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      'Enter the account details issued by your institution administrator.',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(color: AppColors.muted),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    TextFormField(
-                                      controller: _emailController,
-                                      focusNode: _emailFocusNode,
-                                      keyboardType: TextInputType.emailAddress,
-                                      textInputAction: TextInputAction.next,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Email address',
-                                        prefixIcon: Icon(Icons.mail_outline),
-                                      ),
-                                      validator: _validateEmail,
-                                      onFieldSubmitted: (_) =>
-                                          _passwordFocusNode.requestFocus(),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    TextFormField(
-                                      controller: _passwordController,
-                                      focusNode: _passwordFocusNode,
-                                      obscureText: _obscurePassword,
-                                      textInputAction: TextInputAction.done,
-                                      decoration: InputDecoration(
-                                        labelText: 'Password',
-                                        prefixIcon: const Icon(
-                                          Icons.lock_outline,
-                                        ),
-                                        suffixIcon: IconButton(
-                                          tooltip: _obscurePassword
-                                              ? 'Show password'
-                                              : 'Hide password',
-                                          onPressed: () => setState(
-                                            () => _obscurePassword =
-                                                !_obscurePassword,
-                                          ),
-                                          icon: Icon(
-                                            _obscurePassword
-                                                ? Icons.visibility_outlined
-                                                : Icons.visibility_off_outlined,
-                                          ),
-                                        ),
-                                      ),
-                                      validator: _validatePassword,
-                                      onFieldSubmitted: (_) {
-                                        if (!_isSubmitting) _submit();
-                                      },
-                                    ),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: TextButton(
-                                        onPressed: _isSubmitting
-                                            ? null
-                                            : _showPasswordReset,
-                                        child: const Text('Forgot password?'),
-                                      ),
-                                    ),
-                                    if (_errorMessage != null) ...[
-                                      const SizedBox(height: 6),
-                                      _ErrorBanner(message: _errorMessage!),
-                                      const SizedBox(height: 18),
-                                    ] else
-                                      const SizedBox(height: 10),
-                                    FilledButton(
-                                      style: FilledButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 14,
-                                        ),
-                                        backgroundColor: _roleColor(
-                                          UserRole.student,
-                                        ),
-                                      ),
-                                      onPressed: _isSubmitting ? null : _submit,
-                                      child: _isSubmitting
-                                          ? const SizedBox.square(
-                                              dimension: 22,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2.2,
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : const Text(
-                                              'Sign in',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                child: const Icon(
+                  Icons.account_balance_outlined,
+                  color: AppColors.ink,
                 ),
               ),
-            );
-          },
+            ),
+            const SizedBox(height: 26),
+            Text(
+              'Find your institution',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontSize: 29,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Enter the domain provided by your institution administrator.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(height: 1.55),
+            ),
+            const SizedBox(height: 34),
+            _FieldLabel(
+              label: 'Institution domain',
+              child: TextFormField(
+                key: const ValueKey('institution-domain'),
+                controller: controller,
+                autofocus: true,
+                autocorrect: false,
+                enableSuggestions: false,
+                textCapitalization: TextCapitalization.none,
+                keyboardType: TextInputType.url,
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  hintText: 'mec',
+                  prefixIcon: Icon(Icons.language_rounded),
+                  suffixText: '.supercampus.ai',
+                ),
+                validator: validateInstitution,
+                onFieldSubmitted: (_) => onContinue(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Example: enter mec for mec.supercampus.ai',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.muted),
+            ),
+            const SizedBox(height: 28),
+            FilledButton(
+              key: const ValueKey('continue-from-institution'),
+              onPressed: onContinue,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.ink,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(54),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Continue'),
+                  SizedBox(width: 10),
+                  Icon(Icons.arrow_forward_rounded, size: 19),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
 
-  Color _roleColor(UserRole role) {
-    return switch (role) {
-      UserRole.student => AppColors.primary,
-      UserRole.security => const Color(0xFFD9383A),
-      UserRole.parent => const Color(0xFF2E7D32),
-      UserRole.staff => const Color(0xFF6A1B9A),
-      UserRole.timetableAllocator => const Color(0xFF00695C),
-      UserRole.admin => const Color(0xFF263238),
-    };
+class _SignInView extends StatelessWidget {
+  const _SignInView({
+    super.key,
+    required this.formKey,
+    required this.emailController,
+    required this.passwordController,
+    required this.passwordFocusNode,
+    required this.obscurePassword,
+    required this.isSubmitting,
+    required this.errorMessage,
+    required this.validateEmail,
+    required this.validatePassword,
+    required this.onBack,
+    required this.onTogglePassword,
+    required this.onForgotPassword,
+    required this.onSubmit,
+  });
+
+  final GlobalKey<FormState> formKey;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final FocusNode passwordFocusNode;
+  final bool obscurePassword;
+  final bool isSubmitting;
+  final String? errorMessage;
+  final String? Function(String?) validateEmail;
+  final String? Function(String?) validatePassword;
+  final VoidCallback onBack;
+  final VoidCallback onTogglePassword;
+  final VoidCallback onForgotPassword;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AuthPage(
+      onBack: onBack,
+      child: AutofillGroup(
+        child: Form(
+          key: formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 64),
+              Text(
+                'Welcome back',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Use the account issued by your institution.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 34),
+              _FieldLabel(
+                label: 'Email address',
+                child: TextFormField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.email],
+                  decoration: const InputDecoration(
+                    hintText: 'name@college.edu',
+                    prefixIcon: Icon(Icons.mail_outline_rounded),
+                  ),
+                  validator: validateEmail,
+                  onFieldSubmitted: (_) => passwordFocusNode.requestFocus(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              _FieldLabel(
+                label: 'Password',
+                child: TextFormField(
+                  controller: passwordController,
+                  focusNode: passwordFocusNode,
+                  obscureText: obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.password],
+                  decoration: InputDecoration(
+                    hintText: 'Enter your password',
+                    prefixIcon: const Icon(Icons.lock_outline_rounded),
+                    suffixIcon: IconButton(
+                      tooltip: obscurePassword
+                          ? 'Show password'
+                          : 'Hide password',
+                      onPressed: onTogglePassword,
+                      icon: Icon(
+                        obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
+                    ),
+                  ),
+                  validator: validatePassword,
+                  onFieldSubmitted: (_) {
+                    if (!isSubmitting) onSubmit();
+                  },
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: isSubmitting ? null : onForgotPassword,
+                  child: const Text('Forgot password?'),
+                ),
+              ),
+              if (errorMessage != null) ...[
+                const SizedBox(height: 8),
+                _ErrorBanner(message: errorMessage!),
+                const SizedBox(height: 18),
+              ] else
+                const SizedBox(height: 14),
+              FilledButton(
+                onPressed: isSubmitting ? null : onSubmit,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.ink,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(54),
+                ),
+                child: isSubmitting
+                    ? const SizedBox.square(
+                        dimension: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Sign in'),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Your access and campus services are managed by your institution administrator.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.muted,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
-class _BrandHeader extends StatelessWidget {
-  const _BrandHeader();
+class _ResetPasswordView extends StatelessWidget {
+  const _ResetPasswordView({
+    super.key,
+    required this.formKey,
+    required this.emailController,
+    required this.isSubmitting,
+    required this.errorMessage,
+    required this.validateEmail,
+    required this.onBack,
+    required this.onSubmit,
+  });
+
+  final GlobalKey<FormState> formKey;
+  final TextEditingController emailController;
+  final bool isSubmitting;
+  final String? errorMessage;
+  final String? Function(String?) validateEmail;
+  final VoidCallback onBack;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AuthPage(
+      onBack: onBack,
+      child: Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 64),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                width: 52,
+                height: 52,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF0F2F6),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.key_rounded, color: AppColors.ink),
+              ),
+            ),
+            const SizedBox(height: 26),
+            Text(
+              'Reset your password',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontSize: 29,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Enter your registered email address. We will send instructions to regain access.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(height: 1.55),
+            ),
+            const SizedBox(height: 34),
+            _FieldLabel(
+              label: 'Email address',
+              child: TextFormField(
+                controller: emailController,
+                autofocus: true,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.done,
+                decoration: const InputDecoration(
+                  hintText: 'name@college.edu',
+                  prefixIcon: Icon(Icons.mail_outline_rounded),
+                ),
+                validator: validateEmail,
+                onFieldSubmitted: (_) {
+                  if (!isSubmitting) onSubmit();
+                },
+              ),
+            ),
+            if (errorMessage != null) ...[
+              const SizedBox(height: 18),
+              _ErrorBanner(message: errorMessage!),
+            ],
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: isSubmitting ? null : onSubmit,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.ink,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(54),
+              ),
+              child: isSubmitting
+                  ? const SizedBox.square(
+                      dimension: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Send reset link'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthPage extends StatelessWidget {
+  const _AuthPage({required this.onBack, required this.child});
+
+  final VoidCallback onBack;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - 40),
+            child: Center(
+              child: SizedBox(
+                width: 440,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        tooltip: 'Back',
+                        onPressed: onBack,
+                        icon: const Icon(Icons.arrow_back_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    child,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _BrandLockup extends StatelessWidget {
+  const _BrandLockup({required this.centered});
+
+  final bool centered;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: centered
+          ? MainAxisAlignment.center
+          : MainAxisAlignment.start,
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppColors.ink,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Text(
+            'S',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 21,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(width: 11),
+        const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'SuperCampus',
+              style: TextStyle(
+                color: AppColors.ink,
+                fontSize: 19,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0,
+              ),
+            ),
+            Text(
+              'INTEGRATED CAMPUS SYSTEM',
+              style: TextStyle(
+                color: AppColors.muted,
+                fontSize: 8,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, Color(0xFF1E5BB5)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Text(
-                'S',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'SuperCampus',
-                  style: TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                Text(
-                  'INTEGRATED CAMPUS SYSTEM',
-                  style: TextStyle(
-                    color: AppColors.muted.withValues(alpha: 0.8),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-              ],
-            ),
-          ],
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.ink,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
+        const SizedBox(height: 8),
+        child,
       ],
     );
   }
@@ -398,23 +887,23 @@ class _ErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.errorContainer,
+        color: const Color(0xFFFFF1F1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.error_outline,
-            color: Theme.of(context).colorScheme.onErrorContainer,
-          ),
+          const Icon(Icons.error_outline_rounded, color: Color(0xFFB42318)),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onErrorContainer,
+              style: const TextStyle(
+                color: Color(0xFF8A1C13),
+                fontSize: 13,
+                height: 1.45,
               ),
             ),
           ),
@@ -422,4 +911,44 @@ class _ErrorBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CanvasClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    return Path()
+      ..lineTo(0, size.height - 44)
+      ..quadraticBezierTo(
+        size.width * 0.5,
+        size.height + 28,
+        size.width,
+        size.height - 44,
+      )
+      ..lineTo(size.width, 0)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+class _CampusGridPainter extends CustomPainter {
+  const _CampusGridPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.055)
+      ..strokeWidth = 1;
+    const gap = 34.0;
+    for (var x = 0.0; x <= size.width; x += gap) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (var y = 0.0; y <= size.height; y += gap) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

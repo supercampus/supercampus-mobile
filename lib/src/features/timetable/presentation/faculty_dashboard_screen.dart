@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/mock_timetable_repository.dart';
 import '../data/timetable_models.dart';
+import 'widgets/daily_period_strip.dart';
 import 'widgets/month_calendar_dialog.dart';
 import 'widgets/weekly_date_strip.dart';
 
@@ -84,25 +85,13 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
 
     // Get faculty schedule entries for today
     final facultyName = widget.session.displayName;
-    final allFacultyEntries = widget.repository.getEntriesForFaculty(facultyName);
+    final allFacultyEntries = widget.repository.getEntriesForFaculty(
+      facultyName,
+      facultyId: widget.session.staffId,
+    );
     final dayEntries = allFacultyEntries
         .where((e) => e.dayOfWeek.toLowerCase() == selectedDayStr.toLowerCase())
         .toList();
-
-    // Get substitutions involving this faculty
-    final allSubs = widget.repository.getSubstitutions();
-    final daySubs = allSubs
-        .where((s) => s.dayOfWeek.toLowerCase() == selectedDayStr.toLowerCase())
-        .toList();
-
-    final timeSlots = [
-      '08:30 - 09:20 AM',
-      '09:30 - 10:20 AM',
-      '10:20 - 11:10 AM',
-      '11:30 - 12:20 PM',
-      '02:00 - 02:50 PM',
-      '02:50 - 03:40 PM',
-    ];
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -127,7 +116,8 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
               onPressed: () async {
                 final date = await showDialog<DateTime>(
                   context: context,
-                  builder: (ctx) => MonthCalendarDialog(selectedDate: _selectedDate),
+                  builder: (ctx) =>
+                      MonthCalendarDialog(selectedDate: _selectedDate),
                 );
                 if (date != null) {
                   setState(() => _selectedDate = date);
@@ -143,42 +133,12 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
           onDateSelected: (date) => setState(() => _selectedDate = date),
         ),
         const SizedBox(height: 20),
-        
-        // Generate period slots 1 to periodsPerDay
-        ...List.generate(config.periodsPerDay, (index) {
-          final periodNum = index + 1;
-          final timeSlot = timeSlots[index < timeSlots.length ? index : timeSlots.length - 1];
 
-          // Check if faculty has a regular class for this period
-          TimetableEntry? entry;
-          try {
-            entry = dayEntries.firstWhere((e) => e.periodIndex == periodNum);
-          } catch (_) {}
-
-          // Check if there is an active substitution for this slot
-          FacultySubstitution? subOut;
-          try {
-            subOut = daySubs.firstWhere(
-              (s) => s.timeSlot == timeSlot && s.originalFaculty.toLowerCase() == facultyName.toLowerCase() && (s.status == 'Approved' || s.status == 'Pending'),
-            );
-          } catch (_) {}
-
-          FacultySubstitution? subIn;
-          try {
-            subIn = daySubs.firstWhere(
-              (s) => s.timeSlot == timeSlot && s.substituteFaculty.toLowerCase() == facultyName.toLowerCase() && s.status == 'Approved',
-            );
-          } catch (_) {}
-
-          return _buildFacultyPeriodCard(
-            context: context,
-            periodIndex: periodNum,
-            timeSlot: timeSlot,
-            entry: entry,
-            subOut: subOut,
-            subIn: subIn,
-          );
-        }),
+        DailyPeriodStrip(
+          periodsPerDay: config.periodsPerDay,
+          entries: dayEntries,
+          audience: TimetableAudience.staff,
+        ),
       ],
     );
   }
@@ -213,32 +173,50 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       'Period $periodIndex • $timeSlot',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'No Class Assigned',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
                   'Free Period',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey,
+                  ),
                 ),
               ),
             ],
@@ -247,21 +225,27 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
       );
     }
 
-    final targetClass = isSubstitutedIn ? subIn.className : (entry?.className ?? 'CS-3A');
-    final subjectName = isSubstitutedIn ? '${subIn.subjectCode} - ${subIn.subjectName}' : '${entry?.subjectCode} - ${entry?.subjectName}';
+    final targetClass = isSubstitutedIn
+        ? subIn.className
+        : (entry?.className ?? 'CS-3A');
+    final subjectName = isSubstitutedIn
+        ? '${subIn.subjectCode} - ${subIn.subjectName}'
+        : '${entry?.subjectCode} - ${entry?.subjectName}';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
       elevation: 0,
-      color: isSubstitutedIn ? Colors.amber.shade50.withValues(alpha: 0.3) : Colors.white,
+      color: isSubstitutedIn
+          ? Colors.amber.shade50.withValues(alpha: 0.3)
+          : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(
           color: isSubstitutedOut
               ? Colors.amber.shade400
               : isSubstitutedIn
-                  ? Colors.amber.shade600
-                  : AppColors.primary.withValues(alpha: 0.3),
+              ? Colors.amber.shade600
+              : AppColors.primary.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -273,8 +257,8 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
               color: isSubstitutedOut
                   ? Colors.amber.shade700
                   : isSubstitutedIn
-                      ? Colors.amber.shade800
-                      : AppColors.primary,
+                  ? Colors.amber.shade800
+                  : AppColors.primary,
               width: 5,
             ),
           ),
@@ -290,36 +274,59 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           'Period $periodIndex • $timeSlot',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                       if (isSubstitutedOut)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: subOut.status == 'Approved' ? Colors.amber.shade100 : Colors.blue.shade50,
+                            color: subOut.status == 'Approved'
+                                ? Colors.amber.shade100
+                                : Colors.blue.shade50,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: subOut.status == 'Approved' ? Colors.amber.shade400 : Colors.blue.shade300),
+                            border: Border.all(
+                              color: subOut.status == 'Approved'
+                                  ? Colors.amber.shade400
+                                  : Colors.blue.shade300,
+                            ),
                           ),
                           child: Text(
-                            subOut.status == 'Approved' ? 'Substituted' : 'Request Pending',
+                            subOut.status == 'Approved'
+                                ? 'Substituted'
+                                : 'Request Pending',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: subOut.status == 'Approved' ? Colors.amber.shade900 : Colors.blue.shade800,
+                              color: subOut.status == 'Approved'
+                                  ? Colors.amber.shade900
+                                  : Colors.blue.shade800,
                             ),
                           ),
                         )
                       else if (isSubstitutedIn)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.amber.shade100,
                             borderRadius: BorderRadius.circular(8),
@@ -327,12 +334,19 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                           ),
                           child: Text(
                             'Assigned Proxy',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.amber.shade900),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber.shade900,
+                            ),
                           ),
                         )
                       else
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.green.shade50,
                             borderRadius: BorderRadius.circular(8),
@@ -340,24 +354,36 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                           ),
                           child: const Text(
                             'Scheduled',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.green),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green,
+                            ),
                           ),
                         ),
                     ],
                   ),
                   const SizedBox(height: 10),
-                  
+
                   // PRIMARY TITLE FOCUS: CLASS / SECTION
                   Text(
                     'Class $targetClass',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.ink),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.ink,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Padding(
                     padding: const EdgeInsets.only(right: 36),
                     child: Text(
                       subjectName,
-                      style: const TextStyle(fontSize: 13, color: AppColors.muted, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.muted,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -373,7 +399,11 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.swap_horiz, size: 16, color: Colors.amber),
+                          const Icon(
+                            Icons.swap_horiz,
+                            size: 16,
+                            color: Colors.amber,
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Wrap(
@@ -382,12 +412,24 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                               children: [
                                 Text(
                                   widget.session.displayName,
-                                  style: const TextStyle(fontSize: 12, color: Colors.red, decoration: TextDecoration.lineThrough),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.red,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
                                 ),
-                                const Icon(Icons.arrow_right_alt, size: 14, color: AppColors.muted),
+                                const Icon(
+                                  Icons.arrow_right_alt,
+                                  size: 14,
+                                  color: AppColors.muted,
+                                ),
                                 Text(
                                   subOut.substituteFaculty,
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber.shade900),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amber.shade900,
+                                  ),
                                 ),
                               ],
                             ),
@@ -405,7 +447,11 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.shield_outlined, size: 16, color: Colors.amber),
+                          const Icon(
+                            Icons.shield_outlined,
+                            size: 16,
+                            color: Colors.amber,
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Wrap(
@@ -414,12 +460,24 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                               children: [
                                 Text(
                                   subIn.originalFaculty,
-                                  style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                                const Icon(Icons.arrow_right_alt, size: 14, color: AppColors.muted),
+                                const Icon(
+                                  Icons.arrow_right_alt,
+                                  size: 14,
+                                  color: AppColors.muted,
+                                ),
                                 Text(
                                   '${widget.session.displayName} (Proxy)',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber.shade900),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amber.shade900,
+                                  ),
                                 ),
                               ],
                             ),
@@ -442,7 +500,11 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                     shape: const CircleBorder(),
                     clipBehavior: Clip.antiAlias,
                     child: InkWell(
-                      onTap: () => _showRequestSubstitutionModal(context, entry: entry, timeSlot: timeSlot),
+                      onTap: () => _showRequestSubstitutionModal(
+                        context,
+                        entry: entry,
+                        timeSlot: timeSlot,
+                      ),
                       child: const Padding(
                         padding: EdgeInsets.all(10),
                         child: Icon(
@@ -520,7 +582,11 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
   Widget _buildTabMyRequests() {
     final subs = widget.repository
         .getSubstitutions()
-        .where((s) => s.originalFaculty.toLowerCase() == widget.session.displayName.toLowerCase())
+        .where(
+          (s) =>
+              s.originalFaculty.toLowerCase() ==
+              widget.session.displayName.toLowerCase(),
+        )
         .toList();
 
     if (subs.isEmpty) {
@@ -530,7 +596,10 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
           children: [
             Icon(Icons.outbox_outlined, size: 48, color: Colors.grey.shade400),
             const SizedBox(height: 12),
-            const Text('No outgoing substitution requests.', style: TextStyle(color: AppColors.muted)),
+            const Text(
+              'No outgoing substitution requests.',
+              style: TextStyle(color: AppColors.muted),
+            ),
           ],
         ),
       );
@@ -548,7 +617,9 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -557,26 +628,35 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('${item.className} • ${item.subjectName}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(
+                      '${item.className} • ${item.subjectName}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: isApproved
                             ? Colors.green.shade50
                             : isRejected
-                                ? Colors.red.shade50
-                                : isCancelled
-                                    ? Colors.grey.shade200
-                                    : Colors.amber.shade50,
+                            ? Colors.red.shade50
+                            : isCancelled
+                            ? Colors.grey.shade200
+                            : Colors.amber.shade50,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: isApproved
                               ? Colors.green.shade300
                               : isRejected
-                                  ? Colors.red.shade300
-                                  : isCancelled
-                                      ? Colors.grey.shade400
-                                      : Colors.amber.shade300,
+                              ? Colors.red.shade300
+                              : isCancelled
+                              ? Colors.grey.shade400
+                              : Colors.amber.shade300,
                         ),
                       ),
                       child: Text(
@@ -587,10 +667,10 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                           color: isApproved
                               ? Colors.green.shade800
                               : isRejected
-                                  ? Colors.red.shade800
-                                  : isCancelled
-                                      ? Colors.grey.shade700
-                                      : Colors.amber.shade900,
+                              ? Colors.red.shade800
+                              : isCancelled
+                              ? Colors.grey.shade700
+                              : Colors.amber.shade900,
                         ),
                       ),
                     ),
@@ -600,21 +680,45 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
-                        color: item.triggerType == SubstitutionTriggerType.facultyInitiated ? Colors.purple.shade50 : Colors.orange.shade50,
+                        color:
+                            item.triggerType ==
+                                SubstitutionTriggerType.facultyInitiated
+                            ? Colors.purple.shade50
+                            : Colors.orange.shade50,
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: item.triggerType == SubstitutionTriggerType.facultyInitiated ? Colors.purple.shade200 : Colors.orange.shade200),
+                        border: Border.all(
+                          color:
+                              item.triggerType ==
+                                  SubstitutionTriggerType.facultyInitiated
+                              ? Colors.purple.shade200
+                              : Colors.orange.shade200,
+                        ),
                       ),
                       child: Text(
                         item.triggerType.label,
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: item.triggerType == SubstitutionTriggerType.facultyInitiated ? Colors.purple.shade800 : Colors.orange.shade900),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              item.triggerType ==
+                                  SubstitutionTriggerType.facultyInitiated
+                              ? Colors.purple.shade800
+                              : Colors.orange.shade900,
+                        ),
                       ),
                     ),
                     if (item.isPoolBroadcast) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.blue.shade50,
                           borderRadius: BorderRadius.circular(4),
@@ -622,20 +726,47 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                         ),
                         child: const Text(
                           'Pool Broadcast',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
                         ),
                       ),
                     ],
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('Slot: ${item.dayOfWeek}, ${item.timeSlot}', style: const TextStyle(fontSize: 12)),
-                Text('Proxy Assignee: ${item.substituteFaculty}', style: TextStyle(fontSize: 12, color: Colors.amber.shade900, fontWeight: FontWeight.w600)),
+                Text(
+                  'Slot: ${item.dayOfWeek}, ${item.timeSlot}',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                Text(
+                  'Proxy Assignee: ${item.substituteFaculty}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.amber.shade900,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 if (item.reason.isNotEmpty)
-                  Text('Reason: ${item.reason}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                  Text(
+                    'Reason: ${item.reason}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.muted,
+                    ),
+                  ),
                 if (item.note.isNotEmpty)
-                  Text('Note: "${item.note}"', style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.grey)),
-                
+                  Text(
+                    'Note: "${item.note}"',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey,
+                    ),
+                  ),
+
                 // Cancel Request Action Button
                 if (isPending) ...[
                   const SizedBox(height: 10),
@@ -648,13 +779,20 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                         visualDensity: VisualDensity.compact,
                       ),
                       onPressed: () {
-                        setState(() => widget.repository.cancelSubstitution(item.id));
+                        setState(
+                          () => widget.repository.cancelSubstitution(item.id),
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Substitution request cancelled.')),
+                          const SnackBar(
+                            content: Text('Substitution request cancelled.'),
+                          ),
                         );
                       },
                       icon: const Icon(Icons.cancel_outlined, size: 14),
-                      label: const Text('Cancel Request', style: TextStyle(fontSize: 11)),
+                      label: const Text(
+                        'Cancel Request',
+                        style: TextStyle(fontSize: 11),
+                      ),
                     ),
                   ),
                 ],
@@ -671,7 +809,13 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
     final myName = widget.session.displayName.toLowerCase();
     final invites = widget.repository
         .getSubstitutions()
-        .where((s) => (s.substituteFaculty.toLowerCase() == myName || (s.isPoolBroadcast && s.originalFaculty.toLowerCase() != myName)) && s.status == 'Pending')
+        .where(
+          (s) =>
+              (s.substituteFaculty.toLowerCase() == myName ||
+                  (s.isPoolBroadcast &&
+                      s.originalFaculty.toLowerCase() != myName)) &&
+              s.status == 'Pending',
+        )
         .toList();
 
     if (invites.isEmpty) {
@@ -681,7 +825,10 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
           children: [
             Icon(Icons.inbox_outlined, size: 48, color: Colors.grey.shade400),
             const SizedBox(height: 12),
-            const Text('No incoming substitution invites.', style: TextStyle(color: AppColors.muted)),
+            const Text(
+              'No incoming substitution invites.',
+              style: TextStyle(color: AppColors.muted),
+            ),
           ],
         ),
       );
@@ -694,7 +841,9 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
         final item = invites[i];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -703,13 +852,29 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Class ${item.className}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(
+                      'Class ${item.className}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(6)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade100,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
                       child: Text(
                         item.isPoolBroadcast ? 'Pool Invite' : 'Direct Invite',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.amber.shade900),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber.shade900,
+                        ),
                       ),
                     ),
                   ],
@@ -718,40 +883,102 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
-                        color: item.triggerType == SubstitutionTriggerType.facultyInitiated ? Colors.purple.shade50 : Colors.orange.shade50,
+                        color:
+                            item.triggerType ==
+                                SubstitutionTriggerType.facultyInitiated
+                            ? Colors.purple.shade50
+                            : Colors.orange.shade50,
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: item.triggerType == SubstitutionTriggerType.facultyInitiated ? Colors.purple.shade200 : Colors.orange.shade200),
+                        border: Border.all(
+                          color:
+                              item.triggerType ==
+                                  SubstitutionTriggerType.facultyInitiated
+                              ? Colors.purple.shade200
+                              : Colors.orange.shade200,
+                        ),
                       ),
                       child: Text(
                         item.triggerType.label,
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: item.triggerType == SubstitutionTriggerType.facultyInitiated ? Colors.purple.shade800 : Colors.orange.shade900),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              item.triggerType ==
+                                  SubstitutionTriggerType.facultyInitiated
+                              ? Colors.purple.shade800
+                              : Colors.orange.shade900,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('Original Faculty: ${item.originalFaculty}', style: const TextStyle(fontSize: 13, color: Colors.red, fontWeight: FontWeight.w600)),
-                Text('${item.subjectCode} - ${item.subjectName}', style: const TextStyle(fontSize: 13, color: AppColors.muted)),
-                Text('${item.dayOfWeek} • ${item.timeSlot}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                if (item.reason.isNotEmpty) Text('Metadata: ${item.reason}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
-                if (item.note.isNotEmpty) Text('Note: "${item.note}"', style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.grey)),
+                Text(
+                  'Original Faculty: ${item.originalFaculty}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '${item.subjectCode} - ${item.subjectName}',
+                  style: const TextStyle(fontSize: 13, color: AppColors.muted),
+                ),
+                Text(
+                  '${item.dayOfWeek} • ${item.timeSlot}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (item.reason.isNotEmpty)
+                  Text(
+                    'Metadata: ${item.reason}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                if (item.note.isNotEmpty)
+                  Text(
+                    'Note: "${item.note}"',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey,
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     OutlinedButton(
-                      style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
                       onPressed: () {
-                        setState(() => widget.repository.rejectSubstitution(item.id));
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Substitution invite declined.')));
+                        setState(
+                          () => widget.repository.rejectSubstitution(item.id),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Substitution invite declined.'),
+                          ),
+                        );
                       },
                       child: const Text('Decline'),
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                      ),
                       onPressed: () {
                         setState(() {
                           // Assign user as proxy if it was a pool broadcast
@@ -761,7 +988,13 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                             widget.repository.approveSubstitution(item.id);
                           }
                         });
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Substitution invite accepted! You are assigned as proxy.')));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Substitution invite accepted! You are assigned as proxy.',
+                            ),
+                          ),
+                        );
                       },
                       child: const Text('Accept'),
                     ),
@@ -779,7 +1012,14 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
   Widget _buildTabActiveProxies() {
     final activeProxies = widget.repository
         .getSubstitutions()
-        .where((s) => (s.substituteFaculty.toLowerCase() == widget.session.displayName.toLowerCase() || s.originalFaculty.toLowerCase() == widget.session.displayName.toLowerCase()) && s.status == 'Approved')
+        .where(
+          (s) =>
+              (s.substituteFaculty.toLowerCase() ==
+                      widget.session.displayName.toLowerCase() ||
+                  s.originalFaculty.toLowerCase() ==
+                      widget.session.displayName.toLowerCase()) &&
+              s.status == 'Approved',
+        )
         .toList();
 
     if (activeProxies.isEmpty) {
@@ -789,7 +1029,10 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
           children: [
             Icon(Icons.shield_outlined, size: 48, color: Colors.grey.shade400),
             const SizedBox(height: 12),
-            const Text('No active proxy duties for this week.', style: TextStyle(color: AppColors.muted)),
+            const Text(
+              'No active proxy duties for this week.',
+              style: TextStyle(color: AppColors.muted),
+            ),
           ],
         ),
       );
@@ -800,23 +1043,49 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
       itemCount: activeProxies.length,
       itemBuilder: (ctx, i) {
         final item = activeProxies[i];
-        final isProxyDuty = item.substituteFaculty.toLowerCase() == widget.session.displayName.toLowerCase();
+        final isProxyDuty =
+            item.substituteFaculty.toLowerCase() ==
+            widget.session.displayName.toLowerCase();
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: ListTile(
             contentPadding: const EdgeInsets.all(14),
             leading: CircleAvatar(
-              backgroundColor: isProxyDuty ? Colors.amber.shade100 : Colors.red.shade50,
-              child: Icon(isProxyDuty ? Icons.shield : Icons.swap_horiz, color: isProxyDuty ? Colors.amber.shade900 : Colors.red),
+              backgroundColor: isProxyDuty
+                  ? Colors.amber.shade100
+                  : Colors.red.shade50,
+              child: Icon(
+                isProxyDuty ? Icons.shield : Icons.swap_horiz,
+                color: isProxyDuty ? Colors.amber.shade900 : Colors.red,
+              ),
             ),
-            title: Text(isProxyDuty ? 'Proxy Duty: Class ${item.className}' : 'Surrendered Class: ${item.className}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('${item.subjectName}\n${item.dayOfWeek} • ${item.timeSlot}\n${isProxyDuty ? "Covering for: ${item.originalFaculty}" : "Covered by: ${item.substituteFaculty}"}'),
+            title: Text(
+              isProxyDuty
+                  ? 'Proxy Duty: Class ${item.className}'
+                  : 'Surrendered Class: ${item.className}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              '${item.subjectName}\n${item.dayOfWeek} • ${item.timeSlot}\n${isProxyDuty ? "Covering for: ${item.originalFaculty}" : "Covered by: ${item.substituteFaculty}"}',
+            ),
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(4)),
-              child: Text(item.triggerType.label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.purple.shade800)),
+              decoration: BoxDecoration(
+                color: Colors.purple.shade50,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                item.triggerType.label,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.purple.shade800,
+                ),
+              ),
             ),
           ),
         );
@@ -836,7 +1105,9 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
     bool isPoolBroadcast = false;
     String selectedSlot = timeSlot ?? '08:30 - 09:20 AM';
     String selectedClass = entry?.className ?? 'CS-3A';
-    String selectedSubject = entry != null ? '${entry.subjectCode} - ${entry.subjectName}' : 'CS301 - Database Systems';
+    String selectedSubject = entry != null
+        ? '${entry.subjectCode} - ${entry.subjectName}'
+        : 'CS301 - Database Systems';
     final noteController = TextEditingController();
 
     final categories = [
@@ -876,7 +1147,9 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) {
           final isFromCard = entry != null && timeSlot != null;
@@ -898,23 +1171,51 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                     children: [
                       Row(
                         children: [
-                          const Text('Request Substitution', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const Text(
+                            'Request Substitution',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(4)),
-                            child: const Text('FACULTY_INITIATED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purple)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.shade50,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'FACULTY_INITIATED',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.purple,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
 
                   // Period Picker (If opened from top CTA; pre-filled if from card)
                   if (!isFromCard) ...[
-                    const Text('Target Date & Period Slot', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    const Text(
+                      'Target Date & Period Slot',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
@@ -924,22 +1225,48 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                               final d = await showDatePicker(
                                 context: context,
                                 initialDate: modalSelectedDate,
-                                firstDate: DateTime.now().subtract(const Duration(days: 7)),
-                                lastDate: DateTime.now().add(const Duration(days: 60)),
+                                firstDate: DateTime.now().subtract(
+                                  const Duration(days: 7),
+                                ),
+                                lastDate: DateTime.now().add(
+                                  const Duration(days: 60),
+                                ),
                               );
-                              if (d != null) setModalState(() => modalSelectedDate = d);
+                              if (d != null)
+                                setModalState(() => modalSelectedDate = d);
                             },
                             icon: const Icon(Icons.calendar_today, size: 16),
-                            label: Text(DateFormat('EEE, MMM d').format(modalSelectedDate)),
+                            label: Text(
+                              DateFormat(
+                                'EEE, MMM d',
+                              ).format(modalSelectedDate),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             initialValue: selectedSlot,
-                            items: timeSlotsList.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
-                            onChanged: (val) => setModalState(() => selectedSlot = val!),
-                            decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
+                            items: timeSlotsList
+                                .map(
+                                  (s) => DropdownMenuItem(
+                                    value: s,
+                                    child: Text(
+                                      s,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (val) =>
+                                setModalState(() => selectedSlot = val!),
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -952,13 +1279,33 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Class / Section', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                              const Text(
+                                'Class / Section',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               const SizedBox(height: 4),
                               DropdownButtonFormField<String>(
                                 initialValue: selectedClass,
-                                items: classesList.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                                onChanged: (val) => setModalState(() => selectedClass = val!),
-                                decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
+                                items: classesList
+                                    .map(
+                                      (c) => DropdownMenuItem(
+                                        value: c,
+                                        child: Text(c),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (val) =>
+                                    setModalState(() => selectedClass = val!),
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 8,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -969,13 +1316,37 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Subject Name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                              const Text(
+                                'Subject Name',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               const SizedBox(height: 4),
                               DropdownButtonFormField<String>(
                                 initialValue: selectedSubject,
-                                items: subjectsList.map((sub) => DropdownMenuItem(value: sub, child: Text(sub, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)))).toList(),
-                                onChanged: (val) => setModalState(() => selectedSubject = val!),
-                                decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
+                                items: subjectsList
+                                    .map(
+                                      (sub) => DropdownMenuItem(
+                                        value: sub,
+                                        child: Text(
+                                          sub,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (val) =>
+                                    setModalState(() => selectedSubject = val!),
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 8,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -985,15 +1356,26 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                   ] else ...[
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                          const Icon(
+                            Icons.info_outline,
+                            color: Colors.blue,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Pre-filled for Class ${entry.className} (${entry.subjectCode}) • ${DateFormat('EEEE').format(modalSelectedDate)}, $selectedSlot',
-                              style: TextStyle(fontSize: 12, color: Colors.blue.shade900, fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue.shade900,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
@@ -1003,42 +1385,84 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                   const SizedBox(height: 14),
 
                   // Reason Categories
-                  const Text('Reason Category', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Reason Category',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     initialValue: selectedCategory,
-                    items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                    onChanged: (val) => setModalState(() => selectedCategory = val!),
-                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                    items: categories
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (val) =>
+                        setModalState(() => selectedCategory = val!),
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 14),
 
                   // Assignee Selection Mode (Direct Assignment vs Pool Broadcast)
-                  const Text('Assignee Selection', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Assignee Selection',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 6),
                   SegmentedButton<bool>(
                     segments: const [
-                      ButtonSegment(value: false, label: Text('Direct Assignment'), icon: Icon(Icons.person)),
-                      ButtonSegment(value: true, label: Text('Pool Broadcast'), icon: Icon(Icons.groups)),
+                      ButtonSegment(
+                        value: false,
+                        label: Text('Direct Assignment'),
+                        icon: Icon(Icons.person),
+                      ),
+                      ButtonSegment(
+                        value: true,
+                        label: Text('Pool Broadcast'),
+                        icon: Icon(Icons.groups),
+                      ),
                     ],
                     selected: {isPoolBroadcast},
-                    onSelectionChanged: (val) => setModalState(() => isPoolBroadcast = val.first),
+                    onSelectionChanged: (val) =>
+                        setModalState(() => isPoolBroadcast = val.first),
                   ),
                   const SizedBox(height: 10),
 
                   if (!isPoolBroadcast) ...[
-                    const Text('Select Target Peer Faculty', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                    const Text(
+                      'Select Target Peer Faculty',
+                      style: TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
                     const SizedBox(height: 4),
                     DropdownButtonFormField<String>(
                       initialValue: selectedFaculty,
-                      items: availableFaculty.map((f) => DropdownMenuItem(value: f, child: Text(f))).toList(),
-                      onChanged: (val) => setModalState(() => selectedFaculty = val!),
-                      decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                      items: availableFaculty
+                          .map(
+                            (f) => DropdownMenuItem(value: f, child: Text(f)),
+                          )
+                          .toList(),
+                      onChanged: (val) =>
+                          setModalState(() => selectedFaculty = val!),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
                     ),
                   ] else ...[
                     Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: Colors.amber.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.amber.shade300)),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.amber.shade300),
+                      ),
                       child: const Row(
                         children: [
                           Icon(Icons.campaign, color: Colors.amber, size: 20),
@@ -1046,7 +1470,10 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                           Expanded(
                             child: Text(
                               'Request will be broadcasted to all available department faculty for this slot.',
-                              style: TextStyle(fontSize: 11, color: Colors.black87),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.black87,
+                              ),
                             ),
                           ),
                         ],
@@ -1056,13 +1483,17 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                   const SizedBox(height: 14),
 
                   // Note Field
-                  const Text('Optional Note / Extra Context', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Optional Note / Extra Context',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 6),
                   TextField(
                     controller: noteController,
                     maxLines: 2,
                     decoration: const InputDecoration(
-                      hintText: 'e.g., Covering Chapter 4 ahead of mid-term exams...',
+                      hintText:
+                          'e.g., Covering Chapter 4 ahead of mid-term exams...',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -1071,22 +1502,31 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(vertical: 14)),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
                       onPressed: () {
                         final parts = selectedSubject.split(' - ');
                         final subCode = parts.isNotEmpty ? parts[0] : 'CS301';
-                        final subName = parts.length > 1 ? parts[1] : selectedSubject;
+                        final subName = parts.length > 1
+                            ? parts[1]
+                            : selectedSubject;
 
                         final newSub = FacultySubstitution(
                           id: 'SUB-${DateTime.now().millisecondsSinceEpoch}',
                           date: modalSelectedDate,
                           originalFaculty: widget.session.displayName,
-                          substituteFaculty: isPoolBroadcast ? 'Pool Broadcast (Dept Faculty)' : selectedFaculty,
+                          substituteFaculty: isPoolBroadcast
+                              ? 'Pool Broadcast (Dept Faculty)'
+                              : selectedFaculty,
                           className: selectedClass,
                           subjectCode: subCode,
                           subjectName: subName,
                           timeSlot: selectedSlot,
-                          dayOfWeek: DateFormat('EEEE').format(modalSelectedDate),
+                          dayOfWeek: DateFormat(
+                            'EEEE',
+                          ).format(modalSelectedDate),
                           reason: selectedCategory,
                           status: 'Pending',
                           triggerType: SubstitutionTriggerType.facultyInitiated,

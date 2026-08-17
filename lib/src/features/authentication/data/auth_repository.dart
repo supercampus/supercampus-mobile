@@ -2,6 +2,8 @@ import 'dart:convert';
 
 enum UserRole { student, security, parent, staff, timetableAllocator, admin }
 
+enum PortalFamily { student, parent, staff, admin }
+
 extension UserRoleExtension on UserRole {
   String get label => switch (this) {
     UserRole.student => 'Student',
@@ -45,6 +47,8 @@ class UserSession {
     this.staffId,
     this.jwtToken,
     this.accessTokenExpiresAt,
+    this.portalFamilies = const [],
+    this.activePortalFamily,
   });
 
   final String email;
@@ -65,6 +69,8 @@ class UserSession {
   final String? staffId; // e.g. "FAC-101" for faculty
   final String? jwtToken; // Signed JWT Token string
   final DateTime? accessTokenExpiresAt;
+  final List<PortalFamily> portalFamilies;
+  final PortalFamily? activePortalFamily;
 
   /// Display label for the role
   String get roleLabel => roleName ?? role.label;
@@ -155,6 +161,7 @@ abstract interface class AuthRepository {
     required String email,
     required String password,
     required UserRole role,
+    required String tenantDomain,
   });
 
   Future<UserSession> refresh(UserSession session);

@@ -23,8 +23,7 @@ class AllocatorDashboardScreen extends StatefulWidget {
 }
 
 class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
-  int _currentNavIndex =
-      0; // 0: Dashboard, 1: Master Timetable, 2: Substitutions, 3: Configuration
+  int _currentNavIndex = 0;
   String _selectedClass = 'CS-3A';
   final String _selectedDay = 'Monday';
 
@@ -116,6 +115,20 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 ),
                 _sidebarTile(
                   index: 1,
+                  icon: Icons.calendar_month_outlined,
+                  activeIcon: Icons.calendar_month,
+                  label: 'Timetable Builder',
+                  subtitle: 'Generate & Assign Staff',
+                ),
+                _sidebarTile(
+                  index: 2,
+                  icon: Icons.tune_outlined,
+                  activeIcon: Icons.tune,
+                  label: 'Subject Setup',
+                  subtitle: 'Faculty & Weekly Quotas',
+                ),
+                _sidebarTile(
+                  index: 3,
                   icon: Icons.swap_horiz_outlined,
                   activeIcon: Icons.swap_horiz,
                   label: 'Substitutions',
@@ -123,7 +136,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   badgeCount: activeDisruptions + pendingSubs,
                 ),
                 _sidebarTile(
-                  index: 2,
+                  index: 4,
                   icon: Icons.history_outlined,
                   activeIcon: Icons.history,
                   label: 'Activity Logs',
@@ -196,7 +209,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     );
   }
 
-  // Minimal 3-Tab Bottom Navigation Bar (Mobile Cleanup)
+  // Compact allocator navigation for mobile.
   Widget _buildBottomNavBar(BuildContext context) {
     final disruptions = widget.repository.getDisruptionAlerts();
     final activeDisruptions = disruptions.where((d) => !d.isResolved).length;
@@ -205,7 +218,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     final totalBadge = activeDisruptions + pendingSubs;
 
     return BottomNavigationBar(
-      currentIndex: _currentNavIndex > 2 ? 0 : _currentNavIndex,
+      currentIndex: _currentNavIndex,
       onTap: (idx) => setState(() => _currentNavIndex = idx),
       type: BottomNavigationBarType.fixed,
       selectedItemColor: const Color(0xFF00695C),
@@ -219,6 +232,16 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           icon: Icon(Icons.dashboard_outlined),
           activeIcon: Icon(Icons.dashboard),
           label: 'Dashboard',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.calendar_month_outlined),
+          activeIcon: Icon(Icons.calendar_month),
+          label: 'Builder',
+        ),
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.tune_outlined),
+          activeIcon: Icon(Icons.tune),
+          label: 'Setup',
         ),
         BottomNavigationBarItem(
           icon: Badge(
@@ -249,8 +272,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
         Expanded(
           child: switch (_currentNavIndex) {
             0 => _buildView1Dashboard(context),
-            1 => _buildView3Substitutions(context),
-            2 => _buildViewActivityLogs(context),
+            1 => _buildView2MasterTimetable(context),
+            2 => _buildView4Configuration(context),
+            3 => _buildView3Substitutions(context),
+            4 => _buildViewActivityLogs(context),
             _ => _buildView1Dashboard(context),
           },
         ),
@@ -793,7 +818,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   ),
                   onPressed: () => _onGenerateTimetablePressed(context),
                   icon: const Icon(Icons.auto_awesome),
-                  label: const Text('Generate Timetable'),
+                  label: const Text('Randomly Generate'),
                 ),
                 FilledButton.icon(
                   style: FilledButton.styleFrom(
@@ -894,20 +919,21 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                         backgroundColor: const Color(0xFF2E7D32),
                       ),
                       onPressed: () {
-                        for (final e in _aiPreviewEntries!) {
-                          widget.repository.addEntry(e);
-                        }
+                        widget.repository.replaceClassSchedule(
+                          _selectedClass,
+                          _aiPreviewEntries!,
+                        );
                         setState(() => _aiPreviewEntries = null);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
-                              'AI Candidate applied to master grid!',
+                              'Timetable assigned to students and staff.',
                             ),
                             backgroundColor: Color(0xFF2E7D32),
                           ),
                         );
                       },
-                      child: const Text('Apply Candidate to Master Grid'),
+                      child: const Text('Assign Timetable'),
                     ),
                   ],
                 ),
@@ -1797,7 +1823,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: day,
+                            initialValue: day,
                             decoration: const InputDecoration(labelText: 'Day'),
                             items:
                                 [
@@ -2068,7 +2094,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
             ),
             onPressed: () {
               Navigator.pop(ctx);
-              final config = widget.repository.getConfig();
+              final config = widget.repository.getConfig().copyWith(
+                batchSection: _selectedClass,
+              );
               final candidate = widget.repository.generateAiCandidate(config);
               setState(() {
                 _aiPreviewEntries = candidate;
@@ -2076,7 +2104,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text(
-                    'AI Candidate schedule generated! Review & apply to master grid below.',
+                    'Random timetable generated. Review it before assigning staff.',
                   ),
                   backgroundColor: Colors.purple,
                 ),
@@ -2479,7 +2507,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     final logs = <Map<String, dynamic>>[
       {
         'title': 'Substitution Approved',
-        'subtitle': 'Prof. Donald Knuth assigned for CS-3A (Operating Systems, Period 2)',
+        'subtitle':
+            'Prof. Donald Knuth assigned for CS-3A (Operating Systems, Period 2)',
         'time': '10 mins ago',
         'icon': Icons.swap_horiz,
         'color': Colors.green,
@@ -2500,7 +2529,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
       },
       {
         'title': 'Master Matrix Published',
-        'subtitle': 'Odd Sem 2026-27 Initial Published Draft by Dr. Marcus Vance',
+        'subtitle':
+            'Odd Sem 2026-27 Initial Published Draft by Dr. Marcus Vance',
         'time': 'Yesterday',
         'icon': Icons.publish,
         'color': Colors.blue,
@@ -2510,7 +2540,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     for (final s in subs) {
       logs.add({
         'title': 'Proxy Request (${s.status})',
-        'subtitle': '${s.className}: ${s.originalFaculty} ➔ ${s.substituteFaculty} (${s.subjectName})',
+        'subtitle':
+            '${s.className}: ${s.originalFaculty} ➔ ${s.substituteFaculty} (${s.subjectName})',
         'time': '${s.dayOfWeek}, ${s.timeSlot}',
         'icon': Icons.swap_horizontal_circle_outlined,
         'color': s.status == 'Approved' ? Colors.green : Colors.amber.shade800,
@@ -2528,30 +2559,54 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               children: [
                 Text(
                   'Operations & Activity Logs',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const Text(
                   'Real-time audit log of schedule adjustments and proxy approvals',
-                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  style: TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               ],
             ),
           ],
         ),
         const SizedBox(height: 16),
-        ...logs.map((log) => Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: (log['color'] as Color).withValues(alpha: 0.12),
-              child: Icon(log['icon'] as IconData, color: log['color'] as Color, size: 22),
+        ...logs.map(
+          (log) => Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-            title: Text(log['title'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Text(log['subtitle'] as String, style: const TextStyle(fontSize: 12, color: AppColors.muted)),
-            trailing: Text(log['time'] as String, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: (log['color'] as Color).withValues(
+                  alpha: 0.12,
+                ),
+                child: Icon(
+                  log['icon'] as IconData,
+                  color: log['color'] as Color,
+                  size: 22,
+                ),
+              ),
+              title: Text(
+                log['title'] as String,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              subtitle: Text(
+                log['subtitle'] as String,
+                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
+              trailing: Text(
+                log['time'] as String,
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+            ),
           ),
-        )),
+        ),
       ],
     );
   }

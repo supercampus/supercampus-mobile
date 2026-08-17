@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:intl/intl.dart';
 import 'timetable_models.dart';
 import 'timetable_repository.dart';
 
 class MockTimetableRepository implements TimetableRepository {
+  static final shared = MockTimetableRepository();
+
   MockTimetableRepository() {
     _initSeedData();
   }
@@ -26,26 +29,36 @@ class MockTimetableRepository implements TimetableRepository {
   final List<AuditLogEntry> _auditLogs = [];
 
   // Reactive Stream Controllers (WebSocket / SSE Simulation)
-  final _substitutionsController = StreamController<List<FacultySubstitution>>.broadcast();
-  final _disruptionsController = StreamController<List<DisruptionAlert>>.broadcast();
-  final _attendanceController = StreamController<List<PeriodAttendanceRecord>>.broadcast();
-  final _notificationsController = StreamController<List<AppNotification>>.broadcast();
-  final _auditLogsController = StreamController<List<AuditLogEntry>>.broadcast();
+  final _substitutionsController =
+      StreamController<List<FacultySubstitution>>.broadcast();
+  final _disruptionsController =
+      StreamController<List<DisruptionAlert>>.broadcast();
+  final _attendanceController =
+      StreamController<List<PeriodAttendanceRecord>>.broadcast();
+  final _notificationsController =
+      StreamController<List<AppNotification>>.broadcast();
+  final _auditLogsController =
+      StreamController<List<AuditLogEntry>>.broadcast();
 
   @override
-  Stream<List<FacultySubstitution>> get substitutionsStream => _substitutionsController.stream;
+  Stream<List<FacultySubstitution>> get substitutionsStream =>
+      _substitutionsController.stream;
 
   @override
-  Stream<List<DisruptionAlert>> get disruptionsStream => _disruptionsController.stream;
+  Stream<List<DisruptionAlert>> get disruptionsStream =>
+      _disruptionsController.stream;
 
   @override
-  Stream<List<PeriodAttendanceRecord>> get attendanceStream => _attendanceController.stream;
+  Stream<List<PeriodAttendanceRecord>> get attendanceStream =>
+      _attendanceController.stream;
 
   @override
-  Stream<List<AppNotification>> get notificationsStream => _notificationsController.stream;
+  Stream<List<AppNotification>> get notificationsStream =>
+      _notificationsController.stream;
 
   @override
-  Stream<List<AuditLogEntry>> get auditLogsStream => _auditLogsController.stream;
+  Stream<List<AuditLogEntry>> get auditLogsStream =>
+      _auditLogsController.stream;
 
   void _initSeedData() {
     _config = const TimetableConfig(
@@ -55,7 +68,7 @@ class MockTimetableRepository implements TimetableRepository {
       workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
       collegeStartTime: '08:30',
       collegeEndTime: '16:30',
-      periodsPerDay: 6,
+      periodsPerDay: 7,
       periodDurationMinutes: 50,
       breakSlots: [
         '11:10 AM - 11:30 AM (Tea Break)',
@@ -117,6 +130,30 @@ class MockTimetableRepository implements TimetableRepository {
         subjectsHandled: ['Cloud Computing Elective'],
         isAvailable: true,
       ),
+      const FacultyMember(
+        id: 'FAC-201',
+        name: 'Prof. Nikola Tesla',
+        department: 'Electronics and Communication',
+        subjectsHandled: ['Signals and Systems', 'Digital Electronics'],
+      ),
+      const FacultyMember(
+        id: 'FAC-202',
+        name: 'Prof. Claude Shannon',
+        department: 'Electronics and Communication',
+        subjectsHandled: ['Communication Systems', 'Signal Processing Lab'],
+      ),
+      const FacultyMember(
+        id: 'FAC-301',
+        name: 'Prof. James Watt',
+        department: 'Mechanical Engineering',
+        subjectsHandled: ['Thermodynamics', 'Fluid Mechanics'],
+      ),
+      const FacultyMember(
+        id: 'FAC-302',
+        name: 'Prof. Henry Ford',
+        department: 'Mechanical Engineering',
+        subjectsHandled: ['Manufacturing Systems', 'CAD Lab'],
+      ),
     ]);
 
     _quotas.addAll([
@@ -176,6 +213,38 @@ class MockTimetableRepository implements TimetableRepository {
         subjectCode: 'CS308',
         subjectName: 'Cloud Computing Elective',
         minWeeklyPeriods: 2,
+      ),
+      const FacultySubjectQuota(
+        id: 'QUO-201',
+        facultyName: 'Prof. Nikola Tesla',
+        department: 'Electronics and Communication',
+        subjectCode: 'EC201',
+        subjectName: 'Signals and Systems',
+        minWeeklyPeriods: 4,
+      ),
+      const FacultySubjectQuota(
+        id: 'QUO-202',
+        facultyName: 'Prof. Claude Shannon',
+        department: 'Electronics and Communication',
+        subjectCode: 'EC202',
+        subjectName: 'Communication Systems',
+        minWeeklyPeriods: 4,
+      ),
+      const FacultySubjectQuota(
+        id: 'QUO-301',
+        facultyName: 'Prof. James Watt',
+        department: 'Mechanical Engineering',
+        subjectCode: 'ME201',
+        subjectName: 'Thermodynamics',
+        minWeeklyPeriods: 4,
+      ),
+      const FacultySubjectQuota(
+        id: 'QUO-302',
+        facultyName: 'Prof. Henry Ford',
+        department: 'Mechanical Engineering',
+        subjectCode: 'ME202',
+        subjectName: 'Manufacturing Systems',
+        minWeeklyPeriods: 4,
       ),
     ]);
 
@@ -242,6 +311,30 @@ class MockTimetableRepository implements TimetableRepository {
         isLab: true,
         categoryColorValue: 0xFF00ACC1,
       ),
+      const TimetableEntry(
+        id: 'ENT-06',
+        subjectCode: 'CS306',
+        subjectName: 'AI & Machine Learning',
+        facultyId: 'ALLOC-9012',
+        facultyName: 'Dr. Marcus Vance',
+        className: 'CS-3A',
+        dayOfWeek: 'Monday',
+        timeSlot: '02:50 - 03:40 PM',
+        periodIndex: 6,
+        categoryColorValue: 0xFF3949AB,
+      ),
+      const TimetableEntry(
+        id: 'ENT-07',
+        subjectCode: 'CS308',
+        subjectName: 'Cloud Computing Elective',
+        facultyId: 'FAC-108',
+        facultyName: 'Prof. Barbara Liskov',
+        className: 'CS-3A',
+        dayOfWeek: 'Monday',
+        timeSlot: '03:40 - 04:30 PM',
+        periodIndex: 7,
+        categoryColorValue: 0xFFD81B60,
+      ),
 
       // Wednesday Exam Entry (Spanning Periods 1 & 2)
       TimetableEntry(
@@ -264,8 +357,10 @@ class MockTimetableRepository implements TimetableRepository {
         endPeriodIndex: 2,
         duration: '1h 50m',
         examDate: DateTime(2026, 8, 12),
-        syllabus: 'Units 1 & 2: Process Management, Threading, Deadlocks & Memory Allocation',
-        permittedItems: 'Non-programmable Scientific Calculator, Physical College ID Card',
+        syllabus:
+            'Units 1 & 2: Process Management, Threading, Deadlocks & Memory Allocation',
+        permittedItems:
+            'Non-programmable Scientific Calculator, Physical College ID Card',
       ),
       const TimetableEntry(
         id: 'ENT-WED-03',
@@ -301,8 +396,10 @@ class MockTimetableRepository implements TimetableRepository {
         endPeriodIndex: 3,
         duration: '1h 40m',
         examDate: DateTime(2026, 8, 14),
-        syllabus: 'Unit 3: SQL Relational Algebra, Normalization & Indexing B-Trees',
-        permittedItems: 'College ID Card, Blue/Black Pen only (No electronic gadgets allowed)',
+        syllabus:
+            'Unit 3: SQL Relational Algebra, Normalization & Indexing B-Trees',
+        permittedItems:
+            'College ID Card, Blue/Black Pen only (No electronic gadgets allowed)',
       ),
 
       // Term-Wide Exam Entries (for Filtered Exam View)
@@ -326,8 +423,10 @@ class MockTimetableRepository implements TimetableRepository {
         endPeriodIndex: 2,
         duration: '1h 50m',
         examDate: DateTime(2026, 8, 17),
-        syllabus: 'Full Lab Coursework: REST API Integration, Responsive UI & State Management',
-        permittedItems: 'Open Documentation & Workspace IDE (No internet communication tools)',
+        syllabus:
+            'Full Lab Coursework: REST API Integration, Responsive UI & State Management',
+        permittedItems:
+            'Open Documentation & Workspace IDE (No internet communication tools)',
       ),
       TimetableEntry(
         id: 'EXAM-04',
@@ -349,7 +448,8 @@ class MockTimetableRepository implements TimetableRepository {
         endPeriodIndex: 4,
         duration: '2h 00m',
         examDate: DateTime(2026, 8, 19),
-        syllabus: 'Units 1 to 3: OSI & TCP/IP Stack, Subnetting, Routing Algorithms',
+        syllabus:
+            'Units 1 to 3: OSI & TCP/IP Stack, Subnetting, Routing Algorithms',
         permittedItems: 'College ID Card, Basic Calculator allowed',
       ),
     ]);
@@ -365,7 +465,11 @@ class MockTimetableRepository implements TimetableRepository {
         dayOfWeek: 'Monday',
         timeSlot: '09:30 - 10:20 AM',
         periodIndex: 2,
-        suggestedSubstitutes: ['Prof. Donald Knuth', 'Prof. Sarah Jenkins', 'Prof. Barbara Liskov'],
+        suggestedSubstitutes: [
+          'Prof. Donald Knuth',
+          'Prof. Sarah Jenkins',
+          'Prof. Barbara Liskov',
+        ],
       ),
     );
 
@@ -448,7 +552,8 @@ class MockTimetableRepository implements TimetableRepository {
   TimetableVersion? getActiveVersion(String className) {
     try {
       return _versions.firstWhere(
-        (v) => v.className == className && v.status == TimetableStatus.published,
+        (v) =>
+            v.className == className && v.status == TimetableStatus.published,
       );
     } catch (_) {
       return null;
@@ -457,12 +562,24 @@ class MockTimetableRepository implements TimetableRepository {
 
   @override
   List<TimetableEntry> getEntriesForClass(String className) {
-    return _entries.where((e) => e.className.toLowerCase() == className.toLowerCase()).toList();
+    return _entries
+        .where((e) => e.className.toLowerCase() == className.toLowerCase())
+        .toList();
   }
 
   @override
-  List<TimetableEntry> getEntriesForFaculty(String facultyName) {
-    return _entries.where((e) => e.facultyName.toLowerCase() == facultyName.toLowerCase()).toList();
+  List<TimetableEntry> getEntriesForFaculty(
+    String facultyName, {
+    String? facultyId,
+  }) {
+    final normalizedId = facultyId?.trim().toLowerCase();
+    final normalizedName = facultyName.trim().toLowerCase();
+    return _entries.where((entry) {
+      if (normalizedId != null && normalizedId.isNotEmpty) {
+        return entry.facultyId.toLowerCase() == normalizedId;
+      }
+      return entry.facultyName.trim().toLowerCase() == normalizedName;
+    }).toList();
   }
 
   @override
@@ -484,6 +601,21 @@ class MockTimetableRepository implements TimetableRepository {
   }
 
   @override
+  void replaceClassSchedule(String className, List<TimetableEntry> entries) {
+    final normalizedClass = className.trim().toLowerCase();
+    _entries.removeWhere(
+      (entry) =>
+          !entry.isExam &&
+          entry.className.trim().toLowerCase() == normalizedClass,
+    );
+    _entries.addAll(
+      entries.where(
+        (entry) => entry.className.trim().toLowerCase() == normalizedClass,
+      ),
+    );
+  }
+
+  @override
   List<ConflictItem> getConflicts() => List.unmodifiable(_conflicts);
 
   @override
@@ -500,7 +632,8 @@ class MockTimetableRepository implements TimetableRepository {
                 id: 'CONF-${a.id}-${b.id}',
                 type: ConflictType.facultyConflict,
                 title: 'Faculty Double-Booking',
-                description: '${a.facultyName} is assigned to ${a.className} and ${b.className} simultaneously.',
+                description:
+                    '${a.facultyName} is assigned to ${a.className} and ${b.className} simultaneously.',
                 affectedEntryIds: [a.id, b.id],
               ),
             );
@@ -561,7 +694,8 @@ class MockTimetableRepository implements TimetableRepository {
   // Disruption Alerts & Substitutions Engine with Real-Time Streams
   // ---------------------------------------------------------------------------
   @override
-  List<DisruptionAlert> getDisruptionAlerts() => List.unmodifiable(_disruptions);
+  List<DisruptionAlert> getDisruptionAlerts() =>
+      List.unmodifiable(_disruptions);
 
   @override
   void resolveDisruptionAlert(String alertId, String chosenSubstitute) {
@@ -595,7 +729,8 @@ class MockTimetableRepository implements TimetableRepository {
           timestamp: DateTime.now(),
           actionType: 'DISRUPTION_RESOLVED',
           performedBy: 'Dr. Marcus Vance',
-          details: 'Assigned $chosenSubstitute for ${alert.className} (${alert.subjectCode})',
+          details:
+              'Assigned $chosenSubstitute for ${alert.className} (${alert.subjectCode})',
           affectedClass: alert.className,
           affectedFaculty: chosenSubstitute,
         ),
@@ -605,7 +740,8 @@ class MockTimetableRepository implements TimetableRepository {
   }
 
   @override
-  List<FacultySubstitution> getSubstitutions() => List.unmodifiable(_substitutions);
+  List<FacultySubstitution> getSubstitutions() =>
+      List.unmodifiable(_substitutions);
 
   @override
   void requestSubstitution(FacultySubstitution sub) {
@@ -619,7 +755,8 @@ class MockTimetableRepository implements TimetableRepository {
         timestamp: DateTime.now(),
         actionType: 'SUBSTITUTION_REQUESTED',
         performedBy: sub.originalFaculty,
-        details: '${sub.triggerType.label}: Request for ${sub.className} (${sub.subjectCode}) assigned to ${sub.substituteFaculty}',
+        details:
+            '${sub.triggerType.label}: Request for ${sub.className} (${sub.subjectCode}) assigned to ${sub.substituteFaculty}',
         affectedClass: sub.className,
         affectedFaculty: sub.substituteFaculty,
       ),
@@ -629,7 +766,8 @@ class MockTimetableRepository implements TimetableRepository {
     if (sub.isPoolBroadcast) {
       _dispatchNotification(
         title: 'Department Pool Broadcast Invite',
-        body: '${sub.originalFaculty} requested coverage for ${sub.className} (${sub.subjectCode}) at ${sub.timeSlot}.',
+        body:
+            '${sub.originalFaculty} requested coverage for ${sub.className} (${sub.subjectCode}) at ${sub.timeSlot}.',
         type: NotificationType.peerInvite,
         recipientUser: 'POOL_BROADCAST_${sub.className}',
         deepLinkRoute: '/substitutions?tab=invites',
@@ -637,7 +775,8 @@ class MockTimetableRepository implements TimetableRepository {
     } else {
       _dispatchNotification(
         title: 'Peer Substitution Request',
-        body: '${sub.originalFaculty} requested you for coverage in ${sub.className} (${sub.subjectCode}).',
+        body:
+            '${sub.originalFaculty} requested you for coverage in ${sub.className} (${sub.subjectCode}).',
         type: NotificationType.peerInvite,
         recipientUser: sub.substituteFaculty,
         deepLinkRoute: '/substitutions?tab=invites',
@@ -660,7 +799,8 @@ class MockTimetableRepository implements TimetableRepository {
           timestamp: DateTime.now(),
           actionType: 'SUBSTITUTION_APPROVED',
           performedBy: sub.substituteFaculty,
-          details: 'Proxy confirmed for ${sub.className} (${sub.subjectCode}) on ${sub.dayOfWeek}',
+          details:
+              'Proxy confirmed for ${sub.className} (${sub.subjectCode}) on ${sub.dayOfWeek}',
           affectedClass: sub.className,
           affectedFaculty: sub.originalFaculty,
         ),
@@ -669,7 +809,8 @@ class MockTimetableRepository implements TimetableRepository {
 
       _dispatchNotification(
         title: 'Substitution Request Approved',
-        body: '${sub.substituteFaculty} accepted proxy duty for ${sub.className} (${sub.subjectCode}).',
+        body:
+            '${sub.substituteFaculty} accepted proxy duty for ${sub.className} (${sub.subjectCode}).',
         type: NotificationType.allocatorApproval,
         recipientUser: sub.originalFaculty,
         deepLinkRoute: '/substitutions?tab=my_requests',
@@ -677,7 +818,8 @@ class MockTimetableRepository implements TimetableRepository {
 
       _dispatchNotification(
         title: 'Class Schedule Update',
-        body: 'Substitute teacher ${sub.substituteFaculty} is assigned for ${sub.className} (${sub.subjectCode}) today.',
+        body:
+            'Substitute teacher ${sub.substituteFaculty} is assigned for ${sub.className} (${sub.subjectCode}) today.',
         type: NotificationType.studentClassUpdate,
         recipientUser: 'STUDENTS_${sub.className}',
         deepLinkRoute: '/student_dashboard',
@@ -724,7 +866,8 @@ class MockTimetableRepository implements TimetableRepository {
           timestamp: DateTime.now(),
           actionType: 'SUBSTITUTION_CANCELLED',
           performedBy: sub.originalFaculty,
-          details: 'Retracted request for ${sub.className} (${sub.subjectCode})',
+          details:
+              'Retracted request for ${sub.className} (${sub.subjectCode})',
           affectedClass: sub.className,
         ),
       );
@@ -734,52 +877,108 @@ class MockTimetableRepository implements TimetableRepository {
 
   @override
   List<TimetableEntry> generateAiCandidate(TimetableConfig config) {
-    final days = config.workingDays;
-    final subjects = [
-      ('CS301', 'Database Systems', 'Prof. Sarah Jenkins', 0xFF1E88E5, false),
-      ('CS302', 'Operating Systems', 'Prof. Alan Turing', 0xFF43A047, false),
-      ('CS303', 'Computer Networks', 'Prof. Grace Hopper', 0xFFFB8C00, false),
-      ('CS304', 'Software Engineering', 'Prof. Donald Knuth', 0xFF8E24AA, false),
-      ('CS306', 'AI & Machine Learning', 'Dr. Marcus Vance', 0xFFD81B60, false),
-      ('CS305L', 'Web Dev Lab', 'Prof. Tim Berners-Lee', 0xFF00ACC1, true),
-      ('CS308', 'Cloud Computing Elective', 'Prof. Barbara Liskov', 0xFF3949AB, false),
-    ];
-
-    final slots = [
+    final random = Random();
+    final department = _departmentForClass(config.batchSection);
+    final departmentQuotas = _quotas
+        .where((quota) => quota.department == department)
+        .toList();
+    final eligibleQuotas = departmentQuotas.isEmpty
+        ? List<FacultySubjectQuota>.from(_quotas)
+        : departmentQuotas;
+    if (eligibleQuotas.isEmpty) return const [];
+    final slots = <String>[
       '08:30 - 09:20 AM',
       '09:30 - 10:20 AM',
       '10:20 - 11:10 AM',
       '11:30 - 12:20 PM',
+      '12:20 - 01:10 PM',
       '02:00 - 02:50 PM',
       '02:50 - 03:40 PM',
     ];
-
     final candidate = <TimetableEntry>[];
-    int counter = 1;
+    var counter = 1;
 
-    for (final day in days) {
-      for (int i = 0; i < slots.length && i < config.periodsPerDay; i++) {
-        final subIndex = (counter + i) % subjects.length;
-        final sub = subjects[subIndex];
-
+    for (final day in config.workingDays) {
+      final dailyQuotas = <FacultySubjectQuota>[
+        for (final quota in eligibleQuotas)
+          for (var count = 0; count < quota.minWeeklyPeriods; count++) quota,
+      ]..shuffle(random);
+      for (var index = 0; index < config.periodsPerDay; index++) {
+        final periodIndex = index + 1;
+        final availableQuotas = dailyQuotas.where(
+          (quota) => !_isFacultyBusy(
+            facultyName: quota.facultyName,
+            className: config.batchSection,
+            day: day,
+            periodIndex: periodIndex,
+          ),
+        );
+        final quota = availableQuotas.isEmpty
+            ? dailyQuotas[index % dailyQuotas.length]
+            : availableQuotas.elementAt(random.nextInt(availableQuotas.length));
+        final faculty = _facultyList.where(
+          (member) => member.name == quota.facultyName,
+        );
+        final facultyId = faculty.isEmpty
+            ? 'FAC-${quota.facultyName.hashCode.abs()}'
+            : faculty.first.id;
+        final color = _subjectColor(quota.subjectCode);
         candidate.add(
           TimetableEntry(
-            id: 'AI-ENT-${counter++}',
-            subjectCode: sub.$1,
-            subjectName: sub.$2,
-            facultyId: 'FAC-$subIndex',
-            facultyName: sub.$3,
+            id: 'AUTO-${config.batchSection}-${counter++}',
+            subjectCode: quota.subjectCode,
+            subjectName: quota.subjectName,
+            facultyId: facultyId,
+            facultyName: quota.facultyName,
             className: config.batchSection,
             dayOfWeek: day,
-            timeSlot: slots[i],
-            periodIndex: i + 1,
-            isLab: sub.$5,
-            categoryColorValue: sub.$4,
+            timeSlot: slots[index.clamp(0, slots.length - 1)],
+            periodIndex: periodIndex,
+            isLab: quota.isLab,
+            categoryColorValue: color,
           ),
         );
       }
     }
     return candidate;
+  }
+
+  bool _isFacultyBusy({
+    required String facultyName,
+    required String className,
+    required String day,
+    required int periodIndex,
+  }) {
+    return _entries.any(
+      (entry) =>
+          !entry.isExam &&
+          entry.className.toLowerCase() != className.toLowerCase() &&
+          entry.facultyName.toLowerCase() == facultyName.toLowerCase() &&
+          entry.dayOfWeek.toLowerCase() == day.toLowerCase() &&
+          entry.periodIndex == periodIndex,
+    );
+  }
+
+  String _departmentForClass(String className) {
+    final prefix = className.trim().toUpperCase().split('-').first;
+    return switch (prefix) {
+      'ECE' => 'Electronics and Communication',
+      'ME' => 'Mechanical Engineering',
+      _ => 'Computer Science',
+    };
+  }
+
+  int _subjectColor(String subjectCode) {
+    const colors = [
+      0xFF1E88E5,
+      0xFF43A047,
+      0xFFFB8C00,
+      0xFF8E24AA,
+      0xFFD81B60,
+      0xFF00ACC1,
+      0xFF3949AB,
+    ];
+    return colors[subjectCode.hashCode.abs() % colors.length];
   }
 
   @override
@@ -812,21 +1011,28 @@ class MockTimetableRepository implements TimetableRepository {
   // 1. ATTENDANCE ENGINE SERVICE & DYNAMIC PROXY AUTHORIZATION
   // ---------------------------------------------------------------------------
   @override
-  bool canFacultyMarkAttendance(String facultyName, String className, String timeSlot, DateTime date) {
+  bool canFacultyMarkAttendance(
+    String facultyName,
+    String className,
+    String timeSlot,
+    DateTime date,
+  ) {
     final dayStr = DateFormat('EEEE').format(date).toLowerCase();
     final entryExists = _entries.any(
-      (e) => e.facultyName.toLowerCase() == facultyName.toLowerCase() &&
-             e.className.toLowerCase() == className.toLowerCase() &&
-             e.dayOfWeek.toLowerCase() == dayStr &&
-             e.timeSlot == timeSlot,
+      (e) =>
+          e.facultyName.toLowerCase() == facultyName.toLowerCase() &&
+          e.className.toLowerCase() == className.toLowerCase() &&
+          e.dayOfWeek.toLowerCase() == dayStr &&
+          e.timeSlot == timeSlot,
     );
     if (entryExists) return true;
 
     final proxyApproved = _substitutions.any(
-      (s) => s.substituteFaculty.toLowerCase() == facultyName.toLowerCase() &&
-             s.className.toLowerCase() == className.toLowerCase() &&
-             s.timeSlot == timeSlot &&
-             s.status == 'Approved',
+      (s) =>
+          s.substituteFaculty.toLowerCase() == facultyName.toLowerCase() &&
+          s.className.toLowerCase() == className.toLowerCase() &&
+          s.timeSlot == timeSlot &&
+          s.status == 'Approved',
     );
     return proxyApproved;
   }
@@ -834,7 +1040,10 @@ class MockTimetableRepository implements TimetableRepository {
   @override
   void markPeriodAttendance(PeriodAttendanceRecord record) {
     final index = _attendanceRecords.indexWhere(
-      (r) => r.className == record.className && r.periodIndex == record.periodIndex && _isSameDay(r.date, record.date),
+      (r) =>
+          r.className == record.className &&
+          r.periodIndex == record.periodIndex &&
+          _isSameDay(r.date, record.date),
     );
     if (index != -1) {
       _attendanceRecords[index] = record;
@@ -850,7 +1059,8 @@ class MockTimetableRepository implements TimetableRepository {
         timestamp: DateTime.now(),
         actionType: 'ATTENDANCE_MARKED',
         performedBy: record.markedByFaculty,
-        details: 'Attendance marked as ${record.status.label} for ${record.className} Period ${record.periodIndex}',
+        details:
+            'Attendance marked as ${record.status.label} for ${record.className} Period ${record.periodIndex}',
         affectedClass: record.className,
       ),
     );
@@ -858,9 +1068,16 @@ class MockTimetableRepository implements TimetableRepository {
   }
 
   @override
-  List<PeriodAttendanceRecord> getAttendanceRecords(String className, DateTime date) {
+  List<PeriodAttendanceRecord> getAttendanceRecords(
+    String className,
+    DateTime date,
+  ) {
     return _attendanceRecords
-        .where((r) => r.className.toLowerCase() == className.toLowerCase() && _isSameDay(r.date, date))
+        .where(
+          (r) =>
+              r.className.toLowerCase() == className.toLowerCase() &&
+              _isSameDay(r.date, date),
+        )
         .toList();
   }
 
@@ -874,12 +1091,14 @@ class MockTimetableRepository implements TimetableRepository {
 
     final dayStr = DateFormat('EEEE').format(leave.startDate);
     final affectedEntries = _entries.where(
-      (e) => e.facultyName.toLowerCase() == leave.facultyName.toLowerCase() &&
-             e.dayOfWeek.toLowerCase() == dayStr.toLowerCase(),
+      (e) =>
+          e.facultyName.toLowerCase() == leave.facultyName.toLowerCase() &&
+          e.dayOfWeek.toLowerCase() == dayStr.toLowerCase(),
     );
 
     for (final entry in affectedEntries) {
-      final alertId = 'DIS-LVE-${DateTime.now().millisecondsSinceEpoch}-${entry.periodIndex}';
+      final alertId =
+          'DIS-LVE-${DateTime.now().millisecondsSinceEpoch}-${entry.periodIndex}';
       final alert = DisruptionAlert(
         id: alertId,
         absentFacultyName: leave.facultyName,
@@ -889,7 +1108,11 @@ class MockTimetableRepository implements TimetableRepository {
         dayOfWeek: entry.dayOfWeek,
         timeSlot: entry.timeSlot,
         periodIndex: entry.periodIndex,
-        suggestedSubstitutes: ['Prof. Donald Knuth', 'Prof. Sarah Jenkins', 'Prof. Grace Hopper'],
+        suggestedSubstitutes: [
+          'Prof. Donald Knuth',
+          'Prof. Sarah Jenkins',
+          'Prof. Grace Hopper',
+        ],
       );
       _disruptions.add(alert);
     }
@@ -897,7 +1120,8 @@ class MockTimetableRepository implements TimetableRepository {
 
     _dispatchNotification(
       title: 'Faculty Disruption Alert',
-      body: '${leave.facultyName} leave approved. Disruption slots generated for Allocator resolution.',
+      body:
+          '${leave.facultyName} leave approved. Disruption slots generated for Allocator resolution.',
       type: NotificationType.leaveDisruption,
       recipientUser: 'ALLOCATOR',
       deepLinkRoute: '/allocator_dashboard?tab=disruptions',
@@ -905,7 +1129,8 @@ class MockTimetableRepository implements TimetableRepository {
   }
 
   @override
-  List<FacultyLeaveRequest> getFacultyLeaveRequests() => List.unmodifiable(_leaveRequests);
+  List<FacultyLeaveRequest> getFacultyLeaveRequests() =>
+      List.unmodifiable(_leaveRequests);
 
   @override
   void approveStudentOd(StudentOdRequest od) {
@@ -933,7 +1158,11 @@ class MockTimetableRepository implements TimetableRepository {
   @override
   List<StudentOdRequest> getStudentOdRequests(String className, DateTime date) {
     return _odRequests
-        .where((r) => r.className.toLowerCase() == className.toLowerCase() && _isSameDay(r.date, date))
+        .where(
+          (r) =>
+              r.className.toLowerCase() == className.toLowerCase() &&
+              _isSameDay(r.date, date),
+        )
         .toList();
   }
 
@@ -945,7 +1174,10 @@ class MockTimetableRepository implements TimetableRepository {
     return _notifications.where((n) {
       final target = n.recipientUser.toLowerCase();
       final query = userIdentifier.toLowerCase();
-      return target == query || target == 'all' || target.startsWith('students_') || target.startsWith('pool_broadcast_');
+      return target == query ||
+          target == 'all' ||
+          target.startsWith('students_') ||
+          target.startsWith('pool_broadcast_');
     }).toList();
   }
 
@@ -968,7 +1200,10 @@ class MockTimetableRepository implements TimetableRepository {
   List<AuditLogEntry> getAuditLogs() => List.unmodifiable(_auditLogs);
 
   @override
-  Future<bool> executeOptimisticAction(Future<void> Function() action, void Function() rollback) async {
+  Future<bool> executeOptimisticAction(
+    Future<void> Function() action,
+    void Function() rollback,
+  ) async {
     try {
       await action();
       return true;

@@ -32,6 +32,14 @@ Future<void> _openModule(WidgetTester tester, String moduleId) async {
 }
 
 Future<void> _signIn(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('start-sign-in')));
+  await tester.pumpAndSettle();
+  await tester.enterText(
+    find.byKey(const ValueKey('institution-domain')),
+    'mec',
+  );
+  await tester.tap(find.byKey(const ValueKey('continue-from-institution')));
+  await tester.pumpAndSettle();
   await tester.enterText(
     find.byType(TextFormField).at(0),
     'student@example.com',
@@ -60,8 +68,17 @@ void main() {
 
     await tester.pumpWidget(_testApp());
 
-    expect(find.text('SuperCampus'), findsOneWidget);
-    expect(find.text('SuperCampus'), findsOneWidget);
+    expect(find.text('Your campus, in one place.'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('start-sign-in')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('institution-domain')),
+      'mec',
+    );
+    await tester.tap(find.byKey(const ValueKey('continue-from-institution')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('SuperCampus'), findsNothing);
     expect(find.text('Email address'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
     expect(find.text('Sign in'), findsOneWidget);
@@ -74,6 +91,14 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(_testApp());
+    await tester.tap(find.byKey(const ValueKey('start-sign-in')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('institution-domain')),
+      'mec',
+    );
+    await tester.tap(find.byKey(const ValueKey('continue-from-institution')));
+    await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField).at(0), '');
     await tester.enterText(find.byType(TextFormField).at(1), '');

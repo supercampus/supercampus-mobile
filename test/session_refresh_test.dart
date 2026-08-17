@@ -11,6 +11,41 @@ import 'package:supercampus_mobile/src/features/authentication/data/auth_reposit
 import 'package:supercampus_mobile/src/features/authentication/data/backend_auth_repository.dart';
 
 void main() {
+  test('login sends the selected institution domain', () async {
+    final client = MockClient((request) async {
+      expect(request.headers['x-tenant-id'], 'mec');
+      return http.Response(
+        jsonEncode({
+          'data': {
+            'student': {
+              'email': 'student@mec.edu',
+              'name': 'Student',
+              'role': 'student',
+            },
+            'roles': ['student'],
+            'accessToken': 'access-token',
+            'expiresAt': DateTime.now()
+                .toUtc()
+                .add(const Duration(minutes: 15))
+                .toIso8601String(),
+          },
+        }),
+        200,
+      );
+    });
+    final repository = BackendAuthRepository(
+      baseUrl: 'http://localhost:4000',
+      client: client,
+    );
+
+    await repository.signIn(
+      email: 'student@mec.edu',
+      password: 'password123',
+      role: UserRole.student,
+      tenantDomain: 'mec',
+    );
+  });
+
   test('backend refresh returns the rotated access session', () async {
     final expiresAt = DateTime.now().toUtc().add(const Duration(minutes: 15));
     final client = MockClient((request) async {
@@ -43,6 +78,45 @@ void main() {
     expect(refreshed.accessTokenExpiresAt, expiresAt);
   });
 
+  test('explicit portal family controls a custom college role', () async {
+    final client = MockClient(
+      (request) async => http.Response(
+        jsonEncode({
+          'data': {
+            'student': {
+              'email': 'coordinator@mec.edu',
+              'name': 'Coordinator',
+              'role': 'knowledge_centre_incharge',
+              'portalFamilies': ['staff'],
+            },
+            'roles': ['knowledge_centre_incharge'],
+            'accessToken': 'access-token',
+            'expiresAt': DateTime.now()
+                .toUtc()
+                .add(const Duration(minutes: 15))
+                .toIso8601String(),
+          },
+        }),
+        200,
+      ),
+    );
+    final repository = BackendAuthRepository(
+      baseUrl: 'http://localhost:4000',
+      client: client,
+    );
+
+    final session = await repository.signIn(
+      email: 'coordinator@mec.edu',
+      password: 'password123',
+      role: UserRole.student,
+      tenantDomain: 'mec',
+    );
+
+    expect(session.role, UserRole.staff);
+    expect(session.activePortalFamily, PortalFamily.staff);
+    expect(session.roleId, 'knowledge_centre_incharge');
+  });
+
   testWidgets('renews an expiring session before polling permissions', (
     tester,
   ) async {
@@ -51,6 +125,14 @@ void main() {
     await tester.pumpWidget(
       SupercampusApp(authRepository: auth, permissionsRepository: permissions),
     );
+    await tester.tap(find.byKey(const ValueKey('start-sign-in')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('institution-domain')),
+      'mec',
+    );
+    await tester.tap(find.byKey(const ValueKey('continue-from-institution')));
+    await tester.pumpAndSettle();
 
     await tester.enterText(
       find.byType(TextFormField).at(0),
@@ -84,6 +166,7 @@ class _ExpiringAuthRepository implements AuthRepository {
     required String email,
     required String password,
     required UserRole role,
+    required String tenantDomain,
   }) async => _session('old-token', expiring: true);
 
   @override
