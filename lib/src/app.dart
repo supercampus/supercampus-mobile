@@ -536,7 +536,11 @@ class _SupercampusAppState extends State<SupercampusApp>
       return const Scaffold(body: SkeletonList(rows: 7, rowHeight: 72));
     }
 
-    if (session.roleIds.contains('accountant')) {
+    final roleKeys = <String>{
+      ...session.roleIds,
+      session.roleKey,
+    }.map((role) => role.trim().toLowerCase());
+    if (roleKeys.contains('accountant')) {
       return AccountantWalletScreen(
         repository: BackendAccountantWalletRepository(
           baseUrl: _resolvedBackendBaseUrl,
