@@ -209,10 +209,13 @@ class BackendAccountantWalletRepository implements AccountantWalletRepository {
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final error = body['error'];
+      final message = switch (error) {
+        Map<String, dynamic>() => _text(error['message']),
+        String() => error,
+        _ => _text(body['message']),
+      };
       throw CanteenException(
-        error is Map<String, dynamic>
-            ? _text(error['message'], fallback: 'The wallet request failed.')
-            : 'The wallet request failed.',
+        message.trim().isEmpty ? 'The wallet request failed.' : message,
       );
     }
     final data = body['data'];
