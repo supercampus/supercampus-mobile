@@ -492,44 +492,43 @@ class _CardPalette {
 /// 13.png, 14.png, 15.png.
 const _boardPalettes = <String, _CardPalette>{
   ModuleCatalog.attendance: _CardPalette(
-    from: Color(0xFF423A91),
-    to: Color(0xFF262458),
-    hero: Color(0xFF222252),
-    plate: Color(0xFF42426B),
-    tiles: [Color(0xFF7769FF), Color(0xFF3B357F)],
+    from: Color(0xFF4138A0),
+    to: Color(0xFF241F62),
+    hero: Color(0xFF282363),
+    plate: Color(0xFF776CF5),
+    tiles: [Color(0xFF776CF5), Color(0xFF5147B8)],
   ),
   ModuleCatalog.gatepass: _CardPalette(
-    from: Color(0xFF9B01FF),
-    to: Color(0xFF3300FF),
-    hero: Color(0xFF6454E0),
-    plate: Color(0xFF7E70EA),
-    tiles: [Color(0xFF3E00FF), Color(0xFF7152FF), Color(0xFF5B3CE8)],
+    from: Color(0xFF1400FF),
+    to: Color(0xFFA600FF),
+    hero: Color(0xFF4E35EE),
+    plate: Color(0xFF776CF5),
+    tiles: [Color(0xFF1400FF), Color(0xFF776CF5), Color(0xFFA600FF)],
   ),
   ModuleCatalog.canteen: _CardPalette(
-    from: Color(0xFF232355),
-    to: Color(0xFF1A1A4C),
-    hero: Color(0xFF7347F9),
-    plate: Color(0xFF8B66FF),
+    from: Color(0xFF21157D),
+    to: Color(0xFF1400FF),
+    hero: Color(0xFF4D36C8),
+    plate: Color(0xFF776CF5),
     tiles: [
-      Color(0xFF3838A8),
-      Color(0xFF6262A8),
-      Color(0xFF3C3CFF),
-      Color(0xFF0000A8),
+      Color(0xFF776CF5),
+      Color(0xFFA600FF),
+      Color(0xFF594DE5),
+      Color(0xFF1400FF),
     ],
   ),
 };
 
 /// Staff **Attendance**.
 ///
-/// Green, so the card staff mark other people's records on never looks like
-/// the purple card a learner reads their own streak on. The two are different
-/// acts and must not be mistaken for one another at a glance.
+/// A brighter brand gradient distinguishes the operational staff surface from
+/// the calmer learner streak card without leaving the SuperCampus palette.
 const _staffAttendancePalette = _CardPalette(
-  from: Color(0xFF217F49),
-  to: Color(0xFF12502D),
-  hero: Color(0xFF225D3B),
-  plate: Color(0xFF438960),
-  tiles: [Color(0xFF308253), Color(0xFF569F75), Color(0xFF1FC163)],
+  from: Color(0xFF1400FF),
+  to: Color(0xFF5C11D7),
+  hero: Color(0xFF30258D),
+  plate: Color(0xFF776CF5),
+  tiles: [Color(0xFF776CF5), Color(0xFF5C4DD1), Color(0xFFA600FF)],
 );
 
 /// Everything the boards did not draw is built from the module's own catalog
@@ -548,29 +547,24 @@ _CardPalette _paletteFor(ModuleDescriptor module, EffectivePermissions perms) {
 
   final preset = _boardPalettes[module.id];
   if (preset != null) return preset;
-  return _paletteFromSeed(module, perms);
+  return _paletteFromSeed(module);
 }
 
-_CardPalette _paletteFromSeed(
-  ModuleDescriptor module,
-  EffectivePermissions perms,
-) {
-  // The boards fix the colour of the three modules they draw. Everything else
-  // still follows the tenant's brand where there is one, and falls back to the
-  // module's own catalog colour where there is not.
-  final seed = _tenantBrandColor(perms.tenantBrand, 'primary', module.color);
-  final hsl = HSLColor.fromColor(seed);
-  Color at(double lightness, double saturation) => hsl
-      .withSaturation(saturation.clamp(0.0, 1.0))
-      .withLightness(lightness.clamp(0.0, 1.0))
-      .toColor();
-
+_CardPalette _paletteFromSeed(ModuleDescriptor module) {
+  // Module identity comes from composition and iconography. Colour is the
+  // product language shared by every tenant-facing card.
+  final flip = module.id.hashCode.isOdd;
   return _CardPalette(
-    from: at(0.32, 0.58),
-    to: at(0.19, 0.62),
-    hero: at(0.25, 0.46),
-    plate: at(0.40, 0.34),
-    tiles: [at(0.35, 0.46), at(0.48, 0.30), at(0.44, 0.72), at(0.23, 0.78)],
+    from: flip ? const Color(0xFF1400FF) : const Color(0xFF30238F),
+    to: flip ? const Color(0xFFA600FF) : const Color(0xFF1400FF),
+    hero: const Color(0xFF30258D),
+    plate: const Color(0xFF776CF5),
+    tiles: const [
+      Color(0xFF776CF5),
+      Color(0xFF594DE5),
+      Color(0xFFA600FF),
+      Color(0xFF1400FF),
+    ],
   );
 }
 
@@ -708,7 +702,12 @@ class _ModuleCardState extends State<_ModuleCard> {
     String subtitle,
     bool ready,
   ) {
-    if (!ready) return _defaultBoard(module, palette, const [], subtitle, true);
+    if (!ready) {
+      if (module.id == ModuleCatalog.tuitionFee) {
+        return _feePreviewBoard(module, palette, subtitle);
+      }
+      return _defaultBoard(module, palette, const [], subtitle, true);
+    }
     final presentation = academicPresentationFor(widget.permissions);
 
     // A learner's folded Academics entry carries their own streak: the strip
@@ -725,15 +724,19 @@ class _ModuleCardState extends State<_ModuleCard> {
       );
     }
 
+    if (presentation == AcademicPresentation.staff &&
+        module.id == ModuleCatalog.academics) {
+      return _staffAcademicBoard(module, palette, actions, subtitle);
+    }
+
     return switch (module.id) {
       // Staff mark other people's records, and no single streak describes a
       // whole class, so their card is the plain board: three even tiles.
-      ModuleCatalog.attendance => _defaultBoard(
+      ModuleCatalog.attendance => _staffAttendanceBoard(
         module,
         palette,
         actions.take(3).toList(),
         subtitle,
-        false,
       ),
       ModuleCatalog.gatepass => _gatepassBoard(
         module,
@@ -742,6 +745,25 @@ class _ModuleCardState extends State<_ModuleCard> {
         subtitle,
       ),
       ModuleCatalog.canteen => _shopsBoard(module, palette, actions, subtitle),
+      ModuleCatalog.examination => _examinationBoard(
+        module,
+        palette,
+        actions,
+        subtitle,
+      ),
+      ModuleCatalog.timetable => _timetableBoard(
+        module,
+        palette,
+        actions,
+        subtitle,
+      ),
+      ModuleCatalog.library => _libraryBoard(
+        module,
+        palette,
+        actions,
+        subtitle,
+      ),
+      ModuleCatalog.hostel => _hostelBoard(module, palette, actions, subtitle),
       _ => _defaultBoard(module, palette, actions, subtitle, false),
     };
   }
@@ -850,6 +872,111 @@ class _ModuleCardState extends State<_ModuleCard> {
     ),
   );
 
+  /// Attendance is an operational card: the primary roll action is large,
+  /// while roster and reports remain smaller supporting tools.
+  Widget _staffAttendanceBoard(
+    ModuleDescriptor module,
+    _CardPalette palette,
+    List<_QuickAction> actions,
+    String subtitle,
+  ) {
+    final primaryIndex = actions.indexWhere((action) => action.id == 'mark');
+    final primary = actions.isEmpty
+        ? null
+        : actions[primaryIndex < 0 ? 0 : primaryIndex];
+    final support = actions.where((action) => action != primary).toList();
+    return Row(
+      children: [
+        Expanded(
+          flex: 6,
+          child: Column(
+            children: [
+              Expanded(child: _heroCell(module, palette, subtitle)),
+              if (primary != null) ...[
+                SizedBox(height: 16 * _k),
+                SizedBox(
+                  height: 92 * _k,
+                  child: _labelAction(primary, palette.tile(2), wide: true),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (support.isNotEmpty) ...[
+          SizedBox(width: _cellGap),
+          Expanded(
+            flex: 4,
+            child: Column(
+              children: [
+                for (var i = 0; i < support.length; i++) ...[
+                  if (i > 0) SizedBox(height: 14 * _k),
+                  Expanded(
+                    child: _labelAction(
+                      support[i],
+                      palette.tile(i),
+                      wide: true,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Staff Academics is a people-first board. The identity sits above the
+  /// main student/subject destination and the remaining tools form a side rail.
+  Widget _staffAcademicBoard(
+    ModuleDescriptor module,
+    _CardPalette palette,
+    List<_QuickAction> actions,
+    String subtitle,
+  ) {
+    final primary = actions.isEmpty ? null : actions.first;
+    final support = actions.skip(1).take(2).toList();
+    return Row(
+      children: [
+        Expanded(
+          flex: 7,
+          child: Column(
+            children: [
+              Expanded(child: _heroCell(module, palette, subtitle)),
+              if (primary != null) ...[
+                SizedBox(height: 14 * _k),
+                SizedBox(
+                  height: 78 * _k,
+                  child: _labelAction(primary, palette.tile(0), wide: true),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (support.isNotEmpty) ...[
+          SizedBox(width: _cellGap),
+          Expanded(
+            flex: 3,
+            child: Column(
+              children: [
+                for (var i = 0; i < support.length; i++) ...[
+                  if (i > 0) SizedBox(height: 14 * _k),
+                  Expanded(
+                    child: _ActionTile(
+                      action: support[i],
+                      fill: palette.tile(i + 1),
+                      onTap: _run(support[i]),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   // ---------------------------------------------------------------- 14.png
 
   /// Hero over a row of tiles on the left, the pass itself on the right.
@@ -860,9 +987,9 @@ class _ModuleCardState extends State<_ModuleCard> {
     String subtitle,
   ) {
     return Row(
+      key: const ValueKey('gatepass-split-board'),
       children: [
         Expanded(
-          flex: 397,
           child: Column(
             children: [
               SizedBox(
@@ -878,7 +1005,7 @@ class _ModuleCardState extends State<_ModuleCard> {
                 Expanded(
                   child: Row(
                     children: [
-                      for (var i = 0; i < actions.length; i++) ...[
+                      for (var i = 0; i < actions.take(2).length; i++) ...[
                         if (i > 0) SizedBox(width: 34 * _k),
                         Expanded(
                           child: _ActionTile(
@@ -896,7 +1023,9 @@ class _ModuleCardState extends State<_ModuleCard> {
           ),
         ),
         SizedBox(width: _cellGap),
-        Expanded(flex: 292, child: _passPanel(module)),
+        // The pass is the reason this card exists. It owns a true half of the
+        // usable card instead of being squeezed into a decorative side tile.
+        Expanded(child: _passPanel(module)),
       ],
     );
   }
@@ -910,6 +1039,7 @@ class _ModuleCardState extends State<_ModuleCard> {
     final data = widget.content.gatepassQr;
 
     return DecoratedBox(
+      key: const ValueKey('gatepass-qr-panel'),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28 * _k),
@@ -1128,6 +1258,250 @@ class _ModuleCardState extends State<_ModuleCard> {
         ),
         child: Center(
           child: Icon(shop.icon, color: Colors.white, size: _tileGlyph),
+        ),
+      ),
+    ),
+  );
+
+  // ----------------------------------------------------- module personalities
+
+  /// Examination reads like a workbench: one large primary task and two
+  /// secondary tools. Labels remain visible because marks and results must not
+  /// be confused by icon alone.
+  Widget _examinationBoard(
+    ModuleDescriptor module,
+    _CardPalette palette,
+    List<_QuickAction> actions,
+    String subtitle,
+  ) {
+    final primary = actions.isEmpty ? null : actions.first;
+    final secondary = actions.skip(1).take(2).toList();
+    return Row(
+      children: [
+        Expanded(
+          flex: 7,
+          child: Column(
+            children: [
+              Expanded(child: _heroCell(module, palette, subtitle)),
+              if (primary != null) ...[
+                SizedBox(height: 16 * _k),
+                SizedBox(
+                  height: 82 * _k,
+                  child: _labelAction(primary, palette.tile(2), wide: true),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (secondary.isNotEmpty) ...[
+          SizedBox(width: _cellGap),
+          Expanded(
+            flex: 3,
+            child: Column(
+              children: [
+                for (var i = 0; i < secondary.length; i++) ...[
+                  if (i > 0) SizedBox(height: 16 * _k),
+                  Expanded(
+                    child: _labelAction(
+                      secondary[i],
+                      palette.tile(i),
+                      vertical: true,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Timetable uses a calendar-like rail: the module identity is compact and
+  /// the schedule is the dominant, wide action beneath it.
+  Widget _timetableBoard(
+    ModuleDescriptor module,
+    _CardPalette palette,
+    List<_QuickAction> actions,
+    String subtitle,
+  ) {
+    return Column(
+      children: [
+        SizedBox(height: 118 * _k, child: _heroCell(module, palette, subtitle)),
+        SizedBox(height: 18 * _k),
+        Expanded(
+          child: Row(
+            children: [
+              for (var i = 0; i < actions.length; i++) ...[
+                if (i > 0) SizedBox(width: 18 * _k),
+                Expanded(
+                  flex: i == 0 ? 5 : 3,
+                  child: _labelAction(actions[i], palette.tile(i), wide: true),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Library resembles a shelf: the identity occupies the left, while useful
+  /// destinations sit as labelled book spines on the right.
+  Widget _libraryBoard(
+    ModuleDescriptor module,
+    _CardPalette palette,
+    List<_QuickAction> actions,
+    String subtitle,
+  ) {
+    return Row(
+      children: [
+        Expanded(flex: 5, child: _heroCell(module, palette, subtitle)),
+        if (actions.isNotEmpty) ...[
+          SizedBox(width: _cellGap),
+          Expanded(
+            flex: 4,
+            child: Column(
+              children: [
+                for (var i = 0; i < actions.take(3).length; i++) ...[
+                  if (i > 0) SizedBox(height: 12 * _k),
+                  Expanded(
+                    child: _labelAction(
+                      actions[i],
+                      palette.tile(i),
+                      wide: true,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Hostel is arranged like rooms around a central lobby: a tall identity
+  /// tile and a compact two-column action grid.
+  Widget _hostelBoard(
+    ModuleDescriptor module,
+    _CardPalette palette,
+    List<_QuickAction> actions,
+    String subtitle,
+  ) {
+    return Row(
+      children: [
+        Expanded(flex: 4, child: _heroCell(module, palette, subtitle)),
+        if (actions.isNotEmpty) ...[
+          SizedBox(width: _cellGap),
+          Expanded(
+            flex: 6,
+            child: _grid([
+              for (var i = 0; i < actions.take(4).length; i++)
+                _labelAction(actions[i], palette.tile(i), vertical: true),
+            ]),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Fee is intentionally calm while the workflow is not yet enabled: the
+  /// amount/status area is visually separate from the future payment action.
+  Widget _feePreviewBoard(
+    ModuleDescriptor module,
+    _CardPalette palette,
+    String subtitle,
+  ) {
+    return Row(
+      children: [
+        Expanded(flex: 6, child: _heroCell(module, palette, subtitle)),
+        SizedBox(width: _cellGap),
+        Expanded(
+          flex: 4,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(_tileRadius),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.receipt_long_outlined,
+                    color: Colors.white,
+                    size: 46 * _k,
+                  ),
+                  SizedBox(height: 10 * _k),
+                  Text(
+                    'Dues & receipts',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24 * _k,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _labelAction(
+    _QuickAction action,
+    Color fill, {
+    bool wide = false,
+    bool vertical = false,
+  }) => Tooltip(
+    message: action.label,
+    child: _Pressable(
+      key: ValueKey('quick-action-${action.id}'),
+      onTap: _run(action),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: fill,
+          borderRadius: BorderRadius.circular(_tileRadius),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: wide ? 18 * _k : 10 * _k,
+            vertical: 8 * _k,
+          ),
+          child: Flex(
+            direction: vertical ? Axis.vertical : Axis.horizontal,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                action.icon,
+                color: Colors.white,
+                size: (vertical ? 38 : 34) * _k,
+              ),
+              SizedBox(
+                width: vertical ? 0 : 10 * _k,
+                height: vertical ? 4 * _k : 0,
+              ),
+              Flexible(
+                child: Text(
+                  action.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22 * _k,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     ),
@@ -1405,6 +1779,59 @@ List<_QuickAction> _quickActionsFor(String moduleId) => switch (moduleId) {
       ModuleActions.read,
     ),
   ],
+  ModuleCatalog.library => const [
+    _QuickAction(
+      'search',
+      'Search',
+      Icons.search_rounded,
+      'visit_pass',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'my_books',
+      'My books',
+      Icons.menu_book_rounded,
+      'visit_history',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'renew',
+      'Renew',
+      Icons.autorenew_rounded,
+      'visit_pass',
+      ModuleActions.create,
+    ),
+  ],
+  ModuleCatalog.hostel => const [
+    _QuickAction(
+      'outpass',
+      'Outpass',
+      Icons.directions_walk_rounded,
+      'outpass',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'complaints',
+      'Complaint',
+      Icons.build_circle_outlined,
+      'complaints',
+      ModuleActions.create,
+    ),
+    _QuickAction(
+      'mess',
+      'Mess menu',
+      Icons.restaurant_rounded,
+      'mess',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'residency',
+      'My room',
+      Icons.bed_outlined,
+      'residency',
+      ModuleActions.read,
+    ),
+  ],
   _ => const [],
 };
 
@@ -1482,19 +1909,6 @@ class _ActionTile extends StatelessWidget {
       ),
     );
   }
-}
-
-Color _tenantBrandColor(
-  Map<String, dynamic> brand,
-  String key,
-  Color fallback,
-) {
-  final value = brand[key];
-  if (value is! String) return fallback;
-  final normalized = value.trim().replaceFirst('#', '');
-  final hex = normalized.length == 6 ? 'FF$normalized' : normalized;
-  final parsed = int.tryParse(hex, radix: 16);
-  return parsed == null ? fallback : Color(parsed);
 }
 
 /// Which card is in the frame, and how many are waiting. Reads the same
