@@ -101,8 +101,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Academics'), findsOneWidget);
-      expect(find.text('Read only'), findsOneWidget);
+      expect(find.text('Attendance & results'), findsOneWidget);
       expect(find.text('last 7 attendance'), findsOneWidget);
+      expect(find.byIcon(Icons.fact_check_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.edit_note_outlined), findsNothing);
 
       // A learner is never shown a module called Attendance; attendance is one
       // thing they look up inside Academics, not a place they go.
