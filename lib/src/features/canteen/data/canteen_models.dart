@@ -280,6 +280,10 @@ class CanteenStore {
     this.shops = const [],
     this.assignedShopKeys = const [],
     this.canManage = false,
+    // Existing custom/test repositories that expose management predate the
+    // capability split and represent owners. The backend always sends the
+    // explicit value, so order-only captains still receive `false`.
+    this.canManageMenu = true,
     this.staffState = const CanteenStaffState(),
     this.analytics = const CanteenAnalytics(),
   });
@@ -292,6 +296,9 @@ class CanteenStore {
   final List<CanteenShop> shops;
   final List<String> assignedShopKeys;
   final bool canManage;
+
+  /// Owners can edit the catalogue. Order-only operators are canteen captains.
+  final bool canManageMenu;
   final CanteenStaffState staffState;
   final CanteenAnalytics analytics;
 
@@ -314,6 +321,7 @@ class CanteenStore {
       shops: shops ?? this.shops,
       assignedShopKeys: assignedShopKeys ?? this.assignedShopKeys,
       canManage: canManage,
+      canManageMenu: canManageMenu,
       staffState: staffState ?? this.staffState,
       analytics: analytics ?? this.analytics,
     );

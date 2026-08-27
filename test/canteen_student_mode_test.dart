@@ -62,6 +62,67 @@ void main() {
     expect(find.text('Work'), findsOneWidget);
     expect(find.text('Eat'), findsOneWidget);
   });
+
+  testWidgets('order-only staff opens the canteen captain workspace', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CanteenShell(
+          session: const UserSession(
+            email: 'shashi@mec.local',
+            displayName: 'Shashi',
+            role: UserRole.staff,
+            activePortalFamily: PortalFamily.staff,
+          ),
+          repository: _CaptainStoreRepository(),
+          onExitModule: () {},
+          onSignOut: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Canteen captain'), findsOneWidget);
+    expect(find.text('Live orders'), findsOneWidget);
+    expect(find.text('Menu'), findsNothing);
+
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    expect(find.text('Captain profile'), findsOneWidget);
+    expect(find.text('Eat / work mode'), findsOneWidget);
+  });
+}
+
+class _CaptainStoreRepository implements CanteenRepository {
+  @override
+  Future<CanteenStore> loadStore() async => const CanteenStore(
+    user: CanteenUser(
+      name: 'Shashi',
+      email: 'shashi@mec.local',
+      rollNumber: 'MECCAP001',
+      department: 'Canteen',
+    ),
+    walletBalance: 0,
+    menu: [],
+    orders: [],
+    walletTransactions: [],
+    shops: [
+      CanteenShop(
+        id: 'canteen-main',
+        shopKey: 'canteen-main',
+        name: 'Canteen',
+        category: 'Canteen',
+      ),
+    ],
+    assignedShopKeys: ['canteen-main'],
+    canManage: true,
+    canManageMenu: false,
+    staffState: CanteenStaffState(mode: CanteenStaffMode.work),
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _ManagerStoreRepository implements CanteenRepository {

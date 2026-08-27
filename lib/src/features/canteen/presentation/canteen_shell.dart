@@ -8,6 +8,7 @@ import '../data/canteen_models.dart';
 import '../data/canteen_repository.dart';
 import '../data/mock_canteen_repository.dart';
 import 'canteen_cart_screen.dart';
+import 'canteen_captain_home.dart';
 import 'canteen_owner_home.dart';
 import 'canteen_orders_screen.dart';
 import 'canteen_scanner_screen.dart';
@@ -289,6 +290,17 @@ class _CanteenShellState extends State<CanteenShell> {
 
     if (store == null) {
       return const Scaffold(body: SkeletonList(rows: 6, rowHeight: 84));
+    }
+
+    if (store.canManage && !store.canManageMenu) {
+      return CanteenCaptainHome(
+        store: store,
+        onExitModule: widget.onExitModule,
+        onSignOut: widget.onSignOut,
+        onRefresh: () => _loadStore(silent: true),
+        onModeChanged: _updateOwnerMode,
+        onOrderStatusChanged: _updateOrderStatus,
+      );
     }
 
     if (_canUseWorkMode && _ownerWorkMode) {

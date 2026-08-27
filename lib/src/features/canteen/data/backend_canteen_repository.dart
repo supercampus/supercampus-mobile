@@ -43,6 +43,7 @@ class BackendCanteenRepository implements CanteenRepository {
     final menu = _list(data['menu']).map(_menuItem).toList(growable: false);
     final shops = _list(data['shops']).map(_shop).toList(growable: false);
     final byId = {for (final item in menu) item.id: item};
+    final capabilities = _map(data['capabilities']);
 
     return CanteenStore(
       user: CanteenUser(
@@ -65,6 +66,10 @@ class BackendCanteenRepository implements CanteenRepository {
         data['walletTransactions'],
       ).map((value) => _transaction(_map(value))).toList(growable: false),
       canManage: data['canManage'] == true,
+      canManageMenu:
+          capabilities['createMenu'] == true ||
+          capabilities['updateMenu'] == true ||
+          capabilities['deleteMenu'] == true,
       staffState: _staffState(_map(data['staffState'])),
       analytics: _analytics(_map(data['analytics'])),
     );
