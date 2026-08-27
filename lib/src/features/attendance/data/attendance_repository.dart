@@ -28,6 +28,13 @@ class AttendanceRepository {
   Uri _uri(String path, [Map<String, String>? query]) =>
       _baseUri.resolve(path).replace(queryParameters: query);
 
+  String _localCalendarDate() {
+    final now = DateTime.now();
+    return '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+  }
+
   Future<Map<String, dynamic>> summary(String studentUserId) async => _data(
     await _authorizedRequest(
       (headers) => _client.get(
@@ -58,7 +65,13 @@ class AttendanceRepository {
     final data = _data(
       await _authorizedRequest(
         (headers) => _client.get(
-          _uri('/api/v1/operations/attendance/classes'),
+          // The API server runs in UTC while a campus day follows the device's
+          // local calendar. Around midnight in India, relying on the server's
+          // default returned yesterday's timetable and the subsequent session
+          // creation was correctly rejected as belonging to another weekday.
+          _uri('/api/v1/operations/attendance/classes', {
+            'heldOn': _localCalendarDate(),
+          }),
           headers: headers,
         ),
       ),
@@ -77,7 +90,9 @@ class AttendanceRepository {
     final data = _data(
       await _authorizedRequest(
         (headers) => _client.get(
-          _uri('/api/v1/operations/attendance/classes'),
+          _uri('/api/v1/operations/attendance/classes', {
+            'heldOn': _localCalendarDate(),
+          }),
           headers: headers,
         ),
       ),
@@ -129,7 +144,7 @@ class AttendanceRepository {
           'timetableEntryId': _uuidOrNull(timetableEntryId),
           'subjectName': subjectName,
           'periodLabel': periodLabel,
-          'heldOn': DateTime.now().toIso8601String().substring(0, 10),
+          'heldOn': _localCalendarDate(),
         }),
       ),
       json: true,
