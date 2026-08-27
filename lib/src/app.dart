@@ -25,6 +25,8 @@ import 'features/authentication/presentation/login_screen.dart';
 import 'features/advisor/data/advisor_students_repository.dart';
 import 'features/canteen/presentation/canteen_shell.dart';
 import 'features/scanner/presentation/scan_qr_screen.dart';
+import 'features/security/data/security_gate_repository.dart';
+import 'features/security/presentation/security_portal_screen.dart';
 import 'features/canteen/data/backend_canteen_repository.dart';
 import 'features/canteen/data/canteen_repository.dart';
 import 'features/canteen/data/accountant_wallet_repository.dart';
@@ -547,6 +549,19 @@ class _SupercampusAppState extends State<SupercampusApp>
           accessTokenProvider: _provideAccessToken,
         ),
         accountantName: session.displayName,
+        onSignOut: _signOut,
+      );
+    }
+
+    if (session.role == UserRole.security || roleKeys.contains('security')) {
+      return SecurityPortalScreen(
+        session: session,
+        repository: _useMockData
+            ? MockSecurityGateRepository()
+            : BackendSecurityGateRepository(
+                baseUrl: _resolvedBackendBaseUrl,
+                accessTokenProvider: _provideAccessToken,
+              ),
         onSignOut: _signOut,
       );
     }
