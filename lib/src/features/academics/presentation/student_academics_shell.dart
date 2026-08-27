@@ -117,7 +117,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
     appBar: AppBar(
-      backgroundColor: const Color(0xFF4A4E9C),
+      backgroundColor: AppColors.gateBlue,
       foregroundColor: Colors.white,
       leading: ModuleBackButton(
         onPressed: widget.onExitModule,

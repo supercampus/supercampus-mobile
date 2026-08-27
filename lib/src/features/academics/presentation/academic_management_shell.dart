@@ -42,7 +42,7 @@ class _AcademicManagementShellState extends State<AcademicManagementShell> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF4A4E9C),
+        backgroundColor: AppColors.gateBlue,
         foregroundColor: Colors.white,
         leading: ModuleBackButton(
           onPressed: widget.onExitModule,
@@ -150,8 +150,8 @@ class _AcademicCard extends StatelessWidget {
     elevation: 0,
     child: ListTile(
       leading: CircleAvatar(
-        backgroundColor: const Color(0xFF4A4E9C).withValues(alpha: .1),
-        child: Icon(icon, color: const Color(0xFF4A4E9C)),
+        backgroundColor: AppColors.gateLavender.withValues(alpha: .12),
+        child: Icon(icon, color: AppColors.gateBlue),
       ),
       title: Text(title),
       subtitle: Text(subtitle),

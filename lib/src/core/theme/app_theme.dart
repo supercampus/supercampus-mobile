@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 abstract final class AppColors {
-  static const primary = Color(0xFF1A6B3C);
-  static const primaryDark = Color(0xFF12502C);
+  static const primary = Color(0xFF1400FF);
+  static const primaryDark = Color(0xFF0E00B8);
   static const amber = Color(0xFFF5A623);
   static const amberSoft = Color(0xFFFFF3D9);
-  static const accent = amber;
+  static const accent = gateLavender;
   static const success = Color(0xFF2E7D52);
   static const ink = Color(0xFF1C1C1E);
   static const muted = Color(0xFF6B7280);
-  static const canvas = Color(0xFFF8F9FA);
-  static const border = Color(0xFFE1E5E3);
+  static const canvas = Color(0xFFF8F7FF);
+  static const border = Color(0xFFE3E0FF);
   static const gateBlue = Color(0xFF1400FF);
   static const gateMagenta = Color(0xFFA600FF);
   static const gateLavender = Color(0xFF776CF5);
@@ -24,9 +24,9 @@ abstract final class AppColors {
   /// The single accent the module list is built on. A wall of per-module
   /// gradients reads as noise, so hierarchy is carried by lightness inside one
   /// violet: [moduleSoft] for a resting bar, [moduleAccent] for the open card.
-  static const moduleAccent = Color(0xFF6C5CE7);
-  static const moduleAccentDeep = Color(0xFF5A49D6);
-  static const moduleSoft = Color(0xFFD5CFFA);
+  static const moduleAccent = gateLavender;
+  static const moduleAccentDeep = gateBlue;
+  static const moduleSoft = Color(0xFFE8E5FF);
 
   static const violetGradient = LinearGradient(
     begin: Alignment.topLeft,
@@ -117,7 +117,7 @@ abstract final class AppTheme {
         height: 70,
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
-        indicatorColor: AppColors.amberSoft,
+        indicatorColor: AppColors.moduleSoft,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           return TextStyle(
             color: states.contains(WidgetState.selected)
@@ -199,13 +199,13 @@ abstract final class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: AppColors.amber, width: 1.5),
+        borderSide: const BorderSide(color: AppColors.gateLavender, width: 1.5),
       ),
     ),
     navigationBarTheme: const NavigationBarThemeData(
       backgroundColor: Color(0xFF111111),
       surfaceTintColor: Colors.transparent,
-      indicatorColor: Color(0xFF3A2F00),
+      indicatorColor: Color(0xFF30258D),
       labelTextStyle: WidgetStatePropertyAll(
         TextStyle(color: Colors.white70, fontSize: 12),
       ),

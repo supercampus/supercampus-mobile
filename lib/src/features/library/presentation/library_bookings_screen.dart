@@ -147,7 +147,7 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
     return Scaffold(
       backgroundColor: isDark ? Colors.black : AppColors.canvas,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6D357F),
+        backgroundColor: AppColors.gateBlue,
         foregroundColor: Colors.white,
         leading: ModuleBackButton(
           onPressed: widget.onExitModule,
@@ -181,7 +181,7 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
                     child: FilledButton.icon(
                       onPressed: _openBookSlot,
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF6D357F),
+                        backgroundColor: AppColors.gateBlue,
                       ),
                       icon: const Icon(Icons.add),
                       label: const Text('Book Slot'),

@@ -114,8 +114,8 @@ void main() {
       await tester.pumpAndSettle();
 
       final gradient = cardGradient(tester);
-      expect(gradient.colors.first, const Color(0xFF4138A0));
-      expect(gradient.colors.last, const Color(0xFF241F62));
+      expect(gradient.colors.first, const Color(0xFF1400FF));
+      expect(gradient.colors.last, const Color(0xFFA600FF));
     });
 
     testWidgets('draws every mark grey until the standing lands', (
@@ -201,7 +201,7 @@ void main() {
 
       final gradient = cardGradient(tester);
       expect(gradient.colors.first, const Color(0xFF1400FF));
-      expect(gradient.colors.last, const Color(0xFF5C11D7));
+      expect(gradient.colors.last, const Color(0xFFA600FF));
     });
   });
 
