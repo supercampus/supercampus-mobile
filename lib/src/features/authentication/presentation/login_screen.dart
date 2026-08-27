@@ -131,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _isSuccessLeaving = false;
         _successSession = session;
       });
-      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await Future<void>.delayed(const Duration(milliseconds: 1500));
       if (!mounted) return;
       setState(() => _isSuccessLeaving = true);
       await Future<void>.delayed(const Duration(milliseconds: 180));
@@ -183,10 +183,10 @@ class _LoginScreenState extends State<LoginScreen> {
       data: AppTheme.light,
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: SafeArea(
-          child: Stack(
-            children: [
-              AnimatedSwitcher(
+        body: Stack(
+          children: [
+            SafeArea(
+              child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 280),
                 switchInCurve: Curves.easeOutCubic,
                 switchOutCurve: Curves.easeInCubic,
@@ -232,13 +232,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 },
               ),
-              if (_successSession case final session?)
-                _LoginSuccessSplash(
-                  firstName: _firstNameFromSession(session),
-                  isLeaving: _isSuccessLeaving,
-                ),
-            ],
-          ),
+            ),
+            if (_successSession case final session?)
+              _LoginSuccessSplash(
+                firstName: _firstNameFromSession(session),
+                isLeaving: _isSuccessLeaving,
+              ),
+          ],
         ),
       ),
     );
@@ -266,7 +266,6 @@ class _LoginSuccessSplash extends StatefulWidget {
 class _LoginSuccessSplashState extends State<_LoginSuccessSplash>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _cardScale;
   late final Animation<double> _signatureReveal;
   late final Animation<double> _footerOpacity;
 
@@ -275,19 +274,15 @@ class _LoginSuccessSplashState extends State<_LoginSuccessSplash>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 1400),
     )..forward();
-    _cardScale = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0, 0.32, curve: Curves.easeOutBack),
-    );
     _signatureReveal = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.16, 0.88, curve: Curves.easeOutCubic),
+      curve: const Interval(0.04, 0.96, curve: Curves.easeInOutCubic),
     );
     _footerOpacity = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.54, 1, curve: Curves.easeOut),
+      curve: const Interval(0.72, 1, curve: Curves.easeOut),
     );
   }
 
@@ -305,146 +300,119 @@ class _LoginSuccessSplashState extends State<_LoginSuccessSplash>
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeInOut,
           opacity: widget.isLeaving ? 0 : 1,
-          child: ColoredBox(
-            color: Colors.white,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final cardWidth = (constraints.maxWidth - 68).clamp(
-                  280.0,
-                  314.0,
-                );
-                final cardHeight = (constraints.maxHeight * 0.74).clamp(
-                  500.0,
-                  600.0,
-                );
-                final nameWidth = (widget.firstName.length * 30.0).clamp(
-                  134.0,
-                  cardWidth - 72,
-                );
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final nameWidth = (widget.firstName.length * 34.0).clamp(
+                150.0,
+                constraints.maxWidth - 72,
+              );
+              final centerOffset = constraints.maxHeight * 0.02;
 
-                return Center(
-                  child: AnimatedBuilder(
-                    animation: _controller,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: 0.96 + (_cardScale.value * 0.04),
-                        child: child,
-                      );
-                    },
-                    child: Container(
-                      width: cardWidth,
-                      height: cardHeight,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(40),
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF4200FF),
-                            Color(0xFF7A00FF),
-                            Color(0xFF9600FF),
-                          ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFF4200FF,
-                            ).withValues(alpha: 0.24),
-                            blurRadius: 28,
-                            offset: const Offset(0, 18),
-                          ),
-                        ],
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Stack(
-                        children: [
-                          const _SignatureSplashRibbon(
-                            top: 150,
-                            left: -46,
-                            angle: 0.52,
-                          ),
-                          const _SignatureSplashRibbon(
-                            top: 280,
-                            left: -92,
-                            angle: 0.52,
-                          ),
-                          Positioned.fill(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  'Welcome',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w400,
-                                    height: 0.92,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                SizedBox(
-                                  width: nameWidth,
-                                  height: 54,
-                                  child: AnimatedBuilder(
-                                    animation: _signatureReveal,
-                                    builder: (context, child) {
-                                      return ClipRect(
-                                        child: Align(
-                                          alignment: Alignment.centerLeft,
-                                          widthFactor: _signatureReveal.value
-                                              .clamp(0.001, 1.0),
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    child: Text(
-                                      widget.firstName,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.visible,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: 'Brittany',
-                                        fontFamilyFallback: [
-                                          'Poppins',
-                                          'cursive',
-                                        ],
-                                        fontStyle: FontStyle.italic,
-                                        fontSize: 38,
-                                        fontWeight: FontWeight.w300,
-                                        letterSpacing: -1.1,
-                                        height: 1,
+              return Container(
+                width: double.infinity,
+                height: double.infinity,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF4200FF),
+                      Color(0xFF7000FF),
+                      Color(0xFF9600FF),
+                    ],
+                  ),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  children: [
+                    _SignatureSplashRibbon(
+                      top: constraints.maxHeight * 0.25,
+                      left: -constraints.maxWidth * 0.20,
+                      angle: 0.52,
+                    ),
+                    _SignatureSplashRibbon(
+                      top: constraints.maxHeight * 0.47,
+                      left: -constraints.maxWidth * 0.36,
+                      angle: 0.52,
+                    ),
+                    Positioned.fill(
+                      child: Transform.translate(
+                        offset: Offset(0, centerOffset),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'Welcome',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 30,
+                                fontWeight: FontWeight.w400,
+                                height: 0.9,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            SizedBox(
+                              width: nameWidth,
+                              height: 62,
+                              child: Center(
+                                child: AnimatedBuilder(
+                                  animation: _signatureReveal,
+                                  builder: (context, child) {
+                                    return ClipRect(
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        widthFactor: _signatureReveal.value
+                                            .clamp(0.001, 1.0),
+                                        child: child,
                                       ),
+                                    );
+                                  },
+                                  child: Text(
+                                    widget.firstName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Brittany',
+                                      fontFamilyFallback: [
+                                        'Poppins',
+                                        'cursive',
+                                      ],
+                                      fontSize: 46,
+                                      fontWeight: FontWeight.w300,
+                                      letterSpacing: -1.1,
+                                      height: 1,
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: 50,
-                            child: FadeTransition(
-                              opacity: _footerOpacity,
-                              child: const Text(
-                                'login successful',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: -0.2,
-                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: constraints.maxHeight * 0.08,
+                      child: FadeTransition(
+                        opacity: _footerOpacity,
+                        child: const Text(
+                          'login successful',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -471,8 +439,8 @@ class _SignatureSplashRibbon extends StatelessWidget {
       child: Transform.rotate(
         angle: angle,
         child: Container(
-          width: 410,
-          height: 74,
+          width: MediaQuery.sizeOf(context).width * 1.28,
+          height: 78,
           decoration: BoxDecoration(
             color: const Color(0xFFB86CFF).withValues(alpha: 0.22),
             borderRadius: BorderRadius.circular(18),
