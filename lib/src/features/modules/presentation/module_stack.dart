@@ -1357,6 +1357,7 @@ class _ModuleCardState extends State<_ModuleCard> {
     String subtitle,
   ) {
     return Row(
+      key: const ValueKey('library-shelf-board'),
       children: [
         Expanded(flex: 5, child: _heroCell(module, palette, subtitle)),
         if (actions.isNotEmpty) ...[
@@ -1392,6 +1393,7 @@ class _ModuleCardState extends State<_ModuleCard> {
     String subtitle,
   ) {
     return Row(
+      key: const ValueKey('hostel-room-grid-board'),
       children: [
         Expanded(flex: 4, child: _heroCell(module, palette, subtitle)),
         if (actions.isNotEmpty) ...[
@@ -1416,6 +1418,7 @@ class _ModuleCardState extends State<_ModuleCard> {
     String subtitle,
   ) {
     return Row(
+      key: const ValueKey('tuition-fee-preview-board'),
       children: [
         Expanded(flex: 6, child: _heroCell(module, palette, subtitle)),
         SizedBox(width: _cellGap),
