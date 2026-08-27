@@ -12,9 +12,11 @@ class AcademicManagementShell extends StatefulWidget {
     super.key,
     required this.session,
     required this.onExitModule,
+    this.initialAction,
   });
   final UserSession session;
   final VoidCallback onExitModule;
+  final String? initialAction;
   @override
   State<AcademicManagementShell> createState() =>
       _AcademicManagementShellState();
@@ -22,7 +24,17 @@ class AcademicManagementShell extends StatefulWidget {
 
 class _AcademicManagementShellState extends State<AcademicManagementShell> {
   final _repo = MockAcademicRepository();
-  var _tab = 0;
+  late int _tab;
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = switch (widget.initialAction) {
+      'subjects' => 1,
+      'classes' => 2,
+      _ => 0,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +54,30 @@ class _AcademicManagementShellState extends State<AcademicManagementShell> {
           ModuleHomeButton(onPressed: widget.onExitModule, color: Colors.white),
         ],
       ),
-      body: IndexedStack(index: _tab, children: pages),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+            child: SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<int>(
+                segments: const [
+                  ButtonSegment(value: 0, label: Text('Programmes')),
+                  ButtonSegment(value: 1, label: Text('Subjects')),
+                  ButtonSegment(value: 2, label: Text('Classes')),
+                ],
+                selected: {_tab},
+                showSelectedIcon: false,
+                onSelectionChanged: (value) =>
+                    setState(() => _tab = value.first),
+              ),
+            ),
+          ),
+          Expanded(
+            child: IndexedStack(index: _tab, children: pages),
+          ),
+        ],
+      ),
     );
   }
 

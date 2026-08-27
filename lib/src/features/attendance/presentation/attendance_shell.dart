@@ -28,6 +28,7 @@ class AttendanceShell extends StatefulWidget {
     this.initialSubjectName,
     this.initialPeriodLabel,
     this.openSelectedClassImmediately = false,
+    this.initialAction,
   });
 
   final UserSession session;
@@ -48,6 +49,7 @@ class AttendanceShell extends StatefulWidget {
   /// Opening Attendance from the module list leaves this false and keeps the
   /// overview/class switcher available.
   final bool openSelectedClassImmediately;
+  final String? initialAction;
 
   @override
   State<AttendanceShell> createState() => _AttendanceShellState();
@@ -69,6 +71,8 @@ class _AttendanceShellState extends State<AttendanceShell> {
   bool _busy = true;
   Timer? _timer;
   bool _openedInitialClass = false;
+  bool _appliedInitialAction = false;
+  final _reportsKey = GlobalKey();
 
   /// Scope is what separates the three workspaces: your own record, the
   /// sections you teach, or the department and above that you report on.
@@ -153,7 +157,8 @@ class _AttendanceShellState extends State<AttendanceShell> {
         }
         _selectedClass ??= _initialClass(_classes);
         final sectionId = _selectedClass?['sectionId']?.toString();
-        final sectionIds = (_selectedClass?['sectionIds'] as List?)
+        final sectionIds =
+            (_selectedClass?['sectionIds'] as List?)
                 ?.map((value) => value.toString())
                 .where((value) => value.isNotEmpty)
                 .toList() ??
@@ -212,7 +217,11 @@ class _AttendanceShellState extends State<AttendanceShell> {
         setState(() {
           _busy = false;
           _error = null;
+          if (!_appliedInitialAction && widget.initialAction == 'roster') {
+            _choosingClass = true;
+          }
         });
+        _applyInitialAction();
       }
     } catch (error) {
       if (mounted && !silent) {
@@ -224,6 +233,18 @@ class _AttendanceShellState extends State<AttendanceShell> {
         });
       }
     }
+  }
+
+  void _applyInitialAction() {
+    if (_appliedInitialAction) return;
+    _appliedInitialAction = true;
+    if (widget.initialAction != 'reports') return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = _reportsKey.currentContext;
+      if (mounted && target != null) {
+        Scrollable.ensureVisible(target, duration: Duration.zero, alignment: 0);
+      }
+    });
   }
 
   Map<String, dynamic>? _initialClass(List<Map<String, dynamic>> classes) {
@@ -350,7 +371,11 @@ class _AttendanceShellState extends State<AttendanceShell> {
                   if (_error != null) _ErrorBanner(_error!),
                   if (_isLearner) ..._summaryView(),
                   if (_isFaculty) ..._facultyView(),
-                  if (_canReport) ..._reportView(),
+                  if (_canReport)
+                    KeyedSubtree(
+                      key: _reportsKey,
+                      child: Column(children: _reportView()),
+                    ),
                 ],
               ),
             ),

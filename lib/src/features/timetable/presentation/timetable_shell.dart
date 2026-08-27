@@ -22,6 +22,7 @@ class TimetableShell extends StatefulWidget {
     this.accessTokenProvider,
     this.onExitModule,
     required this.onSignOut,
+    this.initialAction,
   });
 
   final UserSession session;
@@ -34,6 +35,7 @@ class TimetableShell extends StatefulWidget {
   final AccessTokenProvider? accessTokenProvider;
   final VoidCallback? onExitModule;
   final VoidCallback onSignOut;
+  final String? initialAction;
 
   @override
   State<TimetableShell> createState() => _TimetableShellState();
@@ -186,6 +188,7 @@ class _TimetableShellState extends State<TimetableShell> {
             return FacultyDashboardScreen(
               session: widget.session,
               repository: repository,
+              initialSection: widget.initialAction == 'substitution' ? 1 : 0,
             );
           }
           return ViewOnlyTimetableScreen(

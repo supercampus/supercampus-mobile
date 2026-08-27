@@ -15,10 +15,12 @@ class FacultyDashboardScreen extends StatefulWidget {
     super.key,
     required this.session,
     required this.repository,
+    this.initialSection = 0,
   });
 
   final UserSession session;
   final TimetableRepository repository;
+  final int initialSection;
 
   @override
   State<FacultyDashboardScreen> createState() => _FacultyDashboardScreenState();
@@ -27,12 +29,13 @@ class FacultyDashboardScreen extends StatefulWidget {
 class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
     with SingleTickerProviderStateMixin {
   DateTime _selectedDate = DateTime.now();
-  int _bottomNavIndex = 0; // 0: Schedule, 1: Substitutions Hub
+  late int _bottomNavIndex; // 0: Schedule, 1: Substitutions Hub
   late TabController _subTabController;
 
   @override
   void initState() {
     super.initState();
+    _bottomNavIndex = widget.initialSection.clamp(0, 1);
     _subTabController = TabController(length: 3, vsync: this);
   }
 
