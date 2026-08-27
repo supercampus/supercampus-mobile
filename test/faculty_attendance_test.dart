@@ -142,6 +142,13 @@ void main() {
         );
       }
       if (path.endsWith('/attendance/sessions') && request.method == 'POST') {
+        final payload = jsonDecode(request.body) as Map<String, dynamic>;
+        final now = DateTime.now();
+        final expectedLocalDate =
+            '${now.year.toString().padLeft(4, '0')}-'
+            '${now.month.toString().padLeft(2, '0')}-'
+            '${now.day.toString().padLeft(2, '0')}';
+        expect(payload['heldOn'], expectedLocalDate);
         return http.Response(
           jsonEncode({
             'data': {'id': 'session-1'},
@@ -201,6 +208,11 @@ void main() {
     tester,
   ) async {
     await pump(tester, repository());
+
+    final classRequest = calls.firstWhere(
+      (call) => call.startsWith('GET /api/v1/operations/attendance/classes?'),
+    );
+    expect(classRequest, contains('heldOn='));
 
     // The first assigned class is chosen so the common case takes no taps.
     expect(find.text('Operating Systems'), findsWidgets);
