@@ -138,7 +138,6 @@ const _markRadius = 12 * _k;
 /// Padding inside a hero cell, and the icon plate that sits in it.
 const _heroPad = 22 * _k;
 const _heroPlate = 93 * _k;
-const _heroPlateRadius = 24 * _k;
 const _heroGlyph = 44 * _k;
 
 /// Type off the artwork: the module name, and the line under it.
@@ -492,29 +491,29 @@ class _CardPalette {
 /// 13.png, 14.png, 15.png.
 const _boardPalettes = <String, _CardPalette>{
   ModuleCatalog.attendance: _CardPalette(
-    from: Color(0xFF1400FF),
-    to: Color(0xFFA600FF),
+    from: Color(0xFF4200FF),
+    to: Color(0xFF9600FF),
     hero: Color(0xFF30258D),
     plate: Color(0xFF776CF5),
-    tiles: [Color(0xFF776CF5), Color(0xFF1400FF), Color(0xFFA600FF)],
+    tiles: [Color(0xFF776CF5), Color(0xFF4200FF), Color(0xFF9600FF)],
   ),
   ModuleCatalog.gatepass: _CardPalette(
-    from: Color(0xFF1400FF),
-    to: Color(0xFFA600FF),
+    from: Color(0xFF4200FF),
+    to: Color(0xFF9600FF),
     hero: Color(0xFF4E35EE),
     plate: Color(0xFF776CF5),
-    tiles: [Color(0xFF1400FF), Color(0xFF776CF5), Color(0xFFA600FF)],
+    tiles: [Color(0xFF4200FF), Color(0xFF776CF5), Color(0xFF9600FF)],
   ),
   ModuleCatalog.canteen: _CardPalette(
-    from: Color(0xFF1400FF),
-    to: Color(0xFFA600FF),
+    from: Color(0xFF4200FF),
+    to: Color(0xFF9600FF),
     hero: Color(0xFF30258D),
     plate: Color(0xFF776CF5),
     tiles: [
       Color(0xFF776CF5),
-      Color(0xFFA600FF),
+      Color(0xFF9600FF),
       Color(0xFF594DE5),
-      Color(0xFF1400FF),
+      Color(0xFF4200FF),
     ],
   ),
 };
@@ -524,11 +523,11 @@ const _boardPalettes = <String, _CardPalette>{
 /// A brighter brand gradient distinguishes the operational staff surface from
 /// the calmer learner streak card without leaving the SuperCampus palette.
 const _staffAttendancePalette = _CardPalette(
-  from: Color(0xFF1400FF),
-  to: Color(0xFFA600FF),
+  from: Color(0xFF4200FF),
+  to: Color(0xFF9600FF),
   hero: Color(0xFF30258D),
   plate: Color(0xFF776CF5),
-  tiles: [Color(0xFF776CF5), Color(0xFF1400FF), Color(0xFFA600FF)],
+  tiles: [Color(0xFF776CF5), Color(0xFF4200FF), Color(0xFF9600FF)],
 );
 
 /// Everything the boards did not draw is built from the module's own catalog
@@ -554,15 +553,15 @@ _CardPalette _paletteFromSeed(ModuleDescriptor module) {
   // Module identity comes from composition and iconography. Colour is the
   // product language shared by every tenant-facing card.
   return _CardPalette(
-    from: const Color(0xFF1400FF),
-    to: const Color(0xFFA600FF),
+    from: const Color(0xFF4200FF),
+    to: const Color(0xFF9600FF),
     hero: const Color(0xFF30258D),
     plate: const Color(0xFF776CF5),
     tiles: const [
       Color(0xFF776CF5),
       Color(0xFF594DE5),
-      Color(0xFFA600FF),
-      Color(0xFF1400FF),
+      Color(0xFF9600FF),
+      Color(0xFF4200FF),
     ],
   );
 }
@@ -1545,13 +1544,9 @@ class _ModuleCardState extends State<_ModuleCard> {
       padding: EdgeInsets.symmetric(horizontal: _heroPad),
       child: Row(
         children: [
-          Container(
+          SizedBox(
             width: _heroPlate,
             height: _heroPlate,
-            decoration: BoxDecoration(
-              color: palette.plate,
-              borderRadius: BorderRadius.circular(_heroPlateRadius),
-            ),
             child: Icon(module.icon, color: Colors.white, size: _heroGlyph),
           ),
           SizedBox(width: 20 * _k),
@@ -1574,8 +1569,8 @@ class _ModuleCardState extends State<_ModuleCard> {
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: _titleSize,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0,
                       height: 1.15,
                     ),
                   ),
