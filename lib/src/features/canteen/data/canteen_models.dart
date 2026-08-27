@@ -196,6 +196,7 @@ class CanteenOrder {
     this.tokenNumber,
     this.orderNumber,
     this.customerName,
+    this.qrPayload,
   });
 
   final String id;
@@ -207,6 +208,7 @@ class CanteenOrder {
   final int? tokenNumber;
   final String? orderNumber;
   final String? customerName;
+  final String? qrPayload;
 
   String get displayId => orderNumber ?? id;
 
@@ -221,6 +223,7 @@ class CanteenOrder {
         tokenNumber: tokenNumber ?? this.tokenNumber,
         orderNumber: orderNumber,
         customerName: customerName,
+        qrPayload: qrPayload,
       );
 
   int get itemCount => lines.fold(0, (total, line) => total + line.quantity);

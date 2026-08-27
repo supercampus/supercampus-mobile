@@ -333,7 +333,12 @@ class _CanteenShellState extends State<CanteenShell> {
         orders: store.orders,
         onBack: () => setState(() => _selectedIndex = 0),
       ),
-      const CanteenScannerScreen(),
+      CanteenScannerScreen(
+        onScan: (payload) async {
+          await _repository.scanOrder(payload);
+          await _loadStore(silent: true);
+        },
+      ),
     ];
 
     return Scaffold(

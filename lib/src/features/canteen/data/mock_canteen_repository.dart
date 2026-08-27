@@ -64,6 +64,17 @@ class MockCanteenRepository implements CanteenRepository {
   }
 
   @override
+  Future<void> scanOrder(String qrPayload) async {
+    final index = _orders.indexWhere(
+      (order) => order.qrPayload == qrPayload || order.id == qrPayload,
+    );
+    if (index < 0) throw const CanteenException('Order QR is invalid.');
+    _orders[index] = _orders[index].copyWith(
+      status: CanteenOrderStatus.completed,
+    );
+  }
+
+  @override
   Future<CanteenStaffState> updateStaffState({
     required CanteenStaffMode mode,
     bool? shopOpen,
@@ -154,6 +165,7 @@ class MockCanteenRepository implements CanteenRepository {
         fulfilmentMode: FulfilmentMode.pickup,
         createdAt: timestamp,
         tokenNumber: 42 + _orders.length + sequence,
+        qrPayload: 'QR-${timestamp.microsecondsSinceEpoch}-$sequence',
       );
       final transaction = WalletTransaction(
         id: 'txn-${timestamp.millisecondsSinceEpoch}-$sequence',
