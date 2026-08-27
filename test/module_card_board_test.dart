@@ -243,14 +243,15 @@ void main() {
       final permissions = grants({
         'library.visit_pass.read',
         'library.visit_pass.create',
+        'library.qr_pass.read',
         'library.visit_history.read',
       });
       await tester.pumpWidget(hostModule(ModuleCatalog.library, permissions));
       await tester.pumpAndSettle();
 
-      expect(find.text('Search'), findsOneWidget);
-      expect(find.text('My books'), findsOneWidget);
-      expect(find.text('Renew'), findsOneWidget);
+      expect(find.text('Book visit'), findsOneWidget);
+      expect(find.text('QR pass'), findsOneWidget);
+      expect(find.text('History'), findsOneWidget);
     });
 
     testWidgets('hostel presents its actions as a room grid', (tester) async {

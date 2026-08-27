@@ -16,11 +16,13 @@ class LibraryBookingsScreen extends StatefulWidget {
     required this.session,
     required this.repository,
     required this.onExitModule,
+    this.initialAction,
   });
 
   final UserSession session;
   final MockLibraryRepository repository;
   final VoidCallback onExitModule;
+  final String? initialAction;
 
   @override
   State<LibraryBookingsScreen> createState() => _LibraryBookingsScreenState();
@@ -28,6 +30,32 @@ class LibraryBookingsScreen extends StatefulWidget {
 
 class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
   String? _expandedId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openInitialAction());
+  }
+
+  void _openInitialAction() {
+    if (!mounted) return;
+    switch (widget.initialAction) {
+      case 'book':
+        _openBookSlot();
+      case 'qr':
+        if (_activeBookings.isNotEmpty) {
+          _openQr(_activeBookings.first);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Book a library visit to create a QR pass.'),
+            ),
+          );
+        }
+      case 'history':
+        _openHistory();
+    }
+  }
 
   /// Only active, upcoming, and inside (checked-in) bookings appear on the
   /// main feed. Completed, cancelled, and expired bookings live in History.

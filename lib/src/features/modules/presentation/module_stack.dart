@@ -641,7 +641,10 @@ class _ModuleCardState extends State<_ModuleCard> {
     final ready = module.status != ModuleStatus.planned;
     final actions = ready
         ? [
-            for (final action in _quickActionsFor(module.id))
+            for (final action in _quickActionsFor(
+              module.id,
+              widget.permissions,
+            ))
               if (widget.permissions.can(
                 module.id,
                 action.featureId,
@@ -1647,7 +1650,10 @@ class _QuickAction {
   final String requiredAction;
 }
 
-List<_QuickAction> _quickActionsFor(String moduleId) => switch (moduleId) {
+List<_QuickAction> _quickActionsFor(
+  String moduleId,
+  EffectivePermissions permissions,
+) => switch (moduleId) {
   ModuleCatalog.examination => const [
     _QuickAction(
       'schedule',
@@ -1687,6 +1693,31 @@ List<_QuickAction> _quickActionsFor(String moduleId) => switch (moduleId) {
       ModuleActions.read,
     ),
   ],
+  ModuleCatalog.academics
+      when academicPresentationFor(permissions) == AcademicPresentation.staff =>
+    const [
+      _QuickAction(
+        'programmes',
+        'Programmes',
+        Icons.school_outlined,
+        'programme',
+        ModuleActions.read,
+      ),
+      _QuickAction(
+        'subjects',
+        'Subjects',
+        Icons.menu_book_outlined,
+        'subject',
+        ModuleActions.read,
+      ),
+      _QuickAction(
+        'classes',
+        'Classes',
+        Icons.groups_outlined,
+        'registration',
+        ModuleActions.read,
+      ),
+    ],
   ModuleCatalog.academics => const [
     _QuickAction(
       'attendance',
@@ -1781,25 +1812,25 @@ List<_QuickAction> _quickActionsFor(String moduleId) => switch (moduleId) {
   ],
   ModuleCatalog.library => const [
     _QuickAction(
-      'search',
-      'Search',
-      Icons.search_rounded,
-      'visit_pass',
-      ModuleActions.read,
-    ),
-    _QuickAction(
-      'my_books',
-      'My books',
-      Icons.menu_book_rounded,
-      'visit_history',
-      ModuleActions.read,
-    ),
-    _QuickAction(
-      'renew',
-      'Renew',
-      Icons.autorenew_rounded,
+      'book',
+      'Book visit',
+      Icons.event_available_outlined,
       'visit_pass',
       ModuleActions.create,
+    ),
+    _QuickAction(
+      'qr',
+      'QR pass',
+      Icons.qr_code_2_rounded,
+      'qr_pass',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'history',
+      'History',
+      Icons.history_rounded,
+      'visit_history',
+      ModuleActions.read,
     ),
   ],
   ModuleCatalog.hostel => const [

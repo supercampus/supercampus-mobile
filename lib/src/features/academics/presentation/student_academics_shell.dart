@@ -34,6 +34,9 @@ class StudentAcademicsShell extends StatefulWidget {
 }
 
 class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
+  final _attendanceKey = GlobalKey();
+  final _marksKey = GlobalKey();
+  final _analysisKey = GlobalKey();
   List<StudentAssessment> _assessments = const [];
   bool _loadingAssessments = false;
   String? _assessmentError;
@@ -46,6 +49,20 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
     super.initState();
     _loadAssessments();
     _loadAttendance();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showInitialAction());
+  }
+
+  void _showInitialAction() {
+    if (!mounted) return;
+    final key = switch (widget.initialAction) {
+      'marks' => _marksKey,
+      'analysis' => _analysisKey,
+      _ => _attendanceKey,
+    };
+    final target = key.currentContext;
+    if (target != null) {
+      Scrollable.ensureVisible(target, duration: Duration.zero, alignment: 0);
+    }
   }
 
   Future<void> _refresh() async {
@@ -132,15 +149,15 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _attendance(),
+          KeyedSubtree(key: _attendanceKey, child: _attendance()),
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 24),
-          _marks(),
+          KeyedSubtree(key: _marksKey, child: _marks()),
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 24),
-          _analysis(),
+          KeyedSubtree(key: _analysisKey, child: _analysis()),
         ],
       ),
     ),

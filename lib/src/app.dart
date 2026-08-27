@@ -680,7 +680,26 @@ class _SupercampusAppState extends State<SupercampusApp>
       (ModuleCatalog.academics, 'marks') => ('marks', ModuleActions.read),
       (ModuleCatalog.academics, 'analysis') => ('analysis', ModuleActions.read),
       (ModuleCatalog.attendance, 'roster') => ('roster', ModuleActions.read),
-      (ModuleCatalog.attendance, 'leave') => ('leave', ModuleActions.read),
+      (ModuleCatalog.attendance, 'mark') => ('records', ModuleActions.update),
+      (ModuleCatalog.attendance, 'reports') => (
+        'reports',
+        ModuleActions.create,
+      ),
+      (ModuleCatalog.library, 'book') => ('visit_pass', ModuleActions.create),
+      (ModuleCatalog.library, 'qr') => ('qr_pass', ModuleActions.read),
+      (ModuleCatalog.library, 'history') => (
+        'visit_history',
+        ModuleActions.read,
+      ),
+      (ModuleCatalog.academics, 'programmes') => (
+        'programme',
+        ModuleActions.read,
+      ),
+      (ModuleCatalog.academics, 'subjects') => ('subject', ModuleActions.read),
+      (ModuleCatalog.academics, 'classes') => (
+        'registration',
+        ModuleActions.read,
+      ),
       (ModuleCatalog.canteen, 'menu') => ('menu', ModuleActions.read),
       (ModuleCatalog.canteen, 'orders') => ('order', ModuleActions.read),
       (ModuleCatalog.canteen, 'wallet') => ('wallet', ModuleActions.read),
@@ -766,6 +785,7 @@ class _SupercampusAppState extends State<SupercampusApp>
       ModuleCatalog.library => LibraryShell(
         session: session,
         onExitModule: exit,
+        initialAction: _openModuleAction,
       ),
       // Which academic workspace someone gets follows what they may do, not
       // what their role is called: `own` scope with no approvals is a learner,
@@ -773,7 +793,11 @@ class _SupercampusAppState extends State<SupercampusApp>
       // and this keeps working.
       ModuleCatalog.academics =>
         academicPresentationFor(_permissions!) == AcademicPresentation.staff
-            ? AcademicManagementShell(session: session, onExitModule: exit)
+            ? AcademicManagementShell(
+                session: session,
+                onExitModule: exit,
+                initialAction: _openModuleAction,
+              )
             : StudentAcademicsShell(
                 session: session,
                 onExitModule: exit,
@@ -823,6 +847,7 @@ class _SupercampusAppState extends State<SupercampusApp>
             ),
         onExitModule: exit,
         onSignOut: _signOut,
+        initialAction: _openModuleAction,
       ),
       'feedback' => FeedbackShell(session: session, onExitModule: exit),
       ModuleCatalog.attendance => AttendanceShell(
@@ -841,6 +866,7 @@ class _SupercampusAppState extends State<SupercampusApp>
         initialSubjectName: _attendanceClass?.subject,
         initialPeriodLabel: _attendanceClass?.periodLabel,
         openSelectedClassImmediately: _attendanceClass != null,
+        initialAction: _openModuleAction,
       ),
       // A grant on a catalogued-but-unbuilt module can't reach here — the
       // dashboard disables its button — but stay defensive rather than crash.

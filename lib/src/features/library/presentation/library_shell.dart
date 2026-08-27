@@ -12,10 +12,12 @@ class LibraryShell extends StatefulWidget {
     super.key,
     required this.session,
     required this.onExitModule,
+    this.initialAction,
   });
 
   final UserSession session;
   final VoidCallback onExitModule;
+  final String? initialAction;
 
   @override
   State<LibraryShell> createState() => _LibraryShellState();
@@ -36,6 +38,7 @@ class _LibraryShellState extends State<LibraryShell> {
       session: widget.session,
       repository: _repository,
       onExitModule: widget.onExitModule,
+      initialAction: widget.initialAction,
     );
   }
 }
