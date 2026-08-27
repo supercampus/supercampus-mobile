@@ -743,8 +743,7 @@ class _ModuleCardState extends State<_ModuleCard> {
       ModuleCatalog.gatepass => _gatepassBoard(
         module,
         palette,
-        actions,
-        subtitle,
+        'Gate-in access',
       ),
       ModuleCatalog.canteen => _shopsBoard(module, palette, actions, subtitle),
       ModuleCatalog.examination => _examinationBoard(
@@ -988,48 +987,16 @@ class _ModuleCardState extends State<_ModuleCard> {
   Widget _gatepassBoard(
     ModuleDescriptor module,
     _CardPalette palette,
-    List<_QuickAction> actions,
     String subtitle,
   ) {
     return Row(
       key: const ValueKey('gatepass-split-board'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: Column(
-            children: [
-              SizedBox(
-                height: actions.isEmpty ? null : 150 * _k,
-                child: actions.isEmpty
-                    ? null
-                    : _heroCell(module, palette, subtitle),
-              ),
-              if (actions.isEmpty)
-                Expanded(child: _heroCell(module, palette, subtitle))
-              else ...[
-                SizedBox(height: 26 * _k),
-                Expanded(
-                  child: Row(
-                    children: [
-                      for (var i = 0; i < actions.take(2).length; i++) ...[
-                        if (i > 0) SizedBox(width: 34 * _k),
-                        Expanded(
-                          child: _ActionTile(
-                            action: actions[i],
-                            fill: palette.tile(i),
-                            onTap: _run(actions[i]),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+        Expanded(child: _heroCell(module, palette, subtitle)),
         SizedBox(width: _cellGap),
-        // The pass is the reason this card exists. It owns a true half of the
-        // usable card instead of being squeezed into a decorative side tile.
+        // The pass is the reason this card exists. It owns the full height of
+        // the right half instead of sharing space with decorative actions.
         Expanded(child: _passPanel(module)),
       ],
     );

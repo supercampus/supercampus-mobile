@@ -231,14 +231,20 @@ void main() {
       );
       expect(find.byKey(const ValueKey('gatepass-qr-panel')), findsOneWidget);
       expect(find.byType(QrImageView), findsOneWidget);
+      expect(find.text('Gate-in access'), findsOneWidget);
+      expect(find.byIcon(Icons.directions_walk_outlined), findsNothing);
+      expect(find.byIcon(Icons.people_outline), findsNothing);
 
-      final boardWidth = tester
-          .getSize(find.byKey(const ValueKey('gatepass-split-board')))
-          .width;
-      final qrWidth = tester
-          .getSize(find.byKey(const ValueKey('gatepass-qr-panel')))
-          .width;
+      final boardSize = tester.getSize(
+        find.byKey(const ValueKey('gatepass-split-board')),
+      );
+      final qrSize = tester.getSize(
+        find.byKey(const ValueKey('gatepass-qr-panel')),
+      );
+      final boardWidth = boardSize.width;
+      final qrWidth = qrSize.width;
       expect(qrWidth / boardWidth, greaterThan(0.45));
+      expect(qrSize.height / boardSize.height, greaterThan(0.95));
     });
 
     testWidgets('library exposes labelled shelf actions', (tester) async {
