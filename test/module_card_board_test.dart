@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supercampus_mobile/src/core/access/academic_presentation.dart';
 import 'package:supercampus_mobile/src/core/access/effective_permissions.dart';
 import 'package:supercampus_mobile/src/core/access/module_catalog.dart';
@@ -36,6 +37,24 @@ Widget host(
     ),
   );
 }
+
+Widget hostModule(
+  String moduleId,
+  EffectivePermissions permissions, {
+  ModuleCardContent content = const ModuleCardContent(),
+}) => MaterialApp(
+  home: Scaffold(
+    body: SizedBox(
+      height: ModuleStack.heightFor(1),
+      child: ModuleStack(
+        modules: [ModuleCatalog.byId(moduleId)!],
+        permissions: permissions,
+        onOpenModule: (_) {},
+        content: content,
+      ),
+    ),
+  ),
+);
 
 /// The streak marks, left to right, by the colour each one is painted.
 List<Color?> streakColours(WidgetTester tester) => tester
@@ -95,8 +114,8 @@ void main() {
       await tester.pumpAndSettle();
 
       final gradient = cardGradient(tester);
-      expect(gradient.colors.first, const Color(0xFF423A91));
-      expect(gradient.colors.last, const Color(0xFF262458));
+      expect(gradient.colors.first, const Color(0xFF4138A0));
+      expect(gradient.colors.last, const Color(0xFF241F62));
     });
 
     testWidgets('draws every mark grey until the standing lands', (
@@ -176,15 +195,78 @@ void main() {
       expect(find.byIcon(Icons.auto_graph_rounded), findsOneWidget);
     });
 
-    testWidgets('is green, so it never reads as the learner card', (
-      tester,
-    ) async {
+    testWidgets('uses the operational brand gradient', (tester) async {
       await tester.pumpWidget(host(staff));
       await tester.pumpAndSettle();
 
       final gradient = cardGradient(tester);
-      expect(gradient.colors.first, const Color(0xFF217F49));
-      expect(gradient.colors.last, const Color(0xFF12502D));
+      expect(gradient.colors.first, const Color(0xFF1400FF));
+      expect(gradient.colors.last, const Color(0xFF5C11D7));
+    });
+  });
+
+  group('module-specific layouts', () {
+    testWidgets('gatepass dedicates half of the board to its live QR', (
+      tester,
+    ) async {
+      final permissions = grants({
+        'gatepass.outpass.read',
+        'gatepass.visitor.read',
+        'gatepass.access.read',
+      });
+      await tester.pumpWidget(
+        hostModule(
+          ModuleCatalog.gatepass,
+          permissions,
+          content: const ModuleCardContent(gatepassQr: 'SC-GATE-TEST'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('gatepass-split-board')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('gatepass-qr-panel')), findsOneWidget);
+      expect(find.byType(QrImageView), findsOneWidget);
+
+      final boardWidth = tester
+          .getSize(find.byKey(const ValueKey('gatepass-split-board')))
+          .width;
+      final qrWidth = tester
+          .getSize(find.byKey(const ValueKey('gatepass-qr-panel')))
+          .width;
+      expect(qrWidth / boardWidth, greaterThan(0.45));
+    });
+
+    testWidgets('library exposes labelled shelf actions', (tester) async {
+      final permissions = grants({
+        'library.visit_pass.read',
+        'library.visit_pass.create',
+        'library.visit_history.read',
+      });
+      await tester.pumpWidget(hostModule(ModuleCatalog.library, permissions));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Search'), findsOneWidget);
+      expect(find.text('My books'), findsOneWidget);
+      expect(find.text('Renew'), findsOneWidget);
+    });
+
+    testWidgets('hostel presents its actions as a room grid', (tester) async {
+      final permissions = grants({
+        'hostel.outpass.read',
+        'hostel.complaints.create',
+        'hostel.mess.read',
+        'hostel.residency.read',
+      });
+      await tester.pumpWidget(hostModule(ModuleCatalog.hostel, permissions));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Outpass'), findsOneWidget);
+      expect(find.text('Complaint'), findsOneWidget);
+      expect(find.text('Mess menu'), findsOneWidget);
+      expect(find.text('My room'), findsOneWidget);
     });
   });
 }
