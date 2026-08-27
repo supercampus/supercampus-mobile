@@ -443,10 +443,8 @@ class ProfileSheet extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
-        const _ProfileSectionTitle('Profile card'),
-        const SizedBox(height: 10),
         _ProfileIdentityCard(session: session, modules: modules.length),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         _ProfileAction(
           icon: Icons.badge_outlined,
           title: 'Details',
@@ -1738,60 +1736,110 @@ class _ProfileIdentityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.secondary,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          _StudentPhoto(
-            key: const ValueKey('profile-card-photo'),
-            session: session,
-            size: 58,
-            borderColor: Colors.white.withValues(alpha: 0.5),
-            fallbackBackground: Colors.white.withValues(alpha: 0.18),
-            fallbackForeground: Colors.white,
+        gradient: AppColors.violetGradient,
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.brandBlue.withValues(alpha: 0.2),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  session.displayName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  session.email,
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.82)),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _StudentPhoto(
+                key: const ValueKey('profile-card-photo'),
+                session: session,
+                size: 74,
+                borderColor: Colors.white.withValues(alpha: 0.72),
+                borderWidth: 2,
+                fallbackBackground: Colors.white.withValues(alpha: 0.18),
+                fallbackForeground: Colors.white,
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _ProfileChip(text: session.roleLabel),
-                    if (session.idNumber != null)
-                      _ProfileChip(text: session.idNumber!),
-                    _ProfileChip(text: '$modules modules'),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text(
+                        session.roleLabel.toUpperCase(),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.9,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      session.displayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      session.email,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.76),
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _ProfileMetric(
+                    label: 'Campus ID',
+                    value: session.idNumber ?? 'Not assigned',
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 32,
+                  color: Colors.white.withValues(alpha: 0.2),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: _ProfileMetric(
+                    label: 'Access',
+                    value: '$modules modules',
+                  ),
                 ),
               ],
             ),
@@ -1800,6 +1848,40 @@ class _ProfileIdentityCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ProfileMetric extends StatelessWidget {
+  const _ProfileMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.62),
+          fontSize: 8,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
+      ),
+      const SizedBox(height: 3),
+      Text(
+        value,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ],
+  );
 }
 
 class _StudentPhoto extends StatelessWidget {
@@ -1903,16 +1985,18 @@ class _ProfileAction extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.moduleSoft.withValues(alpha: 0.62),
+        borderRadius: BorderRadius.circular(18),
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              border: Border.all(color: Theme.of(context).dividerColor),
-              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.brandLavender.withValues(alpha: 0.2),
+              ),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
@@ -1920,16 +2004,10 @@ class _ProfileAction extends StatelessWidget {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.08),
-                    shape: BoxShape.circle,
+                    gradient: AppColors.violetGradient,
+                    borderRadius: BorderRadius.circular(13),
                   ),
-                  child: Icon(
-                    icon,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 21,
-                  ),
+                  child: Icon(icon, color: Colors.white, size: 21),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

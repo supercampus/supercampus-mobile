@@ -128,8 +128,6 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
             child: Column(
               children: [
                 HomeTopBar(
-                  onSparkleTap: _openInsights,
-                  onSearchTap: _openSearch,
                   onAlertsTap: _openAlerts,
                   hasAlerts: _alerts.isNotEmpty,
                 ),
@@ -176,25 +174,6 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       ),
     );
   }
-
-  void _openSearch() => showHomeSheet(
-    context: context,
-    title: 'Search',
-    expand: true,
-    child: CampusSearchSheet(
-      permissions: widget.permissions,
-      onOpenModule: widget.onOpenModule,
-    ),
-  );
-
-  void _openInsights() => showHomeSheet(
-    context: context,
-    title: 'What matters now',
-    child: InsightListSheet(
-      insights: _insights,
-      emptyText: 'Nothing to report yet — check back after your first class.',
-    ),
-  );
 
   void _openAlerts() => showHomeSheet(
     context: context,
@@ -369,110 +348,193 @@ class _PriorityDashboardCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final notices = MockFacultyRepository().getNotices();
     final notice = notices.isEmpty ? null : notices.first;
-    final scheme = Theme.of(context).colorScheme;
-    final postedAt = notice?.postedAt.toLocal();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
-      child: Material(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.72),
-        clipBehavior: Clip.none,
+    final cards = <_DashboardNotice>[
+      if (notice != null)
+        _DashboardNotice(
+          eyebrow: 'ANNOUNCEMENT',
+          title: notice.title,
+          message: notice.content,
+          icon: Icons.campaign_outlined,
+          colors: const [AppColors.brandBlue, AppColors.brandMagenta],
+          action: notice.pdfUrl == null ? 'View update' : 'View details',
+          onTap: () => _openNoticePdf(context, notice),
+        ),
+      _DashboardNotice(
+        eyebrow: 'FEE REMINDER',
+        title: 'Semester fee window is open',
+        message: 'Review your dues and complete payment before the due date.',
+        icon: Icons.account_balance_wallet_outlined,
+        colors: [AppColors.brandMagenta, AppColors.brandLavender],
+        action: 'Check fees',
+        onTap: () => onOpenModule(ModuleCatalog.tuitionFee),
+      ),
+      _DashboardNotice(
+        eyebrow: 'CAMPUS EVENT',
+        title: 'Innovation Day registrations',
+        message: 'Teams can register projects and reserve a presentation slot.',
+        icon: Icons.celebration_outlined,
+        colors: [AppColors.brandLavender, AppColors.brandBlue],
+        action: 'View event',
+        onTap: () => showHomeSheet(
+          context: context,
+          title: 'Campus event',
+          child: const Padding(
+            padding: EdgeInsets.fromLTRB(20, 8, 20, 28),
+            child: Text(
+              'Innovation Day registrations are open. Teams can submit a project and reserve a presentation slot from the event desk.',
+            ),
+          ),
+        ),
+      ),
+      _DashboardNotice(
+        eyebrow: 'EXAM RESULTS',
+        title: 'Internal assessment published',
+        message: 'Your latest subject-wise marks are ready in Academics.',
+        icon: Icons.workspace_premium_outlined,
+        colors: [AppColors.brandBlue, AppColors.brandMagenta],
+        action: 'View results',
+        onTap: () => onOpenModule(ModuleCatalog.academics),
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = (constraints.maxWidth - 52).clamp(280.0, 480.0);
+        return ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
+          physics: const BouncingScrollPhysics(),
+          itemCount: cards.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) => SizedBox(
+            width: cardWidth,
+            child: _DashboardNoticeCard(notice: cards[index]),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DashboardNotice {
+  const _DashboardNotice({
+    required this.eyebrow,
+    required this.title,
+    required this.message,
+    required this.icon,
+    required this.colors,
+    required this.action,
+    this.onTap,
+  });
+
+  final String eyebrow;
+  final String title;
+  final String message;
+  final IconData icon;
+  final List<Color> colors;
+  final String action;
+  final VoidCallback? onTap;
+}
+
+class _DashboardNoticeCard extends StatelessWidget {
+  const _DashboardNoticeCard({required this.notice});
+
+  final _DashboardNotice notice;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(22),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: notice.colors,
+          ),
+          borderRadius: BorderRadius.circular(22),
+        ),
         child: InkWell(
-          onTap: notice == null ? null : () => _openNoticePdf(context, notice),
-          child: Row(
-            children: [
-              Container(
-                width: 64,
-                height: double.infinity,
-                color: scheme.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.campaign_outlined,
-                      color: scheme.onPrimary,
-                      size: 20,
+          onTap: notice.onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 13),
+            child: Row(
+              children: [
+                Container(
+                  width: 54,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(17),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      postedAt == null
-                          ? 'NEW'
-                          : postedAt.day.toString().padLeft(2, '0'),
-                      style: TextStyle(
-                        color: scheme.onPrimary,
-                        fontSize: 18,
-                        height: 1,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      postedAt == null ? 'UPDATE' : _monthName(postedAt.month),
-                      style: TextStyle(
-                        color: scheme.onPrimary.withValues(alpha: 0.76),
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ],
+                  ),
+                  child: Icon(notice.icon, color: Colors.white, size: 26),
                 ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                const SizedBox(width: 14),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        notice?.title ?? 'No new announcements',
+                        notice.eyebrow,
                         style: TextStyle(
-                          color: scheme.onSurface,
-                          fontSize: 16,
-                          height: 1.15,
+                          color: Colors.white.withValues(alpha: 0.72),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.15,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        notice.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
                         ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        notice.message,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 11,
+                          height: 1.25,
+                        ),
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        notice?.content ??
-                            'You are all caught up. New notices will appear here.',
-                        style: TextStyle(
-                          color: scheme.onSurfaceVariant,
-                          fontSize: 12,
-                          height: 1.3,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const Spacer(),
                       Row(
                         children: [
                           Text(
-                            notice?.pdfUrl == null
-                                ? 'View update'
-                                : 'View details',
-                            style: TextStyle(
-                              color: scheme.primary,
-                              fontSize: 11,
+                            notice.action,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           const SizedBox(width: 3),
-                          Icon(
+                          const Icon(
                             Icons.arrow_forward_rounded,
-                            color: scheme.primary,
-                            size: 14,
+                            color: Colors.white,
+                            size: 13,
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -576,22 +638,6 @@ class _PriorityDashboardCard extends StatelessWidget {
 }
 String _formatNoticeDate(DateTime date) {
 */
-
-String _monthName(int month) => const [
-  '',
-  'JAN',
-  'FEB',
-  'MAR',
-  'APR',
-  'MAY',
-  'JUN',
-  'JUL',
-  'AUG',
-  'SEP',
-  'OCT',
-  'NOV',
-  'DEC',
-][month.clamp(1, 12).toInt()];
 
 Future<void> _openNoticePdf(
   BuildContext context,
