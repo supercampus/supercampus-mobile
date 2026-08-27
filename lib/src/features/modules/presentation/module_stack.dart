@@ -492,11 +492,11 @@ class _CardPalette {
 /// 13.png, 14.png, 15.png.
 const _boardPalettes = <String, _CardPalette>{
   ModuleCatalog.attendance: _CardPalette(
-    from: Color(0xFF4138A0),
-    to: Color(0xFF241F62),
-    hero: Color(0xFF282363),
+    from: Color(0xFF1400FF),
+    to: Color(0xFFA600FF),
+    hero: Color(0xFF30258D),
     plate: Color(0xFF776CF5),
-    tiles: [Color(0xFF776CF5), Color(0xFF5147B8)],
+    tiles: [Color(0xFF776CF5), Color(0xFF1400FF), Color(0xFFA600FF)],
   ),
   ModuleCatalog.gatepass: _CardPalette(
     from: Color(0xFF1400FF),
@@ -506,9 +506,9 @@ const _boardPalettes = <String, _CardPalette>{
     tiles: [Color(0xFF1400FF), Color(0xFF776CF5), Color(0xFFA600FF)],
   ),
   ModuleCatalog.canteen: _CardPalette(
-    from: Color(0xFF21157D),
-    to: Color(0xFF1400FF),
-    hero: Color(0xFF4D36C8),
+    from: Color(0xFF1400FF),
+    to: Color(0xFFA600FF),
+    hero: Color(0xFF30258D),
     plate: Color(0xFF776CF5),
     tiles: [
       Color(0xFF776CF5),
@@ -525,10 +525,10 @@ const _boardPalettes = <String, _CardPalette>{
 /// the calmer learner streak card without leaving the SuperCampus palette.
 const _staffAttendancePalette = _CardPalette(
   from: Color(0xFF1400FF),
-  to: Color(0xFF5C11D7),
+  to: Color(0xFFA600FF),
   hero: Color(0xFF30258D),
   plate: Color(0xFF776CF5),
-  tiles: [Color(0xFF776CF5), Color(0xFF5C4DD1), Color(0xFFA600FF)],
+  tiles: [Color(0xFF776CF5), Color(0xFF1400FF), Color(0xFFA600FF)],
 );
 
 /// Everything the boards did not draw is built from the module's own catalog
@@ -553,10 +553,9 @@ _CardPalette _paletteFor(ModuleDescriptor module, EffectivePermissions perms) {
 _CardPalette _paletteFromSeed(ModuleDescriptor module) {
   // Module identity comes from composition and iconography. Colour is the
   // product language shared by every tenant-facing card.
-  final flip = module.id.hashCode.isOdd;
   return _CardPalette(
-    from: flip ? const Color(0xFF1400FF) : const Color(0xFF30238F),
-    to: flip ? const Color(0xFFA600FF) : const Color(0xFF1400FF),
+    from: const Color(0xFF1400FF),
+    to: const Color(0xFFA600FF),
     hero: const Color(0xFF30258D),
     plate: const Color(0xFF776CF5),
     tiles: const [
