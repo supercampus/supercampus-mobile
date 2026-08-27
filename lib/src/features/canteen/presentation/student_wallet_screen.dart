@@ -4,7 +4,15 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../data/canteen_models.dart';
 
-class StudentWalletSheet extends StatelessWidget {
+/// Which history the wallet is showing.
+enum WalletHistory { orders, transactions }
+
+/// The wallet, and both records of what the money did.
+///
+/// Orders and transactions answer different questions — "what did I eat?" and
+/// "where did my balance go?" — but they are the same trail seen twice, so they
+/// live together here rather than being scattered across the app.
+class StudentWalletSheet extends StatefulWidget {
   const StudentWalletSheet({
     super.key,
     required this.store,
@@ -13,6 +21,17 @@ class StudentWalletSheet extends StatelessWidget {
 
   final CanteenStore store;
   final Future<WalletTopUpResult> Function(double amount) onTopUp;
+
+  @override
+  State<StudentWalletSheet> createState() => _StudentWalletSheetState();
+}
+
+class _StudentWalletSheetState extends State<StudentWalletSheet> {
+  WalletHistory _history = WalletHistory.orders;
+
+  CanteenStore get store => widget.store;
+  Future<WalletTopUpResult> Function(double amount) get onTopUp =>
+      widget.onTopUp;
 
   Future<void> _openTopUp(BuildContext context) async {
     final result = await showModalBottomSheet<WalletTopUpResult>(
@@ -132,13 +151,35 @@ class StudentWalletSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            Text(
-              'Transaction history',
-              style: Theme.of(context).textTheme.titleLarge,
+            SegmentedButton<WalletHistory>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(
+                  value: WalletHistory.orders,
+                  icon: Icon(Icons.receipt_long_outlined),
+                  label: Text('Orders'),
+                ),
+                ButtonSegment(
+                  value: WalletHistory.transactions,
+                  icon: Icon(Icons.swap_vert),
+                  label: Text('Transactions'),
+                ),
+              ],
+              selected: {_history},
+              onSelectionChanged: (selection) =>
+                  setState(() => _history = selection.first),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
+            if (_history == WalletHistory.orders)
+              Flexible(child: _OrderHistory(orders: store.orders))
+            else
             Flexible(
-              child: ListView.separated(
+              child: store.walletTransactions.isEmpty
+                  ? const _EmptyHistory(
+                      icon: Icons.swap_vert,
+                      message: 'No transactions yet.',
+                    )
+                  : ListView.separated(
                 shrinkWrap: true,
                 itemCount: store.walletTransactions.length,
                 separatorBuilder: (_, _) =>
@@ -207,6 +248,122 @@ class StudentWalletSheet extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Past orders, newest first.
+///
+/// Items lead, because "what did I order?" is the question being asked; the
+/// order number and status follow in a quieter line.
+class _OrderHistory extends StatelessWidget {
+  const _OrderHistory({required this.orders});
+
+  final List<CanteenOrder> orders;
+
+  @override
+  Widget build(BuildContext context) {
+    if (orders.isEmpty) {
+      return const _EmptyHistory(
+        icon: Icons.receipt_long_outlined,
+        message: 'No orders yet.',
+      );
+    }
+    final sorted = [...orders]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    return ListView.separated(
+      shrinkWrap: true,
+      itemCount: sorted.length,
+      separatorBuilder: (_, _) => const Divider(height: 1, indent: 56),
+      itemBuilder: (context, index) {
+        final order = sorted[index];
+        final settled = !order.status.isActive;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: settled
+                      ? const Color(0xFFF1F2F4)
+                      : const Color(0xFFEAF1FE),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  settled ? Icons.check_rounded : Icons.schedule,
+                  size: 20,
+                  color: settled
+                      ? AppColors.muted
+                      : const Color(0xFF2563EB),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      order.lines
+                          .map(
+                            (line) => line.quantity > 1
+                                ? '${line.quantity} x ${line.item.name}'
+                                : line.item.name,
+                          )
+                          .join(', '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.1,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '#${order.displayId} · ${formatShortDate(order.createdAt)} · ${order.status.label}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                formatCurrency(order.total),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _EmptyHistory extends StatelessWidget {
+  const _EmptyHistory({required this.icon, required this.message});
+
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 34),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 30, color: AppColors.muted),
+          const SizedBox(height: 10),
+          Text(message, style: Theme.of(context).textTheme.bodyMedium),
+        ],
       ),
     );
   }

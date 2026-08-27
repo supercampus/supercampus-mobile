@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/campus_nav_bar.dart';
 import '../../authentication/data/auth_repository.dart';
-import '../data/mock_timetable_repository.dart';
+import '../data/timetable_repository.dart';
 import '../data/timetable_models.dart';
 import 'widgets/daily_period_strip.dart';
 import 'widgets/month_calendar_dialog.dart';
@@ -17,7 +18,7 @@ class FacultyDashboardScreen extends StatefulWidget {
   });
 
   final UserSession session;
-  final MockTimetableRepository repository;
+  final TimetableRepository repository;
 
   @override
   State<FacultyDashboardScreen> createState() => _FacultyDashboardScreenState();
@@ -45,33 +46,61 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
-      body: _bottomNavIndex == 0
-          ? _buildScheduleView(context)
-          : _buildSubstitutionsHub(context),
-      floatingActionButton: FloatingActionButton(
-        shape: const CircleBorder(),
-        backgroundColor: AppColors.primary,
-        onPressed: () => _showRequestSubstitutionModal(context),
-        tooltip: 'Request Substitution',
-        child: const Icon(Icons.swap_calls, color: Colors.white, size: 26),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _bottomNavIndex,
-        onTap: (idx) => setState(() => _bottomNavIndex = idx),
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: Colors.grey.shade600,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
-            label: 'My Schedule',
+      // Sections of this page, at the top of it. The bottom of the screen
+      // belongs to the one nav bar the module host floats there.
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+            child: SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<int>(
+                segments: const [
+                  ButtonSegment(
+                    value: 0,
+                    icon: Icon(Icons.calendar_today_outlined),
+                    label: Text('My schedule'),
+                  ),
+                  ButtonSegment(
+                    value: 1,
+                    icon: Icon(Icons.swap_horiz_outlined),
+                    label: Text('Substitutions'),
+                  ),
+                ],
+                selected: {_bottomNavIndex},
+                showSelectedIcon: false,
+                onSelectionChanged: (value) =>
+                    setState(() => _bottomNavIndex = value.first),
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.swap_horiz_outlined),
-            activeIcon: Icon(Icons.swap_horiz),
-            label: 'Substitutions',
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom:
+                    CampusNavBar.heightFor(context) +
+                    MediaQuery.paddingOf(context).bottom,
+              ),
+              child: _bottomNavIndex == 0
+                  ? _buildScheduleView(context)
+                  : _buildSubstitutionsHub(context),
+            ),
           ),
         ],
+      ),
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(
+          bottom:
+              CampusNavBar.heightFor(context) +
+              MediaQuery.paddingOf(context).bottom,
+        ),
+        child: FloatingActionButton(
+          shape: const CircleBorder(),
+          backgroundColor: AppColors.primary,
+          onPressed: () => _showRequestSubstitutionModal(context),
+          tooltip: 'Request Substitution',
+          child: const Icon(Icons.swap_calls, color: Colors.white, size: 26),
+        ),
       ),
     );
   }
@@ -85,9 +114,12 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
 
     // Get faculty schedule entries for today
     final facultyName = widget.session.displayName;
+    final facultyUserId =
+        widget.session.parseJwtClaims()['sub']?.toString() ??
+        widget.session.staffId;
     final allFacultyEntries = widget.repository.getEntriesForFaculty(
       facultyName,
-      facultyId: widget.session.staffId,
+      facultyId: facultyUserId,
     );
     final dayEntries = allFacultyEntries
         .where((e) => e.dayOfWeek.toLowerCase() == selectedDayStr.toLowerCase())

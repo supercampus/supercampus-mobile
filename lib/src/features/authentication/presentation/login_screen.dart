@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/skeleton_loading.dart';
 import '../data/auth_repository.dart';
 
 enum _AuthView { welcome, institution, signIn, resetPassword }
@@ -51,6 +52,19 @@ class _LoginScreenState extends State<LoginScreen> {
       return 'Enter a valid email address.';
     }
     return null;
+  }
+
+  String? _validateIdentifier(String? value) {
+    final identifier = value?.trim() ?? '';
+    if (identifier.isEmpty) return 'Enter your email address or mobile number.';
+    final isEmail = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(identifier);
+    final phoneDigits = identifier.replaceAll(RegExp(r'\D'), '');
+    if (identifier.contains('@')) {
+      return isEmail ? null : 'Enter a valid email address or mobile number.';
+    }
+    return phoneDigits.length >= 10 && phoneDigits.length <= 15
+        ? null
+        : 'Enter a valid email address or mobile number.';
   }
 
   String? _validatePassword(String? value) {
@@ -107,7 +121,6 @@ class _LoginScreenState extends State<LoginScreen> {
       final session = await widget.authRepository.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        role: UserRole.student,
         tenantDomain: _institutionController.text,
       );
       if (mounted) widget.onSignedIn(session);
@@ -185,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 obscurePassword: _obscurePassword,
                 isSubmitting: _isSubmitting,
                 errorMessage: _errorMessage,
-                validateEmail: _validateEmail,
+                validateEmail: _validateIdentifier,
                 validatePassword: _validatePassword,
                 onBack: () => setState(() => _view = _AuthView.institution),
                 onTogglePassword: () =>
@@ -557,15 +570,15 @@ class _SignInView extends StatelessWidget {
               ),
               const SizedBox(height: 34),
               _FieldLabel(
-                label: 'Email address',
+                label: 'Email address or mobile number',
                 child: TextFormField(
                   controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  keyboardType: TextInputType.text,
                   textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.email],
+                  autofillHints: const [AutofillHints.username],
                   decoration: const InputDecoration(
-                    hintText: 'name@college.edu',
-                    prefixIcon: Icon(Icons.mail_outline_rounded),
+                    hintText: 'name@college.edu or mobile number',
+                    prefixIcon: Icon(Icons.person_outline_rounded),
                   ),
                   validator: validateEmail,
                   onFieldSubmitted: (_) => passwordFocusNode.requestFocus(),
@@ -614,23 +627,21 @@ class _SignInView extends StatelessWidget {
                 const SizedBox(height: 18),
               ] else
                 const SizedBox(height: 14),
-              FilledButton(
-                onPressed: isSubmitting ? null : onSubmit,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.ink,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(54),
+              if (isSubmitting)
+                const SkeletonBox(
+                  height: 54,
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                )
+              else
+                FilledButton(
+                  onPressed: onSubmit,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.ink,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(54),
+                  ),
+                  child: const Text('Sign in'),
                 ),
-                child: isSubmitting
-                    ? const SizedBox.square(
-                        dimension: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Sign in'),
-              ),
               const SizedBox(height: 18),
               Text(
                 'Your access and campus services are managed by your institution administrator.',
@@ -730,23 +741,21 @@ class _ResetPasswordView extends StatelessWidget {
               _ErrorBanner(message: errorMessage!),
             ],
             const SizedBox(height: 24),
-            FilledButton(
-              onPressed: isSubmitting ? null : onSubmit,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.ink,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(54),
+            if (isSubmitting)
+              const SkeletonBox(
+                height: 54,
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              )
+            else
+              FilledButton(
+                onPressed: onSubmit,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.ink,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(54),
+                ),
+                child: const Text('Send reset link'),
               ),
-              child: isSubmitting
-                  ? const SizedBox.square(
-                      dimension: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text('Send reset link'),
-            ),
           ],
         ),
       ),

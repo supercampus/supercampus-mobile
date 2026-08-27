@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/access/academic_presentation.dart';
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/slice_nav_bar.dart';
+import '../../../core/widgets/campus_nav_bar.dart';
 import '../../authentication/data/auth_repository.dart';
+import '../../advisor/data/advisor_students_repository.dart';
+import '../../advisor/presentation/advisor_students_section.dart';
 import '../../faculty/data/faculty_models.dart';
 import '../../faculty/data/mock_faculty_repository.dart';
 import '../../insights/data/insight.dart';
+import '../data/glance_source.dart';
 import 'module_stack.dart';
+import 'today_glance.dart';
 import 'widgets/home_sheets.dart';
 import 'widgets/home_top_bar.dart';
 
@@ -30,8 +34,11 @@ class ModuleDashboardScreen extends StatefulWidget {
     required this.onSignOut,
     required this.onThemeModeChanged,
     this.onQuickAction,
+    this.onOpenAttendanceClass,
     this.onScan,
     this.dashboard,
+    this.glanceSource,
+    this.advisorStudentsSource,
   });
 
   final UserSession session;
@@ -46,6 +53,7 @@ class ModuleDashboardScreen extends StatefulWidget {
     String requiredAction,
   )?
   onQuickAction;
+  final ValueChanged<TodayClass>? onOpenAttendanceClass;
 
   /// The scan button in the middle of the nav bar. Hidden when null. Takes
   /// the caller's context so the owner of navigation can push the scanner
@@ -55,38 +63,60 @@ class ModuleDashboardScreen extends StatefulWidget {
   /// Replaces the insight surface below the greeting.
   final Widget? dashboard;
 
+  /// Supplies "your day". Null leaves the section empty rather than inventing
+  /// numbers for it.
+  final GlanceSource? glanceSource;
+  final AdvisorStudentsSource? advisorStudentsSource;
+
   @override
   State<ModuleDashboardScreen> createState() => _ModuleDashboardScreenState();
 }
 
 class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
-  bool _navCollapsed = false;
   List<Insight> _insights = const [];
+  GlanceFacts _glance = GlanceFacts.empty;
+  String _selectedNavId = 'home';
 
-  /// Reading down closes the bar, coming back up reopens it. Driven by the
-  /// gesture direction rather than by the offset, so a short page that only
-  /// scrolls a little still behaves the same as a long one.
-  bool _onScroll(UserScrollNotification notification) {
-    if (notification.metrics.axis != Axis.vertical) return false;
-
-    final collapsed = switch (notification.direction) {
-      ScrollDirection.reverse => true,
-      ScrollDirection.forward => false,
-      ScrollDirection.idle => _navCollapsed,
-    };
-
-    if (collapsed != _navCollapsed) setState(() => _navCollapsed = collapsed);
-    return false;
+  @override
+  void initState() {
+    super.initState();
+    _loadGlance();
   }
 
+  @override
+  void didUpdateWidget(ModuleDashboardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Grants decide the shape, and the shape decides what is fetched, so a
+    // permission change has to re-ask rather than keep the previous day.
+    if (oldWidget.permissions != widget.permissions ||
+        oldWidget.glanceSource != widget.glanceSource) {
+      _loadGlance();
+    }
+  }
+
+  Future<void> _loadGlance() async {
+    final source = widget.glanceSource;
+    if (source == null || !glanceNeedsLoading(widget.permissions)) {
+      if (mounted) setState(() => _glance = GlanceFacts.empty);
+      return;
+    }
+    setState(() => _glance = GlanceFacts.pending);
+    final facts = await source.load(dayShapeFor(widget.permissions));
+    if (mounted) setState(() => _glance = facts);
+  }
+
+  /// The insights that are asking for something, rather than just
+  /// reporting. Only these put the dot on the bell.
   List<Insight> get _alerts => [
-    for (final i in _insights)
-      if (i.tone == InsightTone.caution || i.tone == InsightTone.urgent) i,
+    for (final insight in _insights)
+      if (insight.tone == InsightTone.urgent ||
+          insight.tone == InsightTone.caution)
+        insight,
   ];
 
   @override
   Widget build(BuildContext context) {
-    final modules = widget.permissions.visibleModules();
+    final modules = presentedModules(widget.permissions);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -106,43 +136,34 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                 Expanded(
                   child: Stack(
                     children: [
-                      NotificationListener<UserScrollNotification>(
-                        onNotification: _onScroll,
-                        child: _Feed(
-                          session: widget.session,
-                          permissions: widget.permissions,
-                          modules: modules,
-                          dashboard: widget.dashboard,
-                          onOpenModule: widget.onOpenModule,
-                          onQuickAction: widget.onQuickAction,
-                          onInsightsChanged: (insights) {
-                            if (mounted) setState(() => _insights = insights);
-                          },
-                        ),
+                      _Feed(
+                        session: widget.session,
+                        permissions: widget.permissions,
+                        modules: modules,
+                        dashboard: widget.dashboard,
+                        onOpenModule: widget.onOpenModule,
+                        onQuickAction: widget.onQuickAction,
+                        onInsightsChanged: (insights) {
+                          if (mounted) setState(() => _insights = insights);
+                        },
+                        glance: _glance,
+                        advisorStudentsSource: widget.advisorStudentsSource,
+                        onOpenAttendanceClass: widget.onOpenAttendanceClass,
                       ),
                       Positioned(
                         left: 0,
                         right: 0,
                         bottom: MediaQuery.paddingOf(context).bottom + 10,
-                        child: SliceNavBar(
-                          destinations: _destinations(),
-                          selectedId: 'home',
-                          onSelect: (id) {
-                            if (id == 'home') return;
-                            if (id == 'profile') {
-                              _openProfile();
-                              return;
-                            }
-                            if (id == 'modules') {
-                              _openModules();
-                              return;
-                            }
-                            widget.onOpenModule(id);
-                          },
-                          onCenterTap: widget.onScan == null
+                        child: CampusNavBar(
+                          selectedId: _selectedNavId,
+                          initials: initialsOf(widget.session.displayName),
+                          avatarUrl: widget.session.photoUrl,
+                          onHome: () {},
+                          onModules: _openModules,
+                          onProfile: _openProfile,
+                          onScan: widget.onScan == null
                               ? null
                               : () => widget.onScan!(context),
-                          centerTooltip: 'Scanner',
                         ),
                       ),
                     ],
@@ -155,26 +176,6 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       ),
     );
   }
-
-  /// Fixed primary navigation for the student portal.
-  List<SliceNavDestination> _destinations() => const [
-    SliceNavDestination(id: 'home', label: 'Home', icon: Icons.home_rounded),
-    SliceNavDestination(
-      id: ModuleCatalog.academics,
-      label: 'Academics',
-      icon: Icons.school_outlined,
-    ),
-    SliceNavDestination(
-      id: 'modules',
-      label: 'Modules',
-      icon: Icons.grid_view_rounded,
-    ),
-    SliceNavDestination(
-      id: 'profile',
-      label: 'Profile',
-      icon: Icons.person_outline,
-    ),
-  ];
 
   void _openSearch() => showHomeSheet(
     context: context,
@@ -217,15 +218,19 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
     ),
   );
 
-  void _openModules() => showHomeSheet(
-    context: context,
-    title: 'Modules',
-    expand: true,
-    child: ModuleListSheet(
-      permissions: widget.permissions,
-      onOpenModule: widget.onOpenModule,
-    ),
-  );
+  Future<void> _openModules() async {
+    setState(() => _selectedNavId = 'modules');
+    await showHomeSheet(
+      context: context,
+      title: 'Modules',
+      expand: true,
+      child: ModuleListSheet(
+        permissions: widget.permissions,
+        onOpenModule: widget.onOpenModule,
+      ),
+    );
+    if (mounted) setState(() => _selectedNavId = 'home');
+  }
 }
 
 class _Feed extends StatelessWidget {
@@ -237,11 +242,15 @@ class _Feed extends StatelessWidget {
     required this.onOpenModule,
     this.onQuickAction,
     required this.onInsightsChanged,
+    required this.glance,
+    required this.advisorStudentsSource,
+    required this.onOpenAttendanceClass,
   });
 
   final UserSession session;
   final EffectivePermissions permissions;
   final List<ModuleDescriptor> modules;
+  final GlanceFacts glance;
   final Widget? dashboard;
   final ValueChanged<String> onOpenModule;
   final void Function(
@@ -252,6 +261,8 @@ class _Feed extends StatelessWidget {
   )?
   onQuickAction;
   final ValueChanged<List<Insight>> onInsightsChanged;
+  final AdvisorStudentsSource? advisorStudentsSource;
+  final ValueChanged<TodayClass>? onOpenAttendanceClass;
 
   @override
   Widget build(BuildContext context) {
@@ -265,7 +276,9 @@ class _Feed extends StatelessWidget {
         0,
         4,
         0,
-        SliceNavBar.height + MediaQuery.paddingOf(context).bottom + 20,
+        CampusNavBar.heightFor(context) +
+            MediaQuery.paddingOf(context).bottom +
+            20,
       ),
       children: [
         _Greeting(session: session),
@@ -292,12 +305,25 @@ class _Feed extends StatelessWidget {
               permissions: permissions,
               onOpenModule: onOpenModule,
               onQuickAction: onQuickAction,
+              // The learner's standing is already loaded for the glance below,
+              // so their streak costs no second request. Null until it lands,
+              // which leaves the strip in its "not taken yet" state rather
+              // than flashing a filled one it is about to correct.
+              content: ModuleCardContent(
+                attendanceMarks: glance.standing?.streak,
+              ),
             ),
           ),
           const SizedBox(height: 24),
-          _DashboardOverview(
+          if (advisorStudentsSource != null) ...[
+            AdvisorStudentsSection(source: advisorStudentsSource!),
+            const SizedBox(height: 24),
+          ],
+          TodayGlance(
             permissions: permissions,
+            facts: glance,
             onOpenModule: onOpenModule,
+            onOpenClass: onOpenAttendanceClass,
           ),
         ],
         if (planned.isNotEmpty) ...[
@@ -316,241 +342,6 @@ class _Feed extends StatelessWidget {
           ),
         ],
       ],
-    );
-  }
-}
-
-class _DashboardOverview extends StatelessWidget {
-  const _DashboardOverview({
-    required this.permissions,
-    required this.onOpenModule,
-  });
-
-  final EffectivePermissions permissions;
-  final ValueChanged<String> onOpenModule;
-
-  @override
-  Widget build(BuildContext context) {
-    final brandPrimary = Theme.of(context).colorScheme.primary;
-    final brandSecondary = Theme.of(context).colorScheme.secondary;
-    final items = <_OverviewItem>[
-      if (permissions.can(
-        ModuleCatalog.academics,
-        'attendance',
-        ModuleActions.read,
-      ))
-        _OverviewItem(
-          moduleId: ModuleCatalog.academics,
-          icon: Icons.fact_check_outlined,
-          label: 'Attendance',
-          value: '74%',
-          detail: 'Current semester',
-          color: brandPrimary,
-        ),
-      if (!permissions.can(
-            ModuleCatalog.academics,
-            'attendance',
-            ModuleActions.read,
-          ) &&
-          permissions.can(
-            ModuleCatalog.attendance,
-            'roster',
-            ModuleActions.read,
-          ))
-        _OverviewItem(
-          moduleId: ModuleCatalog.attendance,
-          icon: Icons.fact_check_outlined,
-          label: 'Attendance roster',
-          value: '3 pending',
-          detail: 'Needs review',
-          color: brandPrimary,
-        ),
-      if (permissions.can(
-        ModuleCatalog.timetable,
-        'schedule',
-        ModuleActions.read,
-      ))
-        _OverviewItem(
-          moduleId: ModuleCatalog.timetable,
-          icon: Icons.calendar_today_outlined,
-          label: 'Next class',
-          value: '11:00 AM',
-          detail: 'Microwave Engineering',
-          color: brandSecondary,
-        ),
-      if (permissions.can(
-        ModuleCatalog.examination,
-        'grades',
-        ModuleActions.read,
-      ))
-        _OverviewItem(
-          moduleId: ModuleCatalog.examination,
-          icon: Icons.school_outlined,
-          label: 'Current CGPA',
-          value: '8.42',
-          detail: 'Semester 6 results',
-          color: brandPrimary,
-        ),
-      if (permissions.can(
-        ModuleCatalog.gatepass,
-        'outpass',
-        ModuleActions.read,
-      ))
-        _OverviewItem(
-          moduleId: ModuleCatalog.gatepass,
-          icon: Icons.directions_walk_outlined,
-          label: 'Gatepass',
-          value: '1 pending',
-          detail: 'Request status',
-          color: brandSecondary,
-        ),
-      if (permissions.can(ModuleCatalog.canteen, 'order', ModuleActions.read))
-        _OverviewItem(
-          moduleId: ModuleCatalog.canteen,
-          icon: Icons.restaurant_outlined,
-          label: 'Canteen order',
-          value: 'Ready',
-          detail: 'Pickup status',
-          color: brandPrimary,
-        ),
-      if (permissions.can(ModuleCatalog.library, 'qr_pass', ModuleActions.read))
-        _OverviewItem(
-          moduleId: ModuleCatalog.library,
-          icon: Icons.local_library_outlined,
-          label: 'Library pass',
-          value: 'Active',
-          detail: 'Today\'s access',
-          color: brandSecondary,
-        ),
-      if (permissions.can(
-        ModuleCatalog.vendorManagement,
-        'purchase_orders',
-        ModuleActions.read,
-      ))
-        _OverviewItem(
-          moduleId: ModuleCatalog.vendorManagement,
-          icon: Icons.receipt_long_outlined,
-          label: 'Purchase orders',
-          value: '4 open',
-          detail: 'Vendor workflow',
-          color: brandPrimary,
-        ),
-      if (permissions.can(
-        ModuleCatalog.tuitionFee,
-        'invoice',
-        ModuleActions.read,
-      ))
-        _OverviewItem(
-          moduleId: ModuleCatalog.tuitionFee,
-          icon: Icons.account_balance_outlined,
-          label: 'Fee balance',
-          value: '₹18,500',
-          detail: 'Due this term',
-          color: brandSecondary,
-        ),
-    ];
-
-    if (items.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionLabel('Today at a glance'),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: items.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              mainAxisExtent: 140,
-            ),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return _OverviewCard(
-                item: item,
-                onTap: () => onOpenModule(item.moduleId),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _OverviewItem {
-  const _OverviewItem({
-    required this.moduleId,
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.detail,
-    required this.color,
-  });
-
-  final String moduleId;
-  final IconData icon;
-  final String label;
-  final String value;
-  final String detail;
-  final Color color;
-}
-
-class _OverviewCard extends StatelessWidget {
-  const _OverviewCard({required this.item, required this.onTap});
-
-  final _OverviewItem item;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Theme.of(context).colorScheme.surface,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            border: Border.all(color: Theme.of(context).dividerColor),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(item.icon, color: item.color, size: 21),
-              const Spacer(),
-              Text(
-                item.label,
-                style: Theme.of(context).textTheme.bodyMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                item.value,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: item.color,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                item.detail,
-                style: Theme.of(context).textTheme.bodySmall,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

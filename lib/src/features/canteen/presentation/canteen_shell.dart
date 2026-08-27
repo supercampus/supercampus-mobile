@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/skeleton_loading.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/canteen_models.dart';
 import '../data/canteen_repository.dart';
 import '../data/mock_canteen_repository.dart';
 import 'canteen_cart_screen.dart';
+import 'canteen_owner_home.dart';
 import 'canteen_orders_screen.dart';
 import 'canteen_scanner_screen.dart';
 import 'student_canteen_home.dart';
@@ -37,6 +41,16 @@ class _CanteenShellState extends State<CanteenShell> {
   CanteenStore? _store;
   String? _error;
   var _selectedIndex = 0;
+  Timer? _refreshTimer;
+  var _loadInProgress = false;
+  var _ownerWorkMode = true;
+
+  bool get _canUseWorkMode {
+    final session = widget.session;
+    return _store?.canManage == true &&
+        session.role != UserRole.student &&
+        session.activePortalFamily != PortalFamily.student;
+  }
 
   @override
   void initState() {
@@ -49,10 +63,24 @@ class _CanteenShellState extends State<CanteenShell> {
         );
     _selectedIndex = widget.initialAction == 'orders' ? 1 : 0;
     _loadStore();
+    if (widget.repository != null) {
+      _refreshTimer = Timer.periodic(
+        const Duration(seconds: 3),
+        (_) => _loadStore(silent: true),
+      );
+    }
   }
 
-  Future<void> _loadStore() async {
-    setState(() => _error = null);
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadStore({bool silent = false}) async {
+    if (_loadInProgress) return;
+    _loadInProgress = true;
+    if (!silent) setState(() => _error = null);
     try {
       final store = await _repository.loadStore();
       if (mounted) {
@@ -64,13 +92,54 @@ class _CanteenShellState extends State<CanteenShell> {
         }
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted && !silent) {
         setState(() {
           _error =
               'The canteen menu is unavailable. Check your connection and retry.';
         });
       }
+    } finally {
+      _loadInProgress = false;
     }
+  }
+
+  Future<void> _updateOwnerMode(CanteenStaffMode mode) async {
+    final state = await _repository.updateStaffState(
+      mode: mode,
+      shopOpen: _store?.staffState.shopOpen,
+    );
+    if (!mounted || _store == null) return;
+    setState(() {
+      _ownerWorkMode = mode == CanteenStaffMode.work;
+      _store = _store!.copyWith(staffState: state);
+    });
+  }
+
+  Future<void> _updateShopOpen(bool open) async {
+    final state = await _repository.updateStaffState(
+      mode: CanteenStaffMode.work,
+      shopOpen: open,
+    );
+    if (!mounted || _store == null) return;
+    setState(() => _store = _store!.copyWith(staffState: state));
+  }
+
+  Future<void> _updateOrderStatus(
+    String orderId,
+    CanteenOrderStatus status,
+  ) async {
+    await _repository.updateOrderStatus(orderId, status);
+    await _loadStore(silent: true);
+  }
+
+  Future<void> _saveMenuItem(CanteenMenuItem item, bool create) async {
+    await _repository.saveMenuItem(item, create: create);
+    await _loadStore(silent: true);
+  }
+
+  Future<void> _deleteMenuItem(String itemId) async {
+    await _repository.deleteMenuItem(itemId);
+    await _loadStore(silent: true);
   }
 
   void _addItem(CanteenMenuItem item) {
@@ -98,18 +167,20 @@ class _CanteenShellState extends State<CanteenShell> {
         .toList();
   }
 
-  Future<OrderPlacementResult> _placeOrder(FulfilmentMode mode) async {
-    final result = await _repository.placeOrder(
-      lines: _cartLines(),
-      fulfilmentMode: mode,
-    );
+  Future<OrderPlacementResult> _placeOrder() async {
+    final result = await _repository.placeOrder(lines: _cartLines());
     if (!mounted) return result;
     final store = _store!;
     setState(() {
+      // A cart spanning shops comes back as several orders, each with its own
+      // QR, paid from the one wallet.
       _store = store.copyWith(
         walletBalance: result.balance,
-        orders: [result.order, ...store.orders],
-        walletTransactions: [result.transaction, ...store.walletTransactions],
+        orders: [...result.orders, ...store.orders],
+        walletTransactions: [
+          ...result.transactions,
+          ...store.walletTransactions,
+        ],
       );
       _cart.clear();
       _selectedIndex = 1;
@@ -217,13 +288,30 @@ class _CanteenShellState extends State<CanteenShell> {
     }
 
     if (store == null) {
-      return const Scaffold(
-        body: Center(
-          child: SizedBox.square(
-            dimension: 30,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
-          ),
-        ),
+      return const Scaffold(body: SkeletonList(rows: 6, rowHeight: 84));
+    }
+
+    if (_canUseWorkMode && _ownerWorkMode) {
+      final ownerStore = store.staffState.mode == CanteenStaffMode.work
+          ? store
+          : store.copyWith(
+              staffState: CanteenStaffState(
+                mode: CanteenStaffMode.work,
+                shopOpen: store.staffState.shopOpen,
+              ),
+            );
+      return CanteenOwnerHome(
+        store: ownerStore,
+        onExitModule: widget.onExitModule,
+        onSignOut: widget.onSignOut,
+        onRefresh: () => _loadStore(silent: true),
+        onModeChanged: _updateOwnerMode,
+        onShopOpenChanged: _updateShopOpen,
+        onOrderStatusChanged: _updateOrderStatus,
+        onSaveMenuItem: _saveMenuItem,
+        onDeleteMenuItem: _deleteMenuItem,
+        onUploadMedia: (bytes, filename) =>
+            _repository.uploadMedia(bytes, filename: filename),
       );
     }
 
@@ -237,8 +325,14 @@ class _CanteenShellState extends State<CanteenShell> {
         onOpenWallet: () => _openWallet(context),
         onOpenProfile: () => _openProfile(context),
         onExitModule: widget.onExitModule,
+        onWorkMode: _canUseWorkMode
+            ? () => _updateOwnerMode(CanteenStaffMode.work)
+            : null,
       ),
-      CanteenOrdersScreen(orders: store.orders),
+      CanteenOrdersScreen(
+        orders: store.orders,
+        onBack: () => setState(() => _selectedIndex = 0),
+      ),
       const CanteenScannerScreen(),
     ];
 

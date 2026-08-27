@@ -1,5 +1,10 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+
+import '../../../core/widgets/module_navigation_buttons.dart';
+import '../../../core/widgets/skeleton_loading.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/gatepass_models.dart';
 import '../data/gatepass_repository.dart';
@@ -28,11 +33,20 @@ class GatepassShell extends StatefulWidget {
   State<GatepassShell> createState() => _GatepassShellState();
 }
 
+/// How far the device must move before the app re-asks the API which side of
+/// the fence it is on. Small enough to catch walking through the gate, large
+/// enough that GPS jitter while sitting still does not rotate the pass.
+const _zoneCheckDistanceMetres = 25;
+
 class _GatepassShellState extends State<GatepassShell> {
   late final GatepassRepository _repository;
   GatepassStore? _store;
   String? _error;
   var _selectedIndex = 0;
+  StreamSubscription<Position>? _positionSubscription;
+  var _receivedPositionBaseline = false;
+  var _loadInFlight = false;
+  var _loadQueued = false;
 
   @override
   void initState() {
@@ -49,10 +63,53 @@ class _GatepassShellState extends State<GatepassShell> {
       _ => 0,
     };
     _load();
+    if (widget.repository != null) _startWatching();
   }
 
-  Future<void> _load() async {
-    setState(() => _error = null);
+  /// Crossing the campus boundary is the only automatic refresh trigger. Each
+  /// activation rotates the token server-side, so a time-based refresh would
+  /// repeatedly invalidate a QR while its owner is standing still.
+  void _startWatching() {
+    _positionSubscription =
+        Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: _zoneCheckDistanceMetres,
+          ),
+        ).listen(
+          (_) {
+            // Android commonly emits the current fix as soon as a listener is
+            // attached. The initial load already used that fix, so consuming it
+            // again would rotate the newly rendered QR immediately.
+            if (!_receivedPositionBaseline) {
+              _receivedPositionBaseline = true;
+              return;
+            }
+            unawaited(_load(silent: true));
+          },
+          // Permission can be revoked or location switched off mid-session.
+          // Keep the last verified screen instead of replacing it with an error.
+          onError: (_) {},
+        );
+  }
+
+  @override
+  void dispose() {
+    unawaited(_positionSubscription?.cancel());
+    super.dispose();
+  }
+
+  Future<void> _load({bool silent = false}) async {
+    // Location and timer events can arrive together. Serializing activation is
+    // important because every successful request rotates the server-side QR;
+    // overlapping requests could otherwise leave the UI showing the token
+    // invalidated by the request that finished just before it.
+    if (_loadInFlight) {
+      _loadQueued = true;
+      return;
+    }
+    _loadInFlight = true;
+    if (!silent) setState(() => _error = null);
     try {
       final store = await _repository.loadStore();
       if (mounted) {
@@ -63,9 +120,20 @@ class _GatepassShellState extends State<GatepassShell> {
           });
         }
       }
+    } on GatepassException catch (error) {
+      // The repository already words its failures for the reader; replacing
+      // them with "unavailable" throws away the one sentence that says what to
+      // do about it.
+      if (mounted && !silent) setState(() => _error = error.message);
     } catch (_) {
-      if (mounted) {
+      if (mounted && !silent) {
         setState(() => _error = 'Gatepass services are unavailable.');
+      }
+    } finally {
+      _loadInFlight = false;
+      if (_loadQueued && mounted) {
+        _loadQueued = false;
+        unawaited(_load(silent: true));
       }
     }
   }
@@ -151,6 +219,14 @@ class _GatepassShellState extends State<GatepassShell> {
     ).showSnackBar(SnackBar(content: Text('${visitor.id} sent for review.')));
   }
 
+  void _handleBack() {
+    if (_selectedIndex == 0) {
+      widget.onExitModule();
+      return;
+    }
+    setState(() => _selectedIndex = 0);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_error != null) {
@@ -175,7 +251,7 @@ class _GatepassShellState extends State<GatepassShell> {
     }
     final store = _store;
     if (store == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: SkeletonList(rows: 5, rowHeight: 88));
     }
 
     final pages = [
@@ -197,8 +273,22 @@ class _GatepassShellState extends State<GatepassShell> {
       GatepassAccessScreen(store: store),
     ];
 
-    return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: pages),
+    const titles = ['Gatepass', 'Requests', 'Visitors', 'Gate access'];
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _handleBack();
+      },
+      child: Scaffold(
+        appBar: _selectedIndex == 0
+            ? null
+            : AppBar(
+                leading: ModuleBackButton(onPressed: _handleBack),
+                title: Text(titles[_selectedIndex]),
+                actions: [ModuleHomeButton(onPressed: widget.onExitModule)],
+              ),
+        body: IndexedStack(index: _selectedIndex, children: pages),
+      ),
     );
   }
 }

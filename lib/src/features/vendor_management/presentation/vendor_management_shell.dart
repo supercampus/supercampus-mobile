@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/module_navigation_buttons.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/mock_vendor_repository.dart';
@@ -45,9 +47,9 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF8A4B20),
         foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.home_outlined),
+        leading: ModuleBackButton(
           onPressed: widget.onExitModule,
+          color: Colors.white,
         ),
         title: const Text('Vendor Management'),
         actions: [
@@ -55,6 +57,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
             onPressed: _tab == 0 ? _addVendor : null,
             icon: const Icon(Icons.add_business_outlined),
           ),
+          ModuleHomeButton(onPressed: widget.onExitModule, color: Colors.white),
         ],
       ),
       body: IndexedStack(index: _tab, children: pages),

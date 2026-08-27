@@ -53,7 +53,8 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
     const double itemMargin = 10.0;
 
     final double screenWidth = MediaQuery.of(context).size.width;
-    final double targetOffset = (navBoxWidth + itemMargin) +
+    final double targetOffset =
+        (navBoxWidth + itemMargin) +
         (selectedIndex * (itemWidth + itemMargin)) -
         (screenWidth / 2) +
         (itemWidth / 2);
@@ -146,7 +147,10 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
                 child: Container(
                   width: 76,
                   margin: const EdgeInsets.only(right: 10, top: 4, bottom: 6),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -189,7 +193,8 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
 
               // Full Month Date Boxes (1 through daysInMonth)
               ...monthDates.map((date) {
-                final isSelected = date.year == widget.selectedDate.year &&
+                final isSelected =
+                    date.year == widget.selectedDate.year &&
                     date.month == widget.selectedDate.month &&
                     date.day == widget.selectedDate.day;
 
@@ -203,9 +208,15 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
                       duration: const Duration(milliseconds: 250),
                       curve: Curves.easeInOut,
                       width: 64,
-                      margin: const EdgeInsets.only(right: 10, top: 4, bottom: 6),
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+                      margin: const EdgeInsets.only(
+                        right: 10,
+                        top: 4,
+                        bottom: 6,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: isSelected ? AppColors.primary : Colors.white,
                         borderRadius: BorderRadius.circular(16),
@@ -271,7 +282,10 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
                 child: Container(
                   width: 76,
                   margin: const EdgeInsets.only(right: 10, top: 4, bottom: 6),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),

@@ -18,7 +18,8 @@ void main() {
 
     expect(store.student.name, 'Test Student');
     expect(store.student.residency, StudentResidency.hosteller);
-    expect(store.dailyPass.qrPayload, isNotEmpty);
+    // The mock never fails to activate, so this one is always present.
+    expect(store.dailyPass?.qrPayload, isNotEmpty);
     expect(store.requests, isNotEmpty);
     expect(store.movements, isNotEmpty);
   });

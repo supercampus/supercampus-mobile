@@ -80,13 +80,40 @@ class EffectivePermissions {
       }
     }
 
+    // Scopes arrive keyed either by module (`{"timetable": "own"}`) or, as
+    // /api/v1/bootstrap sends them, by permission
+    // (`{"attendance.roster.read": "assigned"}`). `scopeFor` is asked about a
+    // module, so the per-permission form has to be folded down to one scope per
+    // module or every lookup misses and falls back to `own` — which silently
+    // presents every staff member as a learner.
+    //
+    // A module's scope is the broadest of its permissions, matching how the
+    // backend merges the same values (`access_scope_rank` in state.rs). An
+    // explicit module-level entry is authoritative and wins over anything
+    // derived.
     final flatScopes = json['scopes'];
     if (flatScopes is Map) {
+      final derived = <String, PermissionScope>{};
+      final raw = <String, PermissionScope>{};
       for (final entry in flatScopes.entries) {
-        scopes[entry.key.toString()] = PermissionScopeX.parse(
-          entry.value as String?,
-        );
+        final key = entry.key.toString();
+        final scope = PermissionScopeX.parse(entry.value as String?);
+        raw[key] = scope;
+        final separator = key.indexOf('.');
+        if (separator <= 0) continue;
+        final moduleId = key.substring(0, separator);
+        final current = derived[moduleId];
+        // PermissionScope is declared narrowest-first, so `index` is the rank.
+        if (current == null || scope.index > current.index) {
+          derived[moduleId] = scope;
+        }
       }
+      // Derived first, then the entries as sent: a module id never contains a
+      // dot, so the only keys that can overwrite a derived scope are explicit
+      // module-level ones, which are authoritative. Per-permission entries are
+      // kept alongside so a caller can still ask about a single permission.
+      scopes.addAll(derived);
+      scopes.addAll(raw);
     }
 
     final rawBrand = json['tenantBrand'];

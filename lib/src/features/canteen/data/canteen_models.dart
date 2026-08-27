@@ -1,10 +1,24 @@
-enum MenuCategory { meals, snacks, drinks }
+/// The storefronts the canteen sells through.
+///
+/// Stationery is not food, so it brings its own sub-categories rather than
+/// sharing the food ones. That is why [CanteenMenuItem.category] is a free
+/// label owned by the storefront instead of a fixed enum.
+enum MenuStore { classic, bites, stationery }
 
-extension MenuCategoryLabel on MenuCategory {
+extension MenuStoreLabel on MenuStore {
   String get label => switch (this) {
-    MenuCategory.meals => 'Meals',
-    MenuCategory.snacks => 'Snacks',
-    MenuCategory.drinks => 'Drinks',
+    MenuStore.classic => 'Classic',
+    MenuStore.bites => 'Bites',
+    MenuStore.stationery => 'Stationery',
+  };
+
+  /// Wire value; matches the `store` column's check constraint.
+  String get apiValue => name;
+
+  static MenuStore parse(String? value) => switch (value) {
+    'bites' => MenuStore.bites,
+    'stationery' => MenuStore.stationery,
+    _ => MenuStore.classic,
   };
 }
 
@@ -16,18 +30,84 @@ class CanteenMenuItem {
     required this.category,
     required this.price,
     required this.isVegetarian,
+    this.store = MenuStore.classic,
+    this.shopKey,
     this.isPopular = false,
     this.isAvailable = true,
+    this.isInstant = false,
+    this.prepMinutes = 10,
+    this.imageUrl,
   });
 
   final String id;
   final String name;
   final String description;
-  final MenuCategory category;
+  final MenuStore store;
+  final String? shopKey;
+
+  String get effectiveShopKey =>
+      shopKey == null || shopKey!.trim().isEmpty ? store.apiValue : shopKey!;
+
+  /// A label within [store], named by whoever runs the counter — 'meals' for
+  /// food, 'Hair Care & Shampoo' for stationery.
+  final String category;
   final double price;
   final bool isVegetarian;
   final bool isPopular;
   final bool isAvailable;
+
+  /// Served straight from the counter; the menu badges these.
+  final bool isInstant;
+  final int prepMinutes;
+  final String? imageUrl;
+
+  CanteenMenuItem copyWith({
+    String? id,
+    String? name,
+    String? description,
+    MenuStore? store,
+    String? shopKey,
+    String? category,
+    double? price,
+    bool? isVegetarian,
+    bool? isPopular,
+    bool? isAvailable,
+    bool? isInstant,
+    int? prepMinutes,
+    String? imageUrl,
+  }) => CanteenMenuItem(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    description: description ?? this.description,
+    store: store ?? this.store,
+    shopKey: shopKey ?? this.shopKey,
+    category: category ?? this.category,
+    price: price ?? this.price,
+    isVegetarian: isVegetarian ?? this.isVegetarian,
+    isPopular: isPopular ?? this.isPopular,
+    isAvailable: isAvailable ?? this.isAvailable,
+    isInstant: isInstant ?? this.isInstant,
+    prepMinutes: prepMinutes ?? this.prepMinutes,
+    imageUrl: imageUrl ?? this.imageUrl,
+  );
+}
+
+class CanteenShop {
+  const CanteenShop({
+    required this.id,
+    required this.shopKey,
+    required this.name,
+    required this.category,
+    this.description = '',
+    this.isActive = true,
+  });
+
+  final String id;
+  final String shopKey;
+  final String name;
+  final String category;
+  final String description;
+  final bool isActive;
 }
 
 class CartLine {
@@ -39,18 +119,61 @@ class CartLine {
   double get total => item.price * quantity;
 }
 
-enum CanteenOrderStatus { preparing, ready, completed, cancelled }
+enum CanteenOrderStatus {
+  pending,
+  accepted,
+  preparing,
+  ready,
+  completed,
+  rejected,
+  cancelled,
+}
+
+/// How an order moves through the counter.
+///
+/// The queue advances one step at a time in one direction, so the card only
+/// ever offers the next step rather than a menu of states. `completed` is the
+/// terminal success state the API understands; the counter calls it delivered.
+extension CanteenOrderServiceFlow on CanteenOrderStatus {
+  CanteenOrderStatus? get nextServiceStep => switch (this) {
+    // A pending order goes straight to preparing: accepting it and starting it
+    // are the same action at a counter.
+    CanteenOrderStatus.pending => CanteenOrderStatus.preparing,
+    CanteenOrderStatus.accepted => CanteenOrderStatus.preparing,
+    CanteenOrderStatus.preparing => CanteenOrderStatus.ready,
+    CanteenOrderStatus.ready => CanteenOrderStatus.completed,
+    _ => null,
+  };
+
+  /// Settled orders cannot be rejected — the money has already moved.
+  bool get canReject => switch (this) {
+    CanteenOrderStatus.completed ||
+    CanteenOrderStatus.rejected ||
+    CanteenOrderStatus.cancelled => false,
+    _ => true,
+  };
+}
 
 extension CanteenOrderStatusLabel on CanteenOrderStatus {
   String get label => switch (this) {
+    CanteenOrderStatus.pending => 'Pending',
+    CanteenOrderStatus.accepted => 'Accepted',
     CanteenOrderStatus.preparing => 'Preparing',
     CanteenOrderStatus.ready => 'Ready for pickup',
     CanteenOrderStatus.completed => 'Completed',
+    CanteenOrderStatus.rejected => 'Rejected',
     CanteenOrderStatus.cancelled => 'Cancelled',
   };
 
-  bool get isActive =>
-      this == CanteenOrderStatus.preparing || this == CanteenOrderStatus.ready;
+  bool get isActive => switch (this) {
+    CanteenOrderStatus.pending ||
+    CanteenOrderStatus.accepted ||
+    CanteenOrderStatus.preparing ||
+    CanteenOrderStatus.ready => true,
+    _ => false,
+  };
+
+  String get apiValue => name;
 }
 
 enum FulfilmentMode { dineIn, pickup }
@@ -71,6 +194,8 @@ class CanteenOrder {
     required this.fulfilmentMode,
     required this.createdAt,
     this.tokenNumber,
+    this.orderNumber,
+    this.customerName,
   });
 
   final String id;
@@ -80,6 +205,23 @@ class CanteenOrder {
   final FulfilmentMode fulfilmentMode;
   final DateTime createdAt;
   final int? tokenNumber;
+  final String? orderNumber;
+  final String? customerName;
+
+  String get displayId => orderNumber ?? id;
+
+  CanteenOrder copyWith({CanteenOrderStatus? status, int? tokenNumber}) =>
+      CanteenOrder(
+        id: id,
+        lines: lines,
+        total: total,
+        status: status ?? this.status,
+        fulfilmentMode: fulfilmentMode,
+        createdAt: createdAt,
+        tokenNumber: tokenNumber ?? this.tokenNumber,
+        orderNumber: orderNumber,
+        customerName: customerName,
+      );
 
   int get itemCount => lines.fold(0, (total, line) => total + line.quantity);
 }
@@ -132,6 +274,11 @@ class CanteenStore {
     required this.menu,
     required this.orders,
     required this.walletTransactions,
+    this.shops = const [],
+    this.assignedShopKeys = const [],
+    this.canManage = false,
+    this.staffState = const CanteenStaffState(),
+    this.analytics = const CanteenAnalytics(),
   });
 
   final CanteenUser user;
@@ -139,20 +286,56 @@ class CanteenStore {
   final List<CanteenMenuItem> menu;
   final List<CanteenOrder> orders;
   final List<WalletTransaction> walletTransactions;
+  final List<CanteenShop> shops;
+  final List<String> assignedShopKeys;
+  final bool canManage;
+  final CanteenStaffState staffState;
+  final CanteenAnalytics analytics;
 
   CanteenStore copyWith({
     double? walletBalance,
     List<CanteenOrder>? orders,
     List<WalletTransaction>? walletTransactions,
+    List<CanteenMenuItem>? menu,
+    List<CanteenShop>? shops,
+    List<String>? assignedShopKeys,
+    CanteenStaffState? staffState,
+    CanteenAnalytics? analytics,
   }) {
     return CanteenStore(
       user: user,
       walletBalance: walletBalance ?? this.walletBalance,
-      menu: menu,
+      menu: menu ?? this.menu,
       orders: orders ?? this.orders,
       walletTransactions: walletTransactions ?? this.walletTransactions,
+      shops: shops ?? this.shops,
+      assignedShopKeys: assignedShopKeys ?? this.assignedShopKeys,
+      canManage: canManage,
+      staffState: staffState ?? this.staffState,
+      analytics: analytics ?? this.analytics,
     );
   }
+}
+
+enum CanteenStaffMode { eat, work }
+
+class CanteenStaffState {
+  const CanteenStaffState({this.mode = CanteenStaffMode.eat, this.shopOpen});
+
+  final CanteenStaffMode mode;
+  final bool? shopOpen;
+}
+
+class CanteenAnalytics {
+  const CanteenAnalytics({
+    this.ordersToday = 0,
+    this.revenueToday = 0,
+    this.pending = 0,
+  });
+
+  final int ordersToday;
+  final double revenueToday;
+  final int pending;
 }
 
 class WalletTopUpResult {
@@ -162,14 +345,24 @@ class WalletTopUpResult {
   final WalletTransaction transaction;
 }
 
+/// What came back from paying for a cart.
+///
+/// A cart spanning several shops becomes one order per shop, each with its own
+/// QR, because each counter hands over its own food. The wallet is shared, so
+/// the balance is a single figure.
 class OrderPlacementResult {
   const OrderPlacementResult({
     required this.balance,
-    required this.order,
-    required this.transaction,
+    required this.orders,
+    required this.transactions,
   });
 
   final double balance;
-  final CanteenOrder order;
-  final WalletTransaction transaction;
+  final List<CanteenOrder> orders;
+  final List<WalletTransaction> transactions;
+
+  /// The order to show first — a single-shop cart has only this one.
+  CanteenOrder get order => orders.first;
+
+  bool get spansMultipleShops => orders.length > 1;
 }

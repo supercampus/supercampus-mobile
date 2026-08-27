@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/module_navigation_buttons.dart';
+import '../../../core/widgets/skeleton_loading.dart';
+
 import '../../../core/theme/app_theme.dart';
+import '../../../core/access/module_catalog.dart';
 import '../../authentication/data/auth_repository.dart';
+import '../data/backend_timetable_repository.dart';
 import '../data/mock_timetable_repository.dart';
-import 'allocator_dashboard_screen.dart';
+import '../data/timetable_repository.dart';
 import 'faculty_dashboard_screen.dart';
 import 'view_only_timetable_screen.dart';
 
@@ -12,12 +17,21 @@ class TimetableShell extends StatefulWidget {
     super.key,
     required this.session,
     required this.canConfigure,
+    required this.scope,
+    this.baseUrl,
+    this.accessTokenProvider,
     this.onExitModule,
     required this.onSignOut,
   });
 
   final UserSession session;
   final bool canConfigure;
+
+  /// How far this person's timetable grant reaches. `own` is a learner reading
+  /// their own week, `section` someone teaching it.
+  final PermissionScope scope;
+  final String? baseUrl;
+  final AccessTokenProvider? accessTokenProvider;
   final VoidCallback? onExitModule;
   final VoidCallback onSignOut;
 
@@ -26,15 +40,38 @@ class TimetableShell extends StatefulWidget {
 }
 
 class _TimetableShellState extends State<TimetableShell> {
-  final _repository = MockTimetableRepository.shared;
+  late Future<TimetableRepository> _repository;
+
+  @override
+  void initState() {
+    super.initState();
+    _repository = _loadRepository();
+  }
+
+  Future<TimetableRepository> _loadRepository() async {
+    final baseUrl = widget.baseUrl;
+    final provider = widget.accessTokenProvider;
+    if (baseUrl == null || provider == null)
+      return MockTimetableRepository.shared;
+    return BackendTimetableRepository.load(
+      baseUrl: baseUrl,
+      accessTokenProvider: provider,
+    );
+  }
+
+  void _retry() => setState(() => _repository = _loadRepository());
 
   @override
   Widget build(BuildContext context) {
     final isAllocator = widget.canConfigure;
-    final isFaculty = widget.session.role == UserRole.staff;
-    final primaryColor = isAllocator
-        ? const Color(0xFF00695C)
-        : AppColors.primary;
+    // A class advisor can hold department scope while still teaching classes
+    // outside that department. Portal family identifies the teaching surface;
+    // the repository then filters the published rows by the signed-in user.
+    // Scope alone cannot make this decision because it describes reach, not
+    // whether the person is faculty.
+    final isFaculty =
+        !isAllocator && widget.session.activePortalFamily == PortalFamily.staff;
+    final primaryColor = AppColors.primary;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
@@ -42,10 +79,9 @@ class _TimetableShellState extends State<TimetableShell> {
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         leading: widget.onExitModule != null
-            ? IconButton(
-                tooltip: 'Modules Home',
-                icon: const Icon(Icons.home),
-                onPressed: widget.onExitModule,
+            ? ModuleBackButton(
+                onPressed: widget.onExitModule!,
+                color: Colors.white,
               )
             : null,
         title: Row(
@@ -69,7 +105,7 @@ class _TimetableShellState extends State<TimetableShell> {
                 children: [
                   Text(
                     isAllocator
-                        ? 'Timetable Allocator Portal'
+                        ? 'Published Timetable'
                         : isFaculty
                         ? 'Faculty Daily Operations'
                         : 'Campus Timetable Management',
@@ -94,6 +130,11 @@ class _TimetableShellState extends State<TimetableShell> {
           ],
         ),
         actions: [
+          if (widget.onExitModule != null)
+            ModuleHomeButton(
+              onPressed: widget.onExitModule!,
+              color: Colors.white,
+            ),
           IconButton(
             tooltip: 'Sign Out',
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -102,20 +143,58 @@ class _TimetableShellState extends State<TimetableShell> {
           const SizedBox(width: 6),
         ],
       ),
-      body: isAllocator
-          ? AllocatorDashboardScreen(
+      body: FutureBuilder<TimetableRepository>(
+        future: _repository,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const TimetableLoadingSkeleton();
+          }
+          if (snapshot.hasError || snapshot.data == null) {
+            final error = snapshot.error;
+            final message = error is TimetableLoadException
+                ? error.message
+                : 'The published timetable could not be loaded.';
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.cloud_off_outlined, size: 42),
+                    const SizedBox(height: 12),
+                    Text(message, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: _retry,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Try again'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          final repository = snapshot.data!;
+          if (isAllocator) {
+            return ViewOnlyTimetableScreen(
+              canConfigure: widget.canConfigure,
               session: widget.session,
-              repository: _repository,
-            )
-          : isFaculty
-          ? FacultyDashboardScreen(
+              repository: repository,
+            );
+          }
+          if (isFaculty) {
+            return FacultyDashboardScreen(
               session: widget.session,
-              repository: _repository,
-            )
-          : ViewOnlyTimetableScreen(
-              session: widget.session,
-              repository: _repository,
-            ),
+              repository: repository,
+            );
+          }
+          return ViewOnlyTimetableScreen(
+            canConfigure: widget.canConfigure,
+            session: widget.session,
+            repository: repository,
+          );
+        },
+      ),
     );
   }
 }

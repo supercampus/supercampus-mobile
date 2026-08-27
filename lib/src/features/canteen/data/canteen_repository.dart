@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'canteen_models.dart';
 
 abstract interface class CanteenRepository {
@@ -5,9 +7,29 @@ abstract interface class CanteenRepository {
 
   Future<WalletTopUpResult> topUpWallet(double amount);
 
-  Future<OrderPlacementResult> placeOrder({
-    required List<CartLine> lines,
-    required FulfilmentMode fulfilmentMode,
+  Future<OrderPlacementResult> placeOrder({required List<CartLine> lines});
+
+  Future<void> updateOrderStatus(
+    String orderId,
+    CanteenOrderStatus status, {
+    String? reason,
+  });
+
+  Future<CanteenStaffState> updateStaffState({
+    required CanteenStaffMode mode,
+    bool? shopOpen,
+  });
+
+  Future<CanteenMenuItem> saveMenuItem(
+    CanteenMenuItem item, {
+    required bool create,
+  });
+
+  Future<void> deleteMenuItem(String itemId);
+
+  Future<String> uploadMedia(
+    Uint8List bytes, {
+    required String filename,
   });
 }
 

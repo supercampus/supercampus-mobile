@@ -48,13 +48,14 @@ class _TimetableGridViewState extends State<TimetableGridView> {
     final dayEntries = widget.entries
         .where((e) => e.dayOfWeek == widget.selectedDay)
         .where((e) {
-      if (_searchQuery.isEmpty) return true;
-      final q = _searchQuery.toLowerCase();
-      return e.subjectName.toLowerCase().contains(q) ||
-          e.subjectCode.toLowerCase().contains(q) ||
-          e.facultyName.toLowerCase().contains(q) ||
-          e.className.toLowerCase().contains(q);
-    }).toList();
+          if (_searchQuery.isEmpty) return true;
+          final q = _searchQuery.toLowerCase();
+          return e.subjectName.toLowerCase().contains(q) ||
+              e.subjectCode.toLowerCase().contains(q) ||
+              e.facultyName.toLowerCase().contains(q) ||
+              e.className.toLowerCase().contains(q);
+        })
+        .toList();
 
     dayEntries.sort((a, b) => a.periodIndex.compareTo(b.periodIndex));
 
@@ -79,8 +80,9 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                           selectedColor: AppColors.primary,
                           labelStyle: TextStyle(
                             color: isSelected ? Colors.white : AppColors.ink,
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.w400,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                           ),
                           onSelected: (_) => widget.onDaySelected(day),
                         ),
@@ -97,7 +99,6 @@ class _TimetableGridViewState extends State<TimetableGridView> {
               ),
             ],
           ),
-
 
         const SizedBox(height: 12),
 
@@ -135,7 +136,10 @@ class _TimetableGridViewState extends State<TimetableGridView> {
     );
   }
 
-  List<Widget> _buildDayListWidgets(BuildContext context, List<TimetableEntry> dayEntries) {
+  List<Widget> _buildDayListWidgets(
+    BuildContext context,
+    List<TimetableEntry> dayEntries,
+  ) {
     final list = <Widget>[];
     final processedPeriodIndexes = <int>{};
 
@@ -199,10 +203,7 @@ class _TimetableGridViewState extends State<TimetableGridView> {
               decoration: const BoxDecoration(
                 borderRadius: BorderRadius.all(Radius.circular(16)),
                 border: Border(
-                  left: BorderSide(
-                    color: Color(0xFF3730A3),
-                    width: 5,
-                  ),
+                  left: BorderSide(color: Color(0xFF3730A3), width: 5),
                 ),
               ),
               padding: const EdgeInsets.all(16),
@@ -214,7 +215,10 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE0E7FF),
                           borderRadius: BorderRadius.circular(20),
@@ -240,7 +244,11 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                             ),
                           ),
                           SizedBox(width: 2),
-                          Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFF3730A3)),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 18,
+                            color: Color(0xFF3730A3),
+                          ),
                         ],
                       ),
                     ],
@@ -263,7 +271,11 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                   // 3. Date of Exam
                   Row(
                     children: [
-                      const Icon(Icons.event_note_rounded, size: 15, color: Color(0xFF3730A3)),
+                      const Icon(
+                        Icons.event_note_rounded,
+                        size: 15,
+                        color: Color(0xFF3730A3),
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         dateStr,
@@ -281,7 +293,11 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                   // 4. Duration / Time Slot (Strictly time slot without period metadata)
                   Row(
                     children: [
-                      const Icon(Icons.access_time_rounded, size: 15, color: Color(0xFF4F46E5)),
+                      const Icon(
+                        Icons.access_time_rounded,
+                        size: 15,
+                        color: Color(0xFF4F46E5),
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -319,10 +335,9 @@ class _TimetableGridViewState extends State<TimetableGridView> {
           const SizedBox(height: 12),
           Text(
             'No classes scheduled for ${widget.selectedDay}',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w500),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 6),
           Text(
@@ -335,8 +350,7 @@ class _TimetableGridViewState extends State<TimetableGridView> {
           if (widget.isEditable && widget.onAddEntryForSlot != null) ...[
             const SizedBox(height: 16),
             OutlinedButton.icon(
-              onPressed: () =>
-                  widget.onAddEntryForSlot!(widget.selectedDay, 1),
+              onPressed: () => widget.onAddEntryForSlot!(widget.selectedDay, 1),
               icon: const Icon(Icons.add),
               label: const Text('Add Period Slot'),
             ),
@@ -347,11 +361,16 @@ class _TimetableGridViewState extends State<TimetableGridView> {
   }
 
   PeriodStatus _getMockPeriodStatus(TimetableEntry entry) {
-    if (widget.isEditable || widget.selectedDate == null) return PeriodStatus.upcoming;
+    if (widget.isEditable || widget.selectedDate == null)
+      return PeriodStatus.upcoming;
 
     final now = DateTime.now();
     final selectedDate = widget.selectedDate!;
-    final targetDate = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final targetDate = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
     final today = DateTime(now.year, now.month, now.day);
 
     bool isPast = false;
@@ -375,8 +394,20 @@ class _TimetableGridViewState extends State<TimetableGridView> {
           final startTime = format.parse(startStr);
           final endTime = format.parse(endStr);
 
-          final startDateTime = DateTime(today.year, today.month, today.day, startTime.hour, startTime.minute);
-          final endDateTime = DateTime(today.year, today.month, today.day, endTime.hour, endTime.minute);
+          final startDateTime = DateTime(
+            today.year,
+            today.month,
+            today.day,
+            startTime.hour,
+            startTime.minute,
+          );
+          final endDateTime = DateTime(
+            today.year,
+            today.month,
+            today.day,
+            endTime.hour,
+            endTime.minute,
+          );
 
           if (now.isAfter(endDateTime)) {
             isPast = true;
@@ -394,7 +425,11 @@ class _TimetableGridViewState extends State<TimetableGridView> {
     if (!isPast) return PeriodStatus.upcoming;
 
     // Past deterministic status
-    final hash = (entry.periodIndex * 7 + entry.subjectCode.length + widget.selectedDate!.day) % 10;
+    final hash =
+        (entry.periodIndex * 7 +
+            entry.subjectCode.length +
+            widget.selectedDate!.day) %
+        10;
     if (hash < 5) return PeriodStatus.present;
     if (hash == 5) return PeriodStatus.absent;
     if (hash == 6) return PeriodStatus.onDuty;
@@ -404,23 +439,35 @@ class _TimetableGridViewState extends State<TimetableGridView> {
 
   Color _getStatusColor(PeriodStatus status) {
     switch (status) {
-      case PeriodStatus.present: return const Color(0xFF4CAF50);
-      case PeriodStatus.onDuty: return const Color(0xFF9C27B0);
-      case PeriodStatus.absent: return const Color(0xFFF44336);
-      case PeriodStatus.upcoming: return const Color(0xFF2196F3);
-      case PeriodStatus.ongoing: return const Color(0xFFFF9800);
-      case PeriodStatus.cancelled: return Colors.grey.shade500;
+      case PeriodStatus.present:
+        return const Color(0xFF4CAF50);
+      case PeriodStatus.onDuty:
+        return const Color(0xFF9C27B0);
+      case PeriodStatus.absent:
+        return const Color(0xFFF44336);
+      case PeriodStatus.upcoming:
+        return const Color(0xFF2196F3);
+      case PeriodStatus.ongoing:
+        return const Color(0xFFFF9800);
+      case PeriodStatus.cancelled:
+        return Colors.grey.shade500;
     }
   }
 
   String _getStatusLabel(PeriodStatus status) {
     switch (status) {
-      case PeriodStatus.present: return 'Present';
-      case PeriodStatus.onDuty: return 'On-Duty';
-      case PeriodStatus.absent: return 'Absent';
-      case PeriodStatus.upcoming: return 'Upcoming';
-      case PeriodStatus.ongoing: return 'In Progress';
-      case PeriodStatus.cancelled: return 'Cancelled';
+      case PeriodStatus.present:
+        return 'Present';
+      case PeriodStatus.onDuty:
+        return 'On-Duty';
+      case PeriodStatus.absent:
+        return 'Absent';
+      case PeriodStatus.upcoming:
+        return 'Upcoming';
+      case PeriodStatus.ongoing:
+        return 'In Progress';
+      case PeriodStatus.cancelled:
+        return 'Cancelled';
     }
   }
 
@@ -430,10 +477,15 @@ class _TimetableGridViewState extends State<TimetableGridView> {
 
     FacultySubstitution? sub;
     try {
-      sub = widget.activeSubs.firstWhere((s) => s.subjectCode == entry.subjectCode && s.timeSlot == entry.timeSlot);
+      sub = widget.activeSubs.firstWhere(
+        (s) =>
+            s.subjectCode == entry.subjectCode && s.timeSlot == entry.timeSlot,
+      );
     } catch (_) {}
 
-    final activeFaculty = sub != null ? sub.substituteFaculty : entry.facultyName;
+    final activeFaculty = sub != null
+        ? sub.substituteFaculty
+        : entry.facultyName;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -441,10 +493,7 @@ class _TimetableGridViewState extends State<TimetableGridView> {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: statusColor.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
+        side: BorderSide(color: statusColor.withValues(alpha: 0.3), width: 1.5),
       ),
       child: InkWell(
         onTap: () => showClassDetailModal(context, entry, sub: sub),
@@ -452,12 +501,7 @@ class _TimetableGridViewState extends State<TimetableGridView> {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border(
-              left: BorderSide(
-                color: statusColor,
-                width: 5,
-              ),
-            ),
+            border: Border(left: BorderSide(color: statusColor, width: 5)),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -494,17 +538,23 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                     decoration: BoxDecoration(
                       color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          status == PeriodStatus.present ? Icons.check_circle_outline :
-                          status == PeriodStatus.absent ? Icons.cancel_outlined :
-                          status == PeriodStatus.onDuty ? Icons.work_outline :
-                          status == PeriodStatus.cancelled ? Icons.block :
-                          Icons.schedule,
+                          status == PeriodStatus.present
+                              ? Icons.check_circle_outline
+                              : status == PeriodStatus.absent
+                              ? Icons.cancel_outlined
+                              : status == PeriodStatus.onDuty
+                              ? Icons.work_outline
+                              : status == PeriodStatus.cancelled
+                              ? Icons.block
+                              : Icons.schedule,
                           size: 14,
                           color: statusColor,
                         ),
@@ -531,9 +581,9 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 4),
 
@@ -560,7 +610,11 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                                   decoration: TextDecoration.lineThrough,
                                 ),
                               ),
-                              const Icon(Icons.arrow_right_alt, size: 16, color: AppColors.muted),
+                              const Icon(
+                                Icons.arrow_right_alt,
+                                size: 16,
+                                color: AppColors.muted,
+                              ),
                               Text(
                                 sub.substituteFaculty,
                                 style: TextStyle(
@@ -614,7 +668,10 @@ class _TimetableGridViewState extends State<TimetableGridView> {
           headingRowColor: WidgetStateProperty.all(const Color(0xFFF0F4F8)),
           columns: [
             const DataColumn(
-              label: Text('Time Slot', style: TextStyle(fontWeight: FontWeight.bold)),
+              label: Text(
+                'Time Slot',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
             ...widget.workingDays.map(
               (day) => DataColumn(
@@ -637,7 +694,10 @@ class _TimetableGridViewState extends State<TimetableGridView> {
                 DataCell(
                   Text(
                     'P${slotIndex + 1}\n$slotText',
-                    style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.muted,
+                    ),
                   ),
                 ),
                 ...widget.workingDays.map((day) {
@@ -651,10 +711,7 @@ class _TimetableGridViewState extends State<TimetableGridView> {
 
                   if (matching == null) {
                     return DataCell(
-                      Text(
-                        '--',
-                        style: TextStyle(color: Colors.grey.shade400),
-                      ),
+                      Text('--', style: TextStyle(color: Colors.grey.shade400)),
                     );
                   }
 

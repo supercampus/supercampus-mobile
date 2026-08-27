@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/module_navigation_buttons.dart';
+import '../../../core/widgets/campus_nav_bar.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
@@ -18,6 +20,7 @@ class StudentCanteenHome extends StatefulWidget {
     required this.onOpenWallet,
     required this.onOpenProfile,
     required this.onExitModule,
+    this.onWorkMode,
   });
 
   final CanteenStore store;
@@ -28,25 +31,86 @@ class StudentCanteenHome extends StatefulWidget {
   final VoidCallback onOpenWallet;
   final VoidCallback onOpenProfile;
   final VoidCallback onExitModule;
+  final VoidCallback? onWorkMode;
 
   @override
   State<StudentCanteenHome> createState() => _StudentCanteenHomeState();
 }
 
 class _StudentCanteenHomeState extends State<StudentCanteenHome> {
-  MenuCategory _category = MenuCategory.meals;
+  String? _shopKey;
   bool _isSearching = false;
   String _query = '';
+
+  /// Sub-category filter within the open storefront; null means "All".
+  String? _subCategory;
+
+  List<CanteenShop> get _shops {
+    final active = widget.store.shops.where((shop) => shop.isActive).toList();
+    if (active.isNotEmpty) return active;
+
+    final keys = <String>[];
+    for (final item in widget.store.menu) {
+      if (!keys.contains(item.effectiveShopKey)) {
+        keys.add(item.effectiveShopKey);
+      }
+    }
+    return [
+      for (final key in keys)
+        CanteenShop(
+          id: key,
+          shopKey: key,
+          name: _shopLabel(key),
+          category: key == 'stationery' ? 'Stationery' : 'Canteen',
+        ),
+    ];
+  }
+
+  String? get _selectedShopKey {
+    final shops = _shops;
+    if (shops.isEmpty) return null;
+    if (shops.any((shop) => shop.shopKey == _shopKey)) return _shopKey;
+    return shops.first.shopKey;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _shopKey = _shops.isEmpty ? null : _shops.first.shopKey;
+  }
+
+  @override
+  void didUpdateWidget(covariant StudentCanteenHome oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_shops.isNotEmpty && !_shops.any((shop) => shop.shopKey == _shopKey)) {
+      _shopKey = _shops.first.shopKey;
+      _subCategory = null;
+    }
+  }
+
+  /// Categories present in the open storefront, in menu order.
+  List<String> get _subCategories {
+    final seen = <String>[];
+    for (final item in widget.store.menu) {
+      if (item.effectiveShopKey == _selectedShopKey &&
+          !seen.contains(item.category)) {
+        seen.add(item.category);
+      }
+    }
+    return seen;
+  }
 
   List<CanteenMenuItem> get _visibleItems {
     final query = _query.trim().toLowerCase();
     return widget.store.menu.where((item) {
-      final matchesCategory = item.category == _category;
+      final matchesStore = item.effectiveShopKey == _selectedShopKey;
+      final matchesCategory =
+          _subCategory == null || item.category == _subCategory;
       final matchesQuery =
           query.isEmpty ||
           item.name.toLowerCase().contains(query) ||
           item.description.toLowerCase().contains(query);
-      return matchesCategory && matchesQuery;
+      return matchesStore && matchesCategory && matchesQuery;
     }).toList();
   }
 
@@ -95,30 +159,29 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                     ),
                   ],
                   const SizedBox(height: 20),
-                  _CategorySelector(
-                    selected: _category,
-                    onSelected: (category) => setState(() {
-                      _category = category;
+                  _StoreSelector(
+                    shops: _shops,
+                    selected: _selectedShopKey,
+                    onSelected: (shopKey) => setState(() {
+                      _shopKey = shopKey;
+                      _subCategory = null;
                       _query = '';
                     }),
                   ),
+                  // Food storefronts are a single flat list; only a shop with
+                  // several aisles needs a second row of filters.
+                  if (_subCategories.length > 1) ...[
+                    const SizedBox(height: 12),
+                    _SubCategoryFilter(
+                      categories: _subCategories,
+                      selected: _subCategory,
+                      onSelected: (category) =>
+                          setState(() => _subCategory = category),
+                    ),
+                  ],
                   const SizedBox(height: 18),
                   const _OpenStatusBand(),
                   const SizedBox(height: 22),
-                  Row(
-                    children: [
-                      Text(
-                        _category.label,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${_visibleItems.length} available',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
                   if (_visibleItems.isEmpty)
                     const CanteenSurface(
                       child: Padding(
@@ -145,7 +208,14 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                 Positioned(
                   left: 20,
                   right: 20,
-                  bottom: 14,
+                  // The nav bar floats over the module content, so a bar
+                  // pinned to the bottom lands behind it and its raised
+                  // centre button swallows the tap. Clear it the same way
+                  // the module dashboard does.
+                  bottom:
+                      CampusNavBar.heightFor(context) +
+                      MediaQuery.paddingOf(context).bottom +
+                      20,
                   child: _CartBar(
                     itemCount: _cartCount,
                     total: _cartTotal,
@@ -162,50 +232,50 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        IconButton.filled(
-          tooltip: 'Modules Home',
-          onPressed: widget.onExitModule,
-          style: IconButton.styleFrom(backgroundColor: AppColors.primary),
-          icon: const Icon(Icons.home),
-        ),
+        ModuleBackButton(onPressed: widget.onExitModule),
         const SizedBox(width: 10),
-        Expanded(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: widget.onOpenWallet,
-            child: Container(
-              height: 42,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE7F3EC),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFBBD9C6)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.account_balance_wallet_outlined,
-                    size: 18,
-                    color: AppColors.primary,
+        // The balance is a glance, not a destination, so the pill hugs its
+        // number instead of stretching across the bar. Tapping it opens the
+        // wallet, where the histories live.
+        InkWell(
+          customBorder: const StadiumBorder(),
+          onTap: widget.onOpenWallet,
+          child: Container(
+            height: 38,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: const ShapeDecoration(
+              color: Color(0xFFEAF1FE),
+              shape: StadiumBorder(),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.account_balance_wallet_outlined,
+                  size: 17,
+                  color: Color(0xFF2563EB),
+                ),
+                const SizedBox(width: 7),
+                Text(
+                  formatCurrency(widget.store.walletBalance),
+                  style: const TextStyle(
+                    color: Color(0xFF2563EB),
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.1,
                   ),
-                  const SizedBox(width: 7),
-                  Flexible(
-                    child: Text(
-                      formatCurrency(widget.store.walletBalance),
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
+        const Spacer(),
         const SizedBox(width: 6),
+        if (widget.onWorkMode != null)
+          IconButton(
+            tooltip: 'Switch to owner workspace',
+            onPressed: widget.onWorkMode,
+            icon: const Icon(Icons.storefront_outlined),
+          ),
         IconButton(
           tooltip: _isSearching ? 'Close search' : 'Search menu',
           onPressed: () => setState(() {
@@ -214,72 +284,138 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
           }),
           icon: Icon(_isSearching ? Icons.close : Icons.search),
         ),
+        ModuleHomeButton(onPressed: widget.onExitModule),
       ],
     );
   }
 }
 
-class _CategorySelector extends StatelessWidget {
-  const _CategorySelector({required this.selected, required this.onSelected});
+/// The three storefronts, as pills across the top of the menu.
+class _StoreSelector extends StatelessWidget {
+  const _StoreSelector({
+    required this.shops,
+    required this.selected,
+    required this.onSelected,
+  });
 
-  final MenuCategory selected;
-  final ValueChanged<MenuCategory> onSelected;
+  final List<CanteenShop> shops;
+  final String? selected;
+  final ValueChanged<String> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: MenuCategory.values.map((category) {
-        final isSelected = category == selected;
-        final icon = switch (category) {
-          MenuCategory.meals => Icons.restaurant_outlined,
-          MenuCategory.snacks => Icons.bakery_dining_outlined,
-          MenuCategory.drinks => Icons.local_cafe_outlined,
-        };
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              right: category == MenuCategory.drinks ? 0 : 8,
+    if (shops.isEmpty) return const SizedBox.shrink();
+    return SizedBox(
+      height: 46,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: shops.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final shop = shops[index];
+          final isSelected = shop.shopKey == selected;
+          final category = shop.category.toLowerCase();
+          final icon = category.contains('station')
+              ? Icons.storefront_outlined
+              : Icons.restaurant;
+          return Material(
+            color: isSelected ? AppColors.primary : Colors.white,
+            shape: StadiumBorder(
+              side: BorderSide(
+                color: isSelected ? AppColors.primary : AppColors.border,
+              ),
             ),
-            child: Material(
-              color: isSelected ? AppColors.primary : Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: BorderSide(
-                  color: isSelected ? AppColors.primary : AppColors.border,
+            child: InkWell(
+              customBorder: const StadiumBorder(),
+              onTap: () => onSelected(shop.shopKey),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 18,
+                      color: isSelected ? Colors.white : AppColors.muted,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      shop.name,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : AppColors.muted,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => onSelected(category),
-                child: SizedBox(
-                  height: 44,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        icon,
-                        size: 18,
-                        color: isSelected ? Colors.white : AppColors.muted,
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          category.label,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : AppColors.muted,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+String _shopLabel(String value) {
+  final words = value.replaceAll(RegExp(r'[-_]'), ' ').trim().split(' ');
+  return words
+      .where((word) => word.isNotEmpty)
+      .map((word) => '${word[0].toUpperCase()}${word.substring(1)}')
+      .join(' ');
+}
+
+/// Aisle filters inside a storefront that has more than one, scrolled
+/// horizontally because the labels are owner-written and can be long.
+class _SubCategoryFilter extends StatelessWidget {
+  const _SubCategoryFilter({
+    required this.categories,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final List<String> categories;
+  final String? selected;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: categories.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final category = index == 0 ? null : categories[index - 1];
+          final isSelected = category == selected;
+          return Material(
+            color: isSelected ? AppColors.primary : Colors.white,
+            shape: StadiumBorder(
+              side: BorderSide(
+                color: isSelected ? AppColors.primary : AppColors.border,
+              ),
+            ),
+            child: InkWell(
+              customBorder: const StadiumBorder(),
+              onTap: () => onSelected(category),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Center(
+                  child: Text(
+                    category ?? 'All',
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : AppColors.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-      }).toList(),
+          );
+        },
+      ),
     );
   }
 }
@@ -309,7 +445,7 @@ class _OpenStatusBand extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Canteen is open',
+                  'Shops are open',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
@@ -330,6 +466,11 @@ class _OpenStatusBand extends StatelessWidget {
   }
 }
 
+/// A menu row: thumbnail, name, price, and a single tap to add.
+///
+/// The design keeps the row deliberately quiet — no description, no metadata —
+/// so a long menu stays scannable. Everything else about the item lives in the
+/// cart and the order.
 class _MenuItemRow extends StatelessWidget {
   const _MenuItemRow({
     required this.item,
@@ -345,82 +486,96 @@ class _MenuItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CanteenSurface(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          MenuItemArt(item: item),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 11,
-                      height: 11,
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: item.isVegetarian
-                              ? AppColors.success
-                              : const Color(0xFFB42318),
+    final unavailable = !item.isAvailable;
+    return Opacity(
+      opacity: unavailable ? 0.5 : 1,
+      child: CanteenSurface(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            MenuItemArt(item: item),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          item.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: item.isVegetarian
-                              ? AppColors.success
-                              : const Color(0xFFB42318),
-                          shape: BoxShape.circle,
+                      if (item.isInstant) ...[
+                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.bolt,
+                          size: 19,
+                          color: Color(0xFFF97316),
                         ),
-                      ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    formatCurrency(item.price),
+                    style: const TextStyle(
+                      color: Color(0xFF2563EB),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        item.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    if (item.isPopular)
-                      const Icon(Icons.bolt, color: AppColors.amber, size: 19),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 9),
-                Row(
-                  children: [
-                    Text(
-                      formatCurrency(item.price),
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const Spacer(),
-                    QuantityControl(
-                      quantity: quantity,
-                      compact: true,
-                      onAdd: onAdd,
-                      onRemove: onRemove,
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(width: 10),
+            if (unavailable)
+              const Text('Sold out', style: TextStyle(color: AppColors.muted))
+            else if (quantity == 0)
+              _AddButton(onTap: onAdd)
+            else
+              QuantityControl(
+                quantity: quantity,
+                compact: true,
+                onAdd: onAdd,
+                onRemove: onRemove,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The round blue affordance that puts a first unit in the cart.
+class _AddButton extends StatelessWidget {
+  const _AddButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Add item',
+      child: Material(
+        color: const Color(0xFF2563EB),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: const SizedBox(
+            width: 46,
+            height: 46,
+            child: Icon(Icons.add, color: Colors.white, size: 24),
           ),
-        ],
+        ),
       ),
     );
   }

@@ -3,10 +3,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class MonthCalendarDialog extends StatefulWidget {
-  const MonthCalendarDialog({
-    super.key,
-    required this.selectedDate,
-  });
+  const MonthCalendarDialog({super.key, required this.selectedDate});
 
   final DateTime selectedDate;
 
@@ -25,7 +22,12 @@ class _MonthCalendarDialogState extends State<MonthCalendarDialog> {
     _selectedDay = widget.selectedDate;
   }
 
-  Widget _buildCalendarCell(BuildContext context, DateTime date, {bool isSelected = false, bool isToday = false}) {
+  Widget _buildCalendarCell(
+    BuildContext context,
+    DateTime date, {
+    bool isSelected = false,
+    bool isToday = false,
+  }) {
     return Container(
       margin: const EdgeInsets.all(6),
       decoration: BoxDecoration(
@@ -75,9 +77,12 @@ class _MonthCalendarDialogState extends State<MonthCalendarDialog> {
                 titleCentered: true,
               ),
               calendarBuilders: CalendarBuilders(
-                defaultBuilder: (context, date, _) => _buildCalendarCell(context, date),
-                todayBuilder: (context, date, _) => _buildCalendarCell(context, date, isToday: true),
-                selectedBuilder: (context, date, _) => _buildCalendarCell(context, date, isSelected: true),
+                defaultBuilder: (context, date, _) =>
+                    _buildCalendarCell(context, date),
+                todayBuilder: (context, date, _) =>
+                    _buildCalendarCell(context, date, isToday: true),
+                selectedBuilder: (context, date, _) =>
+                    _buildCalendarCell(context, date, isSelected: true),
               ),
             ),
             const SizedBox(height: 8),

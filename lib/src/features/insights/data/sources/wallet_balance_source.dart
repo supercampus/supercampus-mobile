@@ -54,7 +54,7 @@ class WalletBalanceSource implements InsightSource {
           ? 'Low balance — top up before lunch'
           : 'Low balance in your canteen wallet';
     } else {
-      headline = nearLunch ? 'Wallet ready for lunch' : 'Canteen wallet topped up';
+      headline = nearLunch ? 'Wallet ready for lunch' : 'Shop wallet topped up';
     }
 
     final rounded = balance.round();

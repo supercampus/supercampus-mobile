@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'canteen_models.dart';
 import 'canteen_repository.dart';
 
@@ -23,11 +26,75 @@ class MockCanteenRepository implements CanteenRepository {
         department: 'Computer Science',
       ),
       walletBalance: _balance,
+      shops: const [
+        CanteenShop(
+          id: 'shop-classic',
+          shopKey: 'classic',
+          name: 'Campus Classic',
+          category: 'canteen',
+        ),
+        CanteenShop(
+          id: 'shop-bites',
+          shopKey: 'bites',
+          name: 'Quick Bites',
+          category: 'canteen',
+        ),
+        CanteenShop(
+          id: 'shop-stationery',
+          shopKey: 'stationery',
+          name: 'Stationery Store',
+          category: 'stationery',
+        ),
+      ],
+      assignedShopKeys: const ['classic', 'bites', 'stationery'],
       menu: List.unmodifiable(_menu),
       orders: List.unmodifiable(_orders),
       walletTransactions: List.unmodifiable(_transactions),
     );
   }
+
+  @override
+  Future<void> updateOrderStatus(
+    String orderId,
+    CanteenOrderStatus status, {
+    String? reason,
+  }) async {
+    final index = _orders.indexWhere((order) => order.id == orderId);
+    if (index >= 0) _orders[index] = _orders[index].copyWith(status: status);
+  }
+
+  @override
+  Future<CanteenStaffState> updateStaffState({
+    required CanteenStaffMode mode,
+    bool? shopOpen,
+  }) async => CanteenStaffState(mode: mode, shopOpen: shopOpen);
+
+  @override
+  Future<CanteenMenuItem> saveMenuItem(
+    CanteenMenuItem item, {
+    required bool create,
+  }) async {
+    final saved = create
+        ? item.copyWith(id: 'menu-${DateTime.now().microsecondsSinceEpoch}')
+        : item;
+    final index = _menu.indexWhere((value) => value.id == saved.id);
+    if (index < 0) {
+      _menu.add(saved);
+    } else {
+      _menu[index] = saved;
+    }
+    return saved;
+  }
+
+  @override
+  Future<void> deleteMenuItem(String itemId) async =>
+      _menu.removeWhere((item) => item.id == itemId);
+
+  @override
+  Future<String> uploadMedia(
+    Uint8List bytes, {
+    required String filename,
+  }) async => 'data:image/png;base64,${base64Encode(bytes)}';
 
   @override
   Future<WalletTopUpResult> topUpWallet(double amount) async {
@@ -50,7 +117,6 @@ class MockCanteenRepository implements CanteenRepository {
   @override
   Future<OrderPlacementResult> placeOrder({
     required List<CartLine> lines,
-    required FulfilmentMode fulfilmentMode,
   }) async {
     if (lines.isEmpty) throw const CanteenException('Your cart is empty.');
     final total = lines.fold<double>(0, (sum, line) => sum + line.total);
@@ -61,125 +127,175 @@ class MockCanteenRepository implements CanteenRepository {
     }
 
     await Future<void>.delayed(const Duration(milliseconds: 950));
-    _balance -= total;
+
+    // Each shop hands its own order over at its own counter, so a cart that
+    // spans shops becomes one order — and one QR — per shop. The wallet is
+    // shared, so the balance moves once per shop against the same purse.
+    final byShop = <String, List<CartLine>>{};
+    for (final line in lines) {
+      byShop.putIfAbsent(line.item.effectiveShopKey, () => []).add(line);
+    }
+
+    final placedOrders = <CanteenOrder>[];
+    final placedTransactions = <WalletTransaction>[];
     final timestamp = DateTime.now();
-    final order = CanteenOrder(
-      id: 'ORD-${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}${timestamp.day.toString().padLeft(2, '0')}-${(_orders.length + 241).toString().padLeft(4, '0')}',
-      lines: List.unmodifiable(lines),
-      total: total,
-      status: CanteenOrderStatus.ready,
-      fulfilmentMode: fulfilmentMode,
-      createdAt: timestamp,
-      tokenNumber: 42 + _orders.length,
-    );
-    final transaction = WalletTransaction(
-      id: 'txn-${timestamp.millisecondsSinceEpoch}',
-      type: WalletTransactionType.debit,
-      amount: total,
-      description: 'Order payment · ${order.id}',
-      createdAt: timestamp,
-    );
-    _orders.insert(0, order);
-    _transactions.insert(0, transaction);
+    var sequence = 0;
+
+    for (final entry in byShop.entries) {
+      final shopLines = entry.value;
+      final shopTotal = shopLines.fold<double>(0, (sum, l) => sum + l.total);
+      _balance -= shopTotal;
+
+      final order = CanteenOrder(
+        id: 'ORD-${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}${timestamp.day.toString().padLeft(2, '0')}-${(_orders.length + 241 + sequence).toString().padLeft(4, '0')}',
+        lines: List.unmodifiable(shopLines),
+        total: shopTotal,
+        status: CanteenOrderStatus.ready,
+        fulfilmentMode: FulfilmentMode.pickup,
+        createdAt: timestamp,
+        tokenNumber: 42 + _orders.length + sequence,
+      );
+      final transaction = WalletTransaction(
+        id: 'txn-${timestamp.millisecondsSinceEpoch}-$sequence',
+        type: WalletTransactionType.debit,
+        amount: shopTotal,
+        description: '${entry.key} order - ${order.id}',
+        createdAt: timestamp,
+      );
+
+      _orders.insert(0, order);
+      _transactions.insert(0, transaction);
+      placedOrders.add(order);
+      placedTransactions.add(transaction);
+      sequence++;
+    }
+
     return OrderPlacementResult(
       balance: _balance,
-      order: order,
-      transaction: transaction,
+      orders: placedOrders,
+      transactions: placedTransactions,
     );
   }
 
+  /// Mirrors the storefronts in the product design so mock mode reads like the
+  /// real counter: Classic is the meals window, Bites the snacks and drinks
+  /// counter, Stationery the campus shop.
   List<CanteenMenuItem> _seedMenu() {
     return const [
       CanteenMenuItem(
-        id: 'meal-parotta',
-        name: 'Parotta with Veg Kurma',
-        description: '3 parottas with vegetable kurma',
-        category: MenuCategory.meals,
+        id: 'classic-parotta',
+        name: '3 Parotta with Veg Kurma',
+        description: 'Three parottas with vegetable kurma',
+        store: MenuStore.classic,
+        category: 'meals',
         price: 79,
         isVegetarian: true,
         isPopular: true,
+        isInstant: true,
       ),
       CanteenMenuItem(
-        id: 'meal-idli',
+        id: 'classic-idli',
         name: 'Idli Podi',
-        description: '4 idlis tossed with podi and oil',
-        category: MenuCategory.meals,
-        price: 30,
+        description: 'Idlis tossed with podi and oil',
+        store: MenuStore.classic,
+        category: 'meals',
+        price: 10,
         isVegetarian: true,
-        isPopular: true,
+        isInstant: true,
       ),
       CanteenMenuItem(
-        id: 'meal-dosa',
+        id: 'classic-dosa',
         name: 'Kal Dosa',
-        description: '2 soft dosas with sambar and chutney',
-        category: MenuCategory.meals,
+        description: 'Soft griddle dosa with chutney',
+        store: MenuStore.classic,
+        category: 'meals',
+        price: 59,
+        isVegetarian: true,
+        isInstant: true,
+      ),
+      // No image on purpose: the menu falls back to a category tile.
+      CanteenMenuItem(
+        id: 'classic-kuska',
+        name: 'Kuska',
+        description: 'Seasoned rice, served plain',
+        store: MenuStore.classic,
+        category: 'meals',
+        price: 99,
+        isVegetarian: true,
+      ),
+      CanteenMenuItem(
+        id: 'bites-banana-cake',
+        name: 'Banana cake',
+        description: 'Freshly baked banana loaf',
+        store: MenuStore.bites,
+        category: 'snacks',
+        price: 25,
+        isVegetarian: true,
+        isInstant: true,
+      ),
+      CanteenMenuItem(
+        id: 'bites-vanilla-ice-cream',
+        name: 'Bean Vanilla Ice Cream',
+        description: 'Two scoops of vanilla bean',
+        store: MenuStore.bites,
+        category: 'snacks',
+        price: 59,
+        isVegetarian: true,
+        isInstant: true,
+      ),
+      CanteenMenuItem(
+        id: 'bites-vanilla-shake',
+        name: 'Bean Vanilla Shake',
+        description: 'Vanilla bean shake, whipped',
+        store: MenuStore.bites,
+        category: 'drinks',
+        price: 89,
+        isVegetarian: true,
+      ),
+      CanteenMenuItem(
+        id: 'bites-chocolate-shake',
+        name: 'Belgian Chocolate Shake',
+        description: 'Belgian chocolate, blended thick',
+        store: MenuStore.bites,
+        category: 'drinks',
+        price: 89,
+        isVegetarian: true,
+      ),
+      CanteenMenuItem(
+        id: 'bites-blue-mojito',
+        name: 'Blue Diamond Mojito',
+        description: 'Mint and lime over crushed ice',
+        store: MenuStore.bites,
+        category: 'drinks',
         price: 59,
         isVegetarian: true,
       ),
       CanteenMenuItem(
-        id: 'meal-veg-rice',
-        name: 'Veg Fried Rice',
-        description: 'Wok-tossed rice with fresh vegetables',
-        category: MenuCategory.meals,
-        price: 70,
+        id: 'stationery-shampoo',
+        name: 'Shampoo Sachet',
+        description: 'Single-use sachet',
+        store: MenuStore.stationery,
+        category: 'Hair Care & Shampoo',
+        price: 5,
+        isVegetarian: true,
+        isInstant: true,
+      ),
+      CanteenMenuItem(
+        id: 'stationery-soap',
+        name: 'Bathing Soap',
+        description: 'Standard bar',
+        store: MenuStore.stationery,
+        category: 'Soaps & Detergents',
+        price: 40,
         isVegetarian: true,
       ),
       CanteenMenuItem(
-        id: 'meal-chicken-rice',
-        name: 'Chicken Fried Rice',
-        description: 'Fried rice with boneless chicken',
-        category: MenuCategory.meals,
-        price: 95,
-        isVegetarian: false,
-        isPopular: true,
-      ),
-      CanteenMenuItem(
-        id: 'snack-samosa',
-        name: 'Vegetable Samosa',
-        description: 'Crisp pastry with spiced potato filling',
-        category: MenuCategory.snacks,
-        price: 20,
-        isVegetarian: true,
-      ),
-      CanteenMenuItem(
-        id: 'snack-puff',
-        name: 'Veg Puff',
-        description: 'Flaky baked puff with vegetable filling',
-        category: MenuCategory.snacks,
-        price: 25,
-        isVegetarian: true,
-      ),
-      CanteenMenuItem(
-        id: 'snack-cake',
-        name: 'Banana Cake',
-        description: 'Soft house-baked banana loaf slice',
-        category: MenuCategory.snacks,
-        price: 30,
-        isVegetarian: true,
-      ),
-      CanteenMenuItem(
-        id: 'drink-coffee',
-        name: 'Cold Coffee',
-        description: 'Chilled creamy coffee',
-        category: MenuCategory.drinks,
+        id: 'stationery-notebook',
+        name: 'Long Notebook',
+        description: '200 pages, ruled',
+        store: MenuStore.stationery,
+        category: 'Books & Paper',
         price: 60,
-        isVegetarian: true,
-        isPopular: true,
-      ),
-      CanteenMenuItem(
-        id: 'drink-lime',
-        name: 'Fresh Lime Soda',
-        description: 'Sweet, salt or mixed',
-        category: MenuCategory.drinks,
-        price: 35,
-        isVegetarian: true,
-      ),
-      CanteenMenuItem(
-        id: 'drink-rose',
-        name: 'Rose Milk',
-        description: 'Chilled milk with rose syrup',
-        category: MenuCategory.drinks,
-        price: 45,
         isVegetarian: true,
       ),
     ];

@@ -16,7 +16,8 @@ class GatepassAccessScreen extends StatelessWidget {
     final approved = store.requests
         .where((request) => request.status == ApprovalStatus.approved)
         .firstOrNull;
-    final pass = approved?.qrPayload ?? store.dailyPass.qrPayload;
+    final daily = store.dailyPass;
+    final pass = approved?.qrPayload ?? daily?.qrPayload;
     return SafeArea(
       child: Center(
         child: ConstrainedBox(
@@ -29,6 +30,9 @@ class GatepassAccessScreen extends StatelessWidget {
                 subtitle: 'Present this code at the gate',
               ),
               const SizedBox(height: 20),
+              if (pass == null)
+                _NoPassCard(zone: store.zone, reason: store.dailyPassIssue)
+              else
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -92,7 +96,7 @@ class GatepassAccessScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      approved?.id ?? store.dailyPass.id,
+                      approved?.id ?? daily!.id,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
@@ -102,7 +106,7 @@ class GatepassAccessScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       approved == null
-                          ? 'Valid ${formatTime(store.dailyPass.validFrom)} - ${formatTime(store.dailyPass.validUntil)}'
+                          ? 'Valid ${formatTime(daily!.validFrom)} - ${formatTime(daily.validUntil)}'
                           : 'Valid until ${formatShortDate(approved.returnAt)}, ${formatTime(approved.returnAt)}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.white70),
@@ -111,27 +115,28 @@ class GatepassAccessScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F0FF),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.brightness_7_outlined,
-                      color: AppColors.gateBlue,
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Increase screen brightness before presenting the QR.',
+              if (pass != null)
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F0FF),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.brightness_7_outlined,
+                        color: AppColors.gateBlue,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Increase screen brightness before presenting the QR.',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               const SizedBox(height: 24),
               Text(
                 'Movement history',
@@ -168,6 +173,74 @@ class GatepassAccessScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Shown in place of the QR when today's pass could not be activated.
+///
+/// The rest of the screen — movement history, the request list behind it —
+/// stays exactly where it was. Only the code itself is missing, so only the
+/// code's place says so.
+///
+/// Being outside the fence gets its own wording and its own icon. It is not a
+/// fault and there is nothing for the reader to fix: the pass issues itself
+/// when they arrive, and the screen is already watching for that.
+class _NoPassCard extends StatelessWidget {
+  const _NoPassCard({required this.zone, this.reason});
+
+  final CampusZone zone;
+  final String? reason;
+
+  @override
+  Widget build(BuildContext context) {
+    final outside = zone == CampusZone.outside;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F0FF),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            outside ? Icons.location_off_outlined : Icons.qr_code_2_outlined,
+            size: 40,
+            color: AppColors.gateBlue,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            outside ? 'Outside campus' : 'No entry QR yet',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            reason ?? "Today's campus entry QR is not active yet.",
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.muted),
+          ),
+          if (outside) ...[
+            const SizedBox(height: 14),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    'Watching for the campus boundary',
+                    style: TextStyle(color: AppColors.muted, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }

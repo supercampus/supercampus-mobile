@@ -120,6 +120,7 @@ class MockGatepassRepository implements GatepassRepository {
         qrPayload:
             'supercampus://gate/day/MEC25AD48/${today.toIso8601String()}',
       ),
+      zone: CampusZone.inside,
       requests: [
         GatepassRequest(
           id: 'GP-240803',
