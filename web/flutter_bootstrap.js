@@ -12,7 +12,7 @@
 // entry point as well so a deployment always paints the UI it contains.
 for (const finalBuild of _flutter.buildConfig.builds) {
   if (finalBuild.mainJsPath != null) {
-    finalBuild.mainJsPath = 'main.dart.js?v=20260827-9';
+    finalBuild.mainJsPath = 'main.dart.js?v=20260827-10';
   }
 }
 _flutter.loader.load();
