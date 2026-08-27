@@ -23,12 +23,9 @@ class AccountantWalletScreen extends StatefulWidget {
 }
 
 class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
-  final _search = TextEditingController();
   List<StudentWalletAccount>? _wallets;
   List<AccountantWalletTransaction>? _transactions;
   String? _error;
-  Timer? _debounce;
-  bool _showActivity = false;
 
   @override
   void initState() {
@@ -36,18 +33,11 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
     _load();
   }
 
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _search.dispose();
-    super.dispose();
-  }
-
   Future<void> _load() async {
     setState(() => _error = null);
     try {
       final results = await Future.wait([
-        widget.repository.listWallets(search: _search.text),
+        widget.repository.listWallets(),
         widget.repository.listTransactions(),
       ]);
       if (mounted) {
@@ -58,47 +48,6 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
       }
     } catch (error) {
       if (mounted) setState(() => _error = error.toString());
-    }
-  }
-
-  void _searchChanged(String _) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 350), _load);
-  }
-
-  Future<void> _openCredit(StudentWalletAccount wallet) async {
-    final result = await showModalBottomSheet<_CreditRequest>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _CreditWalletSheet(wallet: wallet),
-    );
-    if (result == null || !mounted) return;
-    try {
-      await widget.repository.creditWallet(
-        userId: wallet.userId,
-        amount: result.amount,
-        reference: result.reference,
-      );
-      if (!mounted) return;
-      await _load();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${result.amount.toStringAsFixed(0)} credits added to ${wallet.studentName}',
-          ),
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
     }
   }
 
@@ -200,57 +149,219 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(
-                  value: false,
-                  icon: Icon(Icons.people_rounded),
-                  label: Text('Student wallets'),
-                ),
-                ButtonSegment(
-                  value: true,
-                  icon: Icon(Icons.receipt_long_rounded),
-                  label: Text('Activity'),
-                ),
-              ],
-              selected: {_showActivity},
-              onSelectionChanged: (value) =>
-                  setState(() => _showActivity = value.first),
+            const SizedBox(height: 22),
+            Text(
+              'Accountant tools',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: 18),
-            if (!_showActivity) ...[
-              TextField(
-                controller: _search,
-                onChanged: _searchChanged,
-                decoration: InputDecoration(
-                  hintText: 'Search name, roll number or department',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-            ],
+            const SizedBox(height: 10),
             if (_error != null)
               _ErrorCard(message: _error!, onRetry: _load)
             else if (wallets == null || _transactions == null)
               const SizedBox(
+                height: 210,
+                child: SkeletonList(rows: 2, rowHeight: 92),
+              )
+            else ...[
+              _PortalActionCard(
+                key: const ValueKey('open-student-wallets'),
+                icon: Icons.people_alt_rounded,
+                title: 'Student wallets',
+                subtitle:
+                    '${wallets.length} students · Browse A–Z and add credits',
+                onTap: () async {
+                  await Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) => _StudentWalletDirectoryPage(
+                        repository: widget.repository,
+                      ),
+                    ),
+                  );
+                  _load();
+                },
+              ),
+              _PortalActionCard(
+                icon: Icons.receipt_long_rounded,
+                title: 'Wallet activity',
+                subtitle: '${_transactions!.length} recent transactions',
+                onTap: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        _WalletActivityPage(repository: widget.repository),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PortalActionCard extends StatelessWidget {
+  const _PortalActionCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    margin: const EdgeInsets.only(bottom: 12),
+    color: Colors.white,
+    elevation: 0,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    child: ListTile(
+      onTap: onTap,
+      minVerticalPadding: 18,
+      leading: CircleAvatar(
+        backgroundColor: AppColors.brandLavender,
+        foregroundColor: AppColors.primary,
+        child: Icon(icon),
+      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 17),
+    ),
+  );
+}
+
+class _StudentWalletDirectoryPage extends StatefulWidget {
+  const _StudentWalletDirectoryPage({required this.repository});
+  final AccountantWalletRepository repository;
+
+  @override
+  State<_StudentWalletDirectoryPage> createState() =>
+      _StudentWalletDirectoryPageState();
+}
+
+class _StudentWalletDirectoryPageState
+    extends State<_StudentWalletDirectoryPage> {
+  final _search = TextEditingController();
+  List<StudentWalletAccount>? _wallets;
+  String? _error;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _search.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _error = null);
+    try {
+      final wallets = await widget.repository.listWallets(search: _search.text);
+      wallets.sort((a, b) {
+        final byName = a.studentName.toLowerCase().compareTo(
+          b.studentName.toLowerCase(),
+        );
+        return byName != 0
+            ? byName
+            : a.studentNumber.compareTo(b.studentNumber);
+      });
+      if (mounted) setState(() => _wallets = wallets);
+    } catch (error) {
+      if (mounted) setState(() => _error = error.toString());
+    }
+  }
+
+  void _searchChanged(String _) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), _load);
+  }
+
+  Future<void> _openCredit(StudentWalletAccount wallet) async {
+    final result = await showModalBottomSheet<_CreditRequest>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _CreditWalletSheet(wallet: wallet),
+    );
+    if (result == null || !mounted) return;
+    try {
+      await widget.repository.creditWallet(
+        userId: wallet.userId,
+        amount: result.amount,
+        reference: result.reference,
+      );
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${result.amount.toStringAsFixed(0)} credits added to ${wallet.studentName}',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final wallets = _wallets;
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F4FF),
+      appBar: AppBar(title: const Text('Student wallets')),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          children: [
+            TextField(
+              controller: _search,
+              onChanged: _searchChanged,
+              decoration: InputDecoration(
+                hintText: 'Search name, roll number or department',
+                prefixIcon: const Icon(Icons.search_rounded),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (wallets != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  'A–Z · ${wallets.length} students',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            if (_error != null)
+              _ErrorCard(message: _error!, onRetry: _load)
+            else if (wallets == null)
+              const SizedBox(
                 height: 552,
                 child: SkeletonList(rows: 6, rowHeight: 82),
-              )
-            else if (_showActivity && _transactions!.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 56),
-                child: Center(child: Text('No wallet activity yet.')),
-              )
-            else if (_showActivity)
-              ..._transactions!.map(
-                (transaction) => _TransactionCard(transaction: transaction),
               )
             else if (wallets.isEmpty)
               const Padding(
@@ -269,6 +380,65 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
       ),
     );
   }
+}
+
+class _WalletActivityPage extends StatefulWidget {
+  const _WalletActivityPage({required this.repository});
+  final AccountantWalletRepository repository;
+
+  @override
+  State<_WalletActivityPage> createState() => _WalletActivityPageState();
+}
+
+class _WalletActivityPageState extends State<_WalletActivityPage> {
+  List<AccountantWalletTransaction>? _transactions;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _error = null);
+    try {
+      final value = await widget.repository.listTransactions(limit: 200);
+      if (mounted) setState(() => _transactions = value);
+    } catch (error) {
+      if (mounted) setState(() => _error = error.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFFF6F4FF),
+    appBar: AppBar(title: const Text('Wallet activity')),
+    body: RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        children: [
+          if (_error != null)
+            _ErrorCard(message: _error!, onRetry: _load)
+          else if (_transactions == null)
+            const SizedBox(
+              height: 552,
+              child: SkeletonList(rows: 6, rowHeight: 82),
+            )
+          else if (_transactions!.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 56),
+              child: Center(child: Text('No wallet activity yet.')),
+            )
+          else
+            ..._transactions!.map(
+              (transaction) => _TransactionCard(transaction: transaction),
+            ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _SummaryValue extends StatelessWidget {

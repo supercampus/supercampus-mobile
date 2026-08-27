@@ -100,7 +100,7 @@ class BackendAccountantWalletRepository implements AccountantWalletRepository {
       path: '/api/v1/operations/canteen/wallets',
       queryParameters: {
         if (search.trim().isNotEmpty) 'search': search.trim(),
-        'limit': '250',
+        'limit': '2000',
       },
     );
     final data = await _request(
