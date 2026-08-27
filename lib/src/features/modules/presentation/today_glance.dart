@@ -4,6 +4,7 @@ import '../../../core/widgets/skeleton_loading.dart';
 import '../../../core/access/academic_presentation.dart';
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// What a person's day is made of.
 ///
@@ -798,13 +799,14 @@ class _DayIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SizedBox(
+    return Container(
       width: 44,
       height: 44,
-      child: Center(
-        child: Icon(icon, size: 22, color: theme.colorScheme.primary),
+      decoration: BoxDecoration(
+        color: AppColors.moduleSoft,
+        borderRadius: BorderRadius.circular(14),
       ),
+      child: Icon(icon, size: 22, color: AppColors.brandBlue),
     );
   }
 }

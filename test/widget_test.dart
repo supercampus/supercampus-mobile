@@ -287,7 +287,9 @@ void main() {
     expect(find.text('SuperCampus'), findsOneWidget);
   });
 
-  testWidgets('search finds a granted module and opens it', (tester) async {
+  testWidgets('home header keeps search and AI shortcuts out of the way', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 1200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -296,18 +298,9 @@ void main() {
     await tester.pumpWidget(_testApp());
     await _signIn(tester);
 
-    await tester.tap(find.byKey(const ValueKey('home-search')));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byKey(const ValueKey('search-field')), 'cant');
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Shops').last);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Shops are open'), findsOneWidget);
+    expect(find.byKey(const ValueKey('home-search')), findsNothing);
+    expect(find.byKey(const ValueKey('home-insights')), findsNothing);
+    expect(find.byKey(const ValueKey('home-alerts')), findsOneWidget);
   });
 
   testWidgets('modules sheet hides modules without grants', (tester) async {
