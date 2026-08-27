@@ -37,6 +37,25 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Dokploy serves immutable Flutter releases, so an older Flutter service
+    // worker must never keep a student or staff member on a superseded UI.
+    // Retire legacy registrations/caches before loading the current bootstrap.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) =>
+        Promise.all(registrations.map((registration) => registration.unregister()))
+      );
+    }
+    if ('caches' in window) {
+      caches.keys().then((keys) =>
+        Promise.all(keys.map((key) => caches.delete(key)))
+      );
+    }
+
+    const bootstrap = document.createElement('script');
+    bootstrap.src = `flutter_bootstrap.js?v=${Date.now()}`;
+    bootstrap.async = true;
+    document.body.appendChild(bootstrap);
+  </script>
 </body>
 </html>
