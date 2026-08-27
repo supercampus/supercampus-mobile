@@ -325,15 +325,19 @@ class _LoginSuccessSplashState extends State<_LoginSuccessSplash>
                 clipBehavior: Clip.antiAlias,
                 child: Stack(
                   children: [
-                    _SignatureSplashRibbon(
-                      top: constraints.maxHeight * 0.25,
-                      left: -constraints.maxWidth * 0.20,
-                      angle: 0.52,
-                    ),
-                    _SignatureSplashRibbon(
-                      top: constraints.maxHeight * 0.47,
-                      left: -constraints.maxWidth * 0.36,
-                      angle: 0.52,
+                    Positioned.fill(
+                      child: Center(
+                        child: Opacity(
+                          opacity: 0.20,
+                          child: FractionallySizedBox(
+                            widthFactor: 1.54,
+                            child: Image.asset(
+                              'assets/images/login_success_watermark.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                     Positioned.fill(
                       child: Transform.translate(
@@ -413,37 +417,6 @@ class _LoginSuccessSplashState extends State<_LoginSuccessSplash>
                 ),
               );
             },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SignatureSplashRibbon extends StatelessWidget {
-  const _SignatureSplashRibbon({
-    required this.top,
-    required this.left,
-    required this.angle,
-  });
-
-  final double top;
-  final double left;
-  final double angle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: top,
-      left: left,
-      child: Transform.rotate(
-        angle: angle,
-        child: Container(
-          width: MediaQuery.sizeOf(context).width * 1.28,
-          height: 78,
-          decoration: BoxDecoration(
-            color: const Color(0xFFB86CFF).withValues(alpha: 0.22),
-            borderRadius: BorderRadius.circular(18),
           ),
         ),
       ),
