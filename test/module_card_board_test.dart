@@ -249,6 +249,7 @@ void main() {
       await tester.pumpWidget(hostModule(ModuleCatalog.library, permissions));
       await tester.pumpAndSettle();
 
+      expect(find.byKey(const ValueKey('library-shelf-board')), findsOneWidget);
       expect(find.text('Book visit'), findsOneWidget);
       expect(find.text('QR pass'), findsOneWidget);
       expect(find.text('History'), findsOneWidget);
@@ -264,10 +265,34 @@ void main() {
       await tester.pumpWidget(hostModule(ModuleCatalog.hostel, permissions));
       await tester.pumpAndSettle();
 
+      expect(
+        find.byKey(const ValueKey('hostel-room-grid-board')),
+        findsOneWidget,
+      );
       expect(find.text('Outpass'), findsOneWidget);
       expect(find.text('Complaint'), findsOneWidget);
       expect(find.text('Mess menu'), findsOneWidget);
       expect(find.text('My room'), findsOneWidget);
+    });
+
+    testWidgets('tuition fee has a branded coming-soon preview', (
+      tester,
+    ) async {
+      final permissions = grants({'tuition_fee.invoice.read'});
+      await tester.pumpWidget(
+        hostModule(ModuleCatalog.tuitionFee, permissions),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('tuition-fee-preview-board')),
+        findsOneWidget,
+      );
+      expect(find.text('Coming soon'), findsOneWidget);
+      expect(find.text('Dues & receipts'), findsOneWidget);
+      final gradient = cardGradient(tester);
+      expect(gradient.colors.first, const Color(0xFF1400FF));
+      expect(gradient.colors.last, const Color(0xFFA600FF));
     });
   });
 }
