@@ -1,989 +1,700 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../authentication/data/auth_repository.dart';
-import '../data/mock_security_repository.dart';
-import '../data/security_models.dart';
+import '../../scanner/presentation/scan_qr_screen.dart';
+import '../data/security_gate_repository.dart';
+
+const _brandBlue = Color(0xFF1400FF);
+const _brandPurple = Color(0xFFA600FF);
+const _softPurple = Color(0xFF776CF5);
 
 class SecurityPortalScreen extends StatefulWidget {
   const SecurityPortalScreen({
     super.key,
     required this.session,
+    required this.repository,
     required this.onSignOut,
-    this.onExitModule,
   });
 
   final UserSession session;
+  final SecurityGateRepository repository;
   final VoidCallback onSignOut;
-  final VoidCallback? onExitModule;
 
   @override
   State<SecurityPortalScreen> createState() => _SecurityPortalScreenState();
 }
 
 class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
-  final _repository = MockSecurityRepository();
-  int _currentTab = 0;
+  final _manualCode = TextEditingController();
+  var _direction = GateDirection.entry;
+  var _checkpoint = 'Main gate';
+  var _selectedTab = 0;
+  var _loadingHistory = true;
+  var _submitting = false;
+  String? _historyError;
+  List<SecurityGateMovement> _movements = const [];
 
-  final _lookupController = TextEditingController(text: 'GP-2026-881');
-  GateVerificationResult? _lastResult;
-  bool _isSearching = false;
-
-  late List<SecurityActiveOutpass> _activeOutpasses;
-  late List<VisitorPassLog> _visitorLogs;
-  late List<SecurityAlert> _alerts;
+  static const _checkpoints = [
+    'Main gate',
+    'North gate',
+    'Hostel gate',
+    'Visitor gate',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _refreshData();
+    _loadHistory();
   }
 
-  void _refreshData() {
+  @override
+  void dispose() {
+    _manualCode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadHistory() async {
     setState(() {
-      _activeOutpasses = _repository.getActiveOutpasses();
-      _visitorLogs = _repository.getVisitorLogs();
-      _alerts = _repository.getAlerts();
+      _loadingHistory = true;
+      _historyError = null;
     });
+    try {
+      final movements = await widget.repository.recentMovements();
+      if (!mounted) return;
+      setState(() => _movements = movements);
+    } on SecurityGateException catch (error) {
+      if (!mounted) return;
+      setState(() => _historyError = error.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _historyError = 'Recent gate scans could not be loaded.');
+    } finally {
+      if (mounted) setState(() => _loadingHistory = false);
+    }
   }
 
-  void _verifyPass(String code) {
-    setState(() => _isSearching = true);
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) {
-        setState(() {
-          _lastResult = _repository.verifyCode(code);
-          _isSearching = false;
-        });
-      }
-    });
+  Future<void> _openScanner() async {
+    if (_submitting) return;
+    final code = await openScanQr(context, title: 'Scan gatepass');
+    if (code == null || !mounted) return;
+    await _submitCode(code);
   }
 
-  void _approveGateMovement(String passId, String type) {
-    _repository.recordGateAction(passId, type);
-    _refreshData();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Gate movement recorded ($type) for Pass #$passId'),
-        backgroundColor: const Color(0xFF2E7D32),
+  Future<void> _submitManualCode() async {
+    FocusScope.of(context).unfocus();
+    await _submitCode(_manualCode.text);
+  }
+
+  Future<void> _submitCode(String code) async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    try {
+      final movement = await widget.repository.scan(
+        qrPayload: code,
+        direction: _direction,
+        checkpoint: _checkpoint,
+      );
+      if (!mounted) return;
+      _manualCode.clear();
+      setState(() {
+        _movements = [
+          movement,
+          ..._movements.where((item) => item.id != movement.id),
+        ];
+      });
+      await _showAccepted(movement);
+    } on SecurityGateException catch (error) {
+      if (!mounted) return;
+      await _showRejected(error.message);
+    } catch (_) {
+      if (!mounted) return;
+      await _showRejected('The gatepass could not be verified. Try again.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _showAccepted(SecurityGateMovement movement) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ScanResultSheet(
+        accepted: true,
+        title: movement.direction == GateDirection.entry
+            ? 'Gate-in recorded'
+            : 'Gate-out recorded',
+        message: [
+          'Valid pass',
+          if (movement.holderName != null) movement.holderName!,
+          if (movement.passType != null) _passTypeLabel(movement.passType!),
+          movement.checkpoint,
+        ].join(' • '),
+        movement: movement,
       ),
     );
-    setState(() => _lastResult = null);
   }
 
-  void _registerVisitorDialog() {
-    final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    final visitPersonCtrl = TextEditingController();
-    final purposeCtrl = TextEditingController();
-
-    showDialog(
+  Future<void> _showRejected(String message) {
+    return showModalBottomSheet<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.person_add_outlined, color: Color(0xFFD9383A)),
-            SizedBox(width: 8),
-            Text('Register Walk-in Guest'),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Visitor Name'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneCtrl,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'Phone Number'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: visitPersonCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Person/Dept to Visit',
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: purposeCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Purpose of Visit',
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFD9383A),
-            ),
-            onPressed: () {
-              if (nameCtrl.text.isNotEmpty) {
-                final newLog = VisitorPassLog(
-                  id: 'VIS-${DateTime.now().millisecondsSinceEpoch % 1000}',
-                  visitorName: nameCtrl.text,
-                  phone: phoneCtrl.text.isEmpty
-                      ? '+1 555-0000'
-                      : phoneCtrl.text,
-                  personToVisit: visitPersonCtrl.text.isEmpty
-                      ? 'Administration'
-                      : visitPersonCtrl.text,
-                  relationship: 'Guest',
-                  purpose: purposeCtrl.text.isEmpty
-                      ? 'General Inquiry'
-                      : purposeCtrl.text,
-                  checkInTime: DateTime.now(),
-                  isCheckedIn: true,
-                  badgeNumber:
-                      'V-${(DateTime.now().millisecondsSinceEpoch % 20) + 1}',
-                );
-                _repository.addVisitorLog(newLog);
-                _refreshData();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Visitor ${newLog.visitorName} issued badge ${newLog.badgeNumber}',
-                    ),
-                  ),
-                );
-              }
-            },
-            child: const Text('Issue Pass & Check In'),
-          ),
-        ],
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ScanResultSheet(
+        accepted: false,
+        title: 'Do not allow movement',
+        message: message,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final firstName = widget.session.displayName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .first;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: const Color(0xFFF5F2FF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
-        foregroundColor: Colors.white,
-        leading: widget.onExitModule != null
-            ? ModuleBackButton(
-                onPressed: widget.onExitModule!,
-                color: Colors.white,
-              )
-            : null,
-        title: Row(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.ink,
+        elevation: 0,
+        titleSpacing: 20,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFD9383A),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.security, size: 20, color: Colors.white),
+            const Text(
+              'Gate security',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Campus Security Portal',
-                    maxLines: 2,
-                    softWrap: true,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
-                  Text(
-                    'Gate: ${widget.session.departmentOrWard ?? "Main Gate"}',
-                    maxLines: 2,
-                    softWrap: true,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: Colors.white70),
-                  ),
-                ],
-              ),
+            Text(
+              '$firstName • $_checkpoint',
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
           ],
         ),
         actions: [
-          if (widget.onExitModule != null)
-            ModuleHomeButton(
-              onPressed: widget.onExitModule!,
-              color: Colors.white,
-            ),
           IconButton(
-            tooltip: 'Sign Out',
-            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Refresh scans',
+            onPressed: _loadHistory,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+          IconButton(
+            tooltip: 'Sign out',
             onPressed: widget.onSignOut,
+            icon: const Icon(Icons.logout_rounded),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
         ],
       ),
-      body: IndexedStack(
-        index: _currentTab,
-        children: [
-          _buildGateScanTab(),
-          _buildActiveOutpassesTab(),
-          _buildVisitorLogTab(),
-          _buildSecurityAlertsTab(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGateScanTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Card(
-                elevation: 0,
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.grey.shade200),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.qr_code_scanner,
-                            color: Color(0xFFD9383A),
-                            size: 28,
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Gate Pass Scanner & Verification',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  'Scan QR payload or enter Gate Pass ID / Roll Number',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.muted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _lookupController,
-                              decoration: const InputDecoration(
-                                labelText: 'Gate Pass Code / Roll No',
-                                prefixIcon: Icon(Icons.search),
-                                hintText: 'e.g. GP-2026-881',
-                              ),
-                              onSubmitted: _verifyPass,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFF1E293B),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 16,
-                              ),
-                            ),
-                            onPressed: _isSearching
-                                ? null
-                                : () => _verifyPass(_lookupController.text),
-                            icon: _isSearching
-                                ? const SizedBox.square(
-                                    dimension: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(Icons.verified_user),
-                            label: const Text('Verify'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Quick Demo Scan Triggers:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          ActionChip(
-                            avatar: const Icon(
-                              Icons.check_circle,
-                              size: 16,
-                              color: Colors.green,
-                            ),
-                            label: const Text('Valid Pass (Alex)'),
-                            onPressed: () {
-                              _lookupController.text = 'GP-2026-881';
-                              _verifyPass('GP-2026-881');
-                            },
-                          ),
-                          ActionChip(
-                            avatar: const Icon(
-                              Icons.timer_off,
-                              size: 16,
-                              color: Colors.amber,
-                            ),
-                            label: const Text('Expired Pass (Rohan)'),
-                            onPressed: () {
-                              _lookupController.text = 'GP-EXPIRED';
-                              _verifyPass('GP-EXPIRED');
-                            },
-                          ),
-                          ActionChip(
-                            avatar: const Icon(
-                              Icons.block,
-                              size: 16,
-                              color: Colors.red,
-                            ),
-                            label: const Text('Restricted Pass (Vikram)'),
-                            onPressed: () {
-                              _lookupController.text = 'GP-RESTRICT';
-                              _verifyPass('GP-RESTRICT');
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (_lastResult != null) ...[
-                const SizedBox(height: 20),
-                _buildVerificationCard(_lastResult!),
-              ],
-            ],
-          ),
+      body: SafeArea(
+        top: false,
+        child: IndexedStack(
+          index: _selectedTab,
+          children: [_scannerPage(), _historyPage()],
         ),
       ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedTab,
+        onDestinationSelected: (value) => setState(() => _selectedTab = value),
+        indicatorColor: _softPurple.withValues(alpha: 0.16),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.qr_code_scanner_rounded),
+            label: 'Scanner',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_rounded),
+            label: 'Scan history',
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildVerificationCard(GateVerificationResult res) {
-    final (statusColor, statusIcon, statusTitle) = switch (res.status) {
-      PassVerificationStatus.valid => (
-        const Color(0xFF2E7D32),
-        Icons.verified,
-        'ENTRY / EXIT APPROVED',
-      ),
-      PassVerificationStatus.expired => (
-        Colors.orange.shade800,
-        Icons.error_outline,
-        'EXPIRED GATE PASS',
-      ),
-      PassVerificationStatus.restricted => (
-        const Color(0xFFD9383A),
-        Icons.block,
-        'RESTRICTED / BLOCKED PASS',
-      ),
-      PassVerificationStatus.invalid => (
-        Colors.red.shade900,
-        Icons.cancel,
-        'INVALID CODE',
-      ),
-    };
-
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: statusColor, width: 2),
-      ),
-      color: Colors.white,
-      child: Column(
+  Widget _scannerPage() {
+    final today = _movements.where(_isToday).toList(growable: false);
+    final entries = today
+        .where((item) => item.direction == GateDirection.entry)
+        .length;
+    final exits = today.length - entries;
+    return RefreshIndicator(
+      onRefresh: _loadHistory,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: statusColor,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(14),
+              gradient: const LinearGradient(
+                colors: [_brandBlue, _brandPurple],
               ),
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: _brandPurple.withValues(alpha: 0.2),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(statusIcon, color: Colors.white, size: 24),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    statusTitle,
-                    style: const TextStyle(
+                const Row(
+                  children: [
+                    Icon(Icons.verified_user_outlined, color: Colors.white),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Verify campus movement',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Choose the movement, then scan the student or visitor gatepass.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.78),
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _directionSelector(),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  initialValue: _checkpoint,
+                  dropdownColor: const Color(0xFF2D12B7),
+                  iconEnabledColor: Colors.white,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Checkpoint',
+                    labelStyle: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.72),
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.location_on_outlined,
                       color: Colors.white,
-                      fontWeight: FontWeight.w500,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.12),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.24),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Colors.white),
+                    ),
+                  ),
+                  items: _checkpoints
+                      .map(
+                        (value) =>
+                            DropdownMenuItem(value: value, child: Text(value)),
+                      )
+                      .toList(growable: false),
+                  onChanged: _submitting
+                      ? null
+                      : (value) {
+                          if (value != null) {
+                            setState(() => _checkpoint = value);
+                          }
+                        },
+                ),
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  key: const ValueKey('security-scan-gatepass'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(58),
+                    backgroundColor: Colors.white,
+                    foregroundColor: _brandBlue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  onPressed: _submitting ? null : _openScanner,
+                  icon: _submitting
+                      ? const SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.qr_code_scanner_rounded),
+                  label: Text(
+                    _submitting ? 'Verifying…' : 'Scan gatepass QR',
+                    style: const TextStyle(
                       fontSize: 16,
-                      letterSpacing: 0.5,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                Text(
-                  '#${res.passId}',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(20),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _metric('Gate in', '$entries', Icons.login_rounded),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _metric('Gate out', '$exits', Icons.logout_rounded),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          Text(
+            'Manual verification',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Use this only when the camera cannot read the QR.',
+            style: TextStyle(color: AppColors.muted),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _manualCode,
+            enabled: !_submitting,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _submitManualCode(),
+            decoration: InputDecoration(
+              hintText: 'Paste gatepass code',
+              prefixIcon: const Icon(Icons.password_rounded),
+              suffixIcon: IconButton(
+                tooltip: 'Verify code',
+                onPressed: _submitting ? null : _submitManualCode,
+                icon: const Icon(Icons.arrow_forward_rounded),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          if (_movements.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Text(
+                  'Recent scans',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => setState(() => _selectedTab = 1),
+                  child: const Text('View all'),
+                ),
+              ],
+            ),
+            ..._movements.take(3).map(_movementTile),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _directionSelector() {
+    return SegmentedButton<GateDirection>(
+      segments: const [
+        ButtonSegment(
+          value: GateDirection.entry,
+          label: Text('Gate in'),
+          icon: Icon(Icons.login_rounded),
+        ),
+        ButtonSegment(
+          value: GateDirection.exit,
+          label: Text('Gate out'),
+          icon: Icon(Icons.logout_rounded),
+        ),
+      ],
+      selected: {_direction},
+      onSelectionChanged: _submitting
+          ? null
+          : (value) => setState(() => _direction = value.first),
+      style: ButtonStyle(
+        foregroundColor: WidgetStateProperty.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected) ? _brandBlue : Colors.white,
+        ),
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? Colors.white
+              : Colors.white.withValues(alpha: 0.1),
+        ),
+        side: WidgetStateProperty.all(
+          BorderSide(color: Colors.white.withValues(alpha: 0.28)),
+        ),
+      ),
+      showSelectedIcon: false,
+    );
+  }
+
+  Widget _metric(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: _softPurple.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: _brandBlue),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(label, style: const TextStyle(color: AppColors.muted)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _historyPage() {
+    return RefreshIndicator(
+      onRefresh: _loadHistory,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 20, 18, 30),
+        children: [
+          Text(
+            'Gate movement history',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 5),
+          const Text(
+            'Latest verified scans from every checkpoint.',
+            style: TextStyle(color: AppColors.muted),
+          ),
+          const SizedBox(height: 18),
+          if (_loadingHistory)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(36),
+                child: CircularProgressIndicator(color: _brandPurple),
+              ),
+            )
+          else if (_historyError != null)
+            _emptyState(
+              Icons.cloud_off_outlined,
+              _historyError!,
+              action: TextButton(
+                onPressed: _loadHistory,
+                child: const Text('Retry'),
+              ),
+            )
+          else if (_movements.isEmpty)
+            _emptyState(
+              Icons.qr_code_2_rounded,
+              'No gatepasses have been scanned yet.',
+            )
+          else
+            ..._movements.map(_movementTile),
+        ],
+      ),
+    );
+  }
+
+  Widget _movementTile(SecurityGateMovement movement) {
+    final isEntry = movement.direction == GateDirection.entry;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: (isEntry ? _brandBlue : _brandPurple).withValues(
+                alpha: .1,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              isEntry ? Icons.login_rounded : Icons.logout_rounded,
+              color: isEntry ? _brandBlue : _brandPurple,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: statusColor.withValues(alpha: 0.15),
-                      child: Text(
-                        res.studentName.substring(0, 1),
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w500,
-                          color: statusColor,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            res.studentName,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            '${res.rollNumber} • ${res.department}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                          Text(
-                            res.hostelRoom,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const Divider(height: 30),
                 Text(
-                  'Pass Details:',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade800,
-                  ),
+                  movement.direction.label,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 8),
-                _detailRow('Pass Type', res.passType),
-                _detailRow('Status Reason', res.statusReason),
-                _detailRow(
-                  'Parent Consent',
-                  res.parentApproved ? 'Verified' : 'Pending',
-                  valueColor: res.parentApproved ? Colors.green : Colors.red,
+                Text(
+                  movement.checkpoint,
+                  style: const TextStyle(color: AppColors.muted),
                 ),
-                _detailRow(
-                  'Warden Approval',
-                  res.wardenApproved ? 'Verified' : 'Pending / Required',
-                  valueColor: res.wardenApproved ? Colors.green : Colors.amber,
-                ),
-                const SizedBox(height: 20),
-                if (res.status == PassVerificationStatus.valid) ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            foregroundColor: const Color(0xFF2E7D32),
-                            side: const BorderSide(color: Color(0xFF2E7D32)),
-                          ),
-                          onPressed: () =>
-                              _approveGateMovement(res.passId, 'OUTPASS EXIT'),
-                          icon: const Icon(Icons.logout),
-                          label: const Text('Log Student Exit'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            backgroundColor: const Color(0xFF2E7D32),
-                          ),
-                          onPressed: () =>
-                              _approveGateMovement(res.passId, 'OUTPASS ENTRY'),
-                          icon: const Icon(Icons.login),
-                          label: const Text('Log Student Entry'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.amber.shade300),
-                    ),
-                    child: const Text(
-                      'Action Required: Inform student to contact Warden / Chief Warden for clearance.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
+          ),
+          Text(
+            _time(movement.createdAt),
+            style: const TextStyle(color: AppColors.muted, fontSize: 12),
           ),
         ],
       ),
     );
   }
 
-  Widget _detailRow(String label, String value, {Color? valueColor}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _emptyState(IconData icon, String message, {Widget? action}) {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
         children: [
-          SizedBox(
-            width: 130,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: valueColor ?? AppColors.ink,
-              ),
-            ),
-          ),
+          Icon(icon, size: 38, color: _softPurple),
+          const SizedBox(height: 12),
+          Text(message, textAlign: TextAlign.center),
+          if (action != null) action,
         ],
       ),
     );
   }
 
-  Widget _buildActiveOutpassesTab() {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Active Student Outpasses',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
-                ),
-                Text(
-                  '${_activeOutpasses.length} students currently off-campus',
-                  style: const TextStyle(fontSize: 13, color: AppColors.muted),
-                ),
-              ],
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _refreshData,
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        ..._activeOutpasses.map((pass) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: pass.isOverdue
-                    ? const Color(0xFFD9383A)
-                    : Colors.grey.shade200,
-                width: pass.isOverdue ? 1.5 : 1,
-              ),
-            ),
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: pass.isOverdue
-                        ? const Color(0xFFFFEBEE)
-                        : const Color(0xFFE8F5E9),
-                    child: Icon(
-                      pass.isOverdue ? Icons.timer_off : Icons.directions_walk,
-                      color: pass.isOverdue
-                          ? const Color(0xFFD9383A)
-                          : const Color(0xFF2E7D32),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              pass.studentName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 15,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: pass.isOverdue
-                                    ? const Color(0xFFD9383A)
-                                    : const Color(0xFF2E7D32),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                pass.statusLabel,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${pass.rollNumber} • ${pass.passType} to ${pass.destination}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.muted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  OutlinedButton(
-                    onPressed: () =>
-                        _approveGateMovement(pass.id, 'RETURNED TO CAMPUS'),
-                    child: const Text('Log Return'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }),
-      ],
-    );
+  bool _isToday(SecurityGateMovement value) {
+    final now = DateTime.now();
+    return value.createdAt.year == now.year &&
+        value.createdAt.month == now.month &&
+        value.createdAt.day == now.day;
   }
 
-  Widget _buildVisitorLogTab() {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  String _time(DateTime value) {
+    final hour = value.hour % 12 == 0 ? 12 : value.hour % 12;
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '$hour:$minute ${value.hour < 12 ? 'AM' : 'PM'}';
+  }
+
+  String _passTypeLabel(String value) => switch (value) {
+    'daily_access' => 'Campus access',
+    'leave_pass' => 'Leave pass',
+    'outpass' => 'Outpass',
+    'visitor' => 'Visitor pass',
+    _ => value,
+  };
+}
+
+class _ScanResultSheet extends StatelessWidget {
+  const _ScanResultSheet({
+    required this.accepted,
+    required this.title,
+    required this.message,
+    this.movement,
+  });
+
+  final bool accepted;
+  final String title;
+  final String message;
+  final SecurityGateMovement? movement;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = accepted ? _brandBlue : const Color(0xFFE53935);
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(24, 26, 24, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Campus Visitor Log',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
-                ),
-                Text(
-                  'Manage guest badges and check-ins',
-                  style: TextStyle(fontSize: 13, color: AppColors.muted),
-                ),
-              ],
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: .1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                accepted ? Icons.verified_rounded : Icons.block_rounded,
+                size: 40,
+                color: color,
+              ),
             ),
-            FilledButton.icon(
+            const SizedBox(height: 16),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.muted, height: 1.4),
+            ),
+            if (movement != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Reference ${movement!.id}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 11, color: AppColors.muted),
+              ),
+            ],
+            const SizedBox(height: 22),
+            FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFD9383A),
+                minimumSize: const Size.fromHeight(52),
+                backgroundColor: color,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
               ),
-              onPressed: _registerVisitorDialog,
-              icon: const Icon(Icons.add),
-              label: const Text('Walk-in Guest'),
+              onPressed: () => Navigator.pop(context),
+              child: Text(accepted ? 'Scan next pass' : 'Close'),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        ..._visitorLogs.map((log) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade200),
-            ),
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE2E8F0),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      log.badgeNumber,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 13,
-                        color: Color(0xFF1E293B),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          log.visitorName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Visiting: ${log.personToVisit} (${log.relationship})',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.muted,
-                          ),
-                        ),
-                        Text(
-                          'Purpose: ${log.purpose} • Phone: ${log.phone}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.muted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (log.isCheckedIn) ...[
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red.shade800,
-                      ),
-                      onPressed: () {
-                        _repository.checkoutVisitor(log.id);
-                        _refreshData();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Visitor ${log.visitorName} checked out.',
-                            ),
-                          ),
-                        );
-                      },
-                      child: const Text('Check Out'),
-                    ),
-                  ] else ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'Checked Out',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  Widget _buildSecurityAlertsTab() {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        const Text(
-          'Security Emergency & Incident Control',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Real-time broadcasts and incident logs',
-          style: TextStyle(fontSize: 13, color: AppColors.muted),
-        ),
-        const SizedBox(height: 20),
-        Card(
-          elevation: 0,
-          color: const Color(0xFFFFF1F2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: const BorderSide(color: Color(0xFFFECDD3)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                const Icon(Icons.warning, color: Color(0xFFE11D48), size: 36),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Gate Emergency Control',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF9F1239),
-                          fontSize: 15,
-                        ),
-                      ),
-                      Text(
-                        'Trigger instant campus perimeter alert or gate lockdown.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFFBE123C),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFE11D48),
-                  ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('SECURITY ALERT BROADCAST SENT'),
-                        backgroundColor: Color(0xFFE11D48),
-                      ),
-                    );
-                  },
-                  child: const Text('Broadcast Alert'),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          'Recent Incident Log:',
-          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
-        ),
-        const SizedBox(height: 10),
-        ..._alerts.map((alert) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 10),
-            elevation: 0,
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade200),
-            ),
-            child: ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFFF1F5F9),
-                child: Icon(
-                  Icons.notifications_active_outlined,
-                  color: Color(0xFF475569),
-                ),
-              ),
-              title: Text(
-                alert.title,
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-              subtitle: Text(
-                '${alert.description}\nLocation: ${alert.location}',
-              ),
-              trailing: Text(
-                alert.severity,
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: alert.severity == 'High' ? Colors.red : Colors.orange,
-                ),
-              ),
-            ),
-          );
-        }),
-      ],
+      ),
     );
   }
 }
