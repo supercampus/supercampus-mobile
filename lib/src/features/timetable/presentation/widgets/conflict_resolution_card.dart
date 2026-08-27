@@ -101,7 +101,7 @@ class ConflictResolutionCard extends StatelessWidget {
                 if (!isResolved)
                   FilledButton.icon(
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF00695C),
+                      backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 8,

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 
 abstract final class AppColors {
-  static const primary = Color(0xFF1400FF);
+  /// Canonical SuperCampus brand palette. Keep every non-semantic product
+  /// surface inside these three colours unless the product theme is changed.
+  static const brandBlue = Color(0xFF1400FF);
+  static const brandMagenta = Color(0xFFA600FF);
+  static const brandLavender = Color(0xFF776CF5);
+
+  static const primary = brandBlue;
   static const primaryDark = Color(0xFF0E00B8);
   static const amber = Color(0xFFF5A623);
   static const amberSoft = Color(0xFFFFF3D9);
@@ -11,9 +17,9 @@ abstract final class AppColors {
   static const muted = Color(0xFF6B7280);
   static const canvas = Color(0xFFF8F7FF);
   static const border = Color(0xFFE3E0FF);
-  static const gateBlue = Color(0xFF1400FF);
-  static const gateMagenta = Color(0xFFA600FF);
-  static const gateLavender = Color(0xFF776CF5);
+  static const gateBlue = brandBlue;
+  static const gateMagenta = brandMagenta;
+  static const gateLavender = brandLavender;
   static const gateLime = Color(0xFFDFFF00);
 
   /// The violet the student home is built on. Same two stops as the gate

@@ -123,7 +123,7 @@ abstract final class ModuleCatalog {
       tagline:
           'End-to-end exam lifecycle, marks entry, moderation & transcripts',
       icon: Icons.assignment_outlined,
-      color: Color(0xFF1B5E20),
+      color: AppColors.gateMagenta,
       features: [
         FeatureDescriptor(
           id: 'dashboard',
@@ -232,7 +232,7 @@ abstract final class ModuleCatalog {
       shortTitle: 'Timetable',
       tagline: 'Class schedules, teaching periods and substitutions',
       icon: Icons.table_chart_outlined,
-      color: Color(0xFF00695C),
+      color: AppColors.gateLavender,
       features: [
         FeatureDescriptor(
           id: 'schedule',
@@ -278,7 +278,7 @@ abstract final class ModuleCatalog {
       title: 'Attendance',
       tagline: 'Digital swipe attendance, rosters and leave approvals',
       icon: Icons.badge_outlined,
-      color: Color(0xFF6A1B9A),
+      color: AppColors.gateBlue,
       features: [
         FeatureDescriptor(
           id: 'roster',
@@ -344,7 +344,7 @@ abstract final class ModuleCatalog {
       title: 'Gatepass',
       tagline: 'Outpasses, campus access and visitor invitations',
       icon: Icons.qr_code_2_outlined,
-      color: Color(0xFF2455A4),
+      color: AppColors.gateMagenta,
       features: [
         FeatureDescriptor(
           id: 'outpass',
@@ -373,7 +373,7 @@ abstract final class ModuleCatalog {
       title: 'Library',
       tagline: 'Time-bound QR passes, capacity and library visit history',
       icon: Icons.local_library_outlined,
-      color: Color(0xFF7B3F98),
+      color: AppColors.gateLavender,
       status: ModuleStatus.available,
       features: [
         FeatureDescriptor(
@@ -404,7 +404,7 @@ abstract final class ModuleCatalog {
       shortTitle: 'Vendors',
       tagline: 'Vendors, contracts, purchase orders, payments and work orders',
       icon: Icons.handshake_outlined,
-      color: Color(0xFF8A4B20),
+      color: AppColors.gateBlue,
       status: ModuleStatus.available,
       features: [
         FeatureDescriptor(
@@ -459,7 +459,7 @@ abstract final class ModuleCatalog {
       title: 'Tuition Fee',
       tagline: 'Fee structure, dues and payment receipts',
       icon: Icons.account_balance_outlined,
-      color: Color(0xFFB25400),
+      color: AppColors.gateMagenta,
       status: ModuleStatus.planned,
       features: [
         FeatureDescriptor(
@@ -479,7 +479,7 @@ abstract final class ModuleCatalog {
       title: 'Academics',
       tagline: 'Programmes, subjects, batches and weekly hours',
       icon: Icons.school_outlined,
-      color: Color(0xFF4A4E9C),
+      color: AppColors.gateLavender,
       status: ModuleStatus.available,
       features: [
         FeatureDescriptor(
@@ -580,7 +580,7 @@ abstract final class ModuleCatalog {
       tagline:
           'Residency lifecycle, outpass, room allotment, mess and clearance',
       icon: Icons.night_shelter_outlined,
-      color: Color(0xFF2E4057),
+      color: AppColors.gateBlue,
       status: ModuleStatus.available,
       features: [
         FeatureDescriptor(

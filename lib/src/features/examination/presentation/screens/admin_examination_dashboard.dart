@@ -55,7 +55,7 @@ class AdminExaminationDashboard extends StatelessWidget {
                     title: 'Exam Management',
                     subtitle: 'Config, Schedule & Conduct',
                     icon: Icons.calendar_month_outlined,
-                    color: const Color(0xFF1B5E20),
+                    color: AppColors.primary,
                     badgeText: '14 Active',
                     onTap: () => onNavigateToFeature(0),
                   ),
@@ -101,14 +101,14 @@ class AdminExaminationDashboard extends StatelessWidget {
       padding: EdgeInsets.all(isMobile ? 16 : 20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
+          colors: [AppColors.primary, AppColors.gateMagenta],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1B5E20).withValues(alpha: 0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
