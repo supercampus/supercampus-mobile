@@ -43,8 +43,36 @@ class AccountantWalletCredit {
   final double balance;
 }
 
+class AccountantWalletTransaction {
+  const AccountantWalletTransaction({
+    required this.id,
+    required this.userId,
+    required this.studentName,
+    required this.studentNumber,
+    required this.amount,
+    required this.transactionType,
+    required this.description,
+    required this.createdAt,
+    this.referenceId,
+  });
+
+  final String id;
+  final String userId;
+  final String studentName;
+  final String studentNumber;
+  final double amount;
+  final String transactionType;
+  final String description;
+  final DateTime createdAt;
+  final String? referenceId;
+
+  bool get isCredit => amount > 0;
+}
+
 abstract interface class AccountantWalletRepository {
   Future<List<StudentWalletAccount>> listWallets({String search = ''});
+
+  Future<List<AccountantWalletTransaction>> listTransactions({int limit = 50});
 
   Future<AccountantWalletCredit> creditWallet({
     required String userId,
@@ -94,6 +122,45 @@ class BackendAccountantWalletRepository implements AccountantWalletRepository {
           );
         })
         .where((wallet) => wallet.userId.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  @override
+  Future<List<AccountantWalletTransaction>> listTransactions({
+    int limit = 50,
+  }) async {
+    final uri = _baseUri.replace(
+      path: '/api/v1/operations/canteen/wallet-transactions',
+      queryParameters: {'limit': '$limit'},
+    );
+    final data = await _request(
+      (headers) => _client.get(uri, headers: headers),
+    );
+    final values = data['transactions'];
+    if (values is! List) return const [];
+    return values
+        .whereType<Map<String, dynamic>>()
+        .map(
+          (transaction) => AccountantWalletTransaction(
+            id: _text(transaction['id']),
+            userId: _text(transaction['userId']),
+            studentName: _text(
+              transaction['studentName'],
+              fallback: 'Campus user',
+            ),
+            studentNumber: _text(transaction['studentNumber']),
+            amount: _number(transaction['amount']),
+            transactionType: _text(transaction['transactionType']),
+            description: _text(transaction['description']),
+            referenceId: _text(transaction['referenceId']).isEmpty
+                ? null
+                : _text(transaction['referenceId']),
+            createdAt:
+                DateTime.tryParse(transaction['createdAt']?.toString() ?? '') ??
+                DateTime.fromMillisecondsSinceEpoch(0),
+          ),
+        )
+        .where((transaction) => transaction.id.isNotEmpty)
         .toList(growable: false);
   }
 

@@ -14,7 +14,7 @@ void main() {
         theme: AppTheme.light,
         home: AccountantWalletScreen(
           repository: repository,
-          accountantName: 'Vignesh',
+          accountantName: 'Abhinaya',
           onSignOut: () {},
         ),
       ),
@@ -22,7 +22,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Abinaya S'), findsOneWidget);
-    expect(find.text('120'), findsOneWidget);
+    expect(find.text('120'), findsNWidgets(2));
 
     await tester.tap(find.byKey(const ValueKey('credit-student-1')));
     await tester.pumpAndSettle();
@@ -34,7 +34,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.creditedAmount, 250);
-    expect(find.text('370'), findsOneWidget);
+    expect(find.text('370'), findsNWidgets(2));
     expect(find.textContaining('250 credits added'), findsOneWidget);
   });
 }
@@ -44,16 +44,21 @@ class _WalletRepository implements AccountantWalletRepository {
 
   @override
   Future<List<StudentWalletAccount>> listWallets({String search = ''}) async =>
-      const [
+      [
         StudentWalletAccount(
           userId: 'student-1',
           studentNumber: 'MEC25AD01',
           studentName: 'Abinaya S',
           email: 'abinaya@example.com',
           department: 'AIDS',
-          balance: 120,
+          balance: 120 + creditedAmount,
         ),
       ];
+
+  @override
+  Future<List<AccountantWalletTransaction>> listTransactions({
+    int limit = 50,
+  }) async => const [];
 
   @override
   Future<AccountantWalletCredit> creditWallet({

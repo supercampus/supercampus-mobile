@@ -25,8 +25,10 @@ class AccountantWalletScreen extends StatefulWidget {
 class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
   final _search = TextEditingController();
   List<StudentWalletAccount>? _wallets;
+  List<AccountantWalletTransaction>? _transactions;
   String? _error;
   Timer? _debounce;
+  bool _showActivity = false;
 
   @override
   void initState() {
@@ -44,8 +46,16 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
   Future<void> _load() async {
     setState(() => _error = null);
     try {
-      final wallets = await widget.repository.listWallets(search: _search.text);
-      if (mounted) setState(() => _wallets = wallets);
+      final results = await Future.wait([
+        widget.repository.listWallets(search: _search.text),
+        widget.repository.listTransactions(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _wallets = results[0] as List<StudentWalletAccount>;
+          _transactions = results[1] as List<AccountantWalletTransaction>;
+        });
+      }
     } catch (error) {
       if (mounted) setState(() => _error = error.toString());
     }
@@ -69,21 +79,14 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
     );
     if (result == null || !mounted) return;
     try {
-      final credit = await widget.repository.creditWallet(
+      await widget.repository.creditWallet(
         userId: wallet.userId,
         amount: result.amount,
         reference: result.reference,
       );
       if (!mounted) return;
-      setState(() {
-        _wallets = [
-          for (final item in _wallets ?? const <StudentWalletAccount>[])
-            if (item.userId == wallet.userId)
-              item.copyWith(balance: credit.balance, updatedAt: DateTime.now())
-            else
-              item,
-        ];
-      });
+      await _load();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -104,10 +107,21 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
     final wallets = _wallets;
     final total =
         wallets?.fold<double>(0, (sum, item) => sum + item.balance) ?? 0;
+    final today = DateTime.now();
+    final creditedToday =
+        (_transactions ?? const <AccountantWalletTransaction>[])
+            .where(
+              (item) =>
+                  item.isCredit &&
+                  item.createdAt.toLocal().year == today.year &&
+                  item.createdAt.toLocal().month == today.month &&
+                  item.createdAt.toLocal().day == today.day,
+            )
+            .fold<double>(0, (sum, item) => sum + item.amount);
     return Scaffold(
       backgroundColor: const Color(0xFFF6F4FF),
       appBar: AppBar(
-        title: const Text('Campus wallets'),
+        title: const Text('Accounts'),
         actions: [
           IconButton(
             tooltip: 'Refresh',
@@ -133,7 +147,7 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
-            const Text('Credit student wallets and review available balances.'),
+            const Text('Student wallet credits and transaction records.'),
             const SizedBox(height: 18),
             Container(
               padding: const EdgeInsets.all(20),
@@ -141,62 +155,102 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
                 gradient: AppColors.violetGradient,
                 borderRadius: BorderRadius.circular(22),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.account_balance_wallet_rounded,
-                    color: Colors.white,
-                    size: 34,
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Wallet float',
-                          style: TextStyle(color: Colors.white70),
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.account_balance_wallet_rounded,
+                        color: Colors.white,
+                      ),
+                      SizedBox(width: 9),
+                      Text(
+                        'Wallet overview',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
                         ),
-                        Text(
-                          '${total.toStringAsFixed(0)} credits',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    '${wallets?.length ?? 0} students',
-                    style: const TextStyle(color: Colors.white),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SummaryValue(
+                          label: 'Wallet float',
+                          value: total.toStringAsFixed(0),
+                        ),
+                      ),
+                      Expanded(
+                        child: _SummaryValue(
+                          label: 'Credited today',
+                          value: creditedToday.toStringAsFixed(0),
+                        ),
+                      ),
+                      Expanded(
+                        child: _SummaryValue(
+                          label: 'Students',
+                          value: '${wallets?.length ?? 0}',
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _search,
-              onChanged: _searchChanged,
-              decoration: InputDecoration(
-                hintText: 'Search name, roll number or department',
-                prefixIcon: const Icon(Icons.search_rounded),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(
+                  value: false,
+                  icon: Icon(Icons.people_rounded),
+                  label: Text('Student wallets'),
                 ),
-              ),
+                ButtonSegment(
+                  value: true,
+                  icon: Icon(Icons.receipt_long_rounded),
+                  label: Text('Activity'),
+                ),
+              ],
+              selected: {_showActivity},
+              onSelectionChanged: (value) =>
+                  setState(() => _showActivity = value.first),
             ),
             const SizedBox(height: 18),
+            if (!_showActivity) ...[
+              TextField(
+                controller: _search,
+                onChanged: _searchChanged,
+                decoration: InputDecoration(
+                  hintText: 'Search name, roll number or department',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+            ],
             if (_error != null)
               _ErrorCard(message: _error!, onRetry: _load)
-            else if (wallets == null)
+            else if (wallets == null || _transactions == null)
               const SizedBox(
                 height: 552,
                 child: SkeletonList(rows: 6, rowHeight: 82),
+              )
+            else if (_showActivity && _transactions!.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 56),
+                child: Center(child: Text('No wallet activity yet.')),
+              )
+            else if (_showActivity)
+              ..._transactions!.map(
+                (transaction) => _TransactionCard(transaction: transaction),
               )
             else if (wallets.isEmpty)
               const Padding(
@@ -215,6 +269,78 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
       ),
     );
   }
+}
+
+class _SummaryValue extends StatelessWidget {
+  const _SummaryValue({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        value,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 23,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+    ],
+  );
+}
+
+class _TransactionCard extends StatelessWidget {
+  const _TransactionCard({required this.transaction});
+  final AccountantWalletTransaction transaction;
+
+  String _time(DateTime value) {
+    final local = value.toLocal();
+    String two(int number) => number.toString().padLeft(2, '0');
+    return '${two(local.day)}/${two(local.month)}/${local.year} · '
+        '${two(local.hour)}:${two(local.minute)}';
+  }
+
+  @override
+  Widget build(BuildContext context) => Card(
+    margin: const EdgeInsets.only(bottom: 10),
+    elevation: 0,
+    color: Colors.white,
+    child: ListTile(
+      leading: CircleAvatar(
+        backgroundColor: AppColors.brandLavender,
+        foregroundColor: AppColors.primary,
+        child: Icon(
+          transaction.isCredit
+              ? Icons.south_west_rounded
+              : Icons.north_east_rounded,
+        ),
+      ),
+      title: Text(
+        transaction.studentName,
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+      subtitle: Text(
+        [
+          transaction.studentNumber,
+          _time(transaction.createdAt),
+          if (transaction.referenceId?.isNotEmpty == true)
+            'Ref: ${transaction.referenceId}',
+        ].where((item) => item.isNotEmpty).join('\n'),
+      ),
+      trailing: Text(
+        '${transaction.isCredit ? '+' : ''}${transaction.amount.toStringAsFixed(0)}',
+        style: const TextStyle(
+          color: AppColors.primary,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    ),
+  );
 }
 
 class _WalletCard extends StatelessWidget {
