@@ -64,6 +64,7 @@ class ModuleDescriptor {
     required this.color,
     required this.features,
     this.shortTitle,
+    this.keywords = const [],
     this.status = ModuleStatus.available,
   });
 
@@ -77,6 +78,14 @@ class ModuleDescriptor {
   final IconData icon;
   final Color color;
   final List<FeatureDescriptor> features;
+
+  /// Other names people search for this module by.
+  ///
+  /// A module can be renamed without the people using it renaming it too — the
+  /// shops were the canteen for years — so search keeps answering to the old
+  /// word as well as the new one.
+  final List<String> keywords;
+
   final ModuleStatus status;
 
   /// What the module is called on compact surfaces.
@@ -290,12 +299,22 @@ abstract final class ModuleCatalog {
             ModuleActions.approve,
           },
         ),
+        // `reports`, plural, and no `read`: these are the keys that actually
+        // exist in authz.permission_definitions. A feature id the authorization
+        // tables have never heard of can never be granted, so it would have
+        // hidden the button forever without anyone seeing an error.
+        FeatureDescriptor(
+          id: 'reports',
+          label: 'Reports',
+          actions: {ModuleActions.create, ModuleActions.publish},
+        ),
       ],
     ),
     ModuleDescriptor(
       id: canteen,
-      title: 'Canteen',
-      tagline: 'Browse the menu, pay and track pickup orders',
+      title: 'Shops',
+      tagline: 'Classic, Bites and Stationery — browse, pay and track orders',
+      keywords: ['canteen', 'food', 'mess', 'snacks', 'stationery', 'store'],
       icon: Icons.restaurant_outlined,
       color: AppColors.primary,
       features: [
@@ -496,13 +515,70 @@ abstract final class ModuleCatalog {
             ModuleActions.update,
           },
         ),
+        // A learner picks; an advisor sees the section's picks; a head settles
+        // the ones that contend for the same seat.
+        FeatureDescriptor(
+          id: 'elective',
+          label: 'Electives',
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.update,
+            ModuleActions.approve,
+          },
+        ),
+        FeatureDescriptor(
+          id: 'registration',
+          label: 'Registration',
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.update,
+            ModuleActions.approve,
+          },
+        ),
+        // What makes a class advisor an advisor rather than another lecturer:
+        // notes kept about the students in their section, and the formal
+        // warnings that follow when attendance or marks fall short.
+        FeatureDescriptor(
+          id: 'mentoring',
+          label: 'Mentoring',
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.update,
+          },
+        ),
+        FeatureDescriptor(
+          id: 'warning',
+          label: 'Warnings',
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.approve,
+          },
+        ),
+        FeatureDescriptor(
+          id: 'progress',
+          label: 'Progress',
+          actions: {ModuleActions.read},
+        ),
+        // Deliberately narrow, and the only academic feature finance holds: the
+        // derived signals a fee decision needs — attendance percentage, arrears,
+        // result status — and never the per-session log behind them.
+        FeatureDescriptor(
+          id: 'eligibility',
+          label: 'Eligibility',
+          actions: {ModuleActions.read},
+        ),
       ],
     ),
     ModuleDescriptor(
       id: hostel,
       title: 'Hostel Management',
       shortTitle: 'Hostel',
-      tagline: 'Residency lifecycle, outpass, room allotment, mess and clearance',
+      tagline:
+          'Residency lifecycle, outpass, room allotment, mess and clearance',
       icon: Icons.night_shelter_outlined,
       color: Color(0xFF2E4057),
       status: ModuleStatus.available,
@@ -510,27 +586,48 @@ abstract final class ModuleCatalog {
         FeatureDescriptor(
           id: 'residency',
           label: 'Hostel Residency',
-          actions: {ModuleActions.read, ModuleActions.create, ModuleActions.update},
+          actions: {
+            ModuleActions.read,
+            ModuleActions.create,
+            ModuleActions.update,
+          },
         ),
         FeatureDescriptor(
           id: 'application',
           label: 'Accommodation Application',
-          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.approve},
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.approve,
+          },
         ),
         FeatureDescriptor(
           id: 'inventory',
           label: 'Inventory & Bed Allotment',
-          actions: {ModuleActions.read, ModuleActions.update, ModuleActions.create},
+          actions: {
+            ModuleActions.read,
+            ModuleActions.update,
+            ModuleActions.create,
+          },
         ),
         FeatureDescriptor(
           id: 'outpass',
           label: 'Leave & Outpass',
-          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.approve, ModuleActions.update},
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.approve,
+            ModuleActions.update,
+          },
         ),
         FeatureDescriptor(
           id: 'movement',
           label: 'Movement & Gate Logging',
-          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update},
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.update,
+          },
         ),
         FeatureDescriptor(
           id: 'mess',
@@ -540,22 +637,39 @@ abstract final class ModuleCatalog {
         FeatureDescriptor(
           id: 'complaints',
           label: 'Complaints & Maintenance',
-          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.update},
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.update,
+          },
         ),
         FeatureDescriptor(
           id: 'room_change',
           label: 'Room Change',
-          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.approve},
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.approve,
+          },
         ),
         FeatureDescriptor(
           id: 'visitors',
           label: 'Visitor Pass',
-          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.approve},
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.approve,
+          },
         ),
         FeatureDescriptor(
           id: 'clearance',
           label: 'Vacating & Clearance',
-          actions: {ModuleActions.create, ModuleActions.read, ModuleActions.approve, ModuleActions.update},
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.approve,
+            ModuleActions.update,
+          },
         ),
       ],
     ),

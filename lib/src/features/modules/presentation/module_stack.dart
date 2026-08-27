@@ -1,9 +1,12 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../../core/access/academic_presentation.dart';
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
+import 'today_glance.dart';
 
 /// One glass frame that every granted module scrolls through, a single card at
 /// a time.
@@ -22,6 +25,46 @@ import '../../../core/access/module_catalog.dart';
 /// The frame itself is plain glass — the page behind it, blurred, with a lit
 /// edge. It has no colour of its own: whatever tint it seems to have is
 /// borrowed from what is behind it.
+/// Live content for the cards that show more than their own name.
+///
+/// The boards for attendance and gatepass draw real information — today's roll
+/// call, the pass itself. Everything here is optional: with nothing supplied
+/// each card falls back to a state that is true rather than to invented data.
+class ModuleCardContent {
+  const ModuleCardContent({this.attendanceMarks, this.gatepassQr, this.shops});
+
+  /// The seven latest published subject rolls, oldest to newest. Null is an
+  /// unused leading position when fewer than seven rolls have been published.
+  final List<AttendanceMark?>? attendanceMarks;
+
+  /// What the gatepass panel should encode. Null draws the module's glyph
+  /// instead of a code, so the card never shows a scannable square that means
+  /// nothing.
+  final String? gatepassQr;
+
+  /// The storefronts in the grid on the shops board. Null uses the campus shop
+  /// types, which is what the board draws; supply this to show the tenant's own
+  /// shops instead. Every one of them opens the shop list.
+  final List<ModuleShopShortcut>? shops;
+}
+
+/// One storefront tile on the shops board.
+class ModuleShopShortcut {
+  const ModuleShopShortcut(this.id, this.label, this.icon);
+
+  final String id;
+  final String label;
+  final IconData icon;
+}
+
+/// The shop types SuperCampus ships with, in the order the board draws them.
+const _defaultShops = <ModuleShopShortcut>[
+  ModuleShopShortcut('food', 'Canteen', Icons.restaurant_rounded),
+  ModuleShopShortcut('drinks', 'Beverages', Icons.local_cafe_rounded),
+  ModuleShopShortcut('stationery', 'Stationery', Icons.edit_rounded),
+  ModuleShopShortcut('laundry', 'Laundry', Icons.local_laundry_service_rounded),
+];
+
 class ModuleStack extends StatefulWidget {
   const ModuleStack({
     super.key,
@@ -30,6 +73,7 @@ class ModuleStack extends StatefulWidget {
     required this.onOpenModule,
     this.onQuickAction,
     this.onIndexChanged,
+    this.content = const ModuleCardContent(),
   });
 
   final List<ModuleDescriptor> modules;
@@ -44,6 +88,9 @@ class ModuleStack extends StatefulWidget {
   onQuickAction;
   final ValueChanged<int>? onIndexChanged;
 
+  /// What the module-specific panels should draw. See [ModuleCardContent].
+  final ModuleCardContent content;
+
   /// The frame is a fixed slot — one card plus its glass surround — whatever
   /// the module count. Whoever places it hands it this height.
   static double heightFor(int moduleCount) => _frameHeight;
@@ -52,9 +99,19 @@ class ModuleStack extends StatefulWidget {
   State<ModuleStack> createState() => _ModuleStackState();
 }
 
-/// A card tall enough for a 52px icon tile, two lines of text and breathing
-/// room — not so tall that it becomes a poster.
-const _cardHeight = 174.0;
+/// The card is the reference artwork's own shape: the three boards are all
+/// 360 tall on a ~756 wide card, so the card is a touch over 2:1 and every
+/// measurement below is that artwork's, scaled by [_k].
+///
+/// Keeping the height fixed rather than deriving it from the width keeps the
+/// frame a fixed slot on the page; at a typical handset width the card lands
+/// on the reference's own proportion.
+const _cardHeight = 157.0;
+
+/// Artwork pixel -> card pixel. Every number in this file that came off the
+/// reference boards is written as its artwork value times this, so the
+/// measurements can be checked against the images directly.
+const _k = _cardHeight / 360;
 
 /// Glass showing around the card — the same on all four sides — and the
 /// gutter the dot rail sits in beside the frame, outside the glass.
@@ -62,7 +119,34 @@ const _framePad = 8.0;
 const _railWidth = 16.0;
 
 const _frameRadius = 26.0;
-const _cardRadius = _frameRadius - _framePad;
+const _cardRadius = 32 * _k;
+
+/// The border of card colour around everything inside it: 33 on the artwork,
+/// on all four sides.
+const _cardPad = 33 * _k;
+
+/// The gap between neighbouring cells. The boards use 25–35 depending on which
+/// two cells meet; 28 is the middle of that and reads the same.
+const _cellGap = 28 * _k;
+
+/// Corner radii, off the artwork: the hero cell and the big left block, the
+/// action tiles, and the small attendance marks.
+const _heroRadius = 26 * _k;
+const _tileRadius = 24 * _k;
+const _markRadius = 12 * _k;
+
+/// Padding inside a hero cell, and the icon plate that sits in it.
+const _heroPad = 22 * _k;
+const _heroPlate = 93 * _k;
+const _heroPlateRadius = 24 * _k;
+const _heroGlyph = 44 * _k;
+
+/// Type off the artwork: the module name, and the line under it.
+const _titleSize = 38 * _k;
+const _captionSize = 26 * _k;
+
+/// The glyph in an action tile — the boards draw these large and solid.
+const _tileGlyph = 60 * _k;
 
 /// A page is the whole frame with the card centred in it, so the border of
 /// glass above and below the card matches the one either side of it, and two
@@ -187,13 +271,9 @@ class _ModuleStackState extends State<ModuleStack> {
                       animation: _controller,
                       builder: (context, child) => _pageTransform(i, child!),
                       child: _ModuleCard(
-                        // The key follows the state, so a caller can always
-                        // address the card by what tapping it will do.
-                        key: ValueKey(
-                          i == _selected
-                              ? 'open-module-${widget.modules[i].id}'
-                              : 'module-bar-${widget.modules[i].id}',
-                        ),
+                        key: ValueKey('module-card-${widget.modules[i].id}'),
+                        front: i == _selected,
+                        content: widget.content,
                         module: widget.modules[i],
                         permissions: widget.permissions,
                         onQuickAction: widget.onQuickAction,
@@ -378,17 +458,159 @@ class _EdgeFrost extends StatelessWidget {
   }
 }
 
+/// The colours a card is painted in.
+///
+/// The reference boards give every module its own palette rather than tinting
+/// one shared surface, and that is most of why they read as distinct objects
+/// instead of rows in a list. The values here are sampled straight off those
+/// boards, so a card can be checked against its image.
+class _CardPalette {
+  const _CardPalette({
+    required this.from,
+    required this.to,
+    required this.hero,
+    required this.plate,
+    required this.tiles,
+  });
+
+  /// The card's own gradient, top-left to bottom-right.
+  final Color from;
+  final Color to;
+
+  /// The hero cell, and the icon plate that sits inside it.
+  final Color hero;
+  final Color plate;
+
+  /// Action tiles, in order. The boards give neighbouring tiles visibly
+  /// different colours; the list cycles when a module has more actions than
+  /// the board drew.
+  final List<Color> tiles;
+
+  Color tile(int i) => tiles[i % tiles.length];
+}
+
+/// 13.png, 14.png, 15.png.
+const _boardPalettes = <String, _CardPalette>{
+  ModuleCatalog.attendance: _CardPalette(
+    from: Color(0xFF423A91),
+    to: Color(0xFF262458),
+    hero: Color(0xFF222252),
+    plate: Color(0xFF42426B),
+    tiles: [Color(0xFF7769FF), Color(0xFF3B357F)],
+  ),
+  ModuleCatalog.gatepass: _CardPalette(
+    from: Color(0xFF9B01FF),
+    to: Color(0xFF3300FF),
+    hero: Color(0xFF6454E0),
+    plate: Color(0xFF7E70EA),
+    tiles: [Color(0xFF3E00FF), Color(0xFF7152FF), Color(0xFF5B3CE8)],
+  ),
+  ModuleCatalog.canteen: _CardPalette(
+    from: Color(0xFF232355),
+    to: Color(0xFF1A1A4C),
+    hero: Color(0xFF7347F9),
+    plate: Color(0xFF8B66FF),
+    tiles: [
+      Color(0xFF3838A8),
+      Color(0xFF6262A8),
+      Color(0xFF3C3CFF),
+      Color(0xFF0000A8),
+    ],
+  ),
+};
+
+/// Staff **Attendance**.
+///
+/// Green, so the card staff mark other people's records on never looks like
+/// the purple card a learner reads their own streak on. The two are different
+/// acts and must not be mistaken for one another at a glance.
+const _staffAttendancePalette = _CardPalette(
+  from: Color(0xFF217F49),
+  to: Color(0xFF12502D),
+  hero: Color(0xFF225D3B),
+  plate: Color(0xFF438960),
+  tiles: [Color(0xFF308253), Color(0xFF569F75), Color(0xFF1FC163)],
+);
+
+/// Everything the boards did not draw is built from the module's own catalog
+/// colour, in the same register: a deep saturated card, a slightly lifted hero,
+/// and four tile steps that keep neighbouring tiles apart.
+_CardPalette _paletteFor(ModuleDescriptor module, EffectivePermissions perms) {
+  final presentation = academicPresentationFor(perms);
+  if (presentation == AcademicPresentation.learner &&
+      academicModules.contains(module.id)) {
+    return _boardPalettes[ModuleCatalog.attendance]!;
+  }
+  if (presentation == AcademicPresentation.staff &&
+      module.id == ModuleCatalog.attendance) {
+    return _staffAttendancePalette;
+  }
+
+  final preset = _boardPalettes[module.id];
+  if (preset != null) return preset;
+  return _paletteFromSeed(module, perms);
+}
+
+_CardPalette _paletteFromSeed(
+  ModuleDescriptor module,
+  EffectivePermissions perms,
+) {
+  // The boards fix the colour of the three modules they draw. Everything else
+  // still follows the tenant's brand where there is one, and falls back to the
+  // module's own catalog colour where there is not.
+  final seed = _tenantBrandColor(perms.tenantBrand, 'primary', module.color);
+  final hsl = HSLColor.fromColor(seed);
+  Color at(double lightness, double saturation) => hsl
+      .withSaturation(saturation.clamp(0.0, 1.0))
+      .withLightness(lightness.clamp(0.0, 1.0))
+      .toColor();
+
+  return _CardPalette(
+    from: at(0.32, 0.58),
+    to: at(0.19, 0.62),
+    hero: at(0.25, 0.46),
+    plate: at(0.40, 0.34),
+    tiles: [at(0.35, 0.46), at(0.48, 0.30), at(0.44, 0.72), at(0.23, 0.78)],
+  );
+}
+
+/// The mark colours on the attendance strip, off 13.png.
+const _markPresent = Color(0xFF1DCF00);
+const _markAbsent = Color(0xFFFF1723);
+const _markOnDuty = Color(0xFFFFD600);
+const _markPending = Color(0xFF7C7C7C);
+
+/// Used only when a shops board somehow has no granted action to open; the
+/// grid is not built in that case, so it is never run.
+const _noAction = _QuickAction(
+  'menu',
+  'Menu',
+  Icons.storefront,
+  'menu',
+  'read',
+);
+
 class _ModuleCard extends StatefulWidget {
   const _ModuleCard({
     super.key,
     required this.module,
     required this.permissions,
+    required this.front,
+    required this.content,
     this.onQuickAction,
     required this.onTap,
   });
 
   final ModuleDescriptor module;
   final EffectivePermissions permissions;
+
+  /// Whether this card is the one currently in the frame. Only the front card
+  /// opens its module on a tap; the rest scroll themselves into the frame
+  /// first, and the hero cell is named for whichever of the two it will do.
+  final bool front;
+
+  final ModuleCardContent content;
+
   final void Function(
     String moduleId,
     String actionId,
@@ -409,29 +631,20 @@ class _ModuleCardState extends State<_ModuleCard> {
     if (_pressed != value) setState(() => _pressed = value);
   }
 
+  VoidCallback _run(_QuickAction action) => widget.onQuickAction == null
+      ? widget.onTap
+      : () => widget.onQuickAction!(
+          widget.module.id,
+          action.id,
+          action.featureId,
+          action.requiredAction,
+        );
+
   @override
   Widget build(BuildContext context) {
     final module = widget.module;
-    final scheme = Theme.of(context).colorScheme;
-    final brandColors = _sortedBrandColors(
-      widget.permissions.tenantBrand,
-      scheme,
-    );
-    final cardGradientStart = brandColors[0];
-    final cardGradientEnd = brandColors[1];
-    final moduleIconColor = _tenantBrandColor(
-      widget.permissions.tenantBrand,
-      'secondary',
-      scheme.secondary,
-    );
-    final actionIconColor = _tenantBrandColor(
-      widget.permissions.tenantBrand,
-      'surface',
-      scheme.surface,
-    );
-    final cardForeground = _readableForeground(cardGradientStart);
+    final palette = _paletteFor(module, widget.permissions);
     final ready = module.status != ModuleStatus.planned;
-    final level = widget.permissions.accessLevel(module.id);
     final actions = ready
         ? [
             for (final action in _quickActionsFor(module.id))
@@ -443,6 +656,9 @@ class _ModuleCardState extends State<_ModuleCard> {
                 action,
           ]
         : const <_QuickAction>[];
+    final subtitle = ready
+        ? widget.permissions.accessLevel(module.id).label
+        : 'Coming soon';
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -456,20 +672,17 @@ class _ModuleCardState extends State<_ModuleCard> {
         curve: Curves.easeOut,
         child: Container(
           height: _cardHeight,
-          padding: const EdgeInsets.symmetric(horizontal: 18),
+          padding: const EdgeInsets.all(_cardPad),
           decoration: BoxDecoration(
-            // Use two strong logo-derived tones. A light/white surface color
-            // is intentionally excluded so the card keeps visual weight.
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [cardGradientStart, cardGradientEnd],
-              stops: const [0.08, 0.92],
+              colors: [palette.from, palette.to],
             ),
             borderRadius: BorderRadius.circular(_cardRadius),
             boxShadow: [
-              // Light: a card resting on glass, not floating over a page —
-              // a heavy shadow only greys the pane it is lying on.
+              // Light: a card resting on glass, not floating over a page — a
+              // heavy shadow only greys the pane it is lying on.
               BoxShadow(
                 color: const Color(0xFF2A2350).withValues(alpha: 0.14),
                 blurRadius: 12,
@@ -477,109 +690,568 @@ class _ModuleCardState extends State<_ModuleCard> {
               ),
             ],
           ),
-          child: Column(
+          child: _board(module, palette, actions, subtitle, ready),
+        ),
+      ),
+    );
+  }
+
+  /// Which board this module is drawn on.
+  ///
+  /// Three modules have artwork of their own and are built to it. Everything
+  /// else gets the shared board, which is the same construction with the
+  /// module-specific panel left out.
+  Widget _board(
+    ModuleDescriptor module,
+    _CardPalette palette,
+    List<_QuickAction> actions,
+    String subtitle,
+    bool ready,
+  ) {
+    if (!ready) return _defaultBoard(module, palette, const [], subtitle, true);
+    final presentation = academicPresentationFor(widget.permissions);
+
+    // A learner's folded Academics entry carries their own streak: the strip
+    // is one person's sessions — present, absent, not taken yet — so it means
+    // something only on the card of the person being counted. Two tiles sit
+    // beside the hero, the streak runs underneath.
+    if (presentation == AcademicPresentation.learner &&
+        academicModules.contains(module.id)) {
+      return _attendanceBoard(
+        module,
+        palette,
+        actions.take(2).toList(),
+        subtitle,
+      );
+    }
+
+    return switch (module.id) {
+      // Staff mark other people's records, and no single streak describes a
+      // whole class, so their card is the plain board: three even tiles.
+      ModuleCatalog.attendance => _defaultBoard(
+        module,
+        palette,
+        actions.take(3).toList(),
+        subtitle,
+        false,
+      ),
+      ModuleCatalog.gatepass => _gatepassBoard(
+        module,
+        palette,
+        actions,
+        subtitle,
+      ),
+      ModuleCatalog.canteen => _shopsBoard(module, palette, actions, subtitle),
+      _ => _defaultBoard(module, palette, actions, subtitle, false),
+    };
+  }
+
+  // ---------------------------------------------------------------- 13.png
+
+  /// Hero and one tall tile across the top, today's roll call underneath.
+  ///
+  /// The board draws a single tile beside the hero. A module with more than one
+  /// granted action stacks them in that same column rather than dropping any —
+  /// with one action the column is the board exactly.
+  Widget _attendanceBoard(
+    ModuleDescriptor module,
+    _CardPalette palette,
+    List<_QuickAction> actions,
+    String subtitle,
+  ) {
+    final marks = widget.content.attendanceMarks;
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 146 * _k,
+          child: Row(
             children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        // Tinted glass rather than a solid white disc — a disc that
-                        // size reads as an app icon, which is what made the card
-                        // look like a game tile.
-                        color: actionIconColor.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(
-                          color: actionIconColor.withValues(alpha: 0.32),
-                        ),
-                      ),
-                      child: Icon(
-                        module.icon,
-                        color: moduleIconColor,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Sentence case at normal tracking. Long names still get
-                          // no good break points, so one shrinks to fit rather than
-                          // folding mid-word.
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              module.displayName,
-                              style: TextStyle(
-                                color: cardForeground,
-                                fontSize: 17,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 0.1,
-                                height: 1.2,
-                              ),
-                              maxLines: 1,
-                              softWrap: false,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            ready ? level.label : 'Coming soon',
-                            style: TextStyle(
-                              color: cardForeground.withValues(alpha: 0.72),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w300,
-                              letterSpacing: 0.2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Icon(
-                      // A chevron says "opens a screen". The play triangle it
-                      // replaces says "starts a level".
-                      ready
-                          ? Icons.chevron_right_rounded
-                          : Icons.schedule_rounded,
-                      color: cardForeground.withValues(
-                        alpha: ready ? 0.9 : 0.55,
-                      ),
-                      size: ready ? 26 : 20,
-                    ),
-                  ],
-                ),
-              ),
+              Expanded(flex: 450, child: _heroCell(module, palette, subtitle)),
               if (actions.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    for (final action in actions)
-                      _QuickActionButton(
-                        action: action,
-                        iconColor: actionIconColor,
-                        onTap: widget.onQuickAction == null
-                            ? widget.onTap
-                            : () => widget.onQuickAction!(
-                                module.id,
-                                action.id,
-                                action.featureId,
-                                action.requiredAction,
-                              ),
-                      ),
-                  ],
+                SizedBox(width: 25 * _k),
+                Expanded(
+                  flex: 214,
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < actions.length; i++) ...[
+                        if (i > 0) SizedBox(height: 14 * _k),
+                        Expanded(
+                          child: _ActionTile(
+                            action: actions[i],
+                            fill: palette.tile(i),
+                            onTap: _run(actions[i]),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ],
             ],
           ),
         ),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'last 7 attendance',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: _captionSize,
+                  fontWeight: FontWeight.w400,
+                  height: 1.1,
+                ),
+              ),
+              SizedBox(height: 16 * _k),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var i = 0; i < attendanceStreakLength; i++) ...[
+                    if (i > 0) SizedBox(width: 21 * _k),
+                    _mark(
+                      marks != null && i < marks.length ? marks[i] : null,
+                      position: i + 1,
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// One session: taken and present, taken and absent, or not taken yet.
+  ///
+  /// A session with no record is grey. Nothing is invented — with no data wired
+  /// the whole strip reads as "not taken yet", which is true.
+  Widget _mark(AttendanceMark? mark, {required int position}) => Semantics(
+    label: switch (mark) {
+      AttendanceMark.present => 'Recent attendance $position present',
+      AttendanceMark.absent => 'Recent attendance $position absent',
+      AttendanceMark.onDuty => 'Recent attendance $position on duty',
+      null => 'Recent attendance $position has no record',
+    },
+    child: Container(
+      width: 58 * _k,
+      height: 59 * _k,
+      decoration: BoxDecoration(
+        color: switch (mark) {
+          AttendanceMark.present => _markPresent,
+          AttendanceMark.absent => _markAbsent,
+          AttendanceMark.onDuty => _markOnDuty,
+          null => _markPending,
+        },
+        borderRadius: BorderRadius.circular(_markRadius),
+      ),
+    ),
+  );
+
+  // ---------------------------------------------------------------- 14.png
+
+  /// Hero over a row of tiles on the left, the pass itself on the right.
+  Widget _gatepassBoard(
+    ModuleDescriptor module,
+    _CardPalette palette,
+    List<_QuickAction> actions,
+    String subtitle,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 397,
+          child: Column(
+            children: [
+              SizedBox(
+                height: actions.isEmpty ? null : 150 * _k,
+                child: actions.isEmpty
+                    ? null
+                    : _heroCell(module, palette, subtitle),
+              ),
+              if (actions.isEmpty)
+                Expanded(child: _heroCell(module, palette, subtitle))
+              else ...[
+                SizedBox(height: 26 * _k),
+                Expanded(
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < actions.length; i++) ...[
+                        if (i > 0) SizedBox(width: 34 * _k),
+                        Expanded(
+                          child: _ActionTile(
+                            action: actions[i],
+                            fill: palette.tile(i),
+                            onTap: _run(actions[i]),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        SizedBox(width: _cellGap),
+        Expanded(flex: 292, child: _passPanel(module)),
+      ],
+    );
+  }
+
+  /// The white panel on the right of the gatepass board.
+  ///
+  /// It draws a code only when there is one to draw. With nothing wired it
+  /// shows the module's own glyph instead, so the card never offers a scannable
+  /// square that means nothing.
+  Widget _passPanel(ModuleDescriptor module) {
+    final data = widget.content.gatepassQr;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28 * _k),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(14 * _k),
+        child: data == null
+            ? Icon(
+                module.icon,
+                color: const Color(0xFF171719),
+                size: _tileGlyph,
+              )
+            : QrImageView(
+                data: data,
+                padding: EdgeInsets.zero,
+                backgroundColor: Colors.white,
+                eyeStyle: const QrEyeStyle(
+                  eyeShape: QrEyeShape.circle,
+                  color: Color(0xFF171719),
+                ),
+                dataModuleStyle: const QrDataModuleStyle(
+                  dataModuleShape: QrDataModuleShape.circle,
+                  color: Color(0xFF171719),
+                ),
+              ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------- 15.png
+
+  /// A block of two stacked rows on the left, a grid of tiles on the right.
+  ///
+  /// The top row opens the module, the row under it is the module's headline
+  /// action — the board names it "wallet" — and everything else goes in the
+  /// grid, two columns wide.
+  Widget _shopsBoard(
+    ModuleDescriptor module,
+    _CardPalette palette,
+    List<_QuickAction> actions,
+    String subtitle,
+  ) {
+    // The board's second row is the wallet, and its grid is storefronts — not
+    // the module's leftover actions. Anything the grid does not show is still
+    // one tap away inside the module.
+    final headlineAt = actions.indexWhere((a) => a.id == 'wallet');
+    final headline = actions.isEmpty
+        ? null
+        : actions[headlineAt >= 0 ? headlineAt : 0];
+    final rest = [
+      for (final a in actions)
+        if (!identical(a, headline)) a,
+    ];
+
+    // The board draws four tiles. The module's own actions take those cells
+    // first — none of them is dropped for a storefront — and storefronts fill
+    // whatever is left, which is all four once the actions live elsewhere.
+    final browse = actions.firstWhere(
+      (a) => a.id == 'menu',
+      orElse: () => actions.isEmpty ? _noAction : actions.first,
+    );
+    final shops = widget.content.shops ?? _defaultShops;
+    final fill = shops.take((4 - rest.length).clamp(0, shops.length)).toList();
+    final cells = [
+      for (var i = 0; i < rest.length; i++)
+        _ActionTile(
+          action: rest[i],
+          fill: palette.tile(i),
+          onTap: _run(rest[i]),
+        ),
+      for (var i = 0; i < fill.length; i++)
+        _shopTile(fill[i], browse, palette, rest.length + i),
+    ];
+
+    return Row(
+      children: [
+        Expanded(
+          flex: 367,
+          child: Container(
+            decoration: BoxDecoration(
+              color: palette.hero,
+              borderRadius: BorderRadius.circular(_heroRadius),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.55),
+                width: 1.5,
+              ),
+            ),
+            padding: EdgeInsets.all(18 * _k),
+            child: Column(
+              children: [
+                Expanded(
+                  child: _labelledRow(
+                    key: ValueKey(
+                      widget.front
+                          ? 'open-module-${module.id}'
+                          : 'module-bar-${module.id}',
+                    ),
+                    label: moduleLabelFor(
+                      module,
+                      widget.permissions,
+                    ).toUpperCase(),
+                    icon: module.icon,
+                  ),
+                ),
+                if (headline != null) ...[
+                  SizedBox(height: 12 * _k),
+                  SizedBox(
+                    height: 127 * _k,
+                    child: _Pressable(
+                      onTap: _run(headline),
+                      child: _labelledRow(
+                        label: headline.label.toLowerCase(),
+                        icon: headline.icon,
+                        fill: const Color(0xFF3C3CFF),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        if (cells.isNotEmpty) ...[
+          SizedBox(width: 35 * _k),
+          Expanded(flex: 288, child: _grid(cells)),
+        ],
+      ],
+    );
+  }
+
+  /// One line of the left block: glyph, label, and the chevron that says it
+  /// goes somewhere.
+  Widget _labelledRow({
+    Key? key,
+    required String label,
+    required IconData icon,
+    Color? fill,
+  }) => Container(
+    key: key,
+    decoration: fill == null
+        ? null
+        : BoxDecoration(
+            color: fill,
+            borderRadius: BorderRadius.circular(_tileRadius),
+          ),
+    padding: EdgeInsets.symmetric(horizontal: 16 * _k),
+    child: Row(
+      children: [
+        Icon(icon, color: Colors.white, size: 46 * _k),
+        SizedBox(width: 14 * _k),
+        Expanded(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              label,
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 34 * _k,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.2,
+                height: 1.1,
+              ),
+            ),
+          ),
+        ),
+        Icon(Icons.chevron_right_rounded, color: Colors.white, size: 34 * _k),
+      ],
+    ),
+  );
+
+  /// Two columns, however many rows that takes. Nothing is dropped — a fifth
+  /// cell makes the rows shorter rather than falling off the card.
+  Widget _grid(List<Widget> cells) {
+    final rows = (cells.length / 2).ceil();
+
+    return Column(
+      children: [
+        for (var r = 0; r < rows; r++) ...[
+          if (r > 0) SizedBox(height: 31 * _k),
+          Expanded(
+            child: Row(
+              children: [
+                for (var c = 0; c < 2; c++) ...[
+                  if (c > 0) SizedBox(width: 34 * _k),
+                  Expanded(
+                    child: r * 2 + c < cells.length
+                        ? cells[r * 2 + c]
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _shopTile(
+    ModuleShopShortcut shop,
+    _QuickAction browse,
+    _CardPalette palette,
+    int index,
+  ) => Tooltip(
+    message: shop.label,
+    child: _Pressable(
+      key: ValueKey('shop-tile-${shop.id}'),
+      onTap: _run(browse),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: palette.tile(index),
+          borderRadius: BorderRadius.circular(_tileRadius),
+        ),
+        child: Center(
+          child: Icon(shop.icon, color: Colors.white, size: _tileGlyph),
+        ),
+      ),
+    ),
+  );
+
+  // -------------------------------------------------------------- everything
+
+  /// The shared board: hero across the top, actions in a row underneath. It is
+  /// 14.png with the pass panel taken out.
+  Widget _defaultBoard(
+    ModuleDescriptor module,
+    _CardPalette palette,
+    List<_QuickAction> actions,
+    String subtitle,
+    bool comingSoon,
+  ) {
+    if (actions.isEmpty) {
+      return _heroCell(module, palette, subtitle, wide: true);
+    }
+
+    return Column(
+      children: [
+        SizedBox(height: 150 * _k, child: _heroCell(module, palette, subtitle)),
+        SizedBox(height: 26 * _k),
+        Expanded(
+          child: Row(
+            children: [
+              for (var i = 0; i < actions.length; i++) ...[
+                if (i > 0) SizedBox(width: 34 * _k),
+                Expanded(
+                  child: _ActionTile(
+                    action: actions[i],
+                    fill: palette.tile(i),
+                    onTap: _run(actions[i]),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The module's own cell: icon plate, name, access line.
+  Widget _heroCell(
+    ModuleDescriptor module,
+    _CardPalette palette,
+    String subtitle, {
+    bool wide = false,
+  }) {
+    return Container(
+      // The hero is what "open this module" means on this card, so it is the
+      // cell that carries the name of what tapping it will do. Naming the card
+      // as a whole would leave the name pointing at a rectangle whose middle is
+      // a quick action.
+      key: ValueKey(
+        widget.front ? 'open-module-${module.id}' : 'module-bar-${module.id}',
+      ),
+      decoration: BoxDecoration(
+        color: palette.hero,
+        borderRadius: BorderRadius.circular(_heroRadius),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+      ),
+      padding: EdgeInsets.symmetric(horizontal: _heroPad),
+      child: Row(
+        children: [
+          Container(
+            width: _heroPlate,
+            height: _heroPlate,
+            decoration: BoxDecoration(
+              color: palette.plate,
+              borderRadius: BorderRadius.circular(_heroPlateRadius),
+            ),
+            child: Icon(module.icon, color: Colors.white, size: _heroGlyph),
+          ),
+          SizedBox(width: 20 * _k),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Long names get no good break points, so one shrinks to fit
+                // rather than folding mid-word.
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    // Named for the viewer: a learner's card says Academics
+                    // where a faculty member's says Attendance.
+                    moduleLabelFor(module, widget.permissions),
+                    maxLines: 1,
+                    softWrap: false,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: _titleSize,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                      height: 1.15,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 4 * _k),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.66),
+                    fontSize: _captionSize,
+                    fontWeight: FontWeight.w400,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (wide) const Spacer(),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: Colors.white.withValues(alpha: 0.85),
+            size: 34 * _k,
+          ),
+        ],
       ),
     );
   }
@@ -668,16 +1340,23 @@ List<_QuickAction> _quickActionsFor(String moduleId) => switch (moduleId) {
     _QuickAction(
       'roster',
       'Roster',
-      Icons.groups_outlined,
+      Icons.fact_check_outlined,
       'roster',
       ModuleActions.read,
     ),
     _QuickAction(
-      'leave',
-      'Leave',
-      Icons.event_busy_outlined,
-      'leave',
-      ModuleActions.read,
+      'mark',
+      'Mark attendance',
+      Icons.format_list_bulleted_add,
+      'records',
+      ModuleActions.update,
+    ),
+    _QuickAction(
+      'reports',
+      'Reports',
+      Icons.auto_graph_rounded,
+      'reports',
+      ModuleActions.create,
     ),
   ],
   ModuleCatalog.canteen => const [
@@ -729,32 +1408,75 @@ List<_QuickAction> _quickActionsFor(String moduleId) => switch (moduleId) {
   _ => const [],
 };
 
-class _QuickActionButton extends StatelessWidget {
-  const _QuickActionButton({
+/// Anything on a card that can be tapped on its own.
+///
+/// It highlights on press rather than on release, so the feedback lands while
+/// the finger is still down instead of after it lifts.
+class _Pressable extends StatefulWidget {
+  const _Pressable({super.key, required this.onTap, required this.child});
+
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  State<_Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<_Pressable> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed != value) setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => _setPressed(true),
+      onTapUp: (_) => _setPressed(false),
+      onTapCancel: () => _setPressed(false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _pressed ? 0.94 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// One quick action: a rounded tile in its own colour carrying just its glyph.
+///
+/// The label lives in the tooltip rather than under the icon — the boards put
+/// nothing but the glyph in a tile, and at this size a caption would either
+/// wrap or be shrunk past reading.
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
     required this.action,
-    required this.iconColor,
+    required this.fill,
     required this.onTap,
   });
 
   final _QuickAction action;
-  final Color iconColor;
+  final Color fill;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
       message: action.label,
-      child: Material(
-        color: iconColor.withValues(alpha: 0.18),
-        shape: const CircleBorder(),
-        child: InkWell(
-          key: ValueKey('quick-action-${action.id}'),
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: 52,
-            height: 52,
-            child: Icon(action.icon, color: iconColor, size: 23),
+      child: _Pressable(
+        key: ValueKey('quick-action-${action.id}'),
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: fill,
+            borderRadius: BorderRadius.circular(_tileRadius),
+          ),
+          child: Center(
+            child: Icon(action.icon, color: Colors.white, size: _tileGlyph),
           ),
         ),
       ),
@@ -773,18 +1495,6 @@ Color _tenantBrandColor(
   final hex = normalized.length == 6 ? 'FF$normalized' : normalized;
   final parsed = int.tryParse(hex, radix: 16);
   return parsed == null ? fallback : Color(parsed);
-}
-
-Color _readableForeground(Color background) =>
-    background.computeLuminance() > 0.48 ? Colors.black87 : Colors.white;
-
-List<Color> _sortedBrandColors(Map<String, dynamic> brand, ColorScheme scheme) {
-  final colors = [
-    _tenantBrandColor(brand, 'primary', scheme.primary),
-    _tenantBrandColor(brand, 'secondary', scheme.secondary),
-    _tenantBrandColor(brand, 'surface', scheme.surface),
-  ]..sort((a, b) => a.computeLuminance().compareTo(b.computeLuminance()));
-  return colors;
 }
 
 /// Which card is in the frame, and how many are waiting. Reads the same

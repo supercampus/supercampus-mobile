@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/mock_parent_repository.dart';
 import '../data/parent_models.dart';
@@ -114,7 +115,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
           children: [
             Icon(Icons.account_balance_wallet, color: Color(0xFF2E7D32)),
             SizedBox(width: 8),
-            Text('Top-Up Canteen Wallet'),
+            Text('Top-Up Shop Wallet'),
           ],
         ),
         content: Column(
@@ -188,10 +189,9 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
         backgroundColor: const Color(0xFF1B4332),
         foregroundColor: Colors.white,
         leading: widget.onExitModule != null
-            ? IconButton(
-                tooltip: 'Modules Home',
-                icon: const Icon(Icons.home),
-                onPressed: widget.onExitModule,
+            ? ModuleBackButton(
+                onPressed: widget.onExitModule!,
+                color: Colors.white,
               )
             : null,
         title: Row(
@@ -233,6 +233,11 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
           ],
         ),
         actions: [
+          if (widget.onExitModule != null)
+            ModuleHomeButton(
+              onPressed: widget.onExitModule!,
+              color: Colors.white,
+            ),
           IconButton(
             tooltip: 'Sign Out',
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -555,7 +560,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Ward Canteen Wallet',
+                        'Ward Shop Wallet',
                         style: TextStyle(color: Colors.white70, fontSize: 12),
                       ),
                       Text(

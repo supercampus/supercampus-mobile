@@ -42,13 +42,16 @@ class UserSession {
     this.roleName,
     this.idNumber,
     this.departmentOrWard,
+    this.photoUrl,
     this.departmentId,
     this.sectionId,
     this.staffId,
     this.jwtToken,
+    this.refreshToken,
     this.accessTokenExpiresAt,
     this.portalFamilies = const [],
     this.activePortalFamily,
+    this.roleIds = const [],
   });
 
   final String email;
@@ -62,15 +65,18 @@ class UserSession {
 
   final String? idNumber;
   final String? departmentOrWard;
+  final String? photoUrl;
 
   /// Contextual Claims for RBAC & Scope Filtering
   final String? departmentId; // e.g. "DEP-CS"
   final String? sectionId; // e.g. "CS-3A" for students
   final String? staffId; // e.g. "FAC-101" for faculty
   final String? jwtToken; // Signed JWT Token string
+  final String? refreshToken; // Rotating native-app refresh token
   final DateTime? accessTokenExpiresAt;
   final List<PortalFamily> portalFamilies;
   final PortalFamily? activePortalFamily;
+  final List<String> roleIds;
 
   /// Display label for the role
   String get roleLabel => roleName ?? role.label;
@@ -156,12 +162,18 @@ class UserSession {
 
 typedef StudentSession = UserSession;
 
+typedef AccessTokenProvider = Future<String> Function({bool forceRefresh});
+
 abstract interface class AuthRepository {
+  /// Signs in. The role is **not** an input: which persona this account is
+  /// belongs to access control, and the server answers it from the roles and
+  /// portal family it holds. [roleHint] exists only for harnesses with no
+  /// server to ask — never pass it from a screen.
   Future<UserSession> signIn({
     required String email,
     required String password,
-    required UserRole role,
     required String tenantDomain,
+    UserRole? roleHint,
   });
 
   Future<UserSession> refresh(UserSession session);
@@ -170,7 +182,8 @@ abstract interface class AuthRepository {
 }
 
 class AuthenticationException implements Exception {
-  const AuthenticationException(this.message);
+  const AuthenticationException(this.message, {this.sessionExpired = false});
 
   final String message;
+  final bool sessionExpired;
 }

@@ -18,27 +18,33 @@ class BackendAuthRepository implements AuthRepository {
   Future<UserSession> signIn({
     required String email,
     required String password,
-    required UserRole role,
     required String tenantDomain,
+    UserRole? roleHint,
   }) async {
-    late final http.Response response;
+    // Not `late final`: a server too old to know `sessionMode` rejects the
+    // first attempt, and the retry reassigns this.
+    late http.Response response;
     try {
-      response = await _client.post(
-        _uri('/api/auth/login'),
-        headers: {
-          'content-type': 'application/json',
-          'x-tenant-id': tenantDomain,
-        },
-        body: jsonEncode({'email': email, 'password': password}),
+      response = await _postLogin(
+        email: email,
+        password: password,
+        tenantDomain: tenantDomain,
+        tokenMode: true,
       );
-    } on http.ClientException {
-      throw const AuthenticationException(
-        'The SuperCampus API is unavailable. Check the backend URL and try again.',
-      );
+      if (_isLegacySessionModeRejection(response)) {
+        response = await _postLogin(
+          email: email,
+          password: password,
+          tenantDomain: tenantDomain,
+          tokenMode: false,
+        );
+      }
+    } on http.ClientException catch (error) {
+      throw AuthenticationException(_connectionMessage(error, _baseUri));
     }
     if (response.statusCode == 401) {
       throw const AuthenticationException(
-        'The email or password you entered is incorrect.',
+        'The username or password you entered is incorrect.',
       );
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -48,26 +54,34 @@ class BackendAuthRepository implements AuthRepository {
     return _sessionFromResponse(
       response,
       fallbackEmail: email,
-      fallbackRole: role,
+      // Only reached when the server returns neither a role nor a portal
+      // family. Least privilege is the right guess in that case.
+      fallbackRole: roleHint ?? UserRole.student,
     );
   }
 
   @override
   Future<UserSession> refresh(UserSession session) async {
+    final refreshToken = session.refreshToken;
     late final http.Response response;
     try {
       response = await _client.post(
         _uri('/api/auth/refresh'),
-        headers: const {'content-type': 'application/json'},
+        headers: const {
+          'content-type': 'application/json',
+          'x-client-surface': 'app',
+        },
+        body: refreshToken == null || refreshToken.isEmpty
+            ? null
+            : jsonEncode({'refreshToken': refreshToken}),
       );
-    } on http.ClientException {
-      throw const AuthenticationException(
-        'The SuperCampus API is unavailable. Sign in again.',
-      );
+    } on http.ClientException catch (error) {
+      throw AuthenticationException(_connectionMessage(error, _baseUri));
     }
     if (response.statusCode == 401) {
       throw const AuthenticationException(
         'Your session has expired. Sign in again.',
+        sessionExpired: true,
       );
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -78,6 +92,7 @@ class BackendAuthRepository implements AuthRepository {
       response,
       fallbackEmail: session.email,
       fallbackRole: session.role,
+      fallbackRefreshToken: refreshToken,
     );
   }
 
@@ -85,6 +100,7 @@ class BackendAuthRepository implements AuthRepository {
     http.Response response, {
     required String fallbackEmail,
     required UserRole fallbackRole,
+    String? fallbackRefreshToken,
   }) {
     final Map<String, dynamic> body;
     try {
@@ -131,11 +147,13 @@ class BackendAuthRepository implements AuthRepository {
       roleName: _humanize(primaryRole),
       idNumber: student['roll']?.toString(),
       departmentOrWard: student['dept']?.toString(),
+      photoUrl: student['photoUrl']?.toString(),
       departmentId: student['departmentId']?.toString(),
       sectionId:
           student['sectionId']?.toString() ?? student['section']?.toString(),
       staffId: student['staffId']?.toString(),
       jwtToken: data['accessToken']?.toString(),
+      refreshToken: data['refreshToken']?.toString() ?? fallbackRefreshToken,
       accessTokenExpiresAt: DateTime.tryParse(
         data['expiresAt']?.toString() ?? '',
       ),
@@ -143,6 +161,7 @@ class BackendAuthRepository implements AuthRepository {
           ? [activePortalFamily]
           : portalFamilies,
       activePortalFamily: activePortalFamily,
+      roleIds: roles,
     );
   }
 
@@ -152,6 +171,25 @@ class BackendAuthRepository implements AuthRepository {
       _uri('/api/auth/forgot-password'),
       headers: const {'content-type': 'application/json'},
       body: jsonEncode({'email': email}),
+    );
+  }
+
+  Future<http.Response> _postLogin({
+    required String email,
+    required String password,
+    required String tenantDomain,
+    required bool tokenMode,
+  }) {
+    final body = <String, String>{'email': email, 'password': password};
+    if (tokenMode) body['sessionMode'] = 'token';
+    return _client.post(
+      _uri('/api/auth/login'),
+      headers: {
+        'content-type': 'application/json',
+        'x-tenant-id': tenantDomain,
+        'x-client-surface': 'app',
+      },
+      body: jsonEncode(body),
     );
   }
 
@@ -186,6 +224,24 @@ String _errorMessage(http.Response response) {
     // Fall through to the status-based message.
   }
   return 'Unable to sign in right now. (${response.statusCode})';
+}
+
+bool _isLegacySessionModeRejection(http.Response response) {
+  if (response.statusCode != 400 && response.statusCode != 422) return false;
+  final body = response.body.toLowerCase();
+  return body.contains('sessionmode') && body.contains('unknown field');
+}
+
+String _connectionMessage(http.ClientException error, Uri baseUri) {
+  final origin = baseUri.replace(path: '', query: '', fragment: '').toString();
+  if (kReleaseMode) {
+    return 'The SuperCampus API is unavailable at $origin. Check your connection and try again.';
+  }
+  final detail = error.message.trim();
+  if (detail.isEmpty) {
+    return 'The SuperCampus API is unavailable at $origin.';
+  }
+  return 'The SuperCampus API is unavailable at $origin. $detail';
 }
 
 UserRole _roleFromBackend(String role, {required UserRole fallback}) {

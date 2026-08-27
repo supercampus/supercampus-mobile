@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/module_navigation_buttons.dart';
+import '../../../core/widgets/skeleton_loading.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/feedback_models.dart';
 import '../data/feedback_repository.dart';
@@ -104,7 +106,7 @@ class _FeedbackShellState extends State<FeedbackShell> {
 
     final store = _store;
     if (store == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: SkeletonList(rows: 6, rowHeight: 76));
     }
 
     return Scaffold(
@@ -117,6 +119,7 @@ class _FeedbackShellState extends State<FeedbackShell> {
               children: [
                 _FeedbackHeader(
                   onBack: widget.onExitModule,
+                  onHome: widget.onExitModule,
                   onCreate: _openCreateSheet,
                 ),
                 const SizedBox(height: 18),
@@ -136,7 +139,9 @@ class _FeedbackShellState extends State<FeedbackShell> {
                 if (store.tickets.isEmpty)
                   const _EmptyHistory()
                 else
-                  ...store.tickets.map((ticket) => _HistoryTile(ticket: ticket)),
+                  ...store.tickets.map(
+                    (ticket) => _HistoryTile(ticket: ticket),
+                  ),
               ],
             ),
           ),
@@ -152,26 +157,30 @@ class _FeedbackShellState extends State<FeedbackShell> {
 }
 
 class _FeedbackHeader extends StatelessWidget {
-  const _FeedbackHeader({required this.onBack, required this.onCreate});
+  const _FeedbackHeader({
+    required this.onBack,
+    required this.onHome,
+    required this.onCreate,
+  });
 
   final VoidCallback onBack;
+  final VoidCallback onHome;
   final VoidCallback onCreate;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        IconButton.filledTonal(
-          tooltip: 'Modules Home',
-          onPressed: onBack,
-          icon: const Icon(Icons.arrow_back),
-        ),
+        ModuleBackButton(onPressed: onBack),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Feedback', style: Theme.of(context).textTheme.headlineMedium),
+              Text(
+                'Feedback',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
               const Text('Create and track anonymous submissions'),
             ],
           ),
@@ -181,6 +190,7 @@ class _FeedbackHeader extends StatelessWidget {
           onPressed: onCreate,
           icon: const Icon(Icons.add),
         ),
+        ModuleHomeButton(onPressed: onHome),
       ],
     );
   }
@@ -273,7 +283,10 @@ class _FeedbackCreateSheetState extends State<_FeedbackCreateSheet> {
           children: [
             Row(
               children: [
-                Text('Create feedback', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  'Create feedback',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const Spacer(),
                 IconButton(
                   tooltip: 'Close',
@@ -371,7 +384,9 @@ class _FeedbackCreateSheetState extends State<_FeedbackCreateSheet> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.send_outlined),
-              label: Text(_submitting ? 'Submitting' : 'Submit anonymous feedback'),
+              label: Text(
+                _submitting ? 'Submitting' : 'Submit anonymous feedback',
+              ),
             ),
           ],
         ),
@@ -425,7 +440,10 @@ class _HistoryTile extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(_categoryIcon(ticket.category), color: _categoryColor(ticket.category)),
+                Icon(
+                  _categoryIcon(ticket.category),
+                  color: _categoryColor(ticket.category),
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -453,7 +471,10 @@ class _HistoryTile extends StatelessWidget {
                 _InfoPill(text: ticket.id),
                 const _InfoPill(text: 'Anonymous'),
                 _InfoPill(text: ticket.category.label),
-                _InfoPill(text: '${formatShortDate(ticket.submittedAt)} ${formatTime(ticket.submittedAt)}'),
+                _InfoPill(
+                  text:
+                      '${formatShortDate(ticket.submittedAt)} ${formatTime(ticket.submittedAt)}',
+                ),
               ],
             ),
           ],
@@ -495,10 +516,13 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = switch (status) {
       FeedbackStatus.closed => AppColors.success,
-      FeedbackStatus.escalated || FeedbackStatus.reopened => const Color(0xFFB42318),
-      FeedbackStatus.inProgress || FeedbackStatus.acknowledged => AppColors.primary,
-      FeedbackStatus.logged || FeedbackStatus.open || FeedbackStatus.resolved =>
-        AppColors.muted,
+      FeedbackStatus.escalated ||
+      FeedbackStatus.reopened => const Color(0xFFB42318),
+      FeedbackStatus.inProgress ||
+      FeedbackStatus.acknowledged => AppColors.primary,
+      FeedbackStatus.logged ||
+      FeedbackStatus.open ||
+      FeedbackStatus.resolved => AppColors.muted,
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -508,7 +532,11 @@ class _StatusPill extends StatelessWidget {
       ),
       child: Text(
         status.label,
-        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w500),
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }

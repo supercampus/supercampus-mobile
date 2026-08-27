@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/access/academic_presentation.dart';
 import '../../../../core/access/effective_permissions.dart';
 import '../../../../core/access/module_catalog.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -153,16 +154,17 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
     final query = raw.trim().toLowerCase();
     if (query.isEmpty) {
       return [
-        for (final m in widget.permissions.visibleModules())
+        for (final m in presentedModules(widget.permissions))
           _SearchResult(module: m, title: m.title, subtitle: m.tagline),
       ];
     }
 
     final results = <_SearchResult>[];
-    for (final module in widget.permissions.visibleModules()) {
+    for (final module in presentedModules(widget.permissions)) {
       final matchesModule =
           module.title.toLowerCase().contains(query) ||
-          module.tagline.toLowerCase().contains(query);
+          module.tagline.toLowerCase().contains(query) ||
+          module.keywords.any((word) => word.contains(query));
 
       if (matchesModule) {
         results.add(
@@ -180,7 +182,7 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
           _SearchResult(
             module: module,
             title: feature.label,
-            subtitle: 'in ${module.displayName}',
+            subtitle: 'in ${moduleLabelFor(module, widget.permissions)}',
           ),
         );
       }
@@ -215,7 +217,7 @@ class ModuleListSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final modules = [
-      for (final module in permissions.visibleModules())
+      for (final module in presentedModules(permissions))
         if (module.status != ModuleStatus.planned &&
             permissions.grantedFeatures(module).isNotEmpty)
           module,
@@ -436,7 +438,7 @@ class ProfileSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final modules = permissions.visibleModules();
+    final modules = presentedModules(permissions);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -493,6 +495,7 @@ class _ProfileDetailsSheet extends StatelessWidget {
           context,
           title: 'Digital ID card',
           icon: Icons.badge_outlined,
+          identitySession: session,
           items: [
             _ProfileDetailItem('Name', session.displayName),
             _ProfileDetailItem('Student ID', session.idNumber ?? 'SC2600142'),
@@ -596,7 +599,7 @@ class _ProfileDetailsSheet extends StatelessWidget {
           icon: Icons.history,
           items: const [
             _ProfileDetailItem('Today', 'Library pass created'),
-            _ProfileDetailItem('Yesterday', 'Canteen order placed'),
+            _ProfileDetailItem('Yesterday', 'Shop order placed'),
             _ProfileDetailItem('08 Aug 2026', 'Gatepass request submitted'),
           ],
         ),
@@ -693,7 +696,7 @@ class _LegacyProfileOptionsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final modules = permissions.visibleModules();
+    final modules = presentedModules(permissions);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -723,6 +726,7 @@ class _LegacyProfileOptionsSheet extends StatelessWidget {
                   context,
                   title: 'Digital ID card',
                   icon: Icons.badge_outlined,
+                  identitySession: session,
                   items: [
                     _ProfileDetailItem('Name', session.displayName),
                     _ProfileDetailItem(
@@ -835,7 +839,7 @@ class _LegacyProfileOptionsSheet extends StatelessWidget {
                   icon: Icons.history,
                   items: const [
                     _ProfileDetailItem('Today', 'Library pass created'),
-                    _ProfileDetailItem('Yesterday', 'Canteen order placed'),
+                    _ProfileDetailItem('Yesterday', 'Shop order placed'),
                     _ProfileDetailItem(
                       '08 Aug 2026',
                       'Gatepass request submitted',
@@ -1166,7 +1170,7 @@ class _HelpdeskSheetState extends State<_HelpdeskSheet> {
       'In review',
     ),
     const _SupportTicket(
-      'Canteen and payments',
+      'Shops and payments',
       'Wallet top-up query',
       'Please verify a wallet transaction.',
       'Resolved',
@@ -1321,8 +1325,8 @@ class _CreateSupportTicketSheetState extends State<_CreateSupportTicketSheet> {
                   child: Text('Library access'),
                 ),
                 DropdownMenuItem(
-                  value: 'Canteen and payments',
-                  child: Text('Canteen and payments'),
+                  value: 'Shops and payments',
+                  child: Text('Shops and payments'),
                 ),
                 DropdownMenuItem(
                   value: 'ID card and documents',
@@ -1602,12 +1606,17 @@ void _openProfileDetail(
   required String title,
   required IconData icon,
   required List<_ProfileDetailItem> items,
+  UserSession? identitySession,
 }) {
   showHomeSheet(
     context: context,
     title: title,
     expand: true,
-    child: _ProfileDetailSheet(icon: icon, items: items),
+    child: _ProfileDetailSheet(
+      icon: icon,
+      items: items,
+      identitySession: identitySession,
+    ),
   );
 }
 
@@ -1619,19 +1628,28 @@ class _ProfileDetailItem {
 }
 
 class _ProfileDetailSheet extends StatelessWidget {
-  const _ProfileDetailSheet({required this.icon, required this.items});
+  const _ProfileDetailSheet({
+    required this.icon,
+    required this.items,
+    this.identitySession,
+  });
 
   final IconData icon;
   final List<_ProfileDetailItem> items;
+  final UserSession? identitySession;
 
   @override
   Widget build(BuildContext context) {
+    final hasIdentity = identitySession != null;
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-      itemCount: items.length,
+      itemCount: items.length + (hasIdentity ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
-        final item = items[index];
+        if (hasIdentity && index == 0) {
+          return _DigitalIdPortrait(session: identitySession!);
+        }
+        final item = items[index - (hasIdentity ? 1 : 0)];
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -1671,6 +1689,46 @@ class _ProfileDetailSheet extends StatelessWidget {
   }
 }
 
+class _DigitalIdPortrait extends StatelessWidget {
+  const _DigitalIdPortrait({required this.session});
+
+  final UserSession session;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Theme.of(context).dividerColor),
+    ),
+    child: Column(
+      children: [
+        _StudentPhoto(
+          key: const ValueKey('digital-id-photo'),
+          session: session,
+          size: 104,
+          borderColor: Theme.of(context).colorScheme.primary,
+          borderWidth: 3,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          session.displayName,
+          style: Theme.of(context).textTheme.titleLarge,
+          textAlign: TextAlign.center,
+        ),
+        if (session.idNumber != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            session.idNumber!,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      ],
+    ),
+  );
+}
+
 class _ProfileIdentityCard extends StatelessWidget {
   const _ProfileIdentityCard({required this.session, required this.modules});
 
@@ -1694,23 +1752,13 @@ class _ProfileIdentityCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 58,
-            height: 58,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
-            ),
-            child: Text(
-              initialsOf(session.displayName),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+          _StudentPhoto(
+            key: const ValueKey('profile-card-photo'),
+            session: session,
+            size: 58,
+            borderColor: Colors.white.withValues(alpha: 0.5),
+            fallbackBackground: Colors.white.withValues(alpha: 0.18),
+            fallbackForeground: Colors.white,
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -1749,6 +1797,68 @@ class _ProfileIdentityCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StudentPhoto extends StatelessWidget {
+  const _StudentPhoto({
+    super.key,
+    required this.session,
+    required this.size,
+    required this.borderColor,
+    this.borderWidth = 1,
+    this.fallbackBackground,
+    this.fallbackForeground,
+  });
+
+  final UserSession session;
+  final double size;
+  final Color borderColor;
+  final double borderWidth;
+  final Color? fallbackBackground;
+  final Color? fallbackForeground;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = session.photoUrl?.trim();
+    final fallback = ColoredBox(
+      color:
+          fallbackBackground ??
+          Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Text(
+          initialsOf(session.displayName),
+          style: TextStyle(
+            color:
+                fallbackForeground ??
+                Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: size * 0.3,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+
+    return Container(
+      width: size,
+      height: size,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: borderColor, width: borderWidth),
+      ),
+      child: ClipOval(
+        child: url == null || url.isEmpty
+            ? fallback
+            : Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => fallback,
+                loadingBuilder: (context, child, progress) =>
+                    progress == null ? child : fallback,
+              ),
       ),
     );
   }

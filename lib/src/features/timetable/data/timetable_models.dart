@@ -12,24 +12,24 @@ enum TimetableStatus {
 
 extension TimetableStatusExtension on TimetableStatus {
   String get label => switch (this) {
-        TimetableStatus.draft => 'Draft',
-        TimetableStatus.generated => 'Generated',
-        TimetableStatus.validated => 'Validated',
-        TimetableStatus.underReview => 'Under Review',
-        TimetableStatus.approved => 'Approved',
-        TimetableStatus.published => 'Published',
-        TimetableStatus.archived => 'Archived',
-      };
+    TimetableStatus.draft => 'Draft',
+    TimetableStatus.generated => 'Generated',
+    TimetableStatus.validated => 'Validated',
+    TimetableStatus.underReview => 'Under Review',
+    TimetableStatus.approved => 'Approved',
+    TimetableStatus.published => 'Published',
+    TimetableStatus.archived => 'Archived',
+  };
 
   Color get color => switch (this) {
-        TimetableStatus.draft => Colors.grey.shade700,
-        TimetableStatus.generated => Colors.blue.shade700,
-        TimetableStatus.validated => Colors.amber.shade800,
-        TimetableStatus.underReview => Colors.purple.shade700,
-        TimetableStatus.approved => Colors.teal.shade700,
-        TimetableStatus.published => const Color(0xFF2E7D32),
-        TimetableStatus.archived => Colors.brown.shade600,
-      };
+    TimetableStatus.draft => Colors.grey.shade700,
+    TimetableStatus.generated => Colors.blue.shade700,
+    TimetableStatus.validated => Colors.amber.shade800,
+    TimetableStatus.underReview => Colors.purple.shade700,
+    TimetableStatus.approved => Colors.teal.shade700,
+    TimetableStatus.published => const Color(0xFF2E7D32),
+    TimetableStatus.archived => Colors.brown.shade600,
+  };
 }
 
 class AcademicContext {
@@ -105,7 +105,8 @@ class TimetableConfig {
       collegeStartTime: collegeStartTime ?? this.collegeStartTime,
       collegeEndTime: collegeEndTime ?? this.collegeEndTime,
       periodsPerDay: periodsPerDay ?? this.periodsPerDay,
-      periodDurationMinutes: periodDurationMinutes ?? this.periodDurationMinutes,
+      periodDurationMinutes:
+          periodDurationMinutes ?? this.periodDurationMinutes,
       breakSlots: breakSlots ?? this.breakSlots,
       teaBreakDurationMinutes:
           teaBreakDurationMinutes ?? this.teaBreakDurationMinutes,
@@ -118,16 +119,13 @@ class TimetableConfig {
   }
 }
 
-enum PeriodType {
-  classType,
-  examType,
-}
+enum PeriodType { classType, examType }
 
 extension PeriodTypeExtension on PeriodType {
   String get label => switch (this) {
-        PeriodType.classType => 'CLASS',
-        PeriodType.examType => 'EXAM',
-      };
+    PeriodType.classType => 'CLASS',
+    PeriodType.examType => 'EXAM',
+  };
 }
 
 /// TimetableEntry represents a specific scheduled period for a class or an exam.
@@ -157,6 +155,8 @@ class TimetableEntry {
     this.duration,
     this.syllabus,
     this.permittedItems,
+    this.combinedClassCode,
+    this.combinedClassName,
   });
 
   final String id;
@@ -184,10 +184,13 @@ class TimetableEntry {
   final String? duration; // e.g. "1h 40m"
   final String? syllabus; // e.g. "Units 1 & 2"
   final String? permittedItems; // e.g. "Non-programmable calculator"
+  final String? combinedClassCode;
+  final String? combinedClassName;
 
   bool get isExam => periodType == PeriodType.examType;
 
-  Color get categoryColor => isExam ? const Color(0xFFC62828) : Color(categoryColorValue);
+  Color get categoryColor =>
+      isExam ? const Color(0xFFC62828) : Color(categoryColorValue);
 
   TimetableEntry copyWith({
     String? id,
@@ -213,6 +216,8 @@ class TimetableEntry {
     String? duration,
     String? syllabus,
     String? permittedItems,
+    String? combinedClassCode,
+    String? combinedClassName,
   }) {
     return TimetableEntry(
       id: id ?? this.id,
@@ -238,6 +243,8 @@ class TimetableEntry {
       duration: duration ?? this.duration,
       syllabus: syllabus ?? this.syllabus,
       permittedItems: permittedItems ?? this.permittedItems,
+      combinedClassCode: combinedClassCode ?? this.combinedClassCode,
+      combinedClassName: combinedClassName ?? this.combinedClassName,
     );
   }
 }
@@ -252,12 +259,12 @@ enum ConflictType {
 
 extension ConflictTypeExtension on ConflictType {
   String get label => switch (this) {
-        ConflictType.facultyConflict => 'Faculty Double-Booking',
-        ConflictType.classConflict => 'Class Schedule Overlap',
-        ConflictType.timeOverlap => 'Time Slot Contention',
-        ConflictType.workloadExceeded => 'Faculty Workload Exceeded',
-        ConflictType.weeklyHoursMismatch => 'Weekly Subject Hours Deficit',
-      };
+    ConflictType.facultyConflict => 'Faculty Double-Booking',
+    ConflictType.classConflict => 'Class Schedule Overlap',
+    ConflictType.timeOverlap => 'Time Slot Contention',
+    ConflictType.workloadExceeded => 'Faculty Workload Exceeded',
+    ConflictType.weeklyHoursMismatch => 'Weekly Subject Hours Deficit',
+  };
 }
 
 class ConflictItem {
@@ -280,16 +287,13 @@ class ConflictItem {
   final String severity;
 }
 
-enum SubstitutionTriggerType {
-  allocatorAbsence,
-  facultyInitiated,
-}
+enum SubstitutionTriggerType { allocatorAbsence, facultyInitiated }
 
 extension SubstitutionTriggerTypeExtension on SubstitutionTriggerType {
   String get label => switch (this) {
-        SubstitutionTriggerType.allocatorAbsence => 'ALLOCATOR_ABSENCE',
-        SubstitutionTriggerType.facultyInitiated => 'FACULTY_INITIATED',
-      };
+    SubstitutionTriggerType.allocatorAbsence => 'ALLOCATOR_ABSENCE',
+    SubstitutionTriggerType.facultyInitiated => 'FACULTY_INITIATED',
+  };
 }
 
 class FacultySubstitution {
@@ -417,30 +421,24 @@ class FacultySubjectQuota {
 /// ---------------------------------------------------------------------------
 /// ATTENDANCE ENGINE & REAL-TIME LOG MODELS
 /// ---------------------------------------------------------------------------
-enum PeriodAttendanceStatus {
-  present,
-  absent,
-  onDuty,
-  upcoming,
-  cancelled,
-}
+enum PeriodAttendanceStatus { present, absent, onDuty, upcoming, cancelled }
 
 extension PeriodAttendanceStatusExtension on PeriodAttendanceStatus {
   String get label => switch (this) {
-        PeriodAttendanceStatus.present => 'PRESENT',
-        PeriodAttendanceStatus.absent => 'ABSENT',
-        PeriodAttendanceStatus.onDuty => 'ON_DUTY',
-        PeriodAttendanceStatus.upcoming => 'UPCOMING',
-        PeriodAttendanceStatus.cancelled => 'CANCELLED',
-      };
+    PeriodAttendanceStatus.present => 'PRESENT',
+    PeriodAttendanceStatus.absent => 'ABSENT',
+    PeriodAttendanceStatus.onDuty => 'ON_DUTY',
+    PeriodAttendanceStatus.upcoming => 'UPCOMING',
+    PeriodAttendanceStatus.cancelled => 'CANCELLED',
+  };
 
   Color get color => switch (this) {
-        PeriodAttendanceStatus.present => const Color(0xFF2E7D32),
-        PeriodAttendanceStatus.absent => const Color(0xFFC62828),
-        PeriodAttendanceStatus.onDuty => const Color(0xFF6A1B9A),
-        PeriodAttendanceStatus.upcoming => const Color(0xFF1565C0),
-        PeriodAttendanceStatus.cancelled => Colors.grey.shade600,
-      };
+    PeriodAttendanceStatus.present => const Color(0xFF2E7D32),
+    PeriodAttendanceStatus.absent => const Color(0xFFC62828),
+    PeriodAttendanceStatus.onDuty => const Color(0xFF6A1B9A),
+    PeriodAttendanceStatus.upcoming => const Color(0xFF1565C0),
+    PeriodAttendanceStatus.cancelled => Colors.grey.shade600,
+  };
 }
 
 class PeriodAttendanceRecord {
@@ -578,6 +576,3 @@ class AuditLogEntry {
   final String affectedClass;
   final String? affectedFaculty;
 }
-
-
-

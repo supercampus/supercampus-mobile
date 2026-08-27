@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/access/effective_permissions.dart';
-import '../../../core/access/module_catalog.dart';
-import '../../../core/widgets/slice_nav_bar.dart';
+import '../../../core/widgets/campus_nav_bar.dart';
 import '../../authentication/data/auth_repository.dart';
 import 'widgets/home_sheets.dart';
 
@@ -40,46 +39,14 @@ class ModuleNavigationHost extends StatelessWidget {
           left: 0,
           right: 0,
           bottom: MediaQuery.paddingOf(context).bottom + 10,
-          child: SliceNavBar(
-            destinations: const [
-              SliceNavDestination(
-                id: 'home',
-                label: 'Home',
-                icon: Icons.home_rounded,
-              ),
-              SliceNavDestination(
-                id: ModuleCatalog.academics,
-                label: 'Academics',
-                icon: Icons.school_outlined,
-              ),
-              SliceNavDestination(
-                id: 'modules',
-                label: 'Modules',
-                icon: Icons.grid_view_rounded,
-              ),
-              SliceNavDestination(
-                id: 'profile',
-                label: 'Profile',
-                icon: Icons.person_outline,
-              ),
-            ],
+          child: CampusNavBar(
             selectedId: selectedId,
-            onSelect: (id) {
-              switch (id) {
-                case 'home':
-                  onExitModule();
-                case ModuleCatalog.academics:
-                  if (permissions.canSeeModule(ModuleCatalog.academics)) {
-                    onOpenModule(ModuleCatalog.academics);
-                  }
-                case 'modules':
-                  _openModules(context);
-                case 'profile':
-                  _openProfile(context);
-              }
-            },
-            onCenterTap: onScan == null ? null : () => onScan!(context),
-            centerTooltip: 'Scanner',
+            initials: initialsOf(session.displayName),
+            avatarUrl: session.photoUrl,
+            onHome: onExitModule,
+            onModules: () => _openModules(context),
+            onProfile: () => _openProfile(context),
+            onScan: onScan == null ? null : () => onScan!(context),
           ),
         ),
       ],

@@ -18,9 +18,11 @@ void main() {
 
     expect(store.user.name, 'Test Student');
     expect(store.menu.length, greaterThanOrEqualTo(10));
+    // Every storefront has stock, so each of the three tabs has something to
+    // show rather than opening onto an empty list.
     expect(
-      store.menu.map((item) => item.category).toSet(),
-      MenuCategory.values.toSet(),
+      store.menu.map((item) => item.store).toSet(),
+      MenuStore.values.toSet(),
     );
     expect(store.walletBalance, greaterThan(0));
     expect(store.orders, isNotEmpty);
@@ -40,13 +42,47 @@ void main() {
     final item = before.menu.first;
     final result = await repository.placeOrder(
       lines: [CartLine(item: item, quantity: 2)],
-      fulfilmentMode: FulfilmentMode.dineIn,
     );
 
+    // One shop in the cart, so one order and one debit.
+    expect(result.orders, hasLength(1));
     expect(result.order.total, item.price * 2);
     expect(result.order.status, CanteenOrderStatus.ready);
     expect(result.balance, before.walletBalance - item.price * 2);
-    expect(result.transaction.type, WalletTransactionType.debit);
+    expect(result.transactions.single.type, WalletTransactionType.debit);
+  });
+
+  test('a cart spanning shops becomes one order per shop', () async {
+    final before = await repository.loadStore();
+    final classic = before.menu.firstWhere(
+      (item) => item.store == MenuStore.classic,
+    );
+    final bites = before.menu.firstWhere(
+      (item) => item.store == MenuStore.bites,
+    );
+
+    final result = await repository.placeOrder(
+      lines: [
+        CartLine(item: classic, quantity: 1),
+        CartLine(item: bites, quantity: 1),
+      ],
+    );
+
+    // Each shop hands over its own food, so each gets its own order and QR.
+    expect(result.orders, hasLength(2));
+    expect(result.spansMultipleShops, isTrue);
+    expect(
+      result.orders.map((order) => order.lines.single.item.store).toSet(),
+      {MenuStore.classic, MenuStore.bites},
+    );
+
+    // One wallet: the balance falls by the whole cart, debited per shop.
+    expect(result.transactions, hasLength(2));
+    expect(result.balance, before.walletBalance - classic.price - bites.price);
+    expect(
+      result.transactions.fold<double>(0, (sum, t) => sum + t.amount),
+      classic.price + bites.price,
+    );
   });
 
   test('rejects top-up amounts outside the configured range', () async {
@@ -58,10 +94,7 @@ void main() {
     final item = store.menu.first;
 
     expect(
-      repository.placeOrder(
-        lines: [CartLine(item: item, quantity: 100)],
-        fulfilmentMode: FulfilmentMode.pickup,
-      ),
+      repository.placeOrder(lines: [CartLine(item: item, quantity: 100)]),
       throwsA(isA<CanteenException>()),
     );
   });

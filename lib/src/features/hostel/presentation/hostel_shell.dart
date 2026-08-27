@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_navigation_buttons.dart';
+import '../../../core/widgets/skeleton_loading.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/hostel_models.dart';
 import '../data/hostel_repository.dart';
@@ -41,7 +44,8 @@ class _HostelShellState extends State<HostelShell> {
   @override
   void initState() {
     super.initState();
-    _repository = widget.repository ??
+    _repository =
+        widget.repository ??
         MockHostelRepository(
           studentName: widget.session.displayName,
           studentCode: 'SC2600142',
@@ -104,18 +108,26 @@ class _HostelShellState extends State<HostelShell> {
             children: [
               Text(
                 'Apply for Hostel Accommodation',
-                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  ctx,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 initialValue: 'Double Sharing',
-                decoration: const InputDecoration(labelText: 'Preferred Room Type'),
+                decoration: const InputDecoration(
+                  labelText: 'Preferred Room Type',
+                ),
                 items: const [
                   DropdownMenuItem(value: 'Single', child: Text('Single Room')),
-                  DropdownMenuItem(value: 'Double Sharing', child: Text('Double Sharing')),
-                  DropdownMenuItem(value: 'Triple Sharing', child: Text('Triple Sharing')),
+                  DropdownMenuItem(
+                    value: 'Double Sharing',
+                    child: Text('Double Sharing'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Triple Sharing',
+                    child: Text('Triple Sharing'),
+                  ),
                 ],
                 onChanged: (val) {
                   if (val != null) typeCtrl.text = val;
@@ -141,7 +153,11 @@ class _HostelShellState extends State<HostelShell> {
                       Navigator.pop(ctx);
                       _load();
                       ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(content: Text('Hostel Accommodation Application Submitted!')),
+                        const SnackBar(
+                          content: Text(
+                            'Hostel Accommodation Application Submitted!',
+                          ),
+                        ),
                       );
                     }
                   },
@@ -180,10 +196,11 @@ class _HostelShellState extends State<HostelShell> {
 
     final store = _store;
     if (store == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: SkeletonList(rows: 6, rowHeight: 82));
     }
 
-    final isStaff = widget.session.role == UserRole.staff ||
+    final isStaff =
+        widget.session.role == UserRole.staff ||
         widget.session.role == UserRole.timetableAllocator ||
         widget.session.role == UserRole.admin;
 
@@ -246,10 +263,7 @@ class _HostelShellState extends State<HostelShell> {
         onRefresh: _load,
         onBack: _handleBack,
       ),
-      HostelInventoryScreen(
-        buildings: store.buildings,
-        onBack: _handleBack,
-      ),
+      HostelInventoryScreen(buildings: store.buildings, onBack: _handleBack),
       HostelGateScannerScreen(
         repository: _repository,
         store: store,
@@ -266,8 +280,9 @@ class _HostelShellState extends State<HostelShell> {
       child: Scaffold(
         appBar: _selectedIndex == 0
             ? AppBar(
-                leading: BackButton(onPressed: _handleBack),
+                leading: ModuleBackButton(onPressed: _handleBack),
                 title: Text(isStaff ? 'Hostel Operations' : 'My Hostel'),
+                actions: [ModuleHomeButton(onPressed: widget.onExitModule)],
               )
             : null,
         body: Padding(

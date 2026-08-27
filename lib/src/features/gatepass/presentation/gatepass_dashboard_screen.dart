@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/module_navigation_buttons.dart';
 import '../data/gatepass_models.dart';
 import 'widgets/gatepass_ui.dart';
 
@@ -42,24 +45,26 @@ class GatepassDashboardScreen extends StatelessWidget {
               GatepassPageHeader(
                 title: 'Gatepass',
                 subtitle: '${store.student.residency.label} access',
-                leading: IconButton.filledTonal(
-                  tooltip: 'Modules Home',
-                  onPressed: onExitModule,
-                  icon: const Icon(Icons.home),
-                ),
-                trailing: CircleAvatar(
-                  backgroundColor: const Color(0xFFECEAFF),
-                  child: Text(
-                    store.student.initials,
-                    style: const TextStyle(
-                      color: AppColors.gateBlue,
-                      fontWeight: FontWeight.w500,
+                leading: ModuleBackButton(onPressed: onExitModule),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: const Color(0xFFECEAFF),
+                      child: Text(
+                        store.student.initials,
+                        style: const TextStyle(
+                          color: AppColors.gateBlue,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
-                  ),
+                    ModuleHomeButton(onPressed: onExitModule),
+                  ],
                 ),
               ),
               const SizedBox(height: 20),
-              _CampusStatusCard(student: store.student),
+              _CampusStatusCard(store: store),
               const SizedBox(height: 12),
               if (active != null) ...[
                 _ActiveRequestCard(
@@ -148,65 +153,213 @@ class GatepassDashboardScreen extends StatelessWidget {
 }
 
 class _CampusStatusCard extends StatelessWidget {
-  const _CampusStatusCard({required this.student});
+  const _CampusStatusCard({required this.store});
 
-  final GatepassStudent student;
+  final GatepassStore store;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: gatepassGradient,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.location_on_outlined, color: Colors.white),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  student.isOnCampus
-                      ? 'You are on campus'
-                      : 'You are off campus',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                  ),
+    final location = store.mapLocation;
+    final student = store.student;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(
+        height: 184,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (location != null)
+              _CampusMap(location: location)
+            else
+              const DecoratedBox(
+                decoration: BoxDecoration(gradient: gatepassGradient),
+              ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x22000000), Color(0xCC111033)],
+                  stops: [0.3, 1],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${student.rollNumber}  •  ${student.department}',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    fontWeight: FontWeight.w300,
-                  ),
+              ),
+            ),
+            Positioned(
+              left: 16,
+              top: 14,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
                 ),
-              ],
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: store.zone == CampusZone.inside
+                            ? const Color(0xFF1BA765)
+                            : const Color(0xFFE74C3C),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    Text(
+                      store.zone == CampusZone.unknown
+                          ? 'Locating…'
+                          : store.zone == CampusZone.outside
+                          ? 'Outside campus'
+                          : 'Live location',
+                      style: const TextStyle(
+                        color: Color(0xFF17152B),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-          Container(
-            width: 10,
-            height: 10,
-            decoration: const BoxDecoration(
-              color: AppColors.gateLime,
-              shape: BoxShape.circle,
+            Positioned(
+              left: 18,
+              right: 18,
+              bottom: 17,
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: const Icon(Icons.my_location, color: Colors.white),
+                  ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          store.zone == CampusZone.inside
+                              ? 'You are on campus'
+                              : store.zone == CampusZone.outside
+                              ? 'You are off campus'
+                              : 'Finding your location',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${student.rollNumber}  •  ${student.department}',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.86),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (location != null)
+                    const Icon(
+                      Icons.verified,
+                      color: AppColors.gateLime,
+                      size: 21,
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _CampusMap extends StatelessWidget {
+  const _CampusMap({required this.location});
+
+  final CampusMapLocation location;
+
+  @override
+  Widget build(BuildContext context) {
+    final studentPoint = LatLng(
+      location.studentLatitude,
+      location.studentLongitude,
+    );
+    final campusPoint = LatLng(
+      location.campusLatitude,
+      location.campusLongitude,
+    );
+    return FlutterMap(
+      options: MapOptions(
+        initialCenter: studentPoint,
+        initialZoom: 17,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.none,
+        ),
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'ai.supercampus.mobile',
+        ),
+        CircleLayer(
+          circles: [
+            CircleMarker(
+              point: campusPoint,
+              radius: location.radiusMetres,
+              useRadiusInMeter: true,
+              color: const Color(0x332D20FF),
+              borderColor: const Color(0xFF3424F5),
+              borderStrokeWidth: 2,
+            ),
+            if (location.accuracyMetres > 0)
+              CircleMarker(
+                point: studentPoint,
+                radius: location.accuracyMetres,
+                useRadiusInMeter: true,
+                color: const Color(0x223427FF),
+                borderColor: const Color(0x663427FF),
+                borderStrokeWidth: 1,
+              ),
+          ],
+        ),
+        MarkerLayer(
+          markers: [
+            Marker(
+              point: studentPoint,
+              width: 42,
+              height: 42,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3424F5),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 3),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black38, blurRadius: 8),
+                  ],
+                ),
+                child: const Icon(Icons.person_pin_circle, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        const RichAttributionWidget(
+          attributions: [TextSourceAttribution('OpenStreetMap contributors')],
+          popupInitialDisplayDuration: Duration.zero,
+        ),
+      ],
     );
   }
 }

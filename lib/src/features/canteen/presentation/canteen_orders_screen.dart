@@ -8,9 +8,16 @@ import 'widgets/canteen_surface.dart';
 enum OrderFilter { active, history }
 
 class CanteenOrdersScreen extends StatefulWidget {
-  const CanteenOrdersScreen({super.key, required this.orders});
+  const CanteenOrdersScreen({
+    super.key,
+    required this.orders,
+    required this.onBack,
+  });
 
   final List<CanteenOrder> orders;
+
+  /// Returns to the shops menu, which is this module's home.
+  final VoidCallback onBack;
 
   @override
   State<CanteenOrdersScreen> createState() => _CanteenOrdersScreenState();
@@ -32,6 +39,7 @@ class _CanteenOrdersScreenState extends State<CanteenOrdersScreen> {
     return CanteenPageBody(
       children: [
         CanteenPageHeader(
+          onBack: widget.onBack,
           title: 'My orders',
           subtitle: 'Track active and completed orders',
           trailing: IconButton.outlined(
@@ -93,9 +101,12 @@ class _OrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final active = order.status.isActive;
     final statusColor = switch (order.status) {
+      CanteenOrderStatus.pending => const Color(0xFFB96708),
+      CanteenOrderStatus.accepted => AppColors.primary,
       CanteenOrderStatus.preparing => const Color(0xFFB96708),
       CanteenOrderStatus.ready => AppColors.success,
       CanteenOrderStatus.completed => AppColors.primary,
+      CanteenOrderStatus.rejected => Theme.of(context).colorScheme.error,
       CanteenOrderStatus.cancelled => Theme.of(context).colorScheme.error,
     };
 
@@ -107,7 +118,7 @@ class _OrderCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '#${order.id}',
+                  '#${order.displayId}',
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),

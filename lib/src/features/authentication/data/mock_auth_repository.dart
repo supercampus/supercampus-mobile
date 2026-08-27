@@ -8,10 +8,15 @@ class MockAuthRepository implements AuthRepository {
   Future<UserSession> signIn({
     required String email,
     required String password,
-    required UserRole role,
     required String tenantDomain,
+    UserRole? roleHint,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 650));
+
+    // With no server to ask, the address stands in for access control, so every
+    // persona is reachable without editing code: principal@, advisor@, staff@,
+    // parent@, security@, allocator@, admin@ — anything else is a student.
+    final role = roleHint ?? _personaFromEmail(email);
 
     if (password.toLowerCase() == 'invalid1') {
       throw const AuthenticationException(
@@ -57,4 +62,32 @@ class MockAuthRepository implements AuthRepository {
   Future<void> sendPasswordReset(String email) async {
     await Future<void>.delayed(const Duration(milliseconds: 600));
   }
+}
+
+/// Which persona a mock address stands for. Real sign-in never uses this — the
+/// server resolves the role from the account's roles and portal family.
+UserRole _personaFromEmail(String email) {
+  final local = email.split('@').first.toLowerCase();
+  if (local.contains('admin')) return UserRole.admin;
+  if (local.contains('allocator') || local.contains('timetable')) {
+    return UserRole.timetableAllocator;
+  }
+  if (local.contains('security') || local.contains('guard')) {
+    return UserRole.security;
+  }
+  if (local.contains('parent') || local.contains('guardian')) {
+    return UserRole.parent;
+  }
+  // Principal, HOD, class advisor and faculty are all staff personas here —
+  // what separates them is grants, which the mock permissions repository
+  // supplies, not the role name.
+  if (local.contains('principal') ||
+      local.contains('hod') ||
+      local.contains('advisor') ||
+      local.contains('faculty') ||
+      local.contains('staff') ||
+      local.contains('teacher')) {
+    return UserRole.staff;
+  }
+  return UserRole.student;
 }

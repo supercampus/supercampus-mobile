@@ -65,12 +65,7 @@ class _SubstitutionModalState extends State<SubstitutionModal> {
         children: [
           Icon(Icons.swap_horiz, color: Color(0xFF00695C)),
           SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Request Faculty Substitution',
-              softWrap: true,
-            ),
-          ),
+          Expanded(child: Text('Request Faculty Substitution', softWrap: true)),
         ],
       ),
       content: SingleChildScrollView(
@@ -94,7 +89,8 @@ class _SubstitutionModalState extends State<SubstitutionModal> {
                   labelText: 'Substitute Faculty',
                   prefixIcon: Icon(Icons.person_add_outlined),
                 ),
-                validator: (v) => v!.isEmpty ? 'Enter substitute faculty' : null,
+                validator: (v) =>
+                    v!.isEmpty ? 'Enter substitute faculty' : null,
               ),
               const SizedBox(height: 10),
               Row(
@@ -102,7 +98,9 @@ class _SubstitutionModalState extends State<SubstitutionModal> {
                   Expanded(
                     child: TextFormField(
                       controller: _subjectCodeCtrl,
-                      decoration: const InputDecoration(labelText: 'Subject Code'),
+                      decoration: const InputDecoration(
+                        labelText: 'Subject Code',
+                      ),
                       validator: (v) => v!.isEmpty ? 'Required' : null,
                     ),
                   ),
@@ -110,7 +108,9 @@ class _SubstitutionModalState extends State<SubstitutionModal> {
                   Expanded(
                     child: TextFormField(
                       controller: _subjectNameCtrl,
-                      decoration: const InputDecoration(labelText: 'Subject Name'),
+                      decoration: const InputDecoration(
+                        labelText: 'Subject Name',
+                      ),
                       validator: (v) => v!.isEmpty ? 'Required' : null,
                     ),
                   ),
@@ -123,15 +123,19 @@ class _SubstitutionModalState extends State<SubstitutionModal> {
                     child: DropdownButtonFormField<String>(
                       initialValue: _selectedDay,
                       decoration: const InputDecoration(labelText: 'Day'),
-                      items: [
-                        'Monday',
-                        'Tuesday',
-                        'Wednesday',
-                        'Thursday',
-                        'Friday'
-                      ]
-                          .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                          .toList(),
+                      items:
+                          [
+                                'Monday',
+                                'Tuesday',
+                                'Wednesday',
+                                'Thursday',
+                                'Friday',
+                              ]
+                              .map(
+                                (d) =>
+                                    DropdownMenuItem(value: d, child: Text(d)),
+                              )
+                              .toList(),
                       onChanged: (val) {
                         if (val != null) setState(() => _selectedDay = val);
                       },

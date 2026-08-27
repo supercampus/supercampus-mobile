@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../../../core/widgets/skeleton_loading.dart';
 
 import '../../../core/access/effective_permissions.dart';
-import '../../../core/theme/app_theme.dart';
 import '../data/insight.dart';
 import '../data/insight_engine.dart';
 import '../data/mock_insight_feed.dart';
@@ -228,7 +228,6 @@ class _InsightCard extends StatelessWidget {
     InsightTone.urgent => const Color(0xFFFF6B6B),
     InsightTone.neutral => const Color(0xFF6FD3FF),
   };
-
 }
 
 class _Gauge extends StatelessWidget {
@@ -316,19 +315,11 @@ class _InsightSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF181C24), Color(0xFF272E3D)],
-          ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.2)),
-        ),
-        child: const SizedBox.expand(),
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(20, 8, 20, 8),
+      child: SkeletonBox(
+        height: double.infinity,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
       ),
     );
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/module_navigation_buttons.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/academic_models.dart';
@@ -30,12 +32,15 @@ class _AcademicManagementShellState extends State<AcademicManagementShell> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF4A4E9C),
         foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.home_outlined),
+        leading: ModuleBackButton(
           onPressed: widget.onExitModule,
+          color: Colors.white,
         ),
         title: const Text('Academic Management'),
-        actions: [IconButton(onPressed: _add, icon: const Icon(Icons.add))],
+        actions: [
+          IconButton(onPressed: _add, icon: const Icon(Icons.add)),
+          ModuleHomeButton(onPressed: widget.onExitModule, color: Colors.white),
+        ],
       ),
       body: IndexedStack(index: _tab, children: pages),
     );

@@ -5,7 +5,7 @@ import '../../../core/notifications/exam_alert_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/timetable_models.dart';
-import '../data/mock_timetable_repository.dart';
+import '../data/timetable_repository.dart';
 import 'widgets/daily_period_strip.dart';
 import 'widgets/weekly_date_strip.dart';
 import 'widgets/month_calendar_dialog.dart';
@@ -16,10 +16,15 @@ class ViewOnlyTimetableScreen extends StatefulWidget {
     super.key,
     required this.session,
     required this.repository,
+    required this.canConfigure,
   });
 
   final UserSession session;
-  final MockTimetableRepository repository;
+  final TimetableRepository repository;
+
+  /// Whether this person may shape the timetable rather than only read it.
+  /// Resolved from their grants by whoever built this screen.
+  final bool canConfigure;
 
   @override
   State<ViewOnlyTimetableScreen> createState() =>
@@ -35,15 +40,17 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
   @override
   void initState() {
     super.initState();
-    _targetClass =
-        widget.session.sectionId ?? widget.session.departmentOrWard ?? 'CS-3A';
-    if (!_targetClass.contains('CS') && !_targetClass.contains('-')) {
-      _targetClass = 'CS-3A';
-    }
+    final available = widget.repository.getAvailableClasses();
+    // The server already limits a learner to their enrolled section. Prefer
+    // its friendly class name over the UUID stored in the session claim.
+    _targetClass = available.isNotEmpty
+        ? available.first
+        : widget.session.sectionId ?? 'Assigned class';
   }
 
   @override
   Widget build(BuildContext context) {
+    final isAllocator = widget.canConfigure;
     final config = widget.repository.getConfig();
     final entries = widget.repository.getEntriesForClass(_targetClass);
     final selectedDayStr = DateFormat('EEEE').format(_selectedDate);
@@ -65,12 +72,17 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Student Timetable',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Text(
+                  isAllocator ? 'Published timetable' : 'Student Timetable',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
-                  '$_targetClass • Semester View',
+                  isAllocator
+                      ? 'View and acknowledge the active schedule'
+                      : '$_targetClass • Semester View',
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
@@ -95,120 +107,123 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
 
         const SizedBox(height: 14),
 
-        // Dedicated Student View Mode Switcher / Toggle [ Daily Classes | Exam Schedule ]
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _viewMode = 0),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: _viewMode == 0
-                          ? AppColors.primary
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(9),
-                      boxShadow: _viewMode == 0
-                          ? [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(
-                                  alpha: 0.25,
+        // Timetable allocators can also inspect exam rows. Learners receive a
+        // timetable-only surface: they may move between allocated dates but
+        // cannot enter staff or examination operations from this module.
+        if (isAllocator)
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _viewMode = 0),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _viewMode == 0
+                            ? AppColors.primary
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(9),
+                        boxShadow: _viewMode == 0
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.25,
+                                  ),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
                                 ),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : [],
-                    ),
-                    alignment: Alignment.center,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.calendar_today_rounded,
-                          size: 16,
-                          color: _viewMode == 0
-                              ? Colors.white
-                              : Colors.grey.shade700,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Daily Classes',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
+                              ]
+                            : [],
+                      ),
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            size: 16,
                             color: _viewMode == 0
                                 ? Colors.white
                                 : Colors.grey.shade700,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Text(
+                            'Daily Classes',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: _viewMode == 0
+                                  ? Colors.white
+                                  : Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _viewMode = 1),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: _viewMode == 1
-                          ? const Color(0xFF3730A3)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(9),
-                      boxShadow: _viewMode == 1
-                          ? [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF3730A3,
-                                ).withValues(alpha: 0.25),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : [],
-                    ),
-                    alignment: Alignment.center,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.assignment_turned_in_rounded,
-                          size: 16,
-                          color: _viewMode == 1
-                              ? Colors.white
-                              : Colors.grey.shade700,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Exam Schedule',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _viewMode = 1),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _viewMode == 1
+                            ? const Color(0xFF3730A3)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(9),
+                        boxShadow: _viewMode == 1
+                            ? [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF3730A3,
+                                  ).withValues(alpha: 0.25),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : [],
+                      ),
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.assignment_turned_in_rounded,
+                            size: 16,
                             color: _viewMode == 1
                                 ? Colors.white
                                 : Colors.grey.shade700,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Text(
+                            'Exam Schedule',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: _viewMode == 1
+                                  ? Colors.white
+                                  : Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
 
-        const SizedBox(height: 16),
+        if (isAllocator) const SizedBox(height: 16),
 
         if (_viewMode == 0) ...[
           // Mode 0: Daily Classes View (With Weekly Strip & Timetable Grid View)

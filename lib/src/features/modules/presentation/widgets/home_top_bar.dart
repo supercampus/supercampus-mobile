@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 /// Sparkle · search · bell, the strip that sits above everything on the home
 /// screen. The search field is a button rather than a live [TextField] — the
 /// query is typed in the sheet it opens, so the strip never has to give up

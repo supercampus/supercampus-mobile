@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../authentication/data/auth_repository.dart';
 
 import 'screens/admin_examination_dashboard.dart';
@@ -99,16 +101,14 @@ class _ExaminationShellState extends State<ExaminationShell> {
             backgroundColor: const Color(0xFF1B5E20),
             foregroundColor: Colors.white,
             leading: _activeFeatureIndex != null
-                ? IconButton(
-                    tooltip: 'Back to Dashboard',
-                    icon: const Icon(Icons.arrow_back),
+                ? ModuleBackButton(
                     onPressed: () => setState(() => _activeFeatureIndex = null),
+                    color: Colors.white,
                   )
                 : (widget.onExitModule != null
-                      ? IconButton(
-                          tooltip: 'Back',
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: widget.onExitModule,
+                      ? ModuleBackButton(
+                          onPressed: widget.onExitModule!,
+                          color: Colors.white,
                         )
                       : null),
             title: Row(
@@ -153,16 +153,20 @@ class _ExaminationShellState extends State<ExaminationShell> {
                 ),
               ],
             ),
-            actions: _isStudent || _isParent
-                ? const []
-                : [
-                    IconButton(
-                      tooltip: 'Sign Out',
-                      icon: const Icon(Icons.logout, color: Colors.white),
-                      onPressed: widget.onSignOut,
-                    ),
-                    const SizedBox(width: 6),
-                  ],
+            actions: [
+              if (widget.onExitModule != null)
+                ModuleHomeButton(
+                  onPressed: widget.onExitModule!,
+                  color: Colors.white,
+                ),
+              if (!_isStudent && !_isParent)
+                IconButton(
+                  tooltip: 'Sign Out',
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  onPressed: widget.onSignOut,
+                ),
+              const SizedBox(width: 6),
+            ],
           ),
           body: _buildBodyContent(),
         );

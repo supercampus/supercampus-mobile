@@ -25,14 +25,13 @@ class CanteenCartScreen extends StatefulWidget {
   final double walletBalance;
   final ValueChanged<CanteenMenuItem> onAdd;
   final ValueChanged<CanteenMenuItem> onRemove;
-  final Future<OrderPlacementResult> Function(FulfilmentMode mode) onPlaceOrder;
+  final Future<OrderPlacementResult> Function() onPlaceOrder;
 
   @override
   State<CanteenCartScreen> createState() => _CanteenCartScreenState();
 }
 
 class _CanteenCartScreenState extends State<CanteenCartScreen> {
-  FulfilmentMode _mode = FulfilmentMode.dineIn;
   bool _isSubmitting = false;
   String? _error;
 
@@ -44,6 +43,18 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
   }
 
   double get _total => _lines.fold(0, (sum, line) => sum + line.total);
+
+  /// Shops represented in the cart, in menu order — one order and one QR each.
+  List<MenuStore> get _shops {
+    final seen = <MenuStore>[];
+    for (final line in _lines) {
+      if (!seen.contains(line.item.store)) seen.add(line.item.store);
+    }
+    return seen;
+  }
+
+  List<CartLine> _linesFor(MenuStore shop) =>
+      _lines.where((line) => line.item.store == shop).toList(growable: false);
 
   Future<void> _placeOrder() async {
     final approved = await showModalBottomSheet<bool>(
@@ -57,7 +68,7 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
       builder: (_) => TransactionPinSheet(
         amount: _total,
         summary:
-            '${_lines.length} canteen item${_lines.length == 1 ? '' : 's'}',
+            '${_lines.length} item${_lines.length == 1 ? '' : 's'}',
       ),
     );
     if (approved != true || !mounted) return;
@@ -67,7 +78,7 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
       _error = null;
     });
     try {
-      final result = await widget.onPlaceOrder(_mode);
+      final result = await widget.onPlaceOrder();
       if (!mounted) return;
       await showModalBottomSheet<void>(
         context: context,
@@ -117,61 +128,59 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
                         'Order items',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
+                      if (_shops.length > 1) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Each shop hands over its own order, so you will get '
+                          '${_shops.length} separate QR codes.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
                       const SizedBox(height: 12),
-                      CanteenSurface(
-                        padding: EdgeInsets.zero,
-                        child: Column(
-                          children: [
-                            for (
-                              var index = 0;
-                              index < _lines.length;
-                              index++
-                            ) ...[
-                              _CartLineRow(
-                                line: _lines[index],
-                                onAdd: () {
-                                  widget.onAdd(_lines[index].item);
-                                  setState(() {});
-                                },
-                                onRemove: () {
-                                  widget.onRemove(_lines[index].item);
-                                  setState(() {});
-                                },
+                      // Grouped by shop, because that is how the order will be
+                      // split and collected.
+                      for (final shop in _shops) ...[
+                        if (_shops.length > 1)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8, top: 4),
+                            child: Text(
+                              shop.label,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.1,
                               ),
-                              if (index != _lines.length - 1)
-                                const Divider(height: 1, indent: 74),
+                            ),
+                          ),
+                        CanteenSurface(
+                          padding: EdgeInsets.zero,
+                          child: Column(
+                            children: [
+                              for (
+                                var index = 0;
+                                index < _linesFor(shop).length;
+                                index++
+                              ) ...[
+                                _CartLineRow(
+                                  line: _linesFor(shop)[index],
+                                  onAdd: () {
+                                    widget.onAdd(_linesFor(shop)[index].item);
+                                    setState(() {});
+                                  },
+                                  onRemove: () {
+                                    widget.onRemove(
+                                      _linesFor(shop)[index].item,
+                                    );
+                                    setState(() {});
+                                  },
+                                ),
+                                if (index != _linesFor(shop).length - 1)
+                                  const Divider(height: 1, indent: 74),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 22),
-                      Text(
-                        'How will you eat?',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: SegmentedButton<FulfilmentMode>(
-                          showSelectedIcon: false,
-                          segments: const [
-                            ButtonSegment(
-                              value: FulfilmentMode.dineIn,
-                              icon: Icon(Icons.table_restaurant_outlined),
-                              label: Text('Dine in'),
-                            ),
-                            ButtonSegment(
-                              value: FulfilmentMode.pickup,
-                              icon: Icon(Icons.shopping_bag_outlined),
-                              label: Text('Pickup'),
-                            ),
-                          ],
-                          selected: {_mode},
-                          onSelectionChanged: (selection) {
-                            setState(() => _mode = selection.first);
-                          },
-                        ),
-                      ),
+                        const SizedBox(height: 12),
+                      ],
                       const SizedBox(height: 22),
                       CanteenSurface(
                         child: Column(

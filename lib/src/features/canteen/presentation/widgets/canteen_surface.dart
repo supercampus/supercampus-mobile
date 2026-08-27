@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/module_navigation_buttons.dart';
+
 import '../../../../core/theme/app_theme.dart';
 
 class CanteenPageBody extends StatelessWidget {
@@ -68,17 +70,31 @@ class CanteenPageHeader extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.trailing,
+    this.onBack,
   });
 
   final String title;
   final String subtitle;
   final Widget? trailing;
 
+  /// Where this page goes when the reader is done with it.
+  ///
+  /// Every screen has to answer "how do I get out?" — a page inside a module
+  /// with no way back leaves the reader stranded on it.
+  final VoidCallback? onBack;
+
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (onBack != null) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: ModuleBackButton(onPressed: onBack!),
+          ),
+          const SizedBox(width: 4),
+        ],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

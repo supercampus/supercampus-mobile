@@ -24,9 +24,7 @@ class ConflictResolutionCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(
-          color: isResolved
-              ? Colors.grey.shade300
-              : Colors.red.shade300,
+          color: isResolved ? Colors.grey.shade300 : Colors.red.shade300,
           width: isResolved ? 1 : 1.5,
         ),
       ),
@@ -47,16 +45,19 @@ class ConflictResolutionCard extends StatelessWidget {
                   child: Text(
                     conflict.title,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          decoration:
-                              isResolved ? TextDecoration.lineThrough : null,
-                          color: isResolved ? AppColors.muted : AppColors.ink,
-                        ),
+                      fontWeight: FontWeight.w500,
+                      decoration: isResolved
+                          ? TextDecoration.lineThrough
+                          : null,
+                      color: isResolved ? AppColors.muted : AppColors.ink,
+                    ),
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: isResolved
                         ? Colors.green.shade50

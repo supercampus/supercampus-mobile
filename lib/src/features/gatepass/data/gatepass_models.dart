@@ -214,6 +214,46 @@ class DailyAccessPass {
   final String qrPayload;
 }
 
+/// Where the device stands relative to the campus fence.
+///
+/// Decided by the API, never by the app: the fence lives in the tenant's campus
+/// record and a client that judged its own position could simply lie about it.
+/// The app only reads the answer — a pass means inside, a refusal means
+/// outside — and draws the state that answer implies.
+enum CampusZone {
+  /// The API activated a pass, so the device is within the fence.
+  inside,
+
+  /// The API refused on location grounds.
+  outside,
+
+  /// Not established: no fix yet, permission withheld, or the call failed for
+  /// a reason that says nothing about where the device is.
+  unknown,
+}
+
+/// Coordinates returned by the server after it has accepted the device inside
+/// the configured campus fence. Keeping both points lets the dashboard draw
+/// the real boundary and the student's measured position without deciding the
+/// zone locally.
+class CampusMapLocation {
+  const CampusMapLocation({
+    required this.studentLatitude,
+    required this.studentLongitude,
+    required this.accuracyMetres,
+    required this.campusLatitude,
+    required this.campusLongitude,
+    required this.radiusMetres,
+  });
+
+  final double studentLatitude;
+  final double studentLongitude;
+  final double accuracyMetres;
+  final double campusLatitude;
+  final double campusLongitude;
+  final double radiusMetres;
+}
+
 class GatepassStore {
   const GatepassStore({
     required this.student,
@@ -222,11 +262,30 @@ class GatepassStore {
     required this.requests,
     required this.visitors,
     required this.movements,
+    this.dailyPassIssue,
+    this.mapLocation,
+    this.zone = CampusZone.unknown,
   });
+
+  /// Where the device stands relative to the campus fence, as of this load.
+  final CampusZone zone;
+  final CampusMapLocation? mapLocation;
 
   final GatepassStudent student;
   final GatepassWorkflowDefinition workflow;
-  final DailyAccessPass dailyPass;
+
+  /// Today's campus entry pass, or null when it could not be activated.
+  ///
+  /// Activation is the one part of this module that can fail for an ordinary,
+  /// non-broken reason: it needs the device's location and the campus fence has
+  /// to accept it. A learner standing at home is not a failure of the gatepass
+  /// service, and the rest of the module — their requests, their gate
+  /// movements — is perfectly readable without it.
+  final DailyAccessPass? dailyPass;
+
+  /// Why [dailyPass] is null, in words meant for the person reading the screen.
+  final String? dailyPassIssue;
+
   final List<GatepassRequest> requests;
   final List<VisitorInvitation> visitors;
   final List<GateMovement> movements;
@@ -239,6 +298,9 @@ class GatepassStore {
       student: student,
       workflow: workflow,
       dailyPass: dailyPass,
+      dailyPassIssue: dailyPassIssue,
+      mapLocation: mapLocation,
+      zone: zone,
       requests: requests ?? this.requests,
       visitors: visitors ?? this.visitors,
       movements: movements,

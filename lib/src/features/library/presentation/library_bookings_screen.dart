@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/library_models.dart';
 import '../data/mock_library_repository.dart';
@@ -31,17 +32,21 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
   /// Only active, upcoming, and inside (checked-in) bookings appear on the
   /// main feed. Completed, cancelled, and expired bookings live in History.
   List<LibraryVisitPass> get _activeBookings => widget.repository.bookings
-      .where((b) =>
-          b.status == LibraryPassStatus.active ||
-          b.status == LibraryPassStatus.upcoming ||
-          b.status == LibraryPassStatus.inside)
+      .where(
+        (b) =>
+            b.status == LibraryPassStatus.active ||
+            b.status == LibraryPassStatus.upcoming ||
+            b.status == LibraryPassStatus.inside,
+      )
       .toList();
 
   List<LibraryVisitPass> get _historyBookings => widget.repository.bookings
-      .where((b) =>
-          b.status == LibraryPassStatus.used ||
-          b.status == LibraryPassStatus.cancelled ||
-          b.status == LibraryPassStatus.expired)
+      .where(
+        (b) =>
+            b.status == LibraryPassStatus.used ||
+            b.status == LibraryPassStatus.cancelled ||
+            b.status == LibraryPassStatus.expired,
+      )
       .toList();
 
   void _openBookSlot() async {
@@ -86,9 +91,9 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
   void _cancelBooking(String id) {
     widget.repository.cancelBooking(id);
     setState(() {});
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Booking cancelled.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Booking cancelled.')));
   }
 
   void _openHistory() {
@@ -96,6 +101,10 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
       MaterialPageRoute(
         builder: (_) => _BookingHistoryScreen(
           bookings: _historyBookings,
+          onHome: () {
+            Navigator.of(context).pop();
+            widget.onExitModule();
+          },
         ),
       ),
     );
@@ -112,10 +121,9 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF6D357F),
         foregroundColor: Colors.white,
-        leading: IconButton(
-          tooltip: 'Modules Home',
-          icon: const Icon(Icons.home_outlined),
+        leading: ModuleBackButton(
           onPressed: widget.onExitModule,
+          color: Colors.white,
         ),
         title: const Text('Library Bookings'),
         actions: [
@@ -128,6 +136,7 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
                 style: TextStyle(color: Colors.white70),
               ),
             ),
+          ModuleHomeButton(onPressed: widget.onExitModule, color: Colors.white),
         ],
       ),
       body: SafeArea(
@@ -192,7 +201,9 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
                                 OutlinedButton.icon(
                                   onPressed: _openHistory,
                                   icon: const Icon(Icons.history, size: 18),
-                                  label: Text('View $historyCount past booking${historyCount == 1 ? '' : 's'}'),
+                                  label: Text(
+                                    'View $historyCount past booking${historyCount == 1 ? '' : 's'}',
+                                  ),
                                 ),
                               ],
                             ],
@@ -210,8 +221,9 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
                               showCancelAction: true,
                               onTap: () {
                                 setState(() {
-                                  _expandedId =
-                                      _expandedId == pass.id ? null : pass.id;
+                                  _expandedId = _expandedId == pass.id
+                                      ? null
+                                      : pass.id;
                                 });
                               },
                               onShowQr: () => _openQr(pass),
@@ -234,9 +246,10 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _BookingHistoryScreen extends StatelessWidget {
-  const _BookingHistoryScreen({required this.bookings});
+  const _BookingHistoryScreen({required this.bookings, required this.onHome});
 
   final List<LibraryVisitPass> bookings;
+  final VoidCallback onHome;
 
   @override
   Widget build(BuildContext context) {
@@ -246,9 +259,11 @@ class _BookingHistoryScreen extends StatelessWidget {
         .where((b) => b.status == LibraryPassStatus.used)
         .toList();
     final cancelled = bookings
-        .where((b) =>
-            b.status == LibraryPassStatus.cancelled ||
-            b.status == LibraryPassStatus.expired)
+        .where(
+          (b) =>
+              b.status == LibraryPassStatus.cancelled ||
+              b.status == LibraryPassStatus.expired,
+        )
         .toList();
 
     return Scaffold(
@@ -256,7 +271,12 @@ class _BookingHistoryScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF6D357F),
         foregroundColor: Colors.white,
+        leading: ModuleBackButton(
+          onPressed: () => Navigator.of(context).pop(),
+          color: Colors.white,
+        ),
         title: const Text('Booking History'),
+        actions: [ModuleHomeButton(onPressed: onHome, color: Colors.white)],
       ),
       body: SafeArea(
         child: Center(
@@ -298,8 +318,7 @@ class _BookingHistoryScreen extends StatelessWidget {
                               : AppColors.success,
                         ),
                         const SizedBox(height: 10),
-                        for (final pass in completed)
-                          _HistoryCard(pass: pass),
+                        for (final pass in completed) _HistoryCard(pass: pass),
                         const SizedBox(height: 22),
                       ],
 
@@ -314,8 +333,7 @@ class _BookingHistoryScreen extends StatelessWidget {
                               : const Color(0xFFB71C1C),
                         ),
                         const SizedBox(height: 10),
-                        for (final pass in cancelled)
-                          _HistoryCard(pass: pass),
+                        for (final pass in cancelled) _HistoryCard(pass: pass),
                       ],
                     ],
                   ),
@@ -386,9 +404,15 @@ class _HistoryCard extends StatelessWidget {
     final cardColor = isDark ? const Color(0xFF171717) : Colors.white;
     final textColor = isDark ? Colors.white : AppColors.ink;
     final mutedColor = isDark ? Colors.white54 : AppColors.muted;
-    final borderColor = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE1E5E3);
-    final badgeColor = isDark ? pass.status.badgeColorDark : pass.status.badgeColor;
-    final badgeBg = isDark ? pass.status.badgeBackgroundDark : pass.status.badgeBackground;
+    final borderColor = isDark
+        ? const Color(0xFF2A2A2A)
+        : const Color(0xFFE1E5E3);
+    final badgeColor = isDark
+        ? pass.status.badgeColorDark
+        : pass.status.badgeColor;
+    final badgeBg = isDark
+        ? pass.status.badgeBackgroundDark
+        : pass.status.badgeBackground;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -507,13 +531,13 @@ class _BookingCard extends StatelessWidget {
   bool get _canShowQr =>
       showQrAction &&
       (pass.status == LibraryPassStatus.active ||
-       pass.status == LibraryPassStatus.upcoming ||
-       pass.status == LibraryPassStatus.inside);
+          pass.status == LibraryPassStatus.upcoming ||
+          pass.status == LibraryPassStatus.inside);
 
   bool get _canCancel =>
       showCancelAction &&
       (pass.status == LibraryPassStatus.upcoming ||
-       pass.status == LibraryPassStatus.active);
+          pass.status == LibraryPassStatus.active);
 
   @override
   Widget build(BuildContext context) {
@@ -521,9 +545,15 @@ class _BookingCard extends StatelessWidget {
     final cardColor = isDark ? const Color(0xFF171717) : Colors.white;
     final textColor = isDark ? Colors.white : AppColors.ink;
     final mutedColor = isDark ? Colors.white54 : AppColors.muted;
-    final borderColor = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE1E5E3);
-    final badgeColor = isDark ? pass.status.badgeColorDark : pass.status.badgeColor;
-    final badgeBg = isDark ? pass.status.badgeBackgroundDark : pass.status.badgeBackground;
+    final borderColor = isDark
+        ? const Color(0xFF2A2A2A)
+        : const Color(0xFFE1E5E3);
+    final badgeColor = isDark
+        ? pass.status.badgeColorDark
+        : pass.status.badgeColor;
+    final badgeBg = isDark
+        ? pass.status.badgeBackgroundDark
+        : pass.status.badgeBackground;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -608,10 +638,7 @@ class _BookingCard extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             '${DateFormat('HH:mm').format(pass.start)} – ${DateFormat('HH:mm').format(pass.end)}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: mutedColor,
-                            ),
+                            style: TextStyle(fontSize: 13, color: mutedColor),
                           ),
                         ],
                       ),
@@ -663,10 +690,7 @@ class _BookingCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Divider(
-                            color: borderColor,
-                            height: 1,
-                          ),
+                          Divider(color: borderColor, height: 1),
                           const SizedBox(height: 14),
 
                           // Seat / Zone
@@ -782,11 +806,7 @@ class _DetailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: isDark ? Colors.white54 : AppColors.muted,
-        ),
+        Icon(icon, size: 16, color: isDark ? Colors.white54 : AppColors.muted),
         const SizedBox(width: 8),
         Expanded(
           child: Text(

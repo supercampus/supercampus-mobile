@@ -14,6 +14,12 @@ void main() {
   test('login sends the selected institution domain', () async {
     final client = MockClient((request) async {
       expect(request.headers['x-tenant-id'], 'mec');
+      expect(request.headers['x-client-surface'], 'app');
+      expect(jsonDecode(request.body), {
+        'email': 'student@mec.edu',
+        'password': 'password123',
+        'sessionMode': 'token',
+      });
       return http.Response(
         jsonEncode({
           'data': {
@@ -24,6 +30,7 @@ void main() {
             },
             'roles': ['student'],
             'accessToken': 'access-token',
+            'refreshToken': 'refresh-token',
             'expiresAt': DateTime.now()
                 .toUtc()
                 .add(const Duration(minutes: 15))
@@ -38,19 +45,78 @@ void main() {
       client: client,
     );
 
-    await repository.signIn(
+    final session = await repository.signIn(
       email: 'student@mec.edu',
       password: 'password123',
-      role: UserRole.student,
       tenantDomain: 'mec',
     );
+
+    expect(session.refreshToken, 'refresh-token');
   });
+
+  test(
+    'login retries without sessionMode for the deployed legacy API',
+    () async {
+      var attempts = 0;
+      final client = MockClient((request) async {
+        attempts += 1;
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        if (attempts == 1) {
+          expect(body['sessionMode'], 'token');
+          return http.Response(
+            'Failed to deserialize the JSON body: sessionMode: unknown field '
+            '`sessionMode`, expected `email` or `password`',
+            422,
+          );
+        }
+        expect(body, {
+          'email': 'abinaya2006sathya@gmail.com',
+          'password': 'ABIN4119',
+        });
+        return http.Response(
+          jsonEncode({
+            'data': {
+              'student': {
+                'email': 'abinaya2006sathya@gmail.com',
+                'name': 'Abinaya S',
+                'role': 'student',
+                'roll': 'MEC25AD01',
+              },
+              'roles': ['student'],
+              'accessToken': 'access-token',
+              'expiresAt': DateTime.now()
+                  .toUtc()
+                  .add(const Duration(minutes: 15))
+                  .toIso8601String(),
+            },
+          }),
+          200,
+        );
+      });
+      final repository = BackendAuthRepository(
+        baseUrl: 'https://api.supercampus.ai',
+        client: client,
+      );
+
+      final session = await repository.signIn(
+        email: 'abinaya2006sathya@gmail.com',
+        password: 'ABIN4119',
+        tenantDomain: 'mec',
+      );
+
+      expect(attempts, 2);
+      expect(session.displayName, 'Abinaya S');
+      expect(session.idNumber, 'MEC25AD01');
+    },
+  );
 
   test('backend refresh returns the rotated access session', () async {
     final expiresAt = DateTime.now().toUtc().add(const Duration(minutes: 15));
     final client = MockClient((request) async {
       expect(request.method, 'POST');
       expect(request.url.path, '/api/auth/refresh');
+      expect(request.headers['x-client-surface'], 'app');
+      expect(jsonDecode(request.body), {'refreshToken': 'refresh-token'});
       return http.Response(
         jsonEncode({
           'data': {
@@ -61,6 +127,7 @@ void main() {
             },
             'roles': ['student'],
             'accessToken': 'rotated-token',
+            'refreshToken': 'rotated-refresh-token',
             'expiresAt': expiresAt.toIso8601String(),
           },
         }),
@@ -75,6 +142,7 @@ void main() {
     final refreshed = await repository.refresh(_session('old-token'));
 
     expect(refreshed.jwtToken, 'rotated-token');
+    expect(refreshed.refreshToken, 'rotated-refresh-token');
     expect(refreshed.accessTokenExpiresAt, expiresAt);
   });
 
@@ -108,13 +176,37 @@ void main() {
     final session = await repository.signIn(
       email: 'coordinator@mec.edu',
       password: 'password123',
-      role: UserRole.student,
       tenantDomain: 'mec',
     );
 
     expect(session.role, UserRole.staff);
     expect(session.activePortalFamily, PortalFamily.staff);
     expect(session.roleId, 'knowledge_centre_incharge');
+  });
+
+  test('login connection failures name the configured API origin', () async {
+    final client = MockClient((request) async {
+      throw http.ClientException('Failed host lookup', request.url);
+    });
+    final repository = BackendAuthRepository(
+      baseUrl: 'https://api.supercampus.ai',
+      client: client,
+    );
+
+    await expectLater(
+      repository.signIn(
+        email: 'student@mec.edu',
+        password: 'password123',
+        tenantDomain: 'mec',
+      ),
+      throwsA(
+        isA<AuthenticationException>().having(
+          (error) => error.message,
+          'message',
+          contains('https://api.supercampus.ai'),
+        ),
+      ),
+    );
   });
 
   testWidgets('renews an expiring session before polling permissions', (
@@ -148,11 +240,16 @@ void main() {
   });
 }
 
-UserSession _session(String token, {bool expiring = false}) => UserSession(
+UserSession _session(
+  String token, {
+  bool expiring = false,
+  String refreshToken = 'refresh-token',
+}) => UserSession(
   email: 'student@example.com',
   displayName: 'Student',
   role: UserRole.student,
   jwtToken: token,
+  refreshToken: refreshToken,
   accessTokenExpiresAt: DateTime.now().add(
     Duration(seconds: expiring ? 5 : 900),
   ),
@@ -165,8 +262,8 @@ class _ExpiringAuthRepository implements AuthRepository {
   Future<UserSession> signIn({
     required String email,
     required String password,
-    required UserRole role,
     required String tenantDomain,
+    UserRole? roleHint,
   }) async => _session('old-token', expiring: true);
 
   @override

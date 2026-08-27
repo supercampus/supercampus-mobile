@@ -1,0 +1,10 @@
+# Golden tests rasterise the UI, so a different host font stack or Skia build
+# shifts pixels without anything being wrong. They are skipped in the default
+# `flutter test` run; execute them deliberately and look at the image:
+#
+#   flutter test --run-skipped --tags golden
+#   flutter test --run-skipped --tags golden --update-goldens   # after a redesign
+tags:
+  golden:
+    description: Rasterised golden comparisons; run deliberately.
+    skip: "rasterised golden; run with --run-skipped --tags golden"

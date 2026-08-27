@@ -3,11 +3,30 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supercampus_mobile/src/app.dart';
 import 'package:supercampus_mobile/src/core/access/mock_permissions_repository.dart';
 import 'package:supercampus_mobile/src/features/authentication/data/mock_auth_repository.dart';
+import 'package:supercampus_mobile/src/features/canteen/data/mock_canteen_repository.dart';
+import 'package:supercampus_mobile/src/features/gatepass/data/mock_gatepass_repository.dart';
 import 'package:supercampus_mobile/src/features/modules/presentation/module_stack.dart';
 
+/// The identity [MockAuthRepository] issues for the credentials [_signIn] uses.
+/// The module mocks below are seeded with it so the screens read the same way
+/// they would had the shells built their own mocks from the session.
+const _mockStudentName = 'Vishnu Sudharshan';
+const _mockStudentEmail = 'student@example.com';
+
+/// Module repositories are injected rather than left to default, because a
+/// mock sign-in produces a session with no bearer token, and the backend
+/// repositories the app would otherwise build require one.
 Widget _testApp() => SupercampusApp(
   authRepository: MockAuthRepository(),
   permissionsRepository: const MockPermissionsRepository(),
+  canteenRepository: MockCanteenRepository(
+    studentName: _mockStudentName,
+    email: _mockStudentEmail,
+  ),
+  gatepassRepository: MockGatepassRepository(
+    studentName: _mockStudentName,
+    email: _mockStudentEmail,
+  ),
 );
 
 /// Brings [moduleId] into the module frame, then opens it.
@@ -27,7 +46,16 @@ Future<void> _openModule(WidgetTester tester, String moduleId) async {
   }
 
   await tester.ensureVisible(open);
-  await tester.tap(open);
+  final tappableCard = find.ancestor(
+    of: open,
+    matching: find.byType(GestureDetector),
+  );
+  await tester.tap(tappableCard.first);
+  // Data skeletons correctly stop animating for reduced-motion users. Advance
+  // the mock repository timer explicitly before waiting for layout to settle.
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
 }
 
@@ -47,6 +75,11 @@ Future<void> _signIn(WidgetTester tester) async {
   await tester.enterText(find.byType(TextFormField).at(1), 'password123');
   await tester.ensureVisible(find.text('Sign in'));
   await tester.tap(find.text('Sign in'));
+  // Skeletons are static when reduced motion is enabled, so explicitly move
+  // through the mocked permission request instead of relying on animation
+  // frames to advance this timer.
+  await tester.pump(const Duration(milliseconds: 700));
+  await tester.pump(const Duration(milliseconds: 300));
   await tester.pumpAndSettle();
 }
 
@@ -79,7 +112,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('SuperCampus'), findsNothing);
-    expect(find.text('Email address'), findsOneWidget);
+    expect(find.text('Email address or mobile number'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
     expect(find.text('Sign in'), findsOneWidget);
   });
@@ -106,7 +139,10 @@ void main() {
     await tester.tap(find.text('Sign in'));
     await tester.pump();
 
-    expect(find.text('Enter your email address.'), findsOneWidget);
+    expect(
+      find.text('Enter your email address or mobile number.'),
+      findsOneWidget,
+    );
     expect(find.text('Enter your password.'), findsOneWidget);
   });
 
@@ -125,20 +161,33 @@ void main() {
 
     await _openModule(tester, 'canteen');
 
-    expect(find.text('Canteen is open'), findsOneWidget);
-    expect(find.text('Meals'), findsWidgets);
-    expect(find.text('Parotta with Veg Kurma'), findsOneWidget);
+    expect(find.text('Shops are open'), findsOneWidget);
+    // Storefront selection is covered by canteen_storefronts_test.dart. This
+    // smoke test follows one real menu item through to the cart.
+    expect(find.text('3 Parotta with Veg Kurma'), findsWidgets);
 
-    await tester.tap(find.byTooltip('Add item').first);
+    final addItem = find.byTooltip('Add item');
+    await tester.ensureVisible(addItem.last);
+    await tester.pumpAndSettle();
+    final addInkWell = find.descendant(
+      of: addItem.last,
+      matching: find.byType(InkWell),
+    );
+    tester.widget<InkWell>(addInkWell).onTap!();
     await tester.pump();
 
     expect(find.text('View cart'), findsOneWidget);
-    await tester.tap(find.text('View cart'));
+    final cartInkWell = find.ancestor(
+      of: find.text('View cart'),
+      matching: find.byType(InkWell),
+    );
+    tester.widget<InkWell>(cartInkWell).onTap!();
     await tester.pumpAndSettle();
 
     expect(find.text('Your cart'), findsOneWidget);
-    expect(find.text('How will you eat?'), findsOneWidget);
-    expect(find.textContaining('Pay ₹79'), findsOneWidget);
+    // Every shop hands its order over at its own counter, so there is no
+    // dine-in / pickup choice left to make.
+    expect(find.text('How will you eat?'), findsNothing);
   });
 
   testWidgets('scrolling steps the front module one at a time', (tester) async {
@@ -150,27 +199,33 @@ void main() {
     await tester.pumpWidget(_testApp());
     await _signIn(tester);
 
-    // First module in catalog order starts in front of the deck.
+    // This account is own-scoped everywhere, so it is a learner: examinations,
+    // the timetable and academics fold into one Academics entry, which takes
+    // the first of their catalog positions and so starts in front of the deck.
+    expect(find.byKey(const ValueKey('open-module-academics')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('open-module-examination')),
-      findsOneWidget,
+      findsNothing,
+      reason: 'a learner has no separate Examinations module',
+    );
+    expect(
+      find.byKey(const ValueKey('open-module-timetable')),
+      findsNothing,
+      reason: 'a learner has no separate Timetable module',
     );
 
     final frame = find.byType(ModuleStack);
     await tester.fling(frame, const Offset(0, -60), 600);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('open-module-timetable')), findsOneWidget);
-    expect(find.byKey(const ValueKey('open-module-examination')), findsNothing);
+    expect(find.byKey(const ValueKey('open-module-canteen')), findsOneWidget);
+    expect(find.byKey(const ValueKey('open-module-academics')), findsNothing);
 
     // Flicking back returns to the previous module.
     await tester.fling(frame, const Offset(0, 60), 600);
     await tester.pumpAndSettle();
 
-    expect(
-      find.byKey(const ValueKey('open-module-examination')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('open-module-academics')), findsOneWidget);
   });
 
   testWidgets('opens the order history tab', (tester) async {
@@ -181,17 +236,28 @@ void main() {
 
     await tester.pumpWidget(_testApp());
     await _signIn(tester);
-    await _openModule(tester, 'canteen');
 
-    await tester.tap(find.text('Orders'));
+    // Orders is a quick action on the canteen card, not a tab inside the
+    // module, so the card only has to come into frame — opening the module
+    // first would leave the dashboard and take the action with it.
+    final canteenDot = find.byKey(const ValueKey('module-dot-canteen'));
+    await tester.ensureVisible(canteenDot);
+    await tester.tap(canteenDot);
+    await tester.pumpAndSettle();
+
+    final ordersAction = find.byKey(const ValueKey('quick-action-orders'));
+    await tester.ensureVisible(ordersAction);
+    await tester.tap(ordersAction);
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
 
     expect(find.text('My orders'), findsOneWidget);
     expect(find.text('Active'), findsOneWidget);
     expect(find.text('History'), findsOneWidget);
   });
 
-  testWidgets('the nav bar avatar opens the account sheet and signs out', (
+  testWidgets('the profile tab opens the account sheet and signs out', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1200);
@@ -202,13 +268,20 @@ void main() {
     await tester.pumpWidget(_testApp());
     await _signIn(tester);
 
-    await tester.tap(find.byKey(const ValueKey('nav-avatar')));
+    // The account sheet hangs off the nav bar's profile destination; the
+    // standalone avatar button it used to sit behind is gone.
+    await tester.tap(find.byKey(const ValueKey('nav-profile')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Your account'), findsOneWidget);
-    expect(find.text('student@example.com'), findsOneWidget);
+    expect(find.text(_mockStudentName), findsWidgets);
+    expect(find.text(_mockStudentEmail), findsWidgets);
 
-    await tester.tap(find.byKey(const ValueKey('profile-sign-out')));
+    // Signing out now sits one level in, under Settings, rather than on the
+    // account sheet itself.
+    await tester.tap(find.text('Settings').first);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();
 
     expect(find.text('SuperCampus'), findsOneWidget);
@@ -229,10 +302,12 @@ void main() {
     await tester.enterText(find.byKey(const ValueKey('search-field')), 'cant');
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Canteen').last);
+    await tester.tap(find.text('Shops').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
 
-    expect(find.text('Canteen is open'), findsOneWidget);
+    expect(find.text('Shops are open'), findsOneWidget);
   });
 
   testWidgets('modules sheet hides modules without grants', (tester) async {
@@ -248,7 +323,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Modules'), findsWidgets);
-    expect(find.text('Canteen'), findsOneWidget);
+    expect(find.text('Shops'), findsOneWidget);
     expect(find.text('Vendor Management'), findsNothing);
     expect(find.text('Not enabled for your account'), findsNothing);
   });
@@ -262,10 +337,25 @@ void main() {
     await tester.pumpWidget(_testApp());
     await _signIn(tester);
 
-    await tester.tap(find.byKey(const ValueKey('nav-center')));
+    // The scanner is the wide slab on the right of the one nav bar; the raised
+    // circle in the middle of the old two-bar layout is gone.
+    await tester.tap(find.byKey(const ValueKey('nav-scan')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Scan counter QR'), findsOneWidget);
+    // The nav opens the campus scan screen, which keeps the camera inside its
+    // own card. 'Scan counter QR' is the canteen module's own scanner tab.
+    expect(find.text('Scan QR'), findsOneWidget);
+    expect(find.byKey(const ValueKey('scan-close')), findsOneWidget);
+
+    // Closing has to actually leave the route. The screen holds a PopScope so
+    // it can play its exit first, and popping through that guard rather than
+    // around it once stranded the user on a bare black screen with the card
+    // already animated away.
+    await tester.tap(find.byKey(const ValueKey('scan-close')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Scan QR'), findsNothing);
+    expect(find.byKey(const ValueKey('nav-scan')), findsOneWidget);
   });
 
   testWidgets('opens the gatepass module and outpass form', (tester) async {

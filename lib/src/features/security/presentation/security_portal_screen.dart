@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/mock_security_repository.dart';
 import '../data/security_models.dart';
@@ -174,10 +175,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
         backgroundColor: const Color(0xFF1E293B),
         foregroundColor: Colors.white,
         leading: widget.onExitModule != null
-            ? IconButton(
-                tooltip: 'Modules Home',
-                icon: const Icon(Icons.home),
-                onPressed: widget.onExitModule,
+            ? ModuleBackButton(
+                onPressed: widget.onExitModule!,
+                color: Colors.white,
               )
             : null,
         title: Row(
@@ -215,6 +215,11 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
           ],
         ),
         actions: [
+          if (widget.onExitModule != null)
+            ModuleHomeButton(
+              onPressed: widget.onExitModule!,
+              color: Colors.white,
+            ),
           IconButton(
             tooltip: 'Sign Out',
             icon: const Icon(Icons.logout, color: Colors.white),
