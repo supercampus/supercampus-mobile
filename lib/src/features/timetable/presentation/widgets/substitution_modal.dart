@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../data/timetable_models.dart';
 
 class SubstitutionModal extends StatefulWidget {
@@ -63,7 +64,7 @@ class _SubstitutionModalState extends State<SubstitutionModal> {
     return AlertDialog(
       title: const Row(
         children: [
-          Icon(Icons.swap_horiz, color: Color(0xFF00695C)),
+          Icon(Icons.swap_horiz, color: AppColors.primary),
           SizedBox(width: 8),
           Expanded(child: Text('Request Faculty Substitution', softWrap: true)),
         ],
@@ -171,9 +172,7 @@ class _SubstitutionModalState extends State<SubstitutionModal> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF00695C),
-          ),
+          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
           onPressed: _submit,
           child: const Text('Submit Request'),
         ),

@@ -90,7 +90,7 @@ class StudentExaminationDashboard extends StatelessWidget {
       padding: EdgeInsets.all(isMobile ? 16 : 20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1B5E20), Color(0xFF388E3C)],
+          colors: [AppColors.primary, AppColors.gateMagenta],
         ),
         borderRadius: BorderRadius.circular(18),
       ),
@@ -131,14 +131,14 @@ class StudentExaminationDashboard extends StatelessWidget {
       padding: EdgeInsets.all(isMobile ? 16 : 20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
+          colors: [AppColors.primary, AppColors.gateMagenta],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1B5E20).withValues(alpha: 0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

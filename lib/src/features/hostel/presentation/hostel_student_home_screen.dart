@@ -52,9 +52,9 @@ class HostelStudentHomeScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 Text(
                   'No Active Hostel Residency',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -92,9 +92,9 @@ class HostelStudentHomeScreen extends StatelessWidget {
           // Quick Action Tools Grid
           Text(
             'Hostel Operations & Services',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           _buildActionsGrid(context),
@@ -117,7 +117,7 @@ class HostelStudentHomeScreen extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1B4931), Color(0xFF2E7D52)],
+          colors: [AppColors.gateBlue, AppColors.gateMagenta],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -138,7 +138,10 @@ class HostelStudentHomeScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -163,7 +166,10 @@ class HostelStudentHomeScreen extends StatelessWidget {
 
               // Presence Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: residency.presenceStatus.color,
                   borderRadius: BorderRadius.circular(20),
@@ -262,7 +268,9 @@ class HostelStudentHomeScreen extends StatelessWidget {
 
   Widget _buildOutpassBanner(BuildContext context) {
     final activeOutpass = store.outpasses.firstWhere(
-      (o) => o.status == OutpassStatus.approved || o.status == OutpassStatus.active,
+      (o) =>
+          o.status == OutpassStatus.approved ||
+          o.status == OutpassStatus.active,
       orElse: () => store.outpasses.first,
     );
 
@@ -297,10 +305,7 @@ class HostelStudentHomeScreen extends StatelessWidget {
                 ),
                 Text(
                   'Return by ${activeOutpass.expectedReturnAt.hour}:${activeOutpass.expectedReturnAt.minute.toString().padLeft(2, '0')} PM · ${activeOutpass.destination}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.amber.shade900,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
                 ),
               ],
             ),
@@ -440,10 +445,7 @@ class HostelStudentHomeScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              TextButton(
-                onPressed: onOpenMess,
-                child: const Text('View All'),
-              ),
+              TextButton(onPressed: onOpenMess, child: const Text('View All')),
             ],
           ),
           const SizedBox(height: 8),
@@ -505,9 +507,9 @@ class HostelStudentHomeScreen extends StatelessWidget {
       children: [
         Text(
           'Recent Gate Movement Log',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Container(
@@ -531,12 +533,17 @@ class HostelStudentHomeScreen extends StatelessWidget {
                       : Colors.green.shade50,
                   child: Icon(
                     isExit ? Icons.north_east : Icons.south_west,
-                    color: isExit ? Colors.orange.shade800 : Colors.green.shade800,
+                    color: isExit
+                        ? Colors.orange.shade800
+                        : Colors.green.shade800,
                   ),
                 ),
                 title: Text(
                   '${m.movementType} · ${m.gateName}',
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
                 subtitle: Text(
                   'Method: ${m.method} ${m.outpassId != null ? "(${m.outpassId})" : ""}',

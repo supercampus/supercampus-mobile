@@ -111,7 +111,7 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Class Timetable configuration saved successfully!'),
-        backgroundColor: Color(0xFF00695C),
+        backgroundColor: AppColors.primary,
       ),
     );
   }
@@ -137,12 +137,12 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00695C).withValues(alpha: 0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.tune_outlined,
-                    color: Color(0xFF00695C),
+                    color: AppColors.primary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -216,7 +216,7 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                 const Icon(
                   Icons.timer_outlined,
                   size: 18,
-                  color: Color(0xFF00695C),
+                  color: AppColors.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -579,7 +579,7 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                 ChoiceChip(
                   label: const Text('Mon – Fri (5 Days)'),
                   selected: _workingDaysOption == 'Mon-Fri',
-                  selectedColor: const Color(0xFF00695C),
+                  selectedColor: AppColors.primary,
                   labelStyle: TextStyle(
                     color: _workingDaysOption == 'Mon-Fri'
                         ? Colors.white
@@ -594,7 +594,7 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                 ChoiceChip(
                   label: const Text('Mon – Sat (6 Days)'),
                   selected: _workingDaysOption == 'Mon-Sat',
-                  selectedColor: const Color(0xFF00695C),
+                  selectedColor: AppColors.primary,
                   labelStyle: TextStyle(
                     color: _workingDaysOption == 'Mon-Sat'
                         ? Colors.white
@@ -617,7 +617,7 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                 return FilterChip(
                   label: Text(day),
                   selected: isSelected,
-                  selectedColor: const Color(0xFF00695C),
+                  selectedColor: AppColors.primary,
                   labelStyle: TextStyle(
                     color: isSelected ? Colors.white : AppColors.ink,
                     fontSize: 12,
@@ -643,7 +643,7 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
               width: double.infinity,
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF00695C),
+                  backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 onPressed: _save,

@@ -68,12 +68,12 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00695C).withValues(alpha: 0.12),
+                    color: AppColors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.table_chart,
-                    color: Color(0xFF00695C),
+                    color: AppColors.primary,
                     size: 24,
                   ),
                 ),
@@ -163,7 +163,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: isSelected
-            ? const Color(0xFF00695C).withValues(alpha: 0.1)
+            ? AppColors.primary.withValues(alpha: 0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
@@ -171,7 +171,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         leading: Icon(
           isSelected ? activeIcon : icon,
-          color: isSelected ? const Color(0xFF00695C) : AppColors.ink,
+          color: isSelected ? AppColors.primary : AppColors.ink,
         ),
         title: Text(
           label,
@@ -179,7 +179,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected ? const Color(0xFF00695C) : AppColors.ink,
+            color: isSelected ? AppColors.primary : AppColors.ink,
           ),
         ),
         subtitle: Text(
@@ -221,7 +221,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
       currentIndex: _currentNavIndex,
       onTap: (idx) => setState(() => _currentNavIndex = idx),
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: const Color(0xFF00695C),
+      selectedItemColor: AppColors.primary,
       unselectedItemColor: Colors.grey.shade600,
       selectedLabelStyle: const TextStyle(
         fontWeight: FontWeight.w600,
@@ -707,7 +707,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                         ? FontWeight.bold
                                         : FontWeight.normal,
                                     color: sub.id.isNotEmpty
-                                        ? const Color(0xFF00695C)
+                                        ? AppColors.primary
                                         : AppColors.muted,
                                   ),
                                 ),
@@ -822,7 +822,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 ),
                 FilledButton.icon(
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF00695C),
+                    backgroundColor: AppColors.primary,
                   ),
                   onPressed: () => _showManualEntryDialog(context, null),
                   icon: const Icon(Icons.add),
@@ -862,7 +862,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                           child: ChoiceChip(
                             label: Text('Class $cls'),
                             selected: isSelected,
-                            selectedColor: const Color(0xFF00695C),
+                            selectedColor: AppColors.primary,
                             labelStyle: TextStyle(
                               color: isSelected ? Colors.white : AppColors.ink,
                               fontWeight: isSelected
@@ -1003,7 +1003,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                       day,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF00695C),
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -1172,9 +1172,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               ],
             ),
             FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF00695C),
-              ),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
               onPressed: () {
                 showDialog(
                   context: context,
@@ -1187,7 +1185,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Custom substitution created!'),
-                          backgroundColor: Color(0xFF00695C),
+                          backgroundColor: AppColors.primary,
                         ),
                       );
                     },
@@ -1302,7 +1300,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                           avatar: const Icon(
                             Icons.person_add,
                             size: 16,
-                            color: Color(0xFF00695C),
+                            color: AppColors.primary,
                           ),
                           label: Text('Approve $subName'),
                           backgroundColor: const Color(0xFFE0F2F1),
@@ -1318,7 +1316,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                 content: Text(
                                   'Approved $subName for ${disruption.className} ${disruption.subjectCode}! Live schedule updated.',
                                 ),
-                                backgroundColor: const Color(0xFF00695C),
+                                backgroundColor: AppColors.primary,
                               ),
                             );
                           },
@@ -1407,7 +1405,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                         ),
                         FilledButton(
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF00695C),
+                            backgroundColor: AppColors.primary,
                           ),
                           onPressed: () {
                             setState(() {
@@ -1627,7 +1625,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                         ),
                         FilledButton.icon(
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF00695C),
+                            backgroundColor: AppColors.primary,
                           ),
                           onPressed: () => _showAddQuotaDialog(context),
                           icon: const Icon(Icons.add),
@@ -1653,13 +1651,13 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: const Color(
-                              0xFF00695C,
+                              0xFF1400FF,
                             ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
                             Icons.school,
-                            color: Color(0xFF00695C),
+                            color: AppColors.primary,
                             size: 20,
                           ),
                         ),
@@ -1695,7 +1693,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                           labelStyle: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF00695C),
+                            color: AppColors.primary,
                           ),
                         ),
                         Row(
@@ -1705,7 +1703,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               icon: const Icon(
                                 Icons.edit_outlined,
                                 size: 20,
-                                color: Color(0xFF00695C),
+                                color: AppColors.primary,
                               ),
                               onPressed: () =>
                                   _showEditQuotaDialog(context, quota),
@@ -1772,7 +1770,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               children: [
                 Icon(
                   isEdit ? Icons.edit : Icons.add_circle_outline,
-                  color: const Color(0xFF00695C),
+                  color: AppColors.primary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -1896,7 +1894,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF00695C),
+                  backgroundColor: AppColors.primary,
                 ),
                 onPressed: () {
                   final newEntry = TimetableEntry(
@@ -1931,7 +1929,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                             ? 'Period slot updated.'
                             : 'New period slot added to $_selectedClass.',
                       ),
-                      backgroundColor: const Color(0xFF00695C),
+                      backgroundColor: AppColors.primary,
                     ),
                   );
                 },
@@ -1975,9 +1973,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               child: const Text('Cancel'),
             ),
             FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF00695C),
-              ),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
               onPressed: () {
                 Navigator.pop(ctx);
                 setState(() => _currentNavIndex = 3);
@@ -2126,7 +2122,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           return AlertDialog(
             title: const Row(
               children: [
-                Icon(Icons.upload_file, color: Color(0xFF00695C)),
+                Icon(Icons.upload_file, color: AppColors.primary),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -2151,10 +2147,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF00695C).withValues(alpha: 0.05),
+                        color: AppColors.primary.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: const Color(0xFF00695C).withValues(alpha: 0.3),
+                          color: AppColors.primary.withValues(alpha: 0.3),
                           style: BorderStyle.solid,
                         ),
                       ),
@@ -2163,7 +2159,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                           const Icon(
                             Icons.cloud_upload_outlined,
                             size: 40,
-                            color: Color(0xFF00695C),
+                            color: AppColors.primary,
                           ),
                           const SizedBox(height: 8),
                           const Text(
@@ -2208,7 +2204,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               ),
               FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF00695C),
+                  backgroundColor: AppColors.primary,
                 ),
                 onPressed: () {
                   final extracted = [
@@ -2237,7 +2233,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                       content: Text(
                         'Successfully extracted & imported 2 Faculty Quotas from document!',
                       ),
-                      backgroundColor: Color(0xFF00695C),
+                      backgroundColor: AppColors.primary,
                     ),
                   );
                 },
@@ -2266,7 +2262,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           return AlertDialog(
             title: const Row(
               children: [
-                Icon(Icons.add_circle_outline, color: Color(0xFF00695C)),
+                Icon(Icons.add_circle_outline, color: AppColors.primary),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -2343,7 +2339,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF00695C),
+                  backgroundColor: AppColors.primary,
                 ),
                 onPressed: () {
                   final newQuota = FacultySubjectQuota(
@@ -2362,7 +2358,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Faculty workload quota added!'),
-                      backgroundColor: Color(0xFF00695C),
+                      backgroundColor: AppColors.primary,
                     ),
                   );
                 },
@@ -2392,7 +2388,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           return AlertDialog(
             title: const Row(
               children: [
-                Icon(Icons.edit_outlined, color: Color(0xFF00695C)),
+                Icon(Icons.edit_outlined, color: AppColors.primary),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -2469,7 +2465,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF00695C),
+                  backgroundColor: AppColors.primary,
                 ),
                 onPressed: () {
                   final updatedQuota = FacultySubjectQuota(
@@ -2488,7 +2484,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Faculty workload quota updated!'),
-                      backgroundColor: Color(0xFF00695C),
+                      backgroundColor: AppColors.primary,
                     ),
                   );
                 },
@@ -2525,7 +2521,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
         'subtitle': 'Auto-validated schedule matrix: 0 conflicts detected',
         'time': '2 hours ago',
         'icon': Icons.verified_user_outlined,
-        'color': const Color(0xFF00695C),
+        'color': AppColors.primary,
       },
       {
         'title': 'Master Matrix Published',

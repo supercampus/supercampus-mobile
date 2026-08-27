@@ -72,12 +72,12 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF1B5E20).withValues(alpha: 0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               Icons.analytics,
-              color: Color(0xFF1B5E20),
+              color: AppColors.primary,
               size: 28,
             ),
           ),
@@ -329,7 +329,7 @@ class StudentReportsAnalyticsScreen extends StatelessWidget {
                         minHeight: 8,
                         borderRadius: BorderRadius.circular(4),
                         backgroundColor: Colors.grey.shade100,
-                        color: const Color(0xFF1B5E20),
+                        color: AppColors.primary,
                       ),
                     ),
                     const SizedBox(width: 10),

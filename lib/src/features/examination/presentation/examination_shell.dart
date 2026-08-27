@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../authentication/data/auth_repository.dart';
 
@@ -98,7 +99,7 @@ class _ExaminationShellState extends State<ExaminationShell> {
         return Scaffold(
           backgroundColor: const Color(0xFFF4F6FA),
           appBar: AppBar(
-            backgroundColor: const Color(0xFF1B5E20),
+            backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             leading: _activeFeatureIndex != null
                 ? ModuleBackButton(

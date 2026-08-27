@@ -84,9 +84,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
             child: const Text('Reject Pass'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
-            ),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
             onPressed: () {
               _repository.reviewOutpass(req.id, true, noteCtrl.text);
               _refreshData();
@@ -113,7 +111,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.account_balance_wallet, color: Color(0xFF2E7D32)),
+            Icon(Icons.account_balance_wallet, color: AppColors.primary),
             SizedBox(width: 8),
             Text('Top-Up Shop Wallet'),
           ],
@@ -153,9 +151,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
-            ),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
             onPressed: () {
               final val = double.tryParse(amountCtrl.text) ?? 0;
               if (val > 0) {
@@ -406,7 +402,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                 icon: Icons.add_card,
                 title: 'Top-Up Wallet',
                 subtitle: '₹${_ward.canteenBalance.toStringAsFixed(0)} Balance',
-                color: const Color(0xFF2E7D32),
+                color: AppColors.primary,
                 onTap: _topupWalletDialog,
               ),
             ),
