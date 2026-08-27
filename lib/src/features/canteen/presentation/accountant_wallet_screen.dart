@@ -151,7 +151,7 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
             ),
             const SizedBox(height: 22),
             Text(
-              'Accountant tools',
+              'Your modules',
               style: Theme.of(
                 context,
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
@@ -161,17 +161,14 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
               _ErrorCard(message: _error!, onRetry: _load)
             else if (wallets == null || _transactions == null)
               const SizedBox(
-                height: 210,
-                child: SkeletonList(rows: 2, rowHeight: 92),
+                height: 184,
+                child: SkeletonList(rows: 1, rowHeight: 168),
               )
-            else ...[
-              _PortalActionCard(
-                key: const ValueKey('open-student-wallets'),
-                icon: Icons.people_alt_rounded,
-                title: 'Student wallets',
-                subtitle:
-                    '${wallets.length} students · Browse A–Z and add credits',
-                onTap: () async {
+            else
+              _AccountantModuleStack(
+                studentCount: wallets.length,
+                transactionCount: _transactions!.length,
+                onOpenWalletRecharge: () async {
                   await Navigator.of(context).push<void>(
                     MaterialPageRoute(
                       builder: (_) => _StudentWalletDirectoryPage(
@@ -181,19 +178,13 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
                   );
                   _load();
                 },
-              ),
-              _PortalActionCard(
-                icon: Icons.receipt_long_rounded,
-                title: 'Wallet activity',
-                subtitle: '${_transactions!.length} recent transactions',
-                onTap: () => Navigator.of(context).push<void>(
+                onOpenActivity: () => Navigator.of(context).push<void>(
                   MaterialPageRoute(
                     builder: (_) =>
                         _WalletActivityPage(repository: widget.repository),
                   ),
                 ),
               ),
-            ],
           ],
         ),
       ),
@@ -201,36 +192,268 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
   }
 }
 
-class _PortalActionCard extends StatelessWidget {
-  const _PortalActionCard({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
+class _AccountantModuleStack extends StatefulWidget {
+  const _AccountantModuleStack({
+    required this.studentCount,
+    required this.transactionCount,
+    required this.onOpenWalletRecharge,
+    required this.onOpenActivity,
   });
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
+
+  final int studentCount;
+  final int transactionCount;
+  final VoidCallback onOpenWalletRecharge;
+  final VoidCallback onOpenActivity;
 
   @override
-  Widget build(BuildContext context) => Card(
-    margin: const EdgeInsets.only(bottom: 12),
-    color: Colors.white,
-    elevation: 0,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-    child: ListTile(
-      onTap: onTap,
-      minVerticalPadding: 18,
-      leading: CircleAvatar(
-        backgroundColor: AppColors.brandLavender,
-        foregroundColor: AppColors.primary,
-        child: Icon(icon),
+  State<_AccountantModuleStack> createState() =>
+      _AccountantModuleStackState();
+}
+
+class _AccountantModuleStackState extends State<_AccountantModuleStack> {
+  final _controller = PageController();
+  int _page = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final modules = [
+      _AccountantModuleSpec(
+        key: const ValueKey('open-student-wallets'),
+        title: 'Wallet Recharge',
+        subtitle: 'Find a student and add credits',
+        icon: Icons.account_balance_wallet_rounded,
+        from: AppColors.primary,
+        to: AppColors.gateMagenta,
+        metric: '${widget.studentCount}',
+        metricLabel: 'student wallets',
+        actionLabel: 'Browse A–Z',
+        onTap: widget.onOpenWalletRecharge,
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 17),
+      _AccountantModuleSpec(
+        key: const ValueKey('open-wallet-activity'),
+        title: 'Wallet Activity',
+        subtitle: 'Review every credit transaction',
+        icon: Icons.receipt_long_rounded,
+        from: const Color(0xFF352B86),
+        to: AppColors.gateLavender,
+        metric: '${widget.transactionCount}',
+        metricLabel: 'recent transactions',
+        actionLabel: 'View ledger',
+        onTap: widget.onOpenActivity,
+      ),
+    ];
+
+    return SizedBox(
+      height: 178,
+      child: Row(
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: PageView.builder(
+                controller: _controller,
+                scrollDirection: Axis.vertical,
+                itemCount: modules.length,
+                onPageChanged: (value) => setState(() => _page = value),
+                itemBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: _AccountantModuleCard(spec: modules[index]),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 14,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var index = 0; index < modules.length; index++)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    width: 7,
+                    height: _page == index ? 22 : 7,
+                    margin: const EdgeInsets.symmetric(vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _page == index
+                          ? AppColors.primary
+                          : AppColors.brandLavender,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountantModuleSpec {
+  const _AccountantModuleSpec({
+    required this.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.from,
+    required this.to,
+    required this.metric,
+    required this.metricLabel,
+    required this.actionLabel,
+    required this.onTap,
+  });
+
+  final Key key;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color from;
+  final Color to;
+  final String metric;
+  final String metricLabel;
+  final String actionLabel;
+  final VoidCallback onTap;
+}
+
+class _AccountantModuleCard extends StatelessWidget {
+  const _AccountantModuleCard({required this.spec});
+
+  final _AccountantModuleSpec spec;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    key: spec.key,
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: spec.onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Ink(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [spec.from, spec.to],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: spec.from.withValues(alpha: 0.20),
+              blurRadius: 18,
+              offset: const Offset(0, 7),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 7,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: Icon(spec.icon, color: Colors.white),
+                      ),
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Text(
+                          spec.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Text(
+                    spec.subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.80),
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Text(
+                        spec.actionLabel,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 3,
+              child: Container(
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.22),
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      spec.metric,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      child: Text(
+                        spec.metricLabel,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.78),
+                          fontSize: 10,
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     ),
   );
 }
