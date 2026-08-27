@@ -721,8 +721,8 @@ class _ModuleCardState extends State<_ModuleCard> {
       return _attendanceBoard(
         module,
         palette,
-        actions.take(2).toList(),
-        subtitle,
+        actions.take(1).toList(),
+        'Attendance & results',
       );
     }
 
@@ -791,7 +791,10 @@ class _ModuleCardState extends State<_ModuleCard> {
           height: 146 * _k,
           child: Row(
             children: [
-              Expanded(flex: 450, child: _heroCell(module, palette, subtitle)),
+              Expanded(
+                flex: 450,
+                child: _heroCell(module, palette, subtitle, radius: 100),
+              ),
               if (actions.isNotEmpty) ...[
                 SizedBox(width: 25 * _k),
                 Expanded(
@@ -1557,6 +1560,7 @@ class _ModuleCardState extends State<_ModuleCard> {
     _CardPalette palette,
     String subtitle, {
     bool wide = false,
+    double? radius,
   }) {
     return Container(
       // The hero is what "open this module" means on this card, so it is the
@@ -1568,7 +1572,7 @@ class _ModuleCardState extends State<_ModuleCard> {
       ),
       decoration: BoxDecoration(
         color: palette.hero,
-        borderRadius: BorderRadius.circular(_heroRadius),
+        borderRadius: BorderRadius.circular(radius ?? _heroRadius),
         border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
       ),
       padding: EdgeInsets.symmetric(horizontal: _heroPad),
@@ -1723,23 +1727,9 @@ List<_QuickAction> _quickActionsFor(
   ModuleCatalog.academics => const [
     _QuickAction(
       'attendance',
-      'Attendance',
+      'Records',
       Icons.fact_check_outlined,
       'attendance',
-      ModuleActions.read,
-    ),
-    _QuickAction(
-      'marks',
-      'Marks',
-      Icons.edit_note_outlined,
-      'marks',
-      ModuleActions.read,
-    ),
-    _QuickAction(
-      'analysis',
-      'Analysis',
-      Icons.insights_outlined,
-      'analysis',
       ModuleActions.read,
     ),
   ],
