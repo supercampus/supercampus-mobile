@@ -15,6 +15,8 @@ abstract interface class CanteenRepository {
     String? reason,
   });
 
+  Future<void> scanOrder(String qrPayload);
+
   Future<CanteenStaffState> updateStaffState({
     required CanteenStaffMode mode,
     bool? shopOpen,
@@ -27,10 +29,7 @@ abstract interface class CanteenRepository {
 
   Future<void> deleteMenuItem(String itemId);
 
-  Future<String> uploadMedia(
-    Uint8List bytes, {
-    required String filename,
-  });
+  Future<String> uploadMedia(Uint8List bytes, {required String filename});
 }
 
 class CanteenException implements Exception {

@@ -1,9 +1,28 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../scanner/presentation/scan_qr_screen.dart';
 
 class CanteenScannerScreen extends StatelessWidget {
-  const CanteenScannerScreen({super.key});
+  const CanteenScannerScreen({super.key, required this.onScan});
+
+  final Future<void> Function(String payload) onScan;
+
+  Future<void> _scan(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final payload = await openScanQr(context, title: 'Scan pickup QR');
+    if (payload == null || !context.mounted) return;
+    try {
+      await onScan(payload);
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Order collected successfully.')),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,17 +81,9 @@ class CanteenScannerScreen extends StatelessWidget {
                       side: const BorderSide(color: Colors.white38),
                       minimumSize: const Size(0, 50),
                     ),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Counter connected · Canteen Main Block',
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: () => _scan(context),
                     icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('Use demo scan'),
+                    label: const Text('Scan pickup QR'),
                   ),
                 ],
               ),

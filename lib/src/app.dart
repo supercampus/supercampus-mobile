@@ -27,6 +27,8 @@ import 'features/canteen/presentation/canteen_shell.dart';
 import 'features/scanner/presentation/scan_qr_screen.dart';
 import 'features/canteen/data/backend_canteen_repository.dart';
 import 'features/canteen/data/canteen_repository.dart';
+import 'features/canteen/data/accountant_wallet_repository.dart';
+import 'features/canteen/presentation/accountant_wallet_screen.dart';
 import 'features/attendance/data/attendance_repository.dart';
 import 'features/attendance/presentation/attendance_shell.dart';
 import 'features/examination/presentation/examination_shell.dart';
@@ -532,6 +534,17 @@ class _SupercampusAppState extends State<SupercampusApp>
     final permissions = _permissions;
     if (permissions == null) {
       return const Scaffold(body: SkeletonList(rows: 7, rowHeight: 72));
+    }
+
+    if (session.roleIds.contains('accountant')) {
+      return AccountantWalletScreen(
+        repository: BackendAccountantWalletRepository(
+          baseUrl: _resolvedBackendBaseUrl,
+          accessTokenProvider: _provideAccessToken,
+        ),
+        accountantName: session.displayName,
+        onSignOut: _signOut,
+      );
     }
 
     if (session.role == UserRole.admin) {

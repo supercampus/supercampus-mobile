@@ -1,0 +1,67 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:supercampus_mobile/src/core/theme/app_theme.dart';
+import 'package:supercampus_mobile/src/features/canteen/data/accountant_wallet_repository.dart';
+import 'package:supercampus_mobile/src/features/canteen/presentation/accountant_wallet_screen.dart';
+
+void main() {
+  testWidgets('accountant finds a student and credits the shared wallet', (
+    tester,
+  ) async {
+    final repository = _WalletRepository();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: AccountantWalletScreen(
+          repository: repository,
+          accountantName: 'Vignesh',
+          onSignOut: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Abinaya S'), findsOneWidget);
+    expect(find.text('120'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('credit-student-1')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Credits to add'),
+      '250',
+    );
+    await tester.tap(find.byKey(const ValueKey('confirm-wallet-credit')));
+    await tester.pumpAndSettle();
+
+    expect(repository.creditedAmount, 250);
+    expect(find.text('370'), findsOneWidget);
+    expect(find.textContaining('250 credits added'), findsOneWidget);
+  });
+}
+
+class _WalletRepository implements AccountantWalletRepository {
+  double creditedAmount = 0;
+
+  @override
+  Future<List<StudentWalletAccount>> listWallets({String search = ''}) async =>
+      const [
+        StudentWalletAccount(
+          userId: 'student-1',
+          studentNumber: 'MEC25AD01',
+          studentName: 'Abinaya S',
+          email: 'abinaya@example.com',
+          department: 'AIDS',
+          balance: 120,
+        ),
+      ];
+
+  @override
+  Future<AccountantWalletCredit> creditWallet({
+    required String userId,
+    required double amount,
+    String? reference,
+  }) async {
+    creditedAmount = amount;
+    return AccountantWalletCredit(balance: 120 + amount);
+  }
+}

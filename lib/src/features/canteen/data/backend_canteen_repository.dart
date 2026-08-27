@@ -160,6 +160,19 @@ class BackendCanteenRepository implements CanteenRepository {
   }
 
   @override
+  Future<void> scanOrder(String qrPayload) async {
+    final response = await _authorizedRequest(
+      (headers) => _client.post(
+        _uri('/api/v1/operations/canteen/orders/scan'),
+        headers: headers,
+        body: jsonEncode({'qrPayload': qrPayload, 'action': 'completed'}),
+      ),
+      json: true,
+    );
+    _data(response);
+  }
+
+  @override
   Future<CanteenStaffState> updateStaffState({
     required CanteenStaffMode mode,
     bool? shopOpen,
@@ -237,7 +250,9 @@ class BackendCanteenRepository implements CanteenRepository {
     final data = _data(await _authorizedRequest(send));
     final url = _text(data['secureUrl']);
     if (url.isEmpty) {
-      throw const CanteenException('The media upload did not return an image URL.');
+      throw const CanteenException(
+        'The media upload did not return an image URL.',
+      );
     }
     return url;
   }
@@ -314,6 +329,7 @@ class BackendCanteenRepository implements CanteenRepository {
         fallback: value['orderNumber'] is num ? '${value['orderNumber']}' : '',
       ),
       customerName: _text(value['customerName'], fallback: 'Campus user'),
+      qrPayload: _text(value['qrPayload'], fallback: _text(value['id'])),
     );
   }
 

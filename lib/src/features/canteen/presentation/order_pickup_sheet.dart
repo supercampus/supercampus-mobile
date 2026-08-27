@@ -74,7 +74,10 @@ class OrderPickupSheet extends StatelessWidget {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: QrImageView(data: order.id, padding: EdgeInsets.zero),
+                  child: QrImageView(
+                    data: order.qrPayload ?? order.id,
+                    padding: EdgeInsets.zero,
+                  ),
                 ),
                 const SizedBox(width: 20),
                 Expanded(
