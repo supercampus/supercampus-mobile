@@ -366,7 +366,10 @@ class _AttendanceShellState extends State<AttendanceShell> {
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                // The application shell floats its navigation bar over module
+                // content. Keep the final attendance actions completely above
+                // it instead of letting the report button collide with it.
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
                 children: [
                   if (_error != null) _ErrorBanner(_error!),
                   if (_isLearner) ..._summaryView(),
@@ -637,13 +640,42 @@ class _AttendanceShellState extends State<AttendanceShell> {
       const SizedBox(height: 16),
       SizedBox(
         width: double.infinity,
-        child: FilledButton.icon(
+        child: FilledButton(
           onPressed: _publish,
           style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
           ),
-          icon: const Icon(Icons.publish),
-          label: Text('Publish $absent absent, $onDuty on duty'),
+          child: Row(
+            children: [
+              const Icon(Icons.publish_rounded),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Publish attendance',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Publish $absent absent, $onDuty on duty',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onPrimary.withValues(
+                          alpha: 0.78,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_rounded),
+            ],
+          ),
         ),
       ),
     ];
@@ -702,29 +734,89 @@ class _AttendanceShellState extends State<AttendanceShell> {
       session['periodLabel']?.toString() ?? 'earlier';
 
   List<Widget> _reportView() => [
-    Row(
-      children: [
-        Expanded(
-          child: Text(
-            _isDepartment ? 'Department reports' : 'Attendance reports',
-            style: Theme.of(context).textTheme.titleLarge,
+    const SizedBox(height: 14),
+    Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              Icons.summarize_outlined,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _isDepartment ? 'Department report' : 'Weekly report',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Review and submit this week\'s attendance summary',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_canRaiseReport) ...[
+            const SizedBox(width: 10),
+            FilledButton.tonalIcon(
+              onPressed: () async {
+                final report = await widget.repository.createReport();
+                await widget.repository.submitReport(report['id'].toString());
+                await _load();
+              },
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+              ),
+              icon: const Icon(Icons.send_rounded, size: 18),
+              label: const Text('Submit'),
+            ),
+          ],
+        ],
+      ),
+    ),
+    if (_reports.isNotEmpty) ...[
+      const SizedBox(height: 18),
+      Text(
+        _isDepartment ? 'Department reports' : 'Recent reports',
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+      const SizedBox(height: 8),
+    ],
+    if (_reports.isEmpty)
+      Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Text(
+          'No reports submitted yet',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
-        if (_canRaiseReport)
-          FilledButton.icon(
-            onPressed: () async {
-              final report = await widget.repository.createReport();
-              await widget.repository.submitReport(report['id'].toString());
-              await _load();
-            },
-            icon: const Icon(Icons.send),
-            label: const Text('Submit weekly report'),
-          ),
-      ],
-    ),
-    const SizedBox(height: 12),
-    if (_reports.isEmpty)
-      const ListTile(title: Text('No reports submitted yet')),
+      ),
     for (final report in _reports)
       ListTile(
         contentPadding: EdgeInsets.zero,
