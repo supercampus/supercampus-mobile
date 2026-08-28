@@ -128,7 +128,9 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
             child: Column(
               children: [
                 HomeTopBar(
+                  displayName: widget.session.displayName,
                   onAlertsTap: _openAlerts,
+                  onSettingsTap: _openProfile,
                   hasAlerts: _alerts.isNotEmpty,
                 ),
                 Expanded(
@@ -260,7 +262,6 @@ class _Feed extends StatelessWidget {
             20,
       ),
       children: [
-        _Greeting(session: session),
         SizedBox(
           height: 154,
           child:
@@ -416,7 +417,9 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
     ];
 
     if (_selectedIndex >= cards.length) _selectedIndex = 0;
-    final selected = cards[_selectedIndex];
+    // The reference layout treats the date as the fixed notice-board spine.
+    // Only the copy to its right pages horizontally.
+    final anchor = cards.first;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
@@ -437,10 +440,10 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(selected.icon, color: Colors.white, size: 21),
+                Icon(anchor.icon, color: Colors.white, size: 21),
                 const SizedBox(height: 7),
                 Text(
-                  selected.day,
+                  anchor.day,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 19,
@@ -450,7 +453,7 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  selected.month,
+                  anchor.month,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.72),
                     fontSize: 9,
@@ -763,43 +766,6 @@ class _PlannedTile extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _Greeting extends StatelessWidget {
-  const _Greeting({required this.session});
-
-  final UserSession session;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 4, 24, 14),
-      child: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(text: 'Good ${_dayPart()}, '),
-            TextSpan(
-              text: session.displayName.split(' ').first,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        style: Theme.of(context).textTheme.titleLarge,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-
-  String _dayPart() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Morning';
-    if (hour < 17) return 'Afternoon';
-    return 'Evening';
   }
 }
 

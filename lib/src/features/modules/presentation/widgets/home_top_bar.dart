@@ -5,11 +5,15 @@ import 'package:flutter/material.dart';
 class HomeTopBar extends StatelessWidget {
   const HomeTopBar({
     super.key,
+    required this.displayName,
     required this.onAlertsTap,
+    required this.onSettingsTap,
     this.hasAlerts = false,
   });
 
+  final String displayName;
   final VoidCallback onAlertsTap;
+  final VoidCallback onSettingsTap;
 
   /// Shows the dot on the bell.
   final bool hasAlerts;
@@ -17,12 +21,62 @@ class HomeTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 2),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: _Bell(onTap: onAlertsTap, showDot: hasAlerts),
+      padding: const EdgeInsets.fromLTRB(20, 12, 14, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Good ${_dayPart()},',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 14,
+                    height: 1.05,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  _firstName(displayName),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                    height: 1.02,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _Bell(onTap: onAlertsTap, showDot: hasAlerts),
+          IconButton(
+            key: const ValueKey('home-settings'),
+            tooltip: 'Settings',
+            onPressed: onSettingsTap,
+            icon: const Icon(Icons.settings_outlined, size: 24),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+          ),
+        ],
       ),
     );
+  }
+
+  static String _firstName(String value) {
+    final parts = value.trim().split(RegExp(r'\s+'));
+    return parts.isEmpty || parts.first.isEmpty ? 'Campus user' : parts.first;
+  }
+
+  static String _dayPart() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Morning';
+    if (hour < 17) return 'Afternoon';
+    return 'Evening';
   }
 }
 
