@@ -460,7 +460,7 @@ abstract final class ModuleCatalog {
       tagline: 'Fee structure, dues and payment receipts',
       icon: Icons.account_balance_outlined,
       color: AppColors.gateMagenta,
-      status: ModuleStatus.planned,
+      status: ModuleStatus.available,
       features: [
         FeatureDescriptor(
           id: 'invoice',

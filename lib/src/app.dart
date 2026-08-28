@@ -51,6 +51,8 @@ import 'features/modules/presentation/today_glance.dart';
 import 'features/parent/presentation/parent_portal_screen.dart';
 import 'features/timetable/presentation/timetable_shell.dart';
 import 'features/hostel/presentation/hostel_shell.dart';
+import 'screens/tuition_fee/tuition_fee_repository.dart';
+import 'screens/tuition_fee/tuition_fee_screen.dart';
 
 class SupercampusApp extends StatefulWidget {
   const SupercampusApp({
@@ -849,6 +851,14 @@ class _SupercampusAppState extends State<SupercampusApp>
               ),
       ModuleCatalog.vendorManagement => VendorManagementShell(
         session: session,
+        onExitModule: exit,
+      ),
+      ModuleCatalog.tuitionFee => TuitionFeeScreen(
+        session: session,
+        repository: TuitionFeeRepository(
+          baseUrl: _resolvedBackendBaseUrl,
+          accessTokenProvider: _provideAccessToken,
+        ),
         onExitModule: exit,
       ),
       ModuleCatalog.timetable => TimetableShell(
