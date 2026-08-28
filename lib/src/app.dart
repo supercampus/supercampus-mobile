@@ -760,13 +760,22 @@ class _SupercampusAppState extends State<SupercampusApp>
   }
 
   Widget _buildModule(String moduleId, UserSession session) {
+    // Permission payloads from older tenants used `fees` while the current
+    // catalog uses `tuition_fee`. Canonicalise at the navigation boundary so
+    // an existing account or cached dashboard card can never fall through to
+    // the generic "not available" page.
+    final resolvedModuleId = switch (moduleId.trim().toLowerCase()) {
+      'fees' || 'fee' || 'tuition' || 'tuition-fee' => ModuleCatalog.tuitionFee,
+      final id => id,
+    };
+
     void exit() => setState(() {
       _openModuleId = null;
       _openModuleAction = null;
       _attendanceClass = null;
     });
 
-    final module = switch (moduleId) {
+    final module = switch (resolvedModuleId) {
       ModuleCatalog.hostel => HostelShell(
         session: session,
         onExitModule: exit,
@@ -915,7 +924,7 @@ class _SupercampusAppState extends State<SupercampusApp>
       _ => Scaffold(
         appBar: AppBar(
           leading: ModuleBackButton(onPressed: exit),
-          title: Text(ModuleCatalog.byId(moduleId)?.title ?? 'Module'),
+          title: Text(ModuleCatalog.byId(resolvedModuleId)?.title ?? 'Module'),
           actions: [ModuleHomeButton(onPressed: exit)],
         ),
         body: const Center(child: Text('This module is not available yet.')),
