@@ -1,0 +1,3 @@
+SuperCampus librarian operations production release
+Backend commit: 4f36211
+Features: slot capacity, logs, CSV/JSON/HTML/Markdown exports, announcement approval notifications, librarian-only navigation.
