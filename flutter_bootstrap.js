@@ -52,7 +52,7 @@ _flutter.buildConfig = {"engineRevision":"5f77625673248ee5846fbcaf5d3e1a3878386f
 // entry point as well so a deployment always paints the UI it contains.
 for (const finalBuild of _flutter.buildConfig.builds) {
   if (finalBuild.mainJsPath != null) {
-    finalBuild.mainJsPath = 'main.dart.js?v=20260901-23';
+    finalBuild.mainJsPath = 'main.dart.js?v=20260901-24';
   }
 }
 // A single full CanvasKit bundle keeps the deploy artifact below the host's
