@@ -1,0 +1,3 @@
+SuperCampus unified portal release
+Release date: 2026-09-02
+Scope: shared module stack, role-based access control, unified navigation, announcements, gate access, library, stationery, parent and warden portals
