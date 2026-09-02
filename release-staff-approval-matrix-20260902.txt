@@ -2,3 +2,4 @@ SuperCampus staff attendance approval matrix
 Release: 1.0.1+24
 Workflow: subject staff -> class advisor -> HOD -> principal
 Exports: PDF, CSV, Excel/XLSX
+Marks: persisted scoped batches with advisor, HOD and principal review
