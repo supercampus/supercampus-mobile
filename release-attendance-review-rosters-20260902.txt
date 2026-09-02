@@ -1,0 +1,3 @@
+SuperCampus attendance reviewer roster release
+Built: 2026-09-02
+Class Advisor, HOD, and Principal can open a submitted subject and verify its present-student list within their access scope.
