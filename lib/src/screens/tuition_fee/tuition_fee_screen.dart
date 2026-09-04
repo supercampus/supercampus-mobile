@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/module_navigation_buttons.dart';
 import '../../features/authentication/data/auth_repository.dart';
+import 'razorpay_checkout.dart';
 import 'tuition_fee_repository.dart';
 
 class TuitionFeeScreen extends StatefulWidget {
@@ -59,19 +60,38 @@ class _TuitionFeeScreenState extends State<TuitionFeeScreen> {
         return _FeeAccount(
           session: widget.session,
           records: snapshot.data ?? const [],
+          repository: widget.repository,
+          onPaymentVerified: _reload,
         );
       },
     ),
   );
 }
 
-class _FeeAccount extends StatelessWidget {
-  const _FeeAccount({required this.session, required this.records});
+class _FeeAccount extends StatefulWidget {
+  const _FeeAccount({
+    required this.session,
+    required this.records,
+    required this.repository,
+    required this.onPaymentVerified,
+  });
+
   final UserSession session;
   final List<StudentFeeRecord> records;
+  final TuitionFeeRepository repository;
+  final VoidCallback onPaymentVerified;
+
+  @override
+  State<_FeeAccount> createState() => _FeeAccountState();
+}
+
+class _FeeAccountState extends State<_FeeAccount> {
+  var _paying = false;
 
   @override
   Widget build(BuildContext context) {
+    final session = widget.session;
+    final records = widget.records;
     final account = records
         .where((row) => row.type == 'student_fee_accounts')
         .firstOrNull;
@@ -93,17 +113,22 @@ class _FeeAccount extends StatelessWidget {
             (sum, row) => sum + _number(row.data['amountPerStudent']),
           )
         : _number(account.data['totalAssigned']);
-    final paid = account == null
-        ? payments
-              .where(
-                (row) => !{
-                  'failed',
-                  'reversed',
-                  'void',
-                }.contains(_text(row.data['status']).toLowerCase()),
-              )
-              .fold<double>(0, (sum, row) => sum + _number(row.data['amount']))
-        : _number(account.data['paid']);
+    final recordedPayments = payments
+        .where(
+          (row) => !{
+            'failed',
+            'reversed',
+            'void',
+          }.contains(_text(row.data['status']).toLowerCase()),
+        )
+        .fold<double>(0, (sum, row) => sum + _number(row.data['amount']));
+    final paid =
+        (account == null
+                ? recordedPayments
+                : _number(
+                    account.data['paid'],
+                  ).clamp(recordedPayments, double.infinity))
+            .toDouble();
     final waiver = _number(account?.data['discountWaiver']);
     final fine = account == null
         ? fines.fold<double>(
@@ -114,9 +139,9 @@ class _FeeAccount extends StatelessWidget {
                 _number(row.data['waivedAmount']),
           )
         : _number(account.data['fine']);
-    final outstanding = account == null
-        ? (assigned + fine - waiver - paid).clamp(0, double.infinity).toDouble()
-        : _number(account.data['outstanding']);
+    final outstanding = (assigned + fine - waiver - paid)
+        .clamp(0, double.infinity)
+        .toDouble();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 32),
@@ -173,6 +198,31 @@ class _FeeAccount extends StatelessWidget {
                   Expanded(child: _metric('Waiver', waiver)),
                 ],
               ),
+              if (outstanding >= 1) ...[
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    key: const ValueKey('pay-tuition-fee'),
+                    onPressed: _paying
+                        ? null
+                        : () => _payOutstanding(outstanding),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.brandBlue,
+                    ),
+                    icon: _paying
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.lock_outline_rounded),
+                    label: Text(
+                      _paying ? 'Opening secure checkout…' : 'Pay now',
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -214,6 +264,66 @@ class _FeeAccount extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  Future<void> _payOutstanding(double outstanding) async {
+    if (_paying) return;
+    setState(() => _paying = true);
+    try {
+      final amount = (outstanding * 100).round();
+      final identity = (widget.session.idNumber ?? 'student').replaceAll(
+        RegExp('[^A-Za-z0-9]'),
+        '',
+      );
+      final suffix = identity.length <= 8
+          ? identity
+          : identity.substring(identity.length - 8);
+      final receipt = 'sc_${DateTime.now().millisecondsSinceEpoch}_$suffix';
+      final order = await widget.repository.createOrder(
+        amount: amount,
+        receipt: receipt.length <= 40 ? receipt : receipt.substring(0, 40),
+      );
+      final checkout = await const RazorpayCheckoutClient().open(
+        keyId: order.keyId,
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'SuperCampus',
+        description: 'Tuition fee payment',
+        customerName: widget.session.displayName,
+        customerEmail: widget.session.email,
+      );
+      await widget.repository.verifyPayment(
+        paymentId: checkout.paymentId,
+        orderId: checkout.orderId,
+        signature: checkout.signature,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Payment verified successfully.'),
+          backgroundColor: Color(0xFF167447),
+        ),
+      );
+      widget.onPaymentVerified();
+    } on RazorpayCheckoutException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } on TuitionFeeException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment could not be completed.')),
+      );
+    } finally {
+      if (mounted) setState(() => _paying = false);
+    }
   }
 
   Widget _metric(String label, double value) => Column(

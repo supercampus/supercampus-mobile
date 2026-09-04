@@ -21,18 +21,19 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Integrated campus services in one place.">
+  <meta name="theme-color" content="#5700FF">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="supercampus_mobile">
+  <meta name="apple-mobile-web-app-title" content="SuperCampus">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>supercampus_mobile</title>
+  <title>SuperCampus</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
@@ -40,6 +41,8 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
 </head>
 <body>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="razorpay_checkout.js"></script>
   <script>
     // Dokploy serves immutable Flutter releases, so an older Flutter service
     // worker must never keep a student or staff member on a superseded UI.
@@ -58,14 +61,14 @@
       // Safari can keep serving the current document through the worker that
       // was already controlling it. Reload once after retiring that worker;
       // sessionStorage prevents a loop and naturally resets in a new session.
-                  if (controlledByOldWorker && !sessionStorage.getItem('sc-clean-v15')) {
-                    sessionStorage.setItem('sc-clean-v15', '1');
+      if (controlledByOldWorker && !sessionStorage.getItem('sc-clean-v18')) {
+        sessionStorage.setItem('sc-clean-v18', '1');
         location.reload();
         return;
       }
 
       const bootstrap = document.createElement('script');
-                  bootstrap.src = `flutter_bootstrap.js?v=20260828-15-${Date.now()}`;
+      bootstrap.src = `flutter_bootstrap.js?v=20260904-18-${Date.now()}`;
       bootstrap.async = true;
       document.body.appendChild(bootstrap);
     })();
