@@ -143,6 +143,75 @@ class BackendCanteenRepository implements CanteenRepository {
     );
   }
 
+  Future<WalletTopUpOrder> createWalletTopUpOrder(double amount) async {
+    if (amount < 50 || amount > 5000) {
+      throw const CanteenException('Top-up must be between ₹50 and ₹5,000.');
+    }
+    final receipt = 'wallet_${DateTime.now().millisecondsSinceEpoch}';
+    final response = await _authorizedRequest(
+      (headers) => _client.post(
+        _uri('/api/v1/payments/razorpay/orders'),
+        headers: headers,
+        body: jsonEncode({
+          'amount': (amount * 100).round(),
+          'currency': 'INR',
+          'receipt': receipt,
+          'purpose': 'wallet_top_up',
+        }),
+      ),
+      json: true,
+    );
+    final data = _paymentResponse(response);
+    final id = _text(data['order_id']);
+    final keyId = _text(data['key_id']);
+    if (id.isEmpty || keyId.isEmpty) {
+      throw const CanteenException(
+        'The payment order response was incomplete.',
+      );
+    }
+    return WalletTopUpOrder(
+      id: id,
+      amount: _integer(data['amount'], (amount * 100).round()),
+      currency: _text(data['currency'], fallback: 'INR'),
+      keyId: keyId,
+    );
+  }
+
+  Future<WalletTopUpResult> verifyWalletTopUp({
+    required String paymentId,
+    required String orderId,
+    required String signature,
+  }) async {
+    final response = await _authorizedRequest(
+      (headers) => _client.post(
+        _uri('/api/v1/payments/razorpay/verify'),
+        headers: headers,
+        body: jsonEncode({
+          'razorpay_payment_id': paymentId,
+          'razorpay_order_id': orderId,
+          'razorpay_signature': signature,
+        }),
+      ),
+      json: true,
+    );
+    final data = _paymentResponse(response);
+    if (data['success'] != true || data['purpose'] != 'wallet_top_up') {
+      throw const CanteenException(
+        'Wallet payment verification was not completed.',
+      );
+    }
+    final transaction = _map(data['wallet_transaction']);
+    if (transaction.isEmpty) {
+      throw const CanteenException(
+        'The verified wallet transaction is missing.',
+      );
+    }
+    return WalletTopUpResult(
+      balance: _number(data['wallet_balance']),
+      transaction: _transaction(transaction),
+    );
+  }
+
   @override
   Future<void> updateOrderStatus(
     String orderId,
@@ -211,6 +280,7 @@ class BackendCanteenRepository implements CanteenRepository {
       'store': item.effectiveShopKey,
       'category': item.category,
       'price': item.price,
+      'actualPrice': item.effectiveActualPrice,
       'prepMinutes': item.prepMinutes,
       'isVegetarian': item.isVegetarian,
       'isPopular': item.isPopular,
@@ -264,7 +334,7 @@ class BackendCanteenRepository implements CanteenRepository {
 
   CanteenMenuItem _menuItem(dynamic value) {
     final item = _map(value);
-    final imageUrl = _text(item['imageUrl']);
+    final imageUrl = _menuImageUrl(item);
     return CanteenMenuItem(
       id: _text(item['id']),
       name: _text(item['name'], fallback: 'Menu item'),
@@ -273,13 +343,40 @@ class BackendCanteenRepository implements CanteenRepository {
       shopKey: _text(item['store']).toLowerCase(),
       category: _text(item['category'], fallback: 'meals'),
       price: _number(item['price']),
+      actualPrice: item['actualPrice'] == null
+          ? _number(item['price'])
+          : _number(item['actualPrice']),
       isVegetarian: item['isVegetarian'] != false,
       isPopular: item['isPopular'] == true,
       isAvailable: item['isAvailable'] != false,
       isInstant: item['isInstant'] == true,
       prepMinutes: _integer(item['prepMinutes'], 10),
-      imageUrl: imageUrl.isEmpty ? null : imageUrl,
+      imageUrl: imageUrl,
     );
+  }
+
+  /// Menu media has existed in a few API shapes across deployments. Accept
+  /// all persisted forms here so a vendor upload never disappears merely
+  /// because the student app and API were released at different times.
+  String? _menuImageUrl(Map<String, dynamic> item) {
+    final media = _map(item['media']);
+    final raw = [
+      item['imageUrl'],
+      item['image_url'],
+      item['photoUrl'],
+      item['photo_url'],
+      item['secureUrl'],
+      media['secureUrl'],
+      media['secure_url'],
+      media['url'],
+    ].map(_text).firstWhere((value) => value.isNotEmpty, orElse: () => '');
+    if (raw.isEmpty) return null;
+
+    final parsed = Uri.tryParse(raw);
+    if (parsed == null) return null;
+    final resolved = parsed.hasScheme ? parsed : _baseUri.resolveUri(parsed);
+    if (resolved.scheme != 'https' && resolved.scheme != 'http') return null;
+    return resolved.toString();
   }
 
   CanteenOrder _order(
@@ -400,6 +497,26 @@ class BackendCanteenRepository implements CanteenRepository {
       throw const CanteenException('The canteen response is missing data.');
     }
     return data;
+  }
+
+  Map<String, dynamic> _paymentResponse(http.Response response) {
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw const CanteenException(
+        'The payment service returned an unreadable response.',
+      );
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final error = body['error'];
+      throw CanteenException(
+        error is Map
+            ? _text(error['message'], fallback: 'The payment request failed.')
+            : _text(error, fallback: 'The payment request failed.'),
+      );
+    }
+    return body;
   }
 }
 

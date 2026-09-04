@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/skeleton_loading.dart';
+import '../../../screens/tuition_fee/razorpay_checkout.dart';
 import '../../authentication/data/auth_repository.dart';
+import '../data/backend_canteen_repository.dart';
 import '../data/canteen_models.dart';
 import '../data/canteen_repository.dart';
 import '../data/mock_canteen_repository.dart';
@@ -12,6 +14,7 @@ import 'canteen_captain_home.dart';
 import 'canteen_owner_home.dart';
 import 'canteen_orders_screen.dart';
 import 'canteen_scanner_screen.dart';
+import 'stationery_operator_home.dart';
 import 'student_canteen_home.dart';
 import 'student_canteen_profile_screen.dart';
 import 'student_wallet_screen.dart';
@@ -53,6 +56,14 @@ class _CanteenShellState extends State<CanteenShell> {
         session.activePortalFamily != PortalFamily.student;
   }
 
+  bool get _isStationeryOperator {
+    final roles = <String>{
+      widget.session.roleKey,
+      ...widget.session.roleIds,
+    }.map((role) => role.trim().toLowerCase());
+    return roles.contains('stationery_operator');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -62,7 +73,10 @@ class _CanteenShellState extends State<CanteenShell> {
           studentName: widget.session.displayName,
           email: widget.session.email,
         );
-    _selectedIndex = widget.initialAction == 'orders' ? 1 : 0;
+    _selectedIndex =
+        const {'orders', 'order_history'}.contains(widget.initialAction)
+        ? 1
+        : 0;
     _loadStore();
     if (widget.repository != null) {
       _refreshTimer = Timer.periodic(
@@ -190,7 +204,13 @@ class _CanteenShellState extends State<CanteenShell> {
   }
 
   Future<WalletTopUpResult> _topUpWallet(double amount) async {
-    final result = await _repository.topUpWallet(amount);
+    final result = switch (_repository) {
+      BackendCanteenRepository backend => await _payWalletTopUp(
+        backend,
+        amount,
+      ),
+      _ => await _repository.topUpWallet(amount),
+    };
     if (!mounted) return result;
     final store = _store!;
     setState(() {
@@ -200,6 +220,32 @@ class _CanteenShellState extends State<CanteenShell> {
       );
     });
     return result;
+  }
+
+  Future<WalletTopUpResult> _payWalletTopUp(
+    BackendCanteenRepository repository,
+    double amount,
+  ) async {
+    try {
+      final order = await repository.createWalletTopUpOrder(amount);
+      final checkout = await const RazorpayCheckoutClient().open(
+        keyId: order.keyId,
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'SuperCampus',
+        description: 'Campus shop wallet top-up',
+        customerName: widget.session.displayName,
+        customerEmail: widget.session.email,
+      );
+      return await repository.verifyWalletTopUp(
+        paymentId: checkout.paymentId,
+        orderId: checkout.orderId,
+        signature: checkout.signature,
+      );
+    } on RazorpayCheckoutException catch (error) {
+      throw CanteenException(error.message);
+    }
   }
 
   Future<void> _openCart(BuildContext context) async {
@@ -290,6 +336,21 @@ class _CanteenShellState extends State<CanteenShell> {
 
     if (store == null) {
       return const Scaffold(body: SkeletonList(rows: 6, rowHeight: 84));
+    }
+
+    if (_isStationeryOperator) {
+      return StationeryOperatorHome(
+        store: store,
+        initialAction: widget.initialAction,
+        onExitModule: widget.onExitModule,
+        onSignOut: widget.onSignOut,
+        onRefresh: () => _loadStore(silent: true),
+        onCounterStateChanged: _updateOwnerMode,
+        onOrderStatusChanged: _updateOrderStatus,
+        onSaveItem: (item) => _saveMenuItem(item, false),
+        onUploadMedia: (bytes, filename) =>
+            _repository.uploadMedia(bytes, filename: filename),
+      );
     }
 
     if (store.canManage && !store.canManageMenu) {
