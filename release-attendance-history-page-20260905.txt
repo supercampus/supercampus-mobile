@@ -1,0 +1,2 @@
+SuperCampus web release: dedicated attendance history page
+Flutter source: 830a711
