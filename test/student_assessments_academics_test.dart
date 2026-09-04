@@ -24,12 +24,17 @@ void main() {
     );
 
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('marks-results-page')), findsNothing);
+    final marksLink = find.byKey(const ValueKey('marks-results-link'));
     await tester.scrollUntilVisible(
-      find.text('Data Structures Internal 1'),
+      marksLink,
       250,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.tap(marksLink);
+    await tester.pumpAndSettle();
 
+    expect(find.byKey(const ValueKey('marks-results-page')), findsOneWidget);
     expect(find.text('Data Structures Internal 1'), findsOneWidget);
     expect(
       find.text('MA301  •  Internal assessment  •  Semester 2'),
