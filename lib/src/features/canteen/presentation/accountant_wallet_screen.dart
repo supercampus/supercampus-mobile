@@ -73,7 +73,7 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
             )
             .fold<double>(0, (sum, item) => sum + item.amount);
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F4FF),
+      backgroundColor: const Color(0xFFF3F7F5),
       appBar: AppBar(
         title: const Text('Accounts'),
         actions: [
@@ -101,30 +101,67 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
-            const Text('Student wallet credits and transaction records.'),
+            const Text(
+              'Manage student balances, payments and recharge rules.',
+              style: TextStyle(color: Color(0xFF66736C)),
+            ),
             const SizedBox(height: 18),
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                gradient: AppColors.violetGradient,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFDDE9E2)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x100B5136),
+                    blurRadius: 18,
+                    offset: Offset(0, 7),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(
-                        Icons.account_balance_wallet_rounded,
-                        color: Colors.white,
-                      ),
-                      SizedBox(width: 9),
-                      Text(
-                        'Wallet overview',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE2F5E9),
+                          borderRadius: BorderRadius.circular(13),
                         ),
+                        child: const Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: Color(0xFF147745),
+                        ),
+                      ),
+                      const SizedBox(width: 11),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Wallet overview',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            Text(
+                              'Live account summary',
+                              style: TextStyle(
+                                color: Color(0xFF718078),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.insights_rounded,
+                        color: Color(0xFF147745),
                       ),
                     ],
                   ),
@@ -135,18 +172,23 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
                         child: _SummaryValue(
                           label: 'Wallet float',
                           value: total.toStringAsFixed(0),
+                          icon: Icons.account_balance_wallet_outlined,
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _SummaryValue(
                           label: 'Credited today',
                           value: creditedToday.toStringAsFixed(0),
+                          icon: Icons.south_west_rounded,
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _SummaryValue(
                           label: 'Students',
                           value: '${wallets?.length ?? 0}',
+                          icon: Icons.groups_2_outlined,
                         ),
                       ),
                     ],
@@ -236,8 +278,8 @@ class _AccountantModuleStack extends StatelessWidget {
         title: 'Wallet Recharge',
         subtitle: 'Find a student and add credits',
         icon: Icons.account_balance_wallet_rounded,
-        from: AppColors.primary,
-        to: AppColors.gateMagenta,
+        from: const Color(0xFFF0EBFF),
+        to: const Color(0xFF5A2AE6),
         metric: '$studentCount',
         metricLabel: 'student wallets',
         actionLabel: 'Browse A–Z',
@@ -248,8 +290,8 @@ class _AccountantModuleStack extends StatelessWidget {
         title: 'Wallet Activity',
         subtitle: 'Review every credit transaction',
         icon: Icons.receipt_long_rounded,
-        from: const Color(0xFF352B86),
-        to: AppColors.gateLavender,
+        from: const Color(0xFFEAF2FF),
+        to: const Color(0xFF315EB8),
         metric: '$transactionCount',
         metricLabel: 'recent transactions',
         actionLabel: 'View ledger',
@@ -260,8 +302,8 @@ class _AccountantModuleStack extends StatelessWidget {
         title: 'Top-up Rules',
         subtitle: 'Control student online payment limits',
         icon: Icons.tune_rounded,
-        from: const Color(0xFF0C6B58),
-        to: const Color(0xFF25A078),
+        from: const Color(0xFFE3F6EB),
+        to: const Color(0xFF147745),
         metric:
             '${_money(settings.minimumAmount)}–${_money(settings.maximumAmount)}',
         metricLabel: 'allowed range',
@@ -320,7 +362,7 @@ class _AccountantModuleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    height: 88,
+    height: 94,
     child: Material(
       key: spec.key,
       color: Colors.transparent,
@@ -330,17 +372,14 @@ class _AccountantModuleCard extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [spec.from, spec.to],
-            ),
+            color: spec.from,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: spec.to.withValues(alpha: 0.16)),
             boxShadow: [
               BoxShadow(
-                color: spec.from.withValues(alpha: 0.16),
-                blurRadius: 12,
-                offset: const Offset(0, 5),
+                color: const Color(0x120B5136),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -350,7 +389,7 @@ class _AccountantModuleCard extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
+                  color: spec.to,
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Icon(spec.icon, color: Colors.white),
@@ -366,7 +405,7 @@ class _AccountantModuleCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: Color(0xFF202722),
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                       ),
@@ -377,15 +416,15 @@ class _AccountantModuleCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.78),
+                        color: const Color(0xFF68736D),
                         fontSize: 11,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       '${spec.actionLabel}  →',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: spec.to,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                       ),
@@ -401,11 +440,9 @@ class _AccountantModuleCard extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
+                  color: Colors.white.withValues(alpha: 0.82),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.22),
-                  ),
+                  border: Border.all(color: spec.to.withValues(alpha: 0.18)),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -414,8 +451,8 @@ class _AccountantModuleCard extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       child: Text(
                         spec.metric,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: spec.to,
                           fontSize: 17,
                           fontWeight: FontWeight.w900,
                         ),
@@ -426,7 +463,7 @@ class _AccountantModuleCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
+                        color: const Color(0xFF68736D),
                         fontSize: 9,
                       ),
                     ),
@@ -532,7 +569,7 @@ class _StudentWalletDirectoryPageState
   Widget build(BuildContext context) {
     final wallets = _wallets;
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F4FF),
+      backgroundColor: const Color(0xFFF3F7F5),
       appBar: AppBar(title: const Text('Student wallets')),
       body: RefreshIndicator(
         onRefresh: _load,
@@ -555,11 +592,37 @@ class _StudentWalletDirectoryPageState
             ),
             const SizedBox(height: 16),
             if (wallets != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Text(
-                  'A–Z · ${wallets.length} students',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 11,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5F4EA),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.groups_2_outlined,
+                      size: 20,
+                      color: Color(0xFF147745),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${wallets.length} student wallets',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    const Spacer(),
+                    const Text(
+                      'A–Z',
+                      style: TextStyle(
+                        color: Color(0xFF147745),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             if (_error != null)
@@ -821,24 +884,40 @@ class _WalletLimitSettingsPageState extends State<_WalletLimitSettingsPage> {
 }
 
 class _SummaryValue extends StatelessWidget {
-  const _SummaryValue({required this.label, required this.value});
+  const _SummaryValue({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
   final String label;
   final String value;
+  final IconData icon;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        value,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 23,
-          fontWeight: FontWeight.w800,
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(10),
+    decoration: BoxDecoration(
+      color: const Color(0xFFF5F8F6),
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 17, color: const Color(0xFF147745)),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          maxLines: 1,
+          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
         ),
-      ),
-      Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-    ],
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Color(0xFF718078), fontSize: 9.5),
+        ),
+      ],
+    ),
   );
 }
 
@@ -909,15 +988,7 @@ class _WalletCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            CircleAvatar(
-              backgroundColor: AppColors.brandLavender,
-              foregroundColor: AppColors.primary,
-              child: Text(
-                wallet.studentName.isEmpty
-                    ? 'S'
-                    : wallet.studentName[0].toUpperCase(),
-              ),
-            ),
+            _StudentWalletAvatar(wallet: wallet),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -962,6 +1033,54 @@ class _WalletCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _StudentWalletAvatar extends StatelessWidget {
+  const _StudentWalletAvatar({required this.wallet});
+
+  final StudentWalletAccount wallet;
+
+  @override
+  Widget build(BuildContext context) {
+    final photoUrl = wallet.photoUrl?.trim();
+    final fallback = Container(
+      alignment: Alignment.center,
+      color: const Color(0xFFE8E2FF),
+      child: Text(
+        _initials(wallet.studentName),
+        style: const TextStyle(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+    return Container(
+      key: ValueKey('wallet-avatar-${wallet.userId}'),
+      width: 48,
+      height: 48,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFF39A66B), width: 2),
+      ),
+      child: ClipOval(
+        child: photoUrl == null || photoUrl.isEmpty
+            ? fallback
+            : Image.network(
+                photoUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => fallback,
+              ),
+      ),
+    );
+  }
+
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return 'S';
+    return parts.take(2).map((part) => part[0].toUpperCase()).join();
   }
 }
 

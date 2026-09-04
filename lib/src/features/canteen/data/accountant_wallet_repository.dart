@@ -15,6 +15,7 @@ class StudentWalletAccount {
     required this.email,
     required this.department,
     required this.balance,
+    this.photoUrl,
     this.updatedAt,
   });
 
@@ -24,6 +25,7 @@ class StudentWalletAccount {
   final String email;
   final String department;
   final double balance;
+  final String? photoUrl;
   final DateTime? updatedAt;
 
   StudentWalletAccount copyWith({double? balance, DateTime? updatedAt}) =>
@@ -34,6 +36,7 @@ class StudentWalletAccount {
         email: email,
         department: department,
         balance: balance ?? this.balance,
+        photoUrl: photoUrl,
         updatedAt: updatedAt ?? this.updatedAt,
       );
 }
@@ -126,6 +129,9 @@ class BackendAccountantWalletRepository implements AccountantWalletRepository {
             email: _text(wallet['email']),
             department: _text(wallet['department']),
             balance: _number(wallet['balance']),
+            photoUrl: _text(wallet['photoUrl']).trim().isEmpty
+                ? null
+                : _text(wallet['photoUrl']).trim(),
             updatedAt: DateTime.tryParse(wallet['updatedAt']?.toString() ?? ''),
           );
         })
