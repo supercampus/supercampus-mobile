@@ -40,6 +40,50 @@ void main() {
     expect(heatCell('Friday period 7: present'), findsOneWidget);
     expect(find.text('Recent classes'), findsNothing);
   });
+
+  testWidgets('attendance history opens complete class details', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StudentAcademicsShell(
+          session: const UserSession(
+            email: 'student@example.com',
+            displayName: 'Student One',
+            role: UserRole.student,
+          ),
+          onExitModule: () {},
+          attendanceRepository: _FakeAttendanceRepository(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Attendance history'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Attendance history'), findsOneWidget);
+    expect(find.text('Data Structures'), findsWidgets);
+    final historyCard = find.byKey(
+      const ValueKey('attendance-history-session-latest'),
+    );
+    await tester.scrollUntilVisible(
+      historyCard,
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(historyCard);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Friday'), findsOneWidget);
+    expect(find.text('Dr. N. Saranya'), findsOneWidget);
+    expect(find.text('1:50 PM – 3:30 PM'), findsOneWidget);
+    expect(find.text('100 minutes'), findsOneWidget);
+    expect(find.text('LH-302'), findsOneWidget);
+  });
 }
 
 class _FakeAttendanceRepository extends AttendanceRepository {
@@ -70,8 +114,17 @@ class _FakeAttendanceRepository extends AttendanceRepository {
     ],
     'records': [
       {
+        'sessionId': 'session-latest',
         'heldOn': '2026-08-28',
+        'subjectCode': 'CS101',
+        'subjectName': 'Data Structures',
         'periodLabel': 'Period 6-Period 7',
+        'facultyName': 'Dr. N. Saranya',
+        'startsAt': '13:50:00',
+        'endsAt': '15:30:00',
+        'durationMinutes': 100,
+        'sectionName': 'CSE - Section A',
+        'roomCode': 'LH-302',
         'status': 'present',
       },
       {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/skeleton_loading.dart';
@@ -43,6 +45,8 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
   Map<String, dynamic>? _attendanceSummary;
   bool _loadingAttendance = false;
   String? _attendanceError;
+  DateTime _focusedAttendanceDay = DateTime.now();
+  DateTime _selectedAttendanceDay = DateTime.now();
 
   @override
   void initState() {
@@ -79,7 +83,19 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
     try {
       final summary = await repository.summary('me');
       if (!mounted) return;
-      setState(() => _attendanceSummary = summary);
+      setState(() {
+        _attendanceSummary = summary;
+        final records = summary['records'];
+        if (records is List && records.isNotEmpty && records.first is Map) {
+          final latest = DateTime.tryParse(
+            (records.first as Map)['heldOn']?.toString() ?? '',
+          );
+          if (latest != null) {
+            _focusedAttendanceDay = latest;
+            _selectedAttendanceDay = latest;
+          }
+        }
+      });
     } on AttendanceException catch (error) {
       if (!mounted) return;
       setState(() => _attendanceError = error.message);
@@ -228,6 +244,16 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       else ...[
         if (_loadingAttendance) const LinearProgressIndicator(minHeight: 2),
         _overallAttendanceCard(),
+        const SizedBox(height: 18),
+        _attendanceHistory(),
+        const SizedBox(height: 22),
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Subject attendance',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+        ),
         const SizedBox(height: 10),
         for (final subject in _subjects) _subjectAttendanceCard(subject),
       ],
@@ -515,6 +541,383 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       ),
     ],
   );
+
+  Widget _attendanceHistory() {
+    final records = _attendanceRecords;
+    final selectedRecords = records.where((record) {
+      final date = DateTime.tryParse(record['heldOn']?.toString() ?? '');
+      return date != null && isSameDay(date, _selectedAttendanceDay);
+    }).toList();
+    final dates = records
+        .map((record) => DateTime.tryParse(record['heldOn']?.toString() ?? ''))
+        .whereType<DateTime>()
+        .toList();
+    final earliest = dates.isEmpty
+        ? DateTime(DateTime.now().year - 1)
+        : dates.reduce((a, b) => a.isBefore(b) ? a : b);
+    final latest = dates.isEmpty
+        ? DateTime(DateTime.now().year + 1, 12, 31)
+        : dates.reduce((a, b) => a.isAfter(b) ? a : b);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Attendance history',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Choose a date to see every published subject attendance record.',
+          style: TextStyle(color: AppColors.muted),
+        ),
+        const SizedBox(height: 14),
+        Card(
+          elevation: 0,
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+            child: TableCalendar<Map<String, dynamic>>(
+              firstDay: DateTime(earliest.year, earliest.month),
+              lastDay: DateTime(latest.year, latest.month + 1, 0),
+              focusedDay: _focusedAttendanceDay,
+              calendarFormat: CalendarFormat.month,
+              availableCalendarFormats: const {CalendarFormat.month: 'Month'},
+              selectedDayPredicate: (day) =>
+                  isSameDay(day, _selectedAttendanceDay),
+              eventLoader: (day) => records.where((record) {
+                final heldOn = DateTime.tryParse(
+                  record['heldOn']?.toString() ?? '',
+                );
+                return heldOn != null && isSameDay(heldOn, day);
+              }).toList(),
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  _selectedAttendanceDay = selectedDay;
+                  _focusedAttendanceDay = focusedDay;
+                });
+              },
+              onPageChanged: (focusedDay) => _focusedAttendanceDay = focusedDay,
+              headerStyle: const HeaderStyle(
+                titleCentered: true,
+                formatButtonVisible: false,
+              ),
+              calendarStyle: CalendarStyle(
+                todayDecoration: BoxDecoration(
+                  color: AppColors.gateBlue.withValues(alpha: .18),
+                  shape: BoxShape.circle,
+                ),
+                todayTextStyle: const TextStyle(color: AppColors.gateBlue),
+                selectedDecoration: const BoxDecoration(
+                  color: AppColors.gateBlue,
+                  shape: BoxShape.circle,
+                ),
+                markerDecoration: const BoxDecoration(
+                  color: Colors.orange,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          DateFormat('EEEE, d MMMM yyyy').format(_selectedAttendanceDay),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 10),
+        if (selectedRecords.isEmpty)
+          _attendanceMessage(
+            Icons.event_available_outlined,
+            'No attendance on this date',
+            'Select a date with an orange marker to view its subject records.',
+          )
+        else
+          for (final record in selectedRecords) _attendanceHistoryCard(record),
+      ],
+    );
+  }
+
+  Widget _attendanceHistoryCard(Map<String, dynamic> record) {
+    final status = record['status']?.toString() ?? 'unknown';
+    final color = _attendanceStatusColor(status);
+    final subject = record['subjectName']?.toString() ?? 'Subject';
+    final code = record['subjectCode']?.toString() ?? '';
+    final heldOn = DateTime.tryParse(record['heldOn']?.toString() ?? '');
+    final period = record['periodLabel']?.toString() ?? 'Period not recorded';
+    final time = _attendanceTimeRange(record);
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        key: ValueKey('attendance-history-${record['sessionId']}'),
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _showAttendanceDetails(record),
+        child: Padding(
+          padding: const EdgeInsets.all(15),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      heldOn == null ? '--' : DateFormat('dd').format(heldOn),
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      heldOn == null
+                          ? '---'
+                          : DateFormat('MMM').format(heldOn).toUpperCase(),
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      subject,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    if (code.isNotEmpty)
+                      Text(
+                        code,
+                        style: const TextStyle(
+                          color: AppColors.muted,
+                          fontSize: 11,
+                        ),
+                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      time.isEmpty ? period : '$period  •  $time',
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  _attendanceStatusLabel(status),
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right, color: AppColors.muted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAttendanceDetails(Map<String, dynamic> record) {
+    final heldOn = DateTime.tryParse(record['heldOn']?.toString() ?? '');
+    final status = record['status']?.toString() ?? 'unknown';
+    final color = _attendanceStatusColor(status);
+    final duration = switch (record['durationMinutes']) {
+      final num value when value > 0 => '${value.round()} minutes',
+      _ => 'Not recorded',
+    };
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      record['subjectName']?.toString() ?? 'Subject attendance',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: .12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _attendanceStatusLabel(status),
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _attendanceDetailRow(
+                Icons.calendar_today_outlined,
+                'Date',
+                heldOn == null
+                    ? 'Not recorded'
+                    : DateFormat('d MMMM yyyy').format(heldOn),
+              ),
+              _attendanceDetailRow(
+                Icons.today_outlined,
+                'Day',
+                heldOn == null
+                    ? 'Not recorded'
+                    : DateFormat('EEEE').format(heldOn),
+              ),
+              _attendanceDetailRow(
+                Icons.menu_book_outlined,
+                'Subject',
+                _subjectDetail(record),
+              ),
+              _attendanceDetailRow(
+                Icons.person_outline,
+                'Staff',
+                _valueOrFallback(record['facultyName']),
+              ),
+              _attendanceDetailRow(
+                Icons.schedule_outlined,
+                'Time',
+                _attendanceTimeRange(record).isEmpty
+                    ? 'Not recorded'
+                    : _attendanceTimeRange(record),
+              ),
+              _attendanceDetailRow(
+                Icons.timelapse_outlined,
+                'Duration',
+                duration,
+              ),
+              _attendanceDetailRow(
+                Icons.view_timeline_outlined,
+                'Period',
+                _valueOrFallback(record['periodLabel']),
+              ),
+              if (_valueOrFallback(record['sectionName']) != 'Not recorded')
+                _attendanceDetailRow(
+                  Icons.groups_outlined,
+                  'Class',
+                  _valueOrFallback(record['sectionName']),
+                ),
+              if (_valueOrFallback(record['roomCode']) != 'Not recorded')
+                _attendanceDetailRow(
+                  Icons.meeting_room_outlined,
+                  'Room',
+                  _valueOrFallback(record['roomCode']),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _attendanceDetailRow(IconData icon, String label, String value) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 21, color: AppColors.gateBlue),
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 72,
+              child: Text(
+                label,
+                style: const TextStyle(color: AppColors.muted),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      );
+
+  String _subjectDetail(Map<String, dynamic> record) {
+    final name = _valueOrFallback(record['subjectName']);
+    final code = record['subjectCode']?.toString().trim() ?? '';
+    return code.isEmpty ? name : '$name ($code)';
+  }
+
+  String _valueOrFallback(Object? value) {
+    final text = value?.toString().trim() ?? '';
+    return text.isEmpty ? 'Not recorded' : text;
+  }
+
+  String _attendanceTimeRange(Map<String, dynamic> record) {
+    final start = _clockLabel(record['startsAt']);
+    final end = _clockLabel(record['endsAt']);
+    if (start.isEmpty || end.isEmpty) return '';
+    return '$start – $end';
+  }
+
+  String _clockLabel(Object? value) {
+    final raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) return '';
+    for (final pattern in const ['HH:mm:ss', 'HH:mm']) {
+      try {
+        return DateFormat('h:mm a').format(DateFormat(pattern).parse(raw));
+      } catch (_) {
+        // Try the next supported database time representation.
+      }
+    }
+    return raw;
+  }
+
+  String _attendanceStatusLabel(String status) =>
+      switch (status.toLowerCase()) {
+        'present' => 'PRESENT',
+        'absent' => 'ABSENT',
+        'od' || 'on_duty' => 'ON DUTY',
+        'leave' => 'LEAVE',
+        _ => status.toUpperCase(),
+      };
+
+  Color _attendanceStatusColor(String status) => switch (status.toLowerCase()) {
+    'present' => Colors.green,
+    'absent' => Colors.red,
+    'od' || 'on_duty' => const Color(0xFFB57900),
+    'leave' => Colors.orange,
+    _ => AppColors.muted,
+  };
 
   Widget _marks() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
