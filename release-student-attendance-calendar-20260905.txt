@@ -1,0 +1,3 @@
+SuperCampus web release: student attendance calendar history
+Flutter source: 422a8b5
+Backend API: 86b4e39
