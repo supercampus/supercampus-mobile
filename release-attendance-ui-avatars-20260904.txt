@@ -1,0 +1,3 @@
+SuperCampus attendance review UI and student avatars
+Built and deployed: 2026-09-04
+Backend photo field commit: 2fed133
