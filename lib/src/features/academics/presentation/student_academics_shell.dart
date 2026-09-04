@@ -212,14 +212,6 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
     _ => 0,
   };
 
-  List<Map<String, dynamic>> get _subjects {
-    final value = _attendanceSummary?['bySubject'];
-    if (value is! List) return const [];
-    return value.whereType<Map>().map((item) {
-      return item.map((key, value) => MapEntry(key.toString(), value));
-    }).toList();
-  }
-
   List<Map<String, dynamic>> get _attendanceRecords {
     final value = _attendanceSummary?['records'];
     if (value is! List) return const [];
@@ -268,16 +260,6 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
         _overallAttendanceCard(),
         const SizedBox(height: 12),
         _attendanceHistoryLink(),
-        const SizedBox(height: 22),
-        const Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Subject attendance',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-          ),
-        ),
-        const SizedBox(height: 10),
-        for (final subject in _subjects) _subjectAttendanceCard(subject),
       ],
     ],
   );
@@ -364,85 +346,6 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
           ),
         ),
       );
-
-  Widget _subjectAttendanceCard(Map<String, dynamic> subject) {
-    int count(String key) => switch (subject[key]) {
-      final int value => value,
-      final num value => value.round(),
-      _ => 0,
-    };
-    final percentage = _number(subject['percentage']);
-    final color = percentage < 75 ? Colors.orange : Colors.green;
-    final code = subject['subjectCode']?.toString() ?? '';
-    final name = subject['subjectName']?.toString() ?? 'Subject';
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      if (code.isNotEmpty)
-                        Text(
-                          code,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.muted,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Text(
-                  '${percentage.round()}%',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            LinearProgressIndicator(
-              value: (percentage / 100).clamp(0, 1),
-              color: color,
-              backgroundColor: color.withValues(alpha: .12),
-              minHeight: 8,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 12,
-              runSpacing: 5,
-              children: [
-                _statusCount('Present', count('presentClasses'), Colors.green),
-                _statusCount('Absent', count('absentClasses'), Colors.red),
-                _statusCount(
-                  'OD',
-                  count('onDutyClasses'),
-                  const Color(0xFFFFD600),
-                ),
-                _statusCount('Leave', count('leaveClasses'), Colors.orange),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _overallAttendanceCard() {
     final percentage = _number(_attendanceSummary?['percentage']);
@@ -596,22 +499,6 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       ),
     );
   }
-
-  Widget _statusCount(String label, int value, Color color) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        width: 8,
-        height: 8,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      ),
-      const SizedBox(width: 4),
-      Text(
-        '$value $label',
-        style: const TextStyle(fontSize: 11, color: AppColors.muted),
-      ),
-    ],
-  );
 
   Widget _attendanceHistory() {
     final records = _attendanceRecords;

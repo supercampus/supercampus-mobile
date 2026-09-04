@@ -39,6 +39,7 @@ void main() {
     expect(heatCell('Wednesday period 7: on duty'), findsOneWidget);
     expect(heatCell('Friday period 7: present'), findsOneWidget);
     expect(find.text('Recent classes'), findsNothing);
+    expect(find.text('Subject attendance'), findsNothing);
   });
 
   testWidgets('attendance history opens complete class details', (
