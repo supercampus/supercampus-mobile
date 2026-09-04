@@ -1,0 +1,2 @@
+SuperCampus web release: remove subject attendance overview
+Flutter source: 6d71a66
