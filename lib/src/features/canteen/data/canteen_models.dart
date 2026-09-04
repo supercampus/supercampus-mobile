@@ -29,6 +29,7 @@ class CanteenMenuItem {
     required this.description,
     required this.category,
     required this.price,
+    this.actualPrice,
     required this.isVegetarian,
     this.store = MenuStore.classic,
     this.shopKey,
@@ -52,6 +53,8 @@ class CanteenMenuItem {
   /// food, 'Hair Care & Shampoo' for stationery.
   final String category;
   final double price;
+  final double? actualPrice;
+  double get effectiveActualPrice => actualPrice ?? price;
   final bool isVegetarian;
   final bool isPopular;
   final bool isAvailable;
@@ -69,6 +72,7 @@ class CanteenMenuItem {
     String? shopKey,
     String? category,
     double? price,
+    double? actualPrice,
     bool? isVegetarian,
     bool? isPopular,
     bool? isAvailable,
@@ -83,6 +87,7 @@ class CanteenMenuItem {
     shopKey: shopKey ?? this.shopKey,
     category: category ?? this.category,
     price: price ?? this.price,
+    actualPrice: actualPrice ?? this.actualPrice,
     isVegetarian: isVegetarian ?? this.isVegetarian,
     isPopular: isPopular ?? this.isPopular,
     isAvailable: isAvailable ?? this.isAvailable,
@@ -354,6 +359,20 @@ class WalletTopUpResult {
 
   final double balance;
   final WalletTransaction transaction;
+}
+
+class WalletTopUpOrder {
+  const WalletTopUpOrder({
+    required this.id,
+    required this.amount,
+    required this.currency,
+    required this.keyId,
+  });
+
+  final String id;
+  final int amount;
+  final String currency;
+  final String keyId;
 }
 
 /// What came back from paying for a cart.
