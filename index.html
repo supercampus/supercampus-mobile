@@ -59,14 +59,14 @@
       // Safari can keep serving the current document through the worker that
       // was already controlling it. Reload once after retiring that worker;
       // sessionStorage prevents a loop and naturally resets in a new session.
-                  if (controlledByOldWorker && !sessionStorage.getItem('sc-clean-v15')) {
-                    sessionStorage.setItem('sc-clean-v15', '1');
+      if (controlledByOldWorker && !sessionStorage.getItem('sc-clean-v16')) {
+        sessionStorage.setItem('sc-clean-v16', '1');
         location.reload();
         return;
       }
 
       const bootstrap = document.createElement('script');
-                  bootstrap.src = `flutter_bootstrap.js?v=20260828-15-${Date.now()}`;
+      bootstrap.src = `flutter_bootstrap.js?v=20260904-16-${Date.now()}`;
       bootstrap.async = true;
       document.body.appendChild(bootstrap);
     })();
