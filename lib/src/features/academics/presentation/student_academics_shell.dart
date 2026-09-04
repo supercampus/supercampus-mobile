@@ -48,6 +48,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
   DateTime _focusedAttendanceDay = DateTime.now();
   DateTime _selectedAttendanceDay = DateTime.now();
   bool _showAttendanceHistory = false;
+  bool _showMarksResults = false;
 
   @override
   void initState() {
@@ -59,8 +60,11 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
 
   void _showInitialAction() {
     if (!mounted) return;
+    if (widget.initialAction == 'marks') {
+      setState(() => _showMarksResults = true);
+      return;
+    }
     final key = switch (widget.initialAction) {
-      'marks' => _marksKey,
       'analysis' => _analysisKey,
       _ => _attendanceKey,
     };
@@ -137,8 +141,11 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       backgroundColor: AppColors.gateBlue,
       foregroundColor: Colors.white,
       leading: ModuleBackButton(
-        onPressed: _showAttendanceHistory
-            ? () => setState(() => _showAttendanceHistory = false)
+        onPressed: _showAttendanceHistory || _showMarksResults
+            ? () => setState(() {
+                _showAttendanceHistory = false;
+                _showMarksResults = false;
+              })
             : widget.onExitModule,
         color: Colors.white,
       ),
@@ -169,6 +176,12 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 32),
             child: _attendanceHistory(),
           )
+        : _showMarksResults
+        ? SingleChildScrollView(
+            key: const ValueKey('marks-results-page'),
+            padding: const EdgeInsets.fromLTRB(18, 20, 18, 32),
+            child: _marks(),
+          )
         : SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
             child: Column(
@@ -178,7 +191,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                 const SizedBox(height: 24),
                 const Divider(),
                 const SizedBox(height: 24),
-                KeyedSubtree(key: _marksKey, child: _marks()),
+                KeyedSubtree(key: _marksKey, child: _marksResultsLink()),
                 const SizedBox(height: 24),
                 const Divider(),
                 const SizedBox(height: 24),
@@ -976,6 +989,58 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
     'leave' => Colors.orange,
     _ => AppColors.muted,
   };
+
+  Widget _marksResultsLink() => Card(
+    elevation: 0,
+    child: InkWell(
+      key: const ValueKey('marks-results-link'),
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => setState(() => _showMarksResults = true),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: Colors.deepPurple.withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: const Icon(
+                Icons.assessment_outlined,
+                color: Colors.deepPurple,
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Marks and results',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _assessments.isEmpty
+                        ? 'Semester, internal and other tests updated by your class advisor'
+                        : '${_assessments.length} results · Semester, internal and other tests',
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.muted),
+          ],
+        ),
+      ),
+    ),
+  );
 
   Widget _marks() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
