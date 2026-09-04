@@ -31,7 +31,10 @@ void main() {
     );
 
     expect(find.text('Data Structures Internal 1'), findsOneWidget);
-    expect(find.text('Internal assessment  •  Semester 2'), findsOneWidget);
+    expect(
+      find.text('MA301  •  Internal assessment  •  Semester 2'),
+      findsOneWidget,
+    );
     expect(find.text('42 / 50'), findsOneWidget);
     expect(find.text('84%'), findsOneWidget);
     expect(source.loads, 1);
@@ -49,6 +52,7 @@ class _FakeStudentAssessmentsSource implements StudentAssessmentsSource {
         id: 'assessment-1',
         kind: StudentAssessmentKind.internal,
         title: 'Data Structures Internal 1',
+        subjectCode: 'MA301',
         semester: 2,
         marksObtained: 42,
         maximumMarks: 50,
