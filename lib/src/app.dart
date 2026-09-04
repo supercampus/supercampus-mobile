@@ -880,8 +880,6 @@ class _SupercampusAppState extends State<SupercampusApp>
 
     final module = switch (resolvedModuleId) {
       ModuleCatalog.administration => AdminPortalShell(
-        session: session,
-        onSignOut: _signOut,
         libraryRepository: LibrarianRepository(
           baseUrl: _resolvedBackendBaseUrl,
           accessTokenProvider: _provideAccessToken,
