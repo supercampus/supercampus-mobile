@@ -1043,6 +1043,9 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
     final semester = assessment.semester == null
         ? kind
         : '$kind  •  Semester ${assessment.semester}';
+    final detail = assessment.subjectCode == null
+        ? semester
+        : '${assessment.subjectCode}  •  $semester';
     final score =
         '${_mark(assessment.marksObtained)} / ${_mark(assessment.maximumMarks)}';
     return Card(
@@ -1073,7 +1076,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                         ),
                       ),
                       Text(
-                        semester,
+                        detail,
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.muted,

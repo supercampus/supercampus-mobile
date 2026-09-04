@@ -14,6 +14,7 @@ class StudentAssessment {
     required this.title,
     required this.marksObtained,
     required this.maximumMarks,
+    this.subjectCode,
     this.semester,
     this.notes,
     this.assessedOn,
@@ -28,6 +29,7 @@ class StudentAssessment {
           orElse: () => StudentAssessmentKind.test,
         ),
         title: json['title']?.toString() ?? 'Assessment',
+        subjectCode: _text(json['subjectCode']),
         semester: _integer(json['semester']),
         marksObtained: _number(json['marksObtained']),
         maximumMarks: _number(json['maximumMarks']),
@@ -39,6 +41,7 @@ class StudentAssessment {
   final String id;
   final StudentAssessmentKind kind;
   final String title;
+  final String? subjectCode;
   final int? semester;
   final double marksObtained;
   final double maximumMarks;
