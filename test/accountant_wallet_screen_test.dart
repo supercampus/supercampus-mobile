@@ -22,6 +22,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.byType(PageView), findsNothing);
+    expect(find.byKey(const ValueKey('open-student-wallets')), findsOneWidget);
+    expect(find.byKey(const ValueKey('open-wallet-activity')), findsOneWidget);
+    expect(find.byKey(const ValueKey('open-wallet-limits')), findsOneWidget);
     expect(find.text('Abinaya S'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('open-student-wallets')));
     await tester.pumpAndSettle();
