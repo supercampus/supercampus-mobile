@@ -53,6 +53,7 @@ import 'features/academics/presentation/student_academics_shell.dart';
 import 'features/academics/data/student_assessments_repository.dart';
 import 'features/vendor_management/presentation/vendor_management_shell.dart';
 import 'features/admin_portal/presentation/admin_portal_shell.dart';
+import 'features/admin_portal/data/admin_student_repository.dart';
 import 'features/modules/data/glance_source.dart';
 import 'features/modules/presentation/module_dashboard_screen.dart';
 import 'features/modules/presentation/module_navigation_host.dart';
@@ -882,6 +883,10 @@ class _SupercampusAppState extends State<SupercampusApp>
         session: session,
         onSignOut: _signOut,
         libraryRepository: LibrarianRepository(
+          baseUrl: _resolvedBackendBaseUrl,
+          accessTokenProvider: _provideAccessToken,
+        ),
+        studentRepository: AdminStudentRepository(
           baseUrl: _resolvedBackendBaseUrl,
           accessTokenProvider: _provideAccessToken,
         ),
