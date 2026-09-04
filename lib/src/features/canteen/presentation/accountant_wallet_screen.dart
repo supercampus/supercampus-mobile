@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/skeleton_loading.dart';
 import '../data/accountant_wallet_repository.dart';
+import '../data/canteen_models.dart';
 
 class AccountantWalletScreen extends StatefulWidget {
   const AccountantWalletScreen({
@@ -25,6 +27,7 @@ class AccountantWalletScreen extends StatefulWidget {
 class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
   List<StudentWalletAccount>? _wallets;
   List<AccountantWalletTransaction>? _transactions;
+  WalletTopUpSettings? _settings;
   String? _error;
 
   @override
@@ -39,11 +42,13 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
       final results = await Future.wait([
         widget.repository.listWallets(),
         widget.repository.listTransactions(),
+        widget.repository.getWalletTopUpSettings(),
       ]);
       if (mounted) {
         setState(() {
           _wallets = results[0] as List<StudentWalletAccount>;
           _transactions = results[1] as List<AccountantWalletTransaction>;
+          _settings = results[2] as WalletTopUpSettings;
         });
       }
     } catch (error) {
@@ -159,7 +164,9 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
             const SizedBox(height: 10),
             if (_error != null)
               _ErrorCard(message: _error!, onRetry: _load)
-            else if (wallets == null || _transactions == null)
+            else if (wallets == null ||
+                _transactions == null ||
+                _settings == null)
               const SizedBox(
                 height: 184,
                 child: SkeletonList(rows: 1, rowHeight: 168),
@@ -168,6 +175,7 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
               _AccountantModuleStack(
                 studentCount: wallets.length,
                 transactionCount: _transactions!.length,
+                settings: _settings!,
                 onOpenWalletRecharge: () async {
                   await Navigator.of(context).push<void>(
                     MaterialPageRoute(
@@ -184,6 +192,17 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
                         _WalletActivityPage(repository: widget.repository),
                   ),
                 ),
+                onOpenLimits: () async {
+                  await Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) => _WalletLimitSettingsPage(
+                        repository: widget.repository,
+                        settings: _settings!,
+                      ),
+                    ),
+                  );
+                  _load();
+                },
               ),
           ],
         ),
@@ -196,18 +215,21 @@ class _AccountantModuleStack extends StatefulWidget {
   const _AccountantModuleStack({
     required this.studentCount,
     required this.transactionCount,
+    required this.settings,
     required this.onOpenWalletRecharge,
     required this.onOpenActivity,
+    required this.onOpenLimits,
   });
 
   final int studentCount;
   final int transactionCount;
+  final WalletTopUpSettings settings;
   final VoidCallback onOpenWalletRecharge;
   final VoidCallback onOpenActivity;
+  final VoidCallback onOpenLimits;
 
   @override
-  State<_AccountantModuleStack> createState() =>
-      _AccountantModuleStackState();
+  State<_AccountantModuleStack> createState() => _AccountantModuleStackState();
 }
 
 class _AccountantModuleStackState extends State<_AccountantModuleStack> {
@@ -246,6 +268,19 @@ class _AccountantModuleStackState extends State<_AccountantModuleStack> {
         metricLabel: 'recent transactions',
         actionLabel: 'View ledger',
         onTap: widget.onOpenActivity,
+      ),
+      _AccountantModuleSpec(
+        key: const ValueKey('open-wallet-limits'),
+        title: 'Top-up Rules',
+        subtitle: 'Control student online payment limits',
+        icon: Icons.tune_rounded,
+        from: const Color(0xFF0C6B58),
+        to: const Color(0xFF25A078),
+        metric:
+            '${_money(widget.settings.minimumAmount)}–${_money(widget.settings.maximumAmount)}',
+        metricLabel: 'allowed range',
+        actionLabel: 'Set limits',
+        onTap: widget.onOpenLimits,
       ),
     ];
 
@@ -294,6 +329,12 @@ class _AccountantModuleStackState extends State<_AccountantModuleStack> {
       ),
     );
   }
+
+  String _money(double value) => NumberFormat.currency(
+    locale: 'en_IN',
+    symbol: '₹',
+    decimalDigits: value == value.roundToDouble() ? 0 : 2,
+  ).format(value);
 }
 
 class _AccountantModuleSpec {
@@ -660,6 +701,179 @@ class _WalletActivityPageState extends State<_WalletActivityPage> {
             ),
         ],
       ),
+    ),
+  );
+}
+
+class _WalletLimitSettingsPage extends StatefulWidget {
+  const _WalletLimitSettingsPage({
+    required this.repository,
+    required this.settings,
+  });
+
+  final AccountantWalletRepository repository;
+  final WalletTopUpSettings settings;
+
+  @override
+  State<_WalletLimitSettingsPage> createState() =>
+      _WalletLimitSettingsPageState();
+}
+
+class _WalletLimitSettingsPageState extends State<_WalletLimitSettingsPage> {
+  late final TextEditingController _minimum;
+  late final TextEditingController _maximum;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _minimum = TextEditingController(
+      text: widget.settings.minimumAmount.toStringAsFixed(0),
+    );
+    _maximum = TextEditingController(
+      text: widget.settings.maximumAmount.toStringAsFixed(0),
+    );
+  }
+
+  @override
+  void dispose() {
+    _minimum.dispose();
+    _maximum.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final minimum = double.tryParse(_minimum.text.trim());
+    final maximum = double.tryParse(_maximum.text.trim());
+    if (minimum == null ||
+        maximum == null ||
+        minimum < 1 ||
+        maximum < minimum ||
+        maximum > 100000) {
+      setState(
+        () => _error =
+            'Minimum must be at least ₹1. Maximum must be higher and no more than ₹1,00,000.',
+      );
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await widget.repository.updateWalletTopUpSettings(
+        minimumAmount: minimum,
+        maximumAmount: maximum,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Student top-up limits updated.')),
+      );
+      Navigator.of(context).pop();
+    } catch (error) {
+      if (mounted) setState(() => _error = error.toString());
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFFF6F4FF),
+    appBar: AppBar(title: const Text('Student top-up limits')),
+    body: ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF0C6B58), Color(0xFF25A078)],
+            ),
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.shield_outlined, color: Colors.white, size: 30),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Online wallet policy',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      'Students will see and be allowed to pay only within this range. The payment API enforces it too.',
+                      style: TextStyle(color: Colors.white, height: 1.35),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        Card(
+          elevation: 0,
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  key: const ValueKey('wallet-minimum-limit'),
+                  controller: _minimum,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Minimum top-up',
+                    prefixText: '₹ ',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  key: const ValueKey('wallet-maximum-limit'),
+                  controller: _maximum,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Maximum top-up',
+                    prefixText: '₹ ',
+                  ),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 22),
+                FilledButton.icon(
+                  key: const ValueKey('save-wallet-limits'),
+                  onPressed: _saving ? null : _save,
+                  icon: const Icon(Icons.save_outlined),
+                  label: Text(_saving ? 'Saving...' : 'Save limits'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     ),
   );
 }

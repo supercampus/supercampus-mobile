@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supercampus_mobile/src/core/theme/app_theme.dart';
 import 'package:supercampus_mobile/src/features/canteen/data/accountant_wallet_repository.dart';
+import 'package:supercampus_mobile/src/features/canteen/data/canteen_models.dart';
 import 'package:supercampus_mobile/src/features/canteen/presentation/accountant_wallet_screen.dart';
 
 void main() {
@@ -45,6 +46,7 @@ void main() {
 
 class _WalletRepository implements AccountantWalletRepository {
   double creditedAmount = 0;
+  WalletTopUpSettings settings = WalletTopUpSettings.defaults;
 
   @override
   Future<List<StudentWalletAccount>> listWallets({String search = ''}) async =>
@@ -73,4 +75,16 @@ class _WalletRepository implements AccountantWalletRepository {
     creditedAmount = amount;
     return AccountantWalletCredit(balance: 120 + amount);
   }
+
+  @override
+  Future<WalletTopUpSettings> getWalletTopUpSettings() async => settings;
+
+  @override
+  Future<WalletTopUpSettings> updateWalletTopUpSettings({
+    required double minimumAmount,
+    required double maximumAmount,
+  }) async => settings = WalletTopUpSettings(
+    minimumAmount: minimumAmount,
+    maximumAmount: maximumAmount,
+  );
 }

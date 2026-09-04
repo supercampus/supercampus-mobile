@@ -6,6 +6,27 @@ import 'package:http/testing.dart';
 import 'package:supercampus_mobile/src/features/canteen/data/backend_canteen_repository.dart';
 
 void main() {
+  test('loads tenant wallet top-up limits', () async {
+    final repository = BackendCanteenRepository(
+      baseUrl: 'https://api.example.test',
+      accessToken: 'student-token',
+      client: MockClient((request) async {
+        expect(request.url.path, '/api/v1/operations/canteen/wallet-settings');
+        return http.Response(
+          jsonEncode({
+            'data': {'minimumAmount': 250, 'maximumAmount': 5000},
+          }),
+          200,
+        );
+      }),
+    );
+
+    final settings = await repository.getWalletTopUpSettings();
+
+    expect(settings.minimumAmount, 250);
+    expect(settings.maximumAmount, 5000);
+  });
+
   test('creates a wallet top-up order in paise', () async {
     final repository = BackendCanteenRepository(
       baseUrl: 'https://api.example.test',

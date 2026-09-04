@@ -273,6 +273,20 @@ class _CanteenShellState extends State<CanteenShell> {
   }
 
   Future<void> _openWallet(BuildContext context) async {
+    var settings = WalletTopUpSettings.defaults;
+    if (_repository is BackendCanteenRepository) {
+      try {
+        settings = await _repository.getWalletTopUpSettings();
+      } catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(error.toString())));
+        }
+        return;
+      }
+    }
+    if (!context.mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -283,7 +297,11 @@ class _CanteenShellState extends State<CanteenShell> {
       ),
       builder: (_) => FractionallySizedBox(
         heightFactor: 0.84,
-        child: StudentWalletSheet(store: _store!, onTopUp: _topUpWallet),
+        child: StudentWalletSheet(
+          store: _store!,
+          onTopUp: _topUpWallet,
+          topUpSettings: settings,
+        ),
       ),
     );
   }

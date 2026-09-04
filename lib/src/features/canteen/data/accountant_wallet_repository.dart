@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../authentication/data/auth_http_client.dart';
 import '../../authentication/data/auth_repository.dart';
+import 'canteen_models.dart';
 import 'canteen_repository.dart';
 
 class StudentWalletAccount {
@@ -78,6 +79,13 @@ abstract interface class AccountantWalletRepository {
     required String userId,
     required double amount,
     String? reference,
+  });
+
+  Future<WalletTopUpSettings> getWalletTopUpSettings();
+
+  Future<WalletTopUpSettings> updateWalletTopUpSettings({
+    required double minimumAmount,
+    required double maximumAmount,
   });
 }
 
@@ -189,6 +197,41 @@ class BackendAccountantWalletRepository implements AccountantWalletRepository {
     );
     return AccountantWalletCredit(balance: _number(data['balance']));
   }
+
+  @override
+  Future<WalletTopUpSettings> getWalletTopUpSettings() async {
+    final data = await _request(
+      (headers) => _client.get(
+        _baseUri.replace(path: '/api/v1/operations/canteen/wallet-settings'),
+        headers: headers,
+      ),
+    );
+    return _settings(data);
+  }
+
+  @override
+  Future<WalletTopUpSettings> updateWalletTopUpSettings({
+    required double minimumAmount,
+    required double maximumAmount,
+  }) async {
+    final data = await _request(
+      (headers) => _client.put(
+        _baseUri.replace(path: '/api/v1/operations/canteen/wallet-settings'),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({
+          'minimumAmount': minimumAmount,
+          'maximumAmount': maximumAmount,
+        }),
+      ),
+    );
+    return _settings(data);
+  }
+
+  WalletTopUpSettings _settings(Map<String, dynamic> data) =>
+      WalletTopUpSettings(
+        minimumAmount: _number(data['minimumAmount']),
+        maximumAmount: _number(data['maximumAmount']),
+      );
 
   Future<Map<String, dynamic>> _request(
     Future<http.Response> Function(Map<String, String> headers) send,

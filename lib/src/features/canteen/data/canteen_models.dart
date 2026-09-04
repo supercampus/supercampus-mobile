@@ -375,6 +375,21 @@ class WalletTopUpOrder {
   final String keyId;
 }
 
+class WalletTopUpSettings {
+  const WalletTopUpSettings({
+    required this.minimumAmount,
+    required this.maximumAmount,
+  });
+
+  final double minimumAmount;
+  final double maximumAmount;
+
+  static const defaults = WalletTopUpSettings(
+    minimumAmount: 50,
+    maximumAmount: 5000,
+  );
+}
+
 /// What came back from paying for a cart.
 ///
 /// A cart spanning several shops becomes one order per shop, each with its own
