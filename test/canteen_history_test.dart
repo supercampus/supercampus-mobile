@@ -51,16 +51,48 @@ void main() {
 
     // Orders lead, because "what did I order?" is the commoner question.
     final firstOrder = store.orders.first;
-    expect(
-      find.textContaining(firstOrder.lines.first.item.name),
-      findsWidgets,
-    );
+    expect(find.textContaining(firstOrder.lines.first.item.name), findsWidgets);
 
     await tester.tap(find.text('Transactions'));
     await tester.pumpAndSettle();
 
     expect(
       find.text(store.walletTransactions.first.description),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('top-up validation uses the accountant configured range', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final store = await _loadStore(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StudentWalletSheet(
+            store: store,
+            topUpSettings: const WalletTopUpSettings(
+              minimumAmount: 250,
+              maximumAmount: 5000,
+            ),
+            onTopUp: (_) async => throw UnimplementedError(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Top up'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Amount'), '100');
+    await tester.tap(find.text('Continue'));
+    await tester.pump();
+
+    expect(
+      find.text('Enter an amount between ₹250 and ₹5,000.'),
       findsOneWidget,
     );
   });
@@ -94,16 +126,19 @@ void main() {
     expect(wentBack, isTrue);
   });
 
-  test('settled and active orders are separable, which both histories rely on', () {
-    // The owner queue shows active orders and folds the rest into "Settled";
-    // the student wallet lists them all. Both depend on this split.
-    expect(CanteenOrderStatus.pending.isActive, isTrue);
-    expect(CanteenOrderStatus.accepted.isActive, isTrue);
-    expect(CanteenOrderStatus.preparing.isActive, isTrue);
-    expect(CanteenOrderStatus.ready.isActive, isTrue);
+  test(
+    'settled and active orders are separable, which both histories rely on',
+    () {
+      // The owner queue shows active orders and folds the rest into "Settled";
+      // the student wallet lists them all. Both depend on this split.
+      expect(CanteenOrderStatus.pending.isActive, isTrue);
+      expect(CanteenOrderStatus.accepted.isActive, isTrue);
+      expect(CanteenOrderStatus.preparing.isActive, isTrue);
+      expect(CanteenOrderStatus.ready.isActive, isTrue);
 
-    expect(CanteenOrderStatus.completed.isActive, isFalse);
-    expect(CanteenOrderStatus.rejected.isActive, isFalse);
-    expect(CanteenOrderStatus.cancelled.isActive, isFalse);
-  });
+      expect(CanteenOrderStatus.completed.isActive, isFalse);
+      expect(CanteenOrderStatus.rejected.isActive, isFalse);
+      expect(CanteenOrderStatus.cancelled.isActive, isFalse);
+    },
+  );
 }

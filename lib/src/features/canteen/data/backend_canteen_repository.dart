@@ -144,9 +144,6 @@ class BackendCanteenRepository implements CanteenRepository {
   }
 
   Future<WalletTopUpOrder> createWalletTopUpOrder(double amount) async {
-    if (amount < 50 || amount > 5000) {
-      throw const CanteenException('Top-up must be between ₹50 and ₹5,000.');
-    }
     final receipt = 'wallet_${DateTime.now().millisecondsSinceEpoch}';
     final response = await _authorizedRequest(
       (headers) => _client.post(
@@ -174,6 +171,20 @@ class BackendCanteenRepository implements CanteenRepository {
       amount: _integer(data['amount'], (amount * 100).round()),
       currency: _text(data['currency'], fallback: 'INR'),
       keyId: keyId,
+    );
+  }
+
+  Future<WalletTopUpSettings> getWalletTopUpSettings() async {
+    final response = await _authorizedRequest(
+      (headers) => _client.get(
+        _uri('/api/v1/operations/canteen/wallet-settings'),
+        headers: headers,
+      ),
+    );
+    final data = _data(response);
+    return WalletTopUpSettings(
+      minimumAmount: _number(data['minimumAmount']),
+      maximumAmount: _number(data['maximumAmount']),
     );
   }
 

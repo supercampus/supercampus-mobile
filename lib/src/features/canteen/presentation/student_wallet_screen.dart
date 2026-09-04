@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
@@ -17,10 +18,12 @@ class StudentWalletSheet extends StatefulWidget {
     super.key,
     required this.store,
     required this.onTopUp,
+    this.topUpSettings = WalletTopUpSettings.defaults,
   });
 
   final CanteenStore store;
   final Future<WalletTopUpResult> Function(double amount) onTopUp;
+  final WalletTopUpSettings topUpSettings;
 
   @override
   State<StudentWalletSheet> createState() => _StudentWalletSheetState();
@@ -42,7 +45,8 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
       ),
-      builder: (_) => _TopUpSheet(onTopUp: onTopUp),
+      builder: (_) =>
+          _TopUpSheet(onTopUp: onTopUp, settings: widget.topUpSettings),
     );
     if (result == null || !context.mounted) return;
     Navigator.of(context).pop();
@@ -173,79 +177,86 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
             if (_history == WalletHistory.orders)
               Flexible(child: _OrderHistory(orders: store.orders))
             else
-            Flexible(
-              child: store.walletTransactions.isEmpty
-                  ? const _EmptyHistory(
-                      icon: Icons.swap_vert,
-                      message: 'No transactions yet.',
-                    )
-                  : ListView.separated(
-                shrinkWrap: true,
-                itemCount: store.walletTransactions.length,
-                separatorBuilder: (_, _) =>
-                    const Divider(height: 1, indent: 56),
-                itemBuilder: (context, index) {
-                  final transaction = store.walletTransactions[index];
-                  final isCredit =
-                      transaction.type == WalletTransactionType.credit;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: isCredit
-                                ? const Color(0xFFE7F3EC)
-                                : const Color(0xFFFDEBE9),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            isCredit ? Icons.south_west : Icons.north_east,
-                            color: isCredit
-                                ? AppColors.success
-                                : const Color(0xFFC43B31),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                transaction.description,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                '${formatShortDate(transaction.createdAt)} · ${formatTime(transaction.createdAt)}',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          formatCurrency(
-                            transaction.signedAmount,
-                            signed: true,
-                          ),
-                          style: TextStyle(
-                            color: isCredit
-                                ? AppColors.success
-                                : const Color(0xFFC43B31),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+              Flexible(
+                child: store.walletTransactions.isEmpty
+                    ? const _EmptyHistory(
+                        icon: Icons.swap_vert,
+                        message: 'No transactions yet.',
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: store.walletTransactions.length,
+                        separatorBuilder: (_, _) =>
+                            const Divider(height: 1, indent: 56),
+                        itemBuilder: (context, index) {
+                          final transaction = store.walletTransactions[index];
+                          final isCredit =
+                              transaction.type == WalletTransactionType.credit;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 42,
+                                  height: 42,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: isCredit
+                                        ? const Color(0xFFE7F3EC)
+                                        : const Color(0xFFFDEBE9),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    isCredit
+                                        ? Icons.south_west
+                                        : Icons.north_east,
+                                    color: isCredit
+                                        ? AppColors.success
+                                        : const Color(0xFFC43B31),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        transaction.description,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleMedium,
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        '${formatShortDate(transaction.createdAt)} · ${formatTime(transaction.createdAt)}',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  formatCurrency(
+                                    transaction.signedAmount,
+                                    signed: true,
+                                  ),
+                                  style: TextStyle(
+                                    color: isCredit
+                                        ? AppColors.success
+                                        : const Color(0xFFC43B31),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
               ),
-            ),
           ],
         ),
       ),
@@ -298,9 +309,7 @@ class _OrderHistory extends StatelessWidget {
                 child: Icon(
                   settled ? Icons.check_rounded : Icons.schedule,
                   size: 20,
-                  color: settled
-                      ? AppColors.muted
-                      : const Color(0xFF2563EB),
+                  color: settled ? AppColors.muted : const Color(0xFF2563EB),
                 ),
               ),
               const SizedBox(width: 12),
@@ -370,19 +379,51 @@ class _EmptyHistory extends StatelessWidget {
 }
 
 class _TopUpSheet extends StatefulWidget {
-  const _TopUpSheet({required this.onTopUp});
+  const _TopUpSheet({required this.onTopUp, required this.settings});
 
   final Future<WalletTopUpResult> Function(double amount) onTopUp;
+  final WalletTopUpSettings settings;
 
   @override
   State<_TopUpSheet> createState() => _TopUpSheetState();
 }
 
 class _TopUpSheetState extends State<_TopUpSheet> {
-  final _controller = TextEditingController(text: '500');
-  double _amount = 500;
+  late final TextEditingController _controller;
+  late double _amount;
   bool _loading = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _amount = widget.settings.minimumAmount;
+    _controller = TextEditingController(text: _amount.toStringAsFixed(0));
+  }
+
+  String _amountLabel(double value) => NumberFormat.currency(
+    locale: 'en_IN',
+    symbol: '₹',
+    decimalDigits: value == value.roundToDouble() ? 0 : 2,
+  ).format(value);
+
+  List<double> get _suggestions {
+    final values = <double>{
+      widget.settings.minimumAmount,
+      for (final value in const [100.0, 200.0, 250.0, 500.0, 1000.0, 2000.0])
+        if (value >= widget.settings.minimumAmount &&
+            value <= widget.settings.maximumAmount)
+          value,
+      widget.settings.maximumAmount,
+    }.toList()..sort();
+    if (values.length <= 4) return values;
+    return [
+      values.first,
+      values[values.length ~/ 3],
+      values[(values.length * 2) ~/ 3],
+      values.last,
+    ];
+  }
 
   @override
   void dispose() {
@@ -392,8 +433,13 @@ class _TopUpSheetState extends State<_TopUpSheet> {
 
   Future<void> _submit() async {
     final amount = double.tryParse(_controller.text.trim());
-    if (amount == null || amount < 50 || amount > 5000) {
-      setState(() => _error = 'Enter an amount between ₹50 and ₹5,000.');
+    if (amount == null ||
+        amount < widget.settings.minimumAmount ||
+        amount > widget.settings.maximumAmount) {
+      setState(
+        () => _error =
+            'Enter an amount between ${_amountLabel(widget.settings.minimumAmount)} and ${_amountLabel(widget.settings.maximumAmount)}.',
+      );
       return;
     }
     setState(() {
@@ -429,7 +475,7 @@ class _TopUpSheetState extends State<_TopUpSheet> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [100.0, 200.0, 500.0, 1000.0].map((amount) {
+            children: _suggestions.map((amount) {
               return ChoiceChip(
                 label: Text(formatCurrency(amount)),
                 selected: _amount == amount,
