@@ -211,7 +211,7 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
   }
 }
 
-class _AccountantModuleStack extends StatefulWidget {
+class _AccountantModuleStack extends StatelessWidget {
   const _AccountantModuleStack({
     required this.studentCount,
     required this.transactionCount,
@@ -229,20 +229,6 @@ class _AccountantModuleStack extends StatefulWidget {
   final VoidCallback onOpenLimits;
 
   @override
-  State<_AccountantModuleStack> createState() => _AccountantModuleStackState();
-}
-
-class _AccountantModuleStackState extends State<_AccountantModuleStack> {
-  final _controller = PageController();
-  int _page = 0;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final modules = [
       _AccountantModuleSpec(
@@ -252,10 +238,10 @@ class _AccountantModuleStackState extends State<_AccountantModuleStack> {
         icon: Icons.account_balance_wallet_rounded,
         from: AppColors.primary,
         to: AppColors.gateMagenta,
-        metric: '${widget.studentCount}',
+        metric: '$studentCount',
         metricLabel: 'student wallets',
         actionLabel: 'Browse A–Z',
-        onTap: widget.onOpenWalletRecharge,
+        onTap: onOpenWalletRecharge,
       ),
       _AccountantModuleSpec(
         key: const ValueKey('open-wallet-activity'),
@@ -264,10 +250,10 @@ class _AccountantModuleStackState extends State<_AccountantModuleStack> {
         icon: Icons.receipt_long_rounded,
         from: const Color(0xFF352B86),
         to: AppColors.gateLavender,
-        metric: '${widget.transactionCount}',
+        metric: '$transactionCount',
         metricLabel: 'recent transactions',
         actionLabel: 'View ledger',
-        onTap: widget.onOpenActivity,
+        onTap: onOpenActivity,
       ),
       _AccountantModuleSpec(
         key: const ValueKey('open-wallet-limits'),
@@ -277,56 +263,20 @@ class _AccountantModuleStackState extends State<_AccountantModuleStack> {
         from: const Color(0xFF0C6B58),
         to: const Color(0xFF25A078),
         metric:
-            '${_money(widget.settings.minimumAmount)}–${_money(widget.settings.maximumAmount)}',
+            '${_money(settings.minimumAmount)}–${_money(settings.maximumAmount)}',
         metricLabel: 'allowed range',
         actionLabel: 'Set limits',
-        onTap: widget.onOpenLimits,
+        onTap: onOpenLimits,
       ),
     ];
 
-    return SizedBox(
-      height: 178,
-      child: Row(
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: PageView.builder(
-                controller: _controller,
-                scrollDirection: Axis.vertical,
-                itemCount: modules.length,
-                onPageChanged: (value) => setState(() => _page = value),
-                itemBuilder: (context, index) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: _AccountantModuleCard(spec: modules[index]),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 14,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var index = 0; index < modules.length; index++)
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    width: 7,
-                    height: _page == index ? 22 : 7,
-                    margin: const EdgeInsets.symmetric(vertical: 3),
-                    decoration: BoxDecoration(
-                      color: _page == index
-                          ? AppColors.primary
-                          : AppColors.brandLavender,
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+    return Column(
+      children: [
+        for (var index = 0; index < modules.length; index++) ...[
+          _AccountantModuleCard(spec: modules[index]),
+          if (index != modules.length - 1) const SizedBox(height: 10),
         ],
-      ),
+      ],
     );
   }
 
@@ -369,130 +319,122 @@ class _AccountantModuleCard extends StatelessWidget {
   final _AccountantModuleSpec spec;
 
   @override
-  Widget build(BuildContext context) => Material(
-    key: spec.key,
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: spec.onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Ink(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [spec.from, spec.to],
-          ),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: spec.from.withValues(alpha: 0.20),
-              blurRadius: 18,
-              offset: const Offset(0, 7),
+  Widget build(BuildContext context) => SizedBox(
+    height: 88,
+    child: Material(
+      key: spec.key,
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: spec.onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [spec.from, spec.to],
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 7,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(13),
-                        ),
-                        child: Icon(spec.icon, color: Colors.white),
-                      ),
-                      const SizedBox(width: 11),
-                      Expanded(
-                        child: Text(
-                          spec.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Text(
-                    spec.subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.80),
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Text(
-                        spec.actionLabel,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 18,
-                        color: Colors.white,
-                      ),
-                    ],
-                  ),
-                ],
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: spec.from.withValues(alpha: 0.16),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 3,
-              child: Container(
-                height: double.infinity,
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.22),
-                  ),
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(13),
                 ),
+                child: Icon(spec.icon, color: Colors.white),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      spec.metric,
+                      spec.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      spec.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.78),
+                        fontSize: 11,
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: Text(
-                        spec.metricLabel,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.78),
-                          fontSize: 10,
-                          height: 1.1,
-                        ),
+                    Text(
+                      '${spec.actionLabel}  →',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Container(
+                constraints: const BoxConstraints(minWidth: 72, maxWidth: 106),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.22),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        spec.metric,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      spec.metricLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 9,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     ),
