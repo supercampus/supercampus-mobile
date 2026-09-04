@@ -1,0 +1,4 @@
+SuperCampus web release: admin-managed student residency
+Flutter source: b1df325
+Backend API: 43c7811
+
