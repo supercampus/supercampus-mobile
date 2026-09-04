@@ -47,6 +47,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
   String? _attendanceError;
   DateTime _focusedAttendanceDay = DateTime.now();
   DateTime _selectedAttendanceDay = DateTime.now();
+  bool _showAttendanceHistory = false;
 
   @override
   void initState() {
@@ -136,7 +137,9 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       backgroundColor: AppColors.gateBlue,
       foregroundColor: Colors.white,
       leading: ModuleBackButton(
-        onPressed: widget.onExitModule,
+        onPressed: _showAttendanceHistory
+            ? () => setState(() => _showAttendanceHistory = false)
+            : widget.onExitModule,
         color: Colors.white,
       ),
       title: Column(
@@ -160,23 +163,29 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
         ModuleHomeButton(onPressed: widget.onExitModule, color: Colors.white),
       ],
     ),
-    body: SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          KeyedSubtree(key: _attendanceKey, child: _attendance()),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 24),
-          KeyedSubtree(key: _marksKey, child: _marks()),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 24),
-          KeyedSubtree(key: _analysisKey, child: _analysis()),
-        ],
-      ),
-    ),
+    body: _showAttendanceHistory
+        ? SingleChildScrollView(
+            key: const ValueKey('attendance-history-page'),
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 32),
+            child: _attendanceHistory(),
+          )
+        : SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                KeyedSubtree(key: _attendanceKey, child: _attendance()),
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 24),
+                KeyedSubtree(key: _marksKey, child: _marks()),
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 24),
+                KeyedSubtree(key: _analysisKey, child: _analysis()),
+              ],
+            ),
+          ),
   );
 
   int _count(String key) => switch (_attendanceSummary?[key]) {
@@ -244,8 +253,8 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       else ...[
         if (_loadingAttendance) const LinearProgressIndicator(minHeight: 2),
         _overallAttendanceCard(),
-        const SizedBox(height: 18),
-        _attendanceHistory(),
+        const SizedBox(height: 12),
+        _attendanceHistoryLink(),
         const SizedBox(height: 22),
         const Align(
           alignment: Alignment.centerLeft,
@@ -258,6 +267,55 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
         for (final subject in _subjects) _subjectAttendanceCard(subject),
       ],
     ],
+  );
+
+  Widget _attendanceHistoryLink() => Card(
+    elevation: 0,
+    child: InkWell(
+      key: const ValueKey('attendance-history-link'),
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => setState(() => _showAttendanceHistory = true),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: AppColors.gateBlue.withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: const Icon(
+                Icons.calendar_month_outlined,
+                color: AppColors.gateBlue,
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Attendance history',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${_attendanceRecords.length} published records · Calendar view',
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.muted),
+          ],
+        ),
+      ),
+    ),
   );
 
   Widget _attendanceMessage(IconData icon, String title, String subtitle) =>

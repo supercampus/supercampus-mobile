@@ -58,13 +58,21 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('attendance-history-page')), findsNothing);
+    final historyLink = find.byKey(const ValueKey('attendance-history-link'));
     await tester.scrollUntilVisible(
-      find.text('Attendance history'),
-      300,
+      historyLink,
+      220,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.tap(historyLink);
     await tester.pumpAndSettle();
 
+    expect(
+      find.byKey(const ValueKey('attendance-history-page')),
+      findsOneWidget,
+    );
     expect(find.text('Attendance history'), findsOneWidget);
     expect(find.text('Data Structures'), findsWidgets);
     final historyCard = find.byKey(
