@@ -40,6 +40,40 @@ class RazorpayOrder {
   final String keyId;
 }
 
+class FeeStudent {
+  const FeeStudent({
+    required this.id,
+    required this.userId,
+    required this.rollNumber,
+    required this.name,
+    required this.department,
+    required this.email,
+  });
+
+  factory FeeStudent.fromJson(Map<String, dynamic> json) => FeeStudent(
+    id: json['id']?.toString() ?? '',
+    userId: json['userId']?.toString() ?? '',
+    rollNumber: json['rollNo']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    department: json['department']?.toString() ?? '',
+    email: json['email']?.toString() ?? '',
+  );
+
+  final String id;
+  final String userId;
+  final String rollNumber;
+  final String name;
+  final String department;
+  final String email;
+}
+
+class AdminFeeData {
+  const AdminFeeData({required this.records, required this.students});
+
+  final List<StudentFeeRecord> records;
+  final List<FeeStudent> students;
+}
+
 class TuitionFeeRepository {
   TuitionFeeRepository({
     required String baseUrl,
@@ -54,29 +88,68 @@ class TuitionFeeRepository {
   final http.Client _client;
 
   Future<List<StudentFeeRecord>> load() async {
-    var token = await _accessTokenProvider();
-    var response = await _get(token);
-    if (response.statusCode == 401) {
-      token = await _accessTokenProvider(forceRefresh: true);
-      response = await _get(token);
-    }
-    final decoded = jsonDecode(response.body);
-    if (response.statusCode < 200 ||
-        response.statusCode >= 300 ||
-        decoded is! Map) {
-      final error = decoded is Map && decoded['error'] is Map
-          ? (decoded['error'] as Map)['message']?.toString()
-          : null;
-      throw TuitionFeeException(
-        error ?? 'Your fee account could not be loaded.',
-      );
-    }
+    final decoded = await _getJson('/api/v1/student/fees');
     final data = decoded['data'];
     if (data is! List) return const [];
     return data
         .whereType<Map>()
         .map((row) => StudentFeeRecord.fromJson(Map<String, dynamic>.from(row)))
         .toList(growable: false);
+  }
+
+  Future<AdminFeeData> loadAdmin() async {
+    final responses = await Future.wait([
+      _getJson('/api/v1/fees/records'),
+      _getJson('/api/v1/student-master'),
+    ]);
+    final recordRows = responses[0]['data'];
+    final studentRows = responses[1]['data'];
+    return AdminFeeData(
+      records: recordRows is List
+          ? recordRows
+                .whereType<Map>()
+                .map(
+                  (row) =>
+                      StudentFeeRecord.fromJson(Map<String, dynamic>.from(row)),
+                )
+                .toList(growable: false)
+          : const [],
+      students: studentRows is List
+          ? studentRows
+                .whereType<Map>()
+                .map(
+                  (row) => FeeStudent.fromJson(Map<String, dynamic>.from(row)),
+                )
+                .toList(growable: false)
+          : const [],
+    );
+  }
+
+  Future<void> createFeeAssignment({
+    required FeeStudent student,
+    required String title,
+    required String academicContext,
+    required double amount,
+  }) async {
+    if (amount < 1) {
+      throw const TuitionFeeException('Enter an amount of at least ₹1.');
+    }
+    await _post('/api/v1/fees/records', {
+      'recordType': 'fee_assignment',
+      'data': {
+        'studentId': student.userId.isNotEmpty ? student.userId : student.id,
+        'studentRecordId': student.id,
+        'studentNumber': student.rollNumber,
+        'studentName': student.name,
+        'studentEmail': student.email,
+        'department': student.department,
+        'feeStructure': title.trim(),
+        'academicContext': academicContext.trim(),
+        'amountPerStudent': amount,
+        'status': 'assigned',
+        'assignedAt': DateTime.now().toUtc().toIso8601String(),
+      },
+    });
   }
 
   Future<RazorpayOrder> createOrder({
@@ -182,14 +255,38 @@ class TuitionFeeRepository {
     return 'The payment request could not be completed.';
   }
 
-  Future<http.Response> _get(String token) => _client.get(
-    _baseUri.resolve('/api/v1/student/fees'),
-    headers: {
-      'authorization': 'Bearer $token',
-      'x-client-surface': 'app',
-      'accept': 'application/json',
-    },
-  );
+  Future<Map<String, dynamic>> _getJson(String path) async {
+    var token = await _accessTokenProvider();
+    var response = await _client.get(
+      _baseUri.resolve(path),
+      headers: _headers(token),
+    );
+    if (response.statusCode == 401) {
+      token = await _accessTokenProvider(forceRefresh: true);
+      response = await _client.get(
+        _baseUri.resolve(path),
+        headers: _headers(token),
+      );
+    }
+    Object? decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } catch (_) {
+      decoded = null;
+    }
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        decoded is! Map) {
+      throw TuitionFeeException(_errorMessage(response.body, decoded: decoded));
+    }
+    return Map<String, dynamic>.from(decoded);
+  }
+
+  Map<String, String> _headers(String token) => {
+    'authorization': 'Bearer $token',
+    'x-client-surface': 'app',
+    'accept': 'application/json',
+  };
 }
 
 class TuitionFeeException implements Exception {

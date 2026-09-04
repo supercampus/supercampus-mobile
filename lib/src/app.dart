@@ -11,6 +11,10 @@ import 'core/access/mock_permissions_repository.dart';
 import 'core/access/module_catalog.dart';
 import 'core/access/permissions_repository.dart';
 import 'core/motion/app_motion.dart';
+import 'core/notifications/push_notification_service.dart';
+import 'core/notifications/notification_deep_link.dart';
+import 'core/widgets/app_design_viewport.dart';
+import 'core/widgets/launch_brand_intro.dart';
 import 'core/media/media_repository.dart';
 import 'core/media/media_scope.dart';
 import 'core/realtime/realtime_client.dart';
@@ -34,11 +38,16 @@ import 'features/canteen/presentation/accountant_wallet_screen.dart';
 import 'features/attendance/data/attendance_repository.dart';
 import 'features/attendance/presentation/attendance_shell.dart';
 import 'features/examination/presentation/examination_shell.dart';
+import 'features/examination/data/marks_batch_repository.dart';
 import 'features/feedback/presentation/feedback_shell.dart';
 import 'features/gatepass/presentation/gatepass_shell.dart';
 import 'features/gatepass/data/backend_gatepass_repository.dart';
+import 'features/gatepass/data/approval_portal_repository.dart';
 import 'features/gatepass/data/gatepass_repository.dart';
+import 'features/gatepass/presentation/approval_portal_screen.dart';
 import 'features/library/presentation/library_shell.dart';
+import 'features/library/data/librarian_repository.dart';
+import 'features/library/presentation/librarian_portal_screen.dart';
 import 'features/academics/presentation/academic_management_shell.dart';
 import 'features/academics/presentation/student_academics_shell.dart';
 import 'features/academics/data/student_assessments_repository.dart';
@@ -49,6 +58,7 @@ import 'features/modules/presentation/module_dashboard_screen.dart';
 import 'features/modules/presentation/module_navigation_host.dart';
 import 'features/modules/presentation/today_glance.dart';
 import 'features/parent/presentation/parent_portal_screen.dart';
+import 'features/notifications/data/notification_repository.dart';
 import 'features/timetable/presentation/timetable_shell.dart';
 import 'features/hostel/presentation/hostel_shell.dart';
 import 'screens/tuition_fee/tuition_fee_repository.dart';
@@ -62,6 +72,7 @@ class SupercampusApp extends StatefulWidget {
     this.canteenRepository,
     this.gatepassRepository,
     this.attendanceRepository,
+    this.approvalPortalRepository,
   });
 
   final AuthRepository? authRepository;
@@ -75,6 +86,7 @@ class SupercampusApp extends StatefulWidget {
   final CanteenRepository? canteenRepository;
   final GatepassRepository? gatepassRepository;
   final AttendanceRepository? attendanceRepository;
+  final ApprovalPortalRepository? approvalPortalRepository;
 
   @override
   State<SupercampusApp> createState() => _SupercampusAppState();
@@ -84,13 +96,12 @@ class _SupercampusAppState extends State<SupercampusApp>
     with WidgetsBindingObserver {
   static const _backendBaseUrl = String.fromEnvironment(
     'SUPERCAMPUS_API_BASE_URL',
-    defaultValue: '',
+    defaultValue: 'https://api.supercampus.ai',
   );
   static const _allowLocalApiOverride = bool.fromEnvironment(
     'SUPERCAMPUS_ALLOW_LOCAL_API',
   );
   static const _useMockData = bool.fromEnvironment('SUPERCAMPUS_USE_MOCK_DATA');
-  static const _permissionRefreshInterval = Duration(seconds: 30);
   static const _themePreferencePrefix = 'supercampus.theme.';
 
   late final AuthRepository _authRepository;
@@ -102,14 +113,16 @@ class _SupercampusAppState extends State<SupercampusApp>
   String? _openModuleAction;
   TodayClass? _attendanceClass;
   ThemeMode _themeMode = ThemeMode.light;
-  Timer? _permissionRefreshTimer;
   bool _permissionRefreshInProgress = false;
   Future<UserSession>? _sessionRenewal;
   MediaRepository? _mediaRepository;
   RealtimeClient? _realtimeClient;
   StreamSubscription<RealtimeEvent>? _realtimeEventSubscription;
+  StreamSubscription<String>? _pushDeepLinkSubscription;
   Timer? _realtimeRefreshDebounce;
   int _surfaceRevision = 0;
+  int _glanceRevision = 0;
+  int _notificationRevision = 0;
 
   @override
   void initState() {
@@ -131,6 +144,8 @@ class _SupercampusAppState extends State<SupercampusApp>
         (_useMockData
             ? const MockPermissionsRepository()
             : BackendPermissionsRepository(baseUrl: backendBaseUrl));
+    _pushDeepLinkSubscription = PushNotificationService.instance.deepLinks
+        .listen(_openPushDeepLink);
     if (!_useMockData && widget.authRepository == null) {
       // Only against a real backend: with mocks there is nothing to upload to,
       // and the screens hide their upload control when no scope is installed.
@@ -183,9 +198,9 @@ class _SupercampusAppState extends State<SupercampusApp>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _permissionRefreshTimer?.cancel();
     _realtimeRefreshDebounce?.cancel();
     unawaited(_realtimeEventSubscription?.cancel());
+    unawaited(_pushDeepLinkSubscription?.cancel());
     unawaited(_realtimeClient?.dispose());
     super.dispose();
   }
@@ -222,14 +237,24 @@ class _SupercampusAppState extends State<SupercampusApp>
       _permissions = results[0] as EffectivePermissions;
       _themeMode = results[1] as ThemeMode;
     });
-    _startPermissionRefresh();
     unawaited(_realtimeClient?.start());
+    final notificationRepository = _notificationRepository();
+    if (notificationRepository != null) {
+      unawaited(
+        PushNotificationService.instance.activate(notificationRepository),
+      );
+    }
   }
 
   void _signOut() {
-    _permissionRefreshTimer?.cancel();
+    unawaited(_completeSignOut());
+  }
+
+  Future<void> _completeSignOut() async {
     _realtimeRefreshDebounce?.cancel();
     unawaited(_realtimeClient?.stop());
+    await PushNotificationService.instance.deactivate();
+    if (!mounted) return;
     setState(() {
       _sessionRenewal = null;
       _session = null;
@@ -241,18 +266,51 @@ class _SupercampusAppState extends State<SupercampusApp>
     });
   }
 
+  void _openPushDeepLink(String deepLink) {
+    final permissions = _permissions;
+    if (_session == null || permissions == null) return;
+    final moduleId = notificationModuleId(
+      deepLink: deepLink,
+      preferAttendanceModule: permissions.canSeeModule(
+        ModuleCatalog.attendance,
+      ),
+    );
+    if (moduleId == null || !permissions.canSeeModule(moduleId)) return;
+    setState(() {
+      _openModuleId = moduleId;
+      _openModuleAction = null;
+      _attendanceClass = null;
+    });
+  }
+
   void _onRealtimeEvent(RealtimeEvent event) {
     if (!mounted || _session == null) return;
 
-    if (event.type == 'realtime.ready') {
-      _scheduleRealtimeRefresh();
+    // `realtime.ready` is emitted after every socket reconnect. Authentication
+    // already loaded the initial permission snapshot, so treating readiness as
+    // a data change made the home dashboard flash on each reconnect.
+    if (event.type == 'realtime.ready') return;
+    // The operations API publishes completed rolls as
+    // `attendance.session.published_to_hod`. Keep the legacy event name for
+    // compatibility with older deployments, but refresh on the canonical
+    // event so student attendance cards immediately use the latest records.
+    if (event.type == 'attendance.session.published_to_hod' ||
+        event.type == 'attendance.record.published') {
+      setState(() {
+        // Keep the dashboard mounted and refresh only its attendance-backed
+        // glance. An open module can still remount to reread its own records.
+        if (_openModuleId == null) {
+          _glanceRevision++;
+        } else {
+          _surfaceRevision++;
+        }
+        _notificationRevision++;
+      });
       return;
     }
-    if (event.type == 'attendance.record.published') {
-      // This event is delivered only to students in the published roster.
-      // Remounting makes both the home strip and an open Academics page read
-      // the finalized roll immediately.
-      setState(() => _surfaceRevision++);
+    if (_eventCreatesNotification(event.type)) {
+      // A new inbox item must not remount the dashboard or reload "Your day".
+      setState(() => _notificationRevision++);
       return;
     }
     if (!_eventMayChangeAccess(event.type)) return;
@@ -260,7 +318,6 @@ class _SupercampusAppState extends State<SupercampusApp>
     // Operational events (including daily_access.activated) must not remount
     // the open module. Gatepass activation itself emits that event, so doing so
     // creates a feedback loop: remount -> activate -> event -> remount.
-    setState(() => _surfaceRevision++);
     _scheduleRealtimeRefresh();
   }
 
@@ -277,6 +334,12 @@ class _SupercampusAppState extends State<SupercampusApp>
         type.startsWith('configuration.') ||
         type.startsWith('identity.');
   }
+
+  bool _eventCreatesNotification(String type) =>
+      type.startsWith('canteen.order.') ||
+      type == 'canteen.wallet.credited' ||
+      type == 'gatepass.request.decided' ||
+      type == 'attendance.report.submitted_to_principal';
 
   Future<ThemeMode> _loadThemeMode(UserSession session) async {
     try {
@@ -309,16 +372,6 @@ class _SupercampusAppState extends State<SupercampusApp>
 
   String _themePreferenceKey(UserSession session) =>
       '$_themePreferencePrefix${session.email.trim().toLowerCase()}';
-
-  void _startPermissionRefresh() {
-    _permissionRefreshTimer?.cancel();
-    if (_useMockData) return;
-    unawaited(_refreshPermissions());
-    _permissionRefreshTimer = Timer.periodic(
-      _permissionRefreshInterval,
-      (_) => unawaited(_refreshPermissions()),
-    );
-  }
 
   Future<void> _refreshPermissions() async {
     var session = _session;
@@ -407,9 +460,9 @@ class _SupercampusAppState extends State<SupercampusApp>
   }
 
   void _expireSession() {
-    _permissionRefreshTimer?.cancel();
     _realtimeRefreshDebounce?.cancel();
     unawaited(_realtimeClient?.stop());
+    unawaited(PushNotificationService.instance.deactivate());
     _sessionRenewal = null;
     setState(() {
       _session = null;
@@ -457,6 +510,15 @@ class _SupercampusAppState extends State<SupercampusApp>
         theme: _applyTenantBrand(AppTheme.light, brand, Brightness.light),
         darkTheme: _applyTenantBrand(AppTheme.dark, brand, Brightness.dark),
         themeMode: _themeMode,
+        builder: (context, child) => AppDesignViewport(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              child ?? const SizedBox.shrink(),
+              const LaunchBrandIntro(),
+            ],
+          ),
+        ),
         home: Builder(
           builder: (context) {
             final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations;
@@ -540,43 +602,6 @@ class _SupercampusAppState extends State<SupercampusApp>
       return const Scaffold(body: SkeletonList(rows: 7, rowHeight: 72));
     }
 
-    final roleKeys = <String>{
-      ...session.roleIds,
-      session.roleKey,
-    }.map((role) => role.trim().toLowerCase());
-    if (roleKeys.contains('accountant')) {
-      return AccountantWalletScreen(
-        repository: BackendAccountantWalletRepository(
-          baseUrl: _resolvedBackendBaseUrl,
-          accessTokenProvider: _provideAccessToken,
-        ),
-        accountantName: session.displayName,
-        onSignOut: _signOut,
-      );
-    }
-
-    if (session.role == UserRole.security || roleKeys.contains('security')) {
-      return SecurityPortalScreen(
-        session: session,
-        repository: _useMockData
-            ? MockSecurityGateRepository()
-            : BackendSecurityGateRepository(
-                baseUrl: _resolvedBackendBaseUrl,
-                accessTokenProvider: _provideAccessToken,
-              ),
-        onSignOut: _signOut,
-      );
-    }
-
-    if (session.role == UserRole.admin) {
-      return AdminPortalShell(session: session, onSignOut: _signOut);
-    }
-
-    if (_isShopOperator(permissions) &&
-        permissions.canSeeModule(ModuleCatalog.canteen)) {
-      return _buildModule(ModuleCatalog.canteen, session);
-    }
-
     final openModuleId = _openModuleId;
     if (openModuleId == null) {
       return ModuleDashboardScreen(
@@ -613,7 +638,10 @@ class _SupercampusAppState extends State<SupercampusApp>
             ? _openScanner
             : null,
         glanceSource: _glanceSource(session),
+        glanceRevision: _glanceRevision,
         advisorStudentsSource: _advisorStudentsSource(session),
+        notificationRepository: _notificationRepository(),
+        notificationRevision: _notificationRevision,
       );
     }
 
@@ -655,21 +683,13 @@ class _SupercampusAppState extends State<SupercampusApp>
     );
   }
 
-  /// Someone who runs a counter rather than buying at one.
-  ///
-  /// Decided by what they may do, never by what their role is called. This used
-  /// to string-match the role name for "shop owner", "vendor" and so on, which
-  /// meant a tenant naming the role `owner` silently lost the whole owner
-  /// workspace — the account kept its shop assignment and its permissions and
-  /// was still shown the student menu.
-  ///
-  /// Editing a menu or working orders is the thing no customer can do, so it is
-  /// the honest test.
-  bool _isShopOperator(EffectivePermissions permissions) =>
-      permissions.can(ModuleCatalog.canteen, 'menu', ModuleActions.create) ||
-      permissions.can(ModuleCatalog.canteen, 'menu', ModuleActions.update) ||
-      permissions.can(ModuleCatalog.canteen, 'menu', ModuleActions.delete) ||
-      permissions.can(ModuleCatalog.canteen, 'orders', 'manage');
+  NotificationRepository? _notificationRepository() {
+    if (_useMockData || _resolvedBackendBaseUrl.isEmpty) return null;
+    return NotificationRepository(
+      baseUrl: _resolvedBackendBaseUrl,
+      accessTokenProvider: _provideAccessToken,
+    );
+  }
 
   Future<void> _openScanner(BuildContext context) async {
     // The screen owns its own way in and out — it rides up from the bottom and
@@ -696,6 +716,18 @@ class _SupercampusAppState extends State<SupercampusApp>
     String actionId,
   ) {
     final grant = switch ((moduleId, actionId)) {
+      (ModuleCatalog.administration, 'access_control') => (
+        'access_control',
+        ModuleActions.read,
+      ),
+      (ModuleCatalog.administration, 'approvals') => (
+        'approvals',
+        ModuleActions.read,
+      ),
+      (ModuleCatalog.administration, 'emergency') => (
+        'emergency',
+        ModuleActions.read,
+      ),
       (ModuleCatalog.examination, 'schedule') => (
         'publishing',
         ModuleActions.read,
@@ -714,7 +746,8 @@ class _SupercampusAppState extends State<SupercampusApp>
       (ModuleCatalog.academics, 'marks') => ('marks', ModuleActions.read),
       (ModuleCatalog.academics, 'analysis') => ('analysis', ModuleActions.read),
       (ModuleCatalog.attendance, 'roster') => ('roster', ModuleActions.read),
-      (ModuleCatalog.attendance, 'mark') => ('records', ModuleActions.update),
+      (ModuleCatalog.attendance, 'mark') => ('session', ModuleActions.create),
+      (ModuleCatalog.attendance, 'history') => ('records', ModuleActions.read),
       (ModuleCatalog.attendance, 'reports') => (
         'reports',
         ModuleActions.create,
@@ -724,6 +757,16 @@ class _SupercampusAppState extends State<SupercampusApp>
       (ModuleCatalog.library, 'history') => (
         'visit_history',
         ModuleActions.read,
+      ),
+      (ModuleCatalog.library, 'slots') => ('capacity', 'manage'),
+      (ModuleCatalog.library, 'scan') => ('visit_pass', ModuleActions.approve),
+      (ModuleCatalog.library, 'logs' || 'download') => (
+        'logs',
+        ModuleActions.read,
+      ),
+      (ModuleCatalog.library, 'announcement') => (
+        'announcement',
+        ModuleActions.create,
       ),
       (ModuleCatalog.academics, 'programmes') => (
         'programme',
@@ -736,10 +779,26 @@ class _SupercampusAppState extends State<SupercampusApp>
       ),
       (ModuleCatalog.canteen, 'menu') => ('menu', ModuleActions.read),
       (ModuleCatalog.canteen, 'orders') => ('order', ModuleActions.read),
+      (ModuleCatalog.canteen, 'order_history') => ('order', ModuleActions.read),
       (ModuleCatalog.canteen, 'wallet') => ('wallet', ModuleActions.read),
+      (ModuleCatalog.canteen, 'transactions') => ('wallet', ModuleActions.read),
+      (ModuleCatalog.canteen, 'top_up') => ('wallet', ModuleActions.update),
       (ModuleCatalog.gatepass, 'outpass') => ('outpass', ModuleActions.read),
       (ModuleCatalog.gatepass, 'visitors') => ('visitor', ModuleActions.read),
       (ModuleCatalog.gatepass, 'access') => ('access', ModuleActions.read),
+      (ModuleCatalog.gatepass, 'scan' || 'manual_code') => (
+        'scan',
+        ModuleActions.create,
+      ),
+      (ModuleCatalog.gatepass, 'movement_logs') => ('scan', ModuleActions.read),
+      (ModuleCatalog.gatepass, 'leave_pending' || 'leave_history') => (
+        'leave',
+        ModuleActions.read,
+      ),
+      (ModuleCatalog.gatepass, 'outpass_pending' || 'outpass_history') => (
+        'outpass',
+        ModuleActions.read,
+      ),
       (ModuleCatalog.hostel, 'residency') => ('residency', ModuleActions.read),
       (ModuleCatalog.hostel, 'outpass') => ('outpass', ModuleActions.read),
       (ModuleCatalog.hostel, 'mess') => ('mess', ModuleActions.read),
@@ -753,6 +812,29 @@ class _SupercampusAppState extends State<SupercampusApp>
       ),
       (ModuleCatalog.hostel, 'visitors') => ('visitors', ModuleActions.read),
       (ModuleCatalog.hostel, 'clearance') => ('clearance', ModuleActions.read),
+      (ModuleCatalog.vendorManagement, 'vendors') => (
+        'vendors',
+        ModuleActions.read,
+      ),
+      (ModuleCatalog.vendorManagement, 'contracts') => (
+        'contracts',
+        ModuleActions.read,
+      ),
+      (ModuleCatalog.vendorManagement, 'purchase_orders') => (
+        'purchase_orders',
+        ModuleActions.read,
+      ),
+      (ModuleCatalog.vendorManagement, 'payments') => (
+        'payments',
+        ModuleActions.read,
+      ),
+      (ModuleCatalog.vendorManagement, 'work_orders') => (
+        'work_orders',
+        ModuleActions.read,
+      ),
+      (ModuleCatalog.tuitionFee, 'dues') => ('invoice', ModuleActions.read),
+      (ModuleCatalog.tuitionFee, 'pay') => ('payment', ModuleActions.create),
+      (ModuleCatalog.tuitionFee, 'receipts') => ('payment', ModuleActions.read),
       _ => null,
     };
 
@@ -768,6 +850,26 @@ class _SupercampusAppState extends State<SupercampusApp>
       'fees' || 'fee' || 'tuition' || 'tuition-fee' => ModuleCatalog.tuitionFee,
       final id => id,
     };
+    final roleKeys = <String>{
+      ...session.roleIds,
+      session.roleKey,
+    }.map((role) => role.trim().toLowerCase()).toSet();
+    final isAccountant = roleKeys.contains('accountant');
+    final isSecurity =
+        session.role == UserRole.security || roleKeys.contains('security');
+    final isLibrarian = roleKeys.contains('librarian');
+    final approvalViewerKind =
+        session.role == UserRole.parent || roleKeys.contains('parent')
+        ? 'parent'
+        : roleKeys.contains('warden')
+        ? 'warden'
+        : roleKeys.contains('principal')
+        ? 'principal'
+        : roleKeys.contains('class_advisor') ||
+              roleKeys.contains('hod') ||
+              roleKeys.contains('head_of_department')
+        ? 'advisor_or_hod'
+        : null;
 
     void exit() => setState(() {
       _openModuleId = null;
@@ -776,6 +878,14 @@ class _SupercampusAppState extends State<SupercampusApp>
     });
 
     final module = switch (resolvedModuleId) {
+      ModuleCatalog.administration => AdminPortalShell(
+        session: session,
+        onSignOut: _signOut,
+        libraryRepository: LibrarianRepository(
+          baseUrl: _resolvedBackendBaseUrl,
+          accessTokenProvider: _provideAccessToken,
+        ),
+      ),
       ModuleCatalog.hostel => HostelShell(
         session: session,
         onExitModule: exit,
@@ -786,28 +896,68 @@ class _SupercampusAppState extends State<SupercampusApp>
         onExitModule: exit,
         onSignOut: _signOut,
         initialAction: _openModuleAction,
+        marksRepository: _useMockData
+            ? null
+            : MarksBatchRepository(
+                baseUrl: _resolvedBackendBaseUrl,
+                accessTokenProvider: _provideAccessToken,
+              ),
       ),
-      ModuleCatalog.canteen => CanteenShell(
-        session: session,
-        onExitModule: exit,
-        onSignOut: _signOut,
-        initialAction: _openModuleAction,
-        repository:
-            widget.canteenRepository ??
-            (_useMockData
-                ? null
-                : BackendCanteenRepository(
-                    baseUrl: _resolvedBackendBaseUrl,
-                    accessTokenProvider: _provideAccessToken,
-                  )),
-      ),
-      ModuleCatalog.gatepass =>
-        session.role == UserRole.parent
-            ? ParentPortalScreen(
+      ModuleCatalog.canteen =>
+        isAccountant
+            ? AccountantWalletScreen(
+                repository: BackendAccountantWalletRepository(
+                  baseUrl: _resolvedBackendBaseUrl,
+                  accessTokenProvider: _provideAccessToken,
+                ),
+                accountantName: session.displayName,
+                onSignOut: _signOut,
+              )
+            : CanteenShell(
                 session: session,
                 onExitModule: exit,
                 onSignOut: _signOut,
+                initialAction: _openModuleAction,
+                repository:
+                    widget.canteenRepository ??
+                    (_useMockData
+                        ? null
+                        : BackendCanteenRepository(
+                            baseUrl: _resolvedBackendBaseUrl,
+                            accessTokenProvider: _provideAccessToken,
+                          )),
+              ),
+      ModuleCatalog.gatepass =>
+        isSecurity
+            ? SecurityPortalScreen(
+                session: session,
+                initialAction: _openModuleAction,
+                repository: _useMockData
+                    ? MockSecurityGateRepository()
+                    : BackendSecurityGateRepository(
+                        baseUrl: _resolvedBackendBaseUrl,
+                        accessTokenProvider: _provideAccessToken,
+                      ),
+                onSignOut: _signOut,
               )
+            : approvalViewerKind != null
+            ? (_useMockData && approvalViewerKind == 'parent'
+                  ? ParentPortalScreen(
+                      session: session,
+                      onExitModule: exit,
+                      onSignOut: _signOut,
+                    )
+                  : ApprovalPortalScreen(
+                      session: session,
+                      viewerKind: approvalViewerKind,
+                      repository:
+                          widget.approvalPortalRepository ??
+                          BackendApprovalPortalRepository(
+                            baseUrl: _resolvedBackendBaseUrl,
+                            accessTokenProvider: _provideAccessToken,
+                          ),
+                      onSignOut: _signOut,
+                    ))
             : GatepassShell(
                 session: session,
                 onExitModule: exit,
@@ -825,11 +975,24 @@ class _SupercampusAppState extends State<SupercampusApp>
                             department: session.departmentOrWard ?? '',
                           )),
               ),
-      ModuleCatalog.library => LibraryShell(
-        session: session,
-        onExitModule: exit,
-        initialAction: _openModuleAction,
-      ),
+      ModuleCatalog.library =>
+        isLibrarian
+            ? LibrarianPortalScreen(
+                session: session,
+                initialAction: _openModuleAction,
+                repository: LibrarianRepository(
+                  baseUrl: _resolvedBackendBaseUrl,
+                  accessTokenProvider: _provideAccessToken,
+                ),
+                onSignOut: _signOut,
+              )
+            : LibraryShell(
+                session: session,
+                onExitModule: exit,
+                initialAction: _openModuleAction,
+                baseUrl: _useMockData ? null : _resolvedBackendBaseUrl,
+                accessTokenProvider: _useMockData ? null : _provideAccessToken,
+              ),
       // Which academic workspace someone gets follows what they may do, not
       // what their role is called: `own` scope with no approvals is a learner,
       // anything wider is staff. A tenant can rename or split its roles freely
@@ -868,6 +1031,14 @@ class _SupercampusAppState extends State<SupercampusApp>
           baseUrl: _resolvedBackendBaseUrl,
           accessTokenProvider: _provideAccessToken,
         ),
+        canManageFees:
+            _permissions!.can('fees', 'records', ModuleActions.create) ||
+            _permissions!.can('fees', 'records', ModuleActions.update) ||
+            _permissions!.can(
+              ModuleCatalog.tuitionFee,
+              'invoice',
+              ModuleActions.create,
+            ),
         onExitModule: exit,
       ),
       ModuleCatalog.timetable => TimetableShell(

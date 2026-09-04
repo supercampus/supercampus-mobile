@@ -102,4 +102,74 @@ void main() {
       ),
     );
   });
+
+  test('loads the access-controlled admin fee workspace', () async {
+    final requestedPaths = <String>[];
+    final repository = TuitionFeeRepository(
+      baseUrl: 'https://api.example.test',
+      accessTokenProvider: ({bool forceRefresh = false}) async => 'admin-token',
+      client: MockClient((request) async {
+        requestedPaths.add(request.url.path);
+        expect(request.headers['authorization'], 'Bearer admin-token');
+        if (request.url.path == '/api/v1/student-master') {
+          return http.Response(
+            jsonEncode({
+              'data': [
+                {
+                  'id': 'student-record',
+                  'userId': 'student-user',
+                  'rollNo': '413225243049',
+                  'name': 'Vishnu S',
+                  'department': 'AIDS',
+                  'email': 'vishnu@mec.local',
+                },
+              ],
+            }),
+            200,
+          );
+        }
+        return http.Response(jsonEncode({'data': []}), 200);
+      }),
+    );
+
+    final data = await repository.loadAdmin();
+
+    expect(
+      requestedPaths,
+      containsAll(['/api/v1/fees/records', '/api/v1/student-master']),
+    );
+    expect(requestedPaths, isNot(contains('/api/v1/student/fees')));
+    expect(data.students.single.rollNumber, '413225243049');
+  });
+
+  test('creates a fee assignment linked to the selected student', () async {
+    final repository = TuitionFeeRepository(
+      baseUrl: 'https://api.example.test',
+      accessTokenProvider: ({bool forceRefresh = false}) async => 'admin-token',
+      client: MockClient((request) async {
+        expect(request.url.path, '/api/v1/fees/records');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['recordType'], 'fee_assignment');
+        final data = body['data'] as Map<String, dynamic>;
+        expect(data['studentId'], 'student-user');
+        expect(data['studentNumber'], '413225243049');
+        expect(data['amountPerStudent'], 25000);
+        return http.Response(jsonEncode({'id': 'assignment-1'}), 201);
+      }),
+    );
+
+    await repository.createFeeAssignment(
+      student: const FeeStudent(
+        id: 'student-record',
+        userId: 'student-user',
+        rollNumber: '413225243049',
+        name: 'Vishnu S',
+        department: 'AIDS',
+        email: 'vishnu@mec.local',
+      ),
+      title: 'Semester fee',
+      academicContext: '2026–27',
+      amount: 25000,
+    );
+  });
 }

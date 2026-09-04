@@ -11,12 +11,14 @@ class TuitionFeeScreen extends StatefulWidget {
     required this.session,
     required this.repository,
     required this.onExitModule,
+    this.canManageFees = false,
     super.key,
   });
 
   final UserSession session;
   final TuitionFeeRepository repository;
   final VoidCallback onExitModule;
+  final bool canManageFees;
 
   @override
   State<TuitionFeeScreen> createState() => _TuitionFeeScreenState();
@@ -24,14 +26,29 @@ class TuitionFeeScreen extends StatefulWidget {
 
 class _TuitionFeeScreenState extends State<TuitionFeeScreen> {
   late Future<List<StudentFeeRecord>> _future;
+  late Future<AdminFeeData> _adminFuture;
 
   @override
   void initState() {
     super.initState();
-    _future = widget.repository.load();
+    if (widget.canManageFees) {
+      _future = Future.value(const []);
+      _adminFuture = widget.repository.loadAdmin();
+    } else {
+      _future = widget.repository.load();
+      _adminFuture = Future.value(
+        const AdminFeeData(records: [], students: []),
+      );
+    }
   }
 
-  void _reload() => setState(() => _future = widget.repository.load());
+  void _reload() => setState(() {
+    if (widget.canManageFees) {
+      _adminFuture = widget.repository.loadAdmin();
+    } else {
+      _future = widget.repository.load();
+    }
+  });
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -43,29 +60,408 @@ class _TuitionFeeScreenState extends State<TuitionFeeScreen> {
         ModuleHomeButton(onPressed: widget.onExitModule),
       ],
     ),
-    body: FutureBuilder<List<StudentFeeRecord>>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const _FeeLoading();
-        }
-        if (snapshot.hasError) {
-          return _FeeError(
-            message: snapshot.error is TuitionFeeException
-                ? (snapshot.error! as TuitionFeeException).message
-                : 'Your fee account could not be loaded.',
-            onRetry: _reload,
+    body: widget.canManageFees
+        ? FutureBuilder<AdminFeeData>(
+            future: _adminFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const _FeeLoading();
+              }
+              if (snapshot.hasError) {
+                return _FeeError(
+                  message: snapshot.error is TuitionFeeException
+                      ? (snapshot.error! as TuitionFeeException).message
+                      : 'Fee management could not be loaded.',
+                  onRetry: _reload,
+                );
+              }
+              return _AdminFeeWorkspace(
+                data:
+                    snapshot.data ??
+                    const AdminFeeData(records: [], students: []),
+                repository: widget.repository,
+                onChanged: _reload,
+              );
+            },
+          )
+        : FutureBuilder<List<StudentFeeRecord>>(
+            future: _future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const _FeeLoading();
+              }
+              if (snapshot.hasError) {
+                return _FeeError(
+                  message: snapshot.error is TuitionFeeException
+                      ? (snapshot.error! as TuitionFeeException).message
+                      : 'Your fee account could not be loaded.',
+                  onRetry: _reload,
+                );
+              }
+              return _FeeAccount(
+                session: widget.session,
+                records: snapshot.data ?? const [],
+                repository: widget.repository,
+                onPaymentVerified: _reload,
+              );
+            },
+          ),
+  );
+}
+
+class _AdminFeeWorkspace extends StatefulWidget {
+  const _AdminFeeWorkspace({
+    required this.data,
+    required this.repository,
+    required this.onChanged,
+  });
+
+  final AdminFeeData data;
+  final TuitionFeeRepository repository;
+  final VoidCallback onChanged;
+
+  @override
+  State<_AdminFeeWorkspace> createState() => _AdminFeeWorkspaceState();
+}
+
+class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
+  var _saving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final assignments =
+        widget.data.records
+            .where((row) => row.type == 'fee_assignment')
+            .toList()
+          ..sort(
+            (a, b) => _text(
+              b.data['assignedAt'],
+            ).compareTo(_text(a.data['assignedAt'])),
           );
-        }
-        return _FeeAccount(
-          session: widget.session,
-          records: snapshot.data ?? const [],
-          repository: widget.repository,
-          onPaymentVerified: _reload,
-        );
-      },
+    final payments = widget.data.records
+        .where((row) => row.type == 'payments')
+        .toList();
+    final assignedTotal = assignments.fold<double>(
+      0,
+      (sum, row) => sum + _number(row.data['amountPerStudent']),
+    );
+    final collectedTotal = payments
+        .where(
+          (row) => !{
+            'failed',
+            'reversed',
+            'void',
+          }.contains(_text(row.data['status']).toLowerCase()),
+        )
+        .fold<double>(0, (sum, row) => sum + _number(row.data['amount']));
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 32),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: AppColors.violetGradient,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.account_balance_outlined, color: Colors.white),
+              const SizedBox(height: 14),
+              const Text(
+                'Fee administration',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Text(
+                'Assign student fees and monitor verified payments.',
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: _adminMetric(
+                      'Students',
+                      '${widget.data.students.length}',
+                    ),
+                  ),
+                  Expanded(
+                    child: _adminMetric('Assigned', _money(assignedTotal)),
+                  ),
+                  Expanded(
+                    child: _adminMetric('Collected', _money(collectedTotal)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  key: const ValueKey('assign-student-fee'),
+                  onPressed: _saving || widget.data.students.isEmpty
+                      ? null
+                      : _openAssignment,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppColors.brandBlue,
+                  ),
+                  icon: const Icon(Icons.add_card_rounded),
+                  label: const Text('Assign fee to student'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 22),
+        _adminSectionTitle('Recent fee assignments', assignments.length),
+        if (assignments.isEmpty)
+          _adminEmpty('No student fees have been assigned yet.')
+        else
+          ...assignments
+              .take(50)
+              .map(
+                (row) => Card(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    leading: const CircleAvatar(
+                      child: Icon(Icons.person_outline_rounded),
+                    ),
+                    title: Text(
+                      _text(row.data['studentName'], fallback: 'Student'),
+                    ),
+                    subtitle: Text(
+                      '${_text(row.data['studentNumber'])} · ${_text(row.data['feeStructure'], fallback: 'Fee assignment')}',
+                    ),
+                    trailing: Text(
+                      _money(_number(row.data['amountPerStudent'])),
+                      style: const TextStyle(
+                        color: AppColors.brandBlue,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+        const SizedBox(height: 16),
+        _adminSectionTitle('Verified payment history', payments.length),
+        if (payments.isEmpty)
+          _adminEmpty('No payments have been recorded yet.')
+        else
+          ...payments
+              .take(50)
+              .map(
+                (row) => Card(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    leading: const CircleAvatar(
+                      child: Icon(Icons.verified_outlined),
+                    ),
+                    title: Text(
+                      _text(
+                        row.data['studentName'],
+                        fallback: 'Student payment',
+                      ),
+                    ),
+                    subtitle: Text(
+                      '${_text(row.data['studentNumber'])} · ${_text(row.data['status'])}',
+                    ),
+                    trailing: Text(
+                      _money(_number(row.data['amount'])),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ),
+      ],
+    );
+  }
+
+  Widget _adminMetric(String label, String value) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+      const SizedBox(height: 2),
+      Text(
+        value,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ],
+  );
+
+  Widget _adminSectionTitle(String title, int count) => Padding(
+    padding: const EdgeInsets.only(bottom: 9),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+        ),
+        Text('$count', style: const TextStyle(color: AppColors.muted)),
+      ],
     ),
   );
+
+  Widget _adminEmpty(String message) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(22),
+      child: Center(
+        child: Text(message, style: const TextStyle(color: AppColors.muted)),
+      ),
+    ),
+  );
+
+  Future<void> _openAssignment() async {
+    final titleController = TextEditingController(text: 'Tuition fee');
+    final contextController = TextEditingController(
+      text: 'Academic year 2026–27',
+    );
+    final amountController = TextEditingController();
+    FeeStudent? selectedStudent;
+    final submit = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            12,
+            20,
+            MediaQuery.viewInsetsOf(context).bottom + 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.muted.withValues(alpha: .5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Assign student fee',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 18),
+                DropdownButtonFormField<FeeStudent>(
+                  key: const ValueKey('fee-student-selector'),
+                  initialValue: selectedStudent,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Student',
+                    prefixIcon: Icon(Icons.person_search_outlined),
+                  ),
+                  items: widget.data.students
+                      .map(
+                        (student) => DropdownMenuItem(
+                          value: student,
+                          child: Text(
+                            '${student.name} · ${student.rollNumber}',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(growable: false),
+                  onChanged: (value) =>
+                      setSheetState(() => selectedStudent = value),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Fee title'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: contextController,
+                  decoration: const InputDecoration(
+                    labelText: 'Academic context',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  key: const ValueKey('fee-amount-field'),
+                  controller: amountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Amount',
+                    prefixText: '₹ ',
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(sheetContext, true),
+                    child: const Text('Assign fee'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (submit != true) return;
+    final amount = double.tryParse(amountController.text.trim());
+    if (selectedStudent == null ||
+        titleController.text.trim().isEmpty ||
+        amount == null ||
+        amount < 1) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Select a student and enter a valid fee title and amount.',
+          ),
+        ),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      await widget.repository.createFeeAssignment(
+        student: selectedStudent!,
+        title: titleController.text,
+        academicContext: contextController.text,
+        amount: amount,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fee assigned to ${selectedStudent!.name}.')),
+      );
+      widget.onChanged();
+    } on TuitionFeeException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      titleController.dispose();
+      contextController.dispose();
+      amountController.dispose();
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 }
 
 class _FeeAccount extends StatefulWidget {
