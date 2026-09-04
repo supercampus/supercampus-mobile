@@ -19,6 +19,7 @@ class StudentCanteenHome extends StatefulWidget {
     required this.onOpenCart,
     required this.onOpenWallet,
     required this.onOpenProfile,
+    required this.onOpenOrders,
     required this.onExitModule,
     this.onWorkMode,
   });
@@ -30,6 +31,7 @@ class StudentCanteenHome extends StatefulWidget {
   final VoidCallback onOpenCart;
   final VoidCallback onOpenWallet;
   final VoidCallback onOpenProfile;
+  final VoidCallback onOpenOrders;
   final VoidCallback onExitModule;
   final VoidCallback? onWorkMode;
 
@@ -72,6 +74,17 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
     if (shops.any((shop) => shop.shopKey == _shopKey)) return _shopKey;
     return shops.first.shopKey;
   }
+
+  CanteenShop? get _selectedShop {
+    final key = _selectedShopKey;
+    if (key == null) return null;
+    for (final shop in _shops) {
+      if (shop.shopKey == key) return shop;
+    }
+    return null;
+  }
+
+  bool get _selectedShopIsOpen => _selectedShop?.isOpen ?? true;
 
   @override
   void initState() {
@@ -170,7 +183,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                   ),
                   // Food storefronts are a single flat list; only a shop with
                   // several aisles needs a second row of filters.
-                  if (_subCategories.length > 1) ...[
+                  if (_selectedShopIsOpen && _subCategories.length > 1) ...[
                     const SizedBox(height: 12),
                     _SubCategoryFilter(
                       categories: _subCategories,
@@ -180,9 +193,9 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                     ),
                   ],
                   const SizedBox(height: 18),
-                  const _OpenStatusBand(),
-                  const SizedBox(height: 22),
-                  if (_visibleItems.isEmpty)
+                  if (!_selectedShopIsOpen)
+                    _ClosedShopCard(shopName: _selectedShop?.name ?? 'Shop')
+                  else if (_visibleItems.isEmpty)
                     const CanteenSurface(
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 28),
@@ -276,6 +289,11 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
             onPressed: widget.onWorkMode,
             icon: const Icon(Icons.storefront_outlined),
           ),
+        IconButton(
+          tooltip: 'My orders',
+          onPressed: widget.onOpenOrders,
+          icon: const Icon(Icons.receipt_long_outlined),
+        ),
         IconButton(
           tooltip: _isSearching ? 'Close search' : 'Search menu',
           onPressed: () => setState(() {
@@ -420,47 +438,46 @@ class _SubCategoryFilter extends StatelessWidget {
   }
 }
 
-class _OpenStatusBand extends StatelessWidget {
-  const _OpenStatusBand();
+class _ClosedShopCard extends StatelessWidget {
+  const _ClosedShopCard({required this.shopName});
+
+  final String shopName;
 
   @override
   Widget build(BuildContext context) {
     return CanteenSurface(
-      color: AppColors.ink,
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.amber,
-              borderRadius: BorderRadius.circular(8),
+      color: const Color(0xFFFFF3EE),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        child: Column(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFDDD0),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.storefront_outlined,
+                color: Color(0xFFB64226),
+              ),
             ),
-            child: const Icon(Icons.bolt, color: AppColors.ink),
-          ),
-          const SizedBox(width: 13),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Shops are open',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 3),
-                Text(
-                  'Order now · Counter closes at 8:30 PM',
-                  style: TextStyle(color: Color(0xFFCBD2CE), fontSize: 12),
-                ),
-              ],
+            const SizedBox(height: 13),
+            Text(
+              '$shopName is closed',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
-          ),
-          Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.7)),
-        ],
+            const SizedBox(height: 5),
+            const Text(
+              'The menu will appear here when the counter opens.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.muted),
+            ),
+          ],
+        ),
       ),
     );
   }

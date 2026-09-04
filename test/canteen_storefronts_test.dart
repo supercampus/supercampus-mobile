@@ -1,18 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supercampus_mobile/src/features/canteen/data/canteen_models.dart';
 import 'package:supercampus_mobile/src/features/canteen/data/mock_canteen_repository.dart';
 import 'package:supercampus_mobile/src/features/canteen/presentation/student_canteen_home.dart';
 
 /// Drives the real menu screen against the seeded menu, so these assertions
 /// break when a storefront stops filtering rather than when a label is reworded.
-Future<void> _pumpMenu(WidgetTester tester) async {
+Future<void> _pumpMenu(
+  WidgetTester tester, {
+  bool closed = false,
+  VoidCallback? onOpenOrders,
+}) async {
   final repository = MockCanteenRepository(
     studentName: 'Test Student',
     email: 'student@example.com',
   );
   // The mock repository sleeps to imitate a round trip, and `testWidgets` runs
   // on a frozen clock, so the load has to happen on the real one.
-  final store = (await tester.runAsync(repository.loadStore))!;
+  var store = (await tester.runAsync(repository.loadStore))!;
+  if (closed) {
+    store = store.copyWith(
+      shops: [
+        for (final shop in store.shops)
+          CanteenShop(
+            id: shop.id,
+            shopKey: shop.shopKey,
+            name: shop.name,
+            category: shop.category,
+            description: shop.description,
+            isActive: shop.isActive,
+            isOpen: false,
+          ),
+      ],
+    );
+  }
   final cart = <String, int>{};
 
   await tester.pumpWidget(
@@ -26,6 +47,7 @@ Future<void> _pumpMenu(WidgetTester tester) async {
           onOpenCart: () {},
           onOpenWallet: () {},
           onOpenProfile: () {},
+          onOpenOrders: onOpenOrders ?? () {},
           onExitModule: () {},
         ),
       ),
@@ -109,8 +131,6 @@ void main() {
 
     await _pumpMenu(tester);
 
-    // Scoped to the instant badge's colour: the "Canteen is open" band uses the
-    // same glyph, so a bare icon finder would count it too.
     final instantBadge = find.byWidgetPredicate(
       (widget) =>
           widget is Icon &&
@@ -120,5 +140,30 @@ void main() {
 
     // Classic seeds three instant items; Kuska is the one that is not.
     expect(instantBadge, findsNWidgets(3));
+  });
+
+  testWidgets('a closed shop hides its menu and blocks item controls', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await _pumpMenu(tester, closed: true);
+
+    expect(find.textContaining('is closed'), findsOneWidget);
+    expect(find.text('3 Parotta with Veg Kurma'), findsNothing);
+    expect(find.text('Shops are open'), findsNothing);
+  });
+
+  testWidgets('student can open My orders directly from the shop header', (
+    tester,
+  ) async {
+    var opened = false;
+    await _pumpMenu(tester, onOpenOrders: () => opened = true);
+
+    await tester.tap(find.byTooltip('My orders'));
+    expect(opened, isTrue);
   });
 }

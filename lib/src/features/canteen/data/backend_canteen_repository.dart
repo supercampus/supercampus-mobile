@@ -463,6 +463,7 @@ class BackendCanteenRepository implements CanteenRepository {
       category: _text(shop['category'], fallback: 'shop'),
       description: _text(shop['description']),
       isActive: shop['isActive'] != false && shop['active'] != false,
+      isOpen: shop['shopOpen'] != false,
     );
   }
 

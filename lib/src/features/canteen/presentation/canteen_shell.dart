@@ -415,6 +415,7 @@ class _CanteenShellState extends State<CanteenShell> {
         onOpenCart: () => _openCart(context),
         onOpenWallet: () => _openWallet(context),
         onOpenProfile: () => _openProfile(context),
+        onOpenOrders: () => setState(() => _selectedIndex = 1),
         onExitModule: widget.onExitModule,
         onWorkMode: _canUseWorkMode
             ? () => _updateOwnerMode(CanteenStaffMode.work)
