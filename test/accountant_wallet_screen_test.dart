@@ -32,6 +32,10 @@ void main() {
 
     expect(find.text('Abinaya S'), findsOneWidget);
     expect(find.text('120'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('wallet-avatar-student-1')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const ValueKey('credit-student-1')));
     await tester.pumpAndSettle();
