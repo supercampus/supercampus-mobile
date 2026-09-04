@@ -1,0 +1,4 @@
+SuperCampus attendance final-history release
+Built: 2026-09-04
+HOD submissions remain visible as department history after being sent.
+Principal attendance is a permanent read-only institution record with roster exports.
