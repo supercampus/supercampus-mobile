@@ -1,0 +1,5 @@
+SuperCampus web release: simplified admin portal
+Removed sections: Desk, Access, Emergency
+Remaining sections: Students, Approvals
+Flutter source: 46a63bb
+
