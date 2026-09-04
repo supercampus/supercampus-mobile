@@ -105,6 +105,7 @@ class CanteenShop {
     required this.category,
     this.description = '',
     this.isActive = true,
+    this.isOpen = true,
   });
 
   final String id;
@@ -113,6 +114,7 @@ class CanteenShop {
   final String category;
   final String description;
   final bool isActive;
+  final bool isOpen;
 }
 
 class CartLine {
