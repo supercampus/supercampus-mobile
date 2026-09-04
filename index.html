@@ -41,6 +41,8 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
 </head>
 <body>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="razorpay_checkout.js"></script>
   <script>
     // Dokploy serves immutable Flutter releases, so an older Flutter service
     // worker must never keep a student or staff member on a superseded UI.
@@ -59,14 +61,14 @@
       // Safari can keep serving the current document through the worker that
       // was already controlling it. Reload once after retiring that worker;
       // sessionStorage prevents a loop and naturally resets in a new session.
-      if (controlledByOldWorker && !sessionStorage.getItem('sc-clean-v17')) {
-        sessionStorage.setItem('sc-clean-v17', '1');
+      if (controlledByOldWorker && !sessionStorage.getItem('sc-clean-v18')) {
+        sessionStorage.setItem('sc-clean-v18', '1');
         location.reload();
         return;
       }
 
       const bootstrap = document.createElement('script');
-      bootstrap.src = `flutter_bootstrap.js?v=20260904-17-${Date.now()}`;
+      bootstrap.src = `flutter_bootstrap.js?v=20260904-18-${Date.now()}`;
       bootstrap.async = true;
       document.body.appendChild(bootstrap);
     })();
