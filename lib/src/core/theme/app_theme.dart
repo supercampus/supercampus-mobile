@@ -15,7 +15,9 @@ abstract final class AppColors {
   static const success = Color(0xFF2E7D52);
   static const ink = Color(0xFF1C1C1E);
   static const muted = Color(0xFF6B7280);
-  static const canvas = Color(0xFFF8F7FF);
+
+  /// Near-white lavender blush used behind light-mode content.
+  static const canvas = Color(0xFFFCF8FF);
   static const border = Color(0xFFE3E0FF);
   static const gateBlue = brandBlue;
   static const gateMagenta = brandMagenta;
