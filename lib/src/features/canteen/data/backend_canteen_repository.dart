@@ -72,6 +72,10 @@ class BackendCanteenRepository implements CanteenRepository {
           capabilities['deleteMenu'] == true,
       staffState: _staffState(_map(data['staffState'])),
       analytics: _analytics(_map(data['analytics'])),
+      laundryPricePerKg: _number(data['laundryPricePerKg']),
+      laundryCharges: _list(
+        data['laundryCharges'],
+      ).map((value) => _laundryCharge(_map(value))).toList(growable: false),
     );
   }
 
@@ -343,6 +347,98 @@ class BackendCanteenRepository implements CanteenRepository {
     return url;
   }
 
+  @override
+  Future<double> updateLaundryPrice(double pricePerKg) async {
+    final response = await _authorizedRequest(
+      (headers) => _client.put(
+        _uri('/api/v1/operations/canteen/laundry/settings'),
+        headers: headers,
+        body: jsonEncode({'pricePerKg': pricePerKg}),
+      ),
+      json: true,
+    );
+    return _number(_data(response)['pricePerKg']);
+  }
+
+  @override
+  Future<LaundryCharge> createLaundryCharge({
+    required LaundryServiceType serviceType,
+    required String name,
+    required String description,
+    required double quantity,
+    double? price,
+  }) async {
+    final response = await _authorizedRequest(
+      (headers) => _client.post(
+        _uri('/api/v1/operations/canteen/laundry/charges'),
+        headers: headers,
+        body: jsonEncode({
+          'serviceType': serviceType.name,
+          'name': name,
+          'description': description,
+          'quantity': quantity,
+          if (price != null) 'price': price,
+        }),
+      ),
+      json: true,
+    );
+    return _laundryCharge(_data(response));
+  }
+
+  @override
+  Future<LaundryCharge> claimLaundryCharge(String qrPayload) async {
+    final response = await _authorizedRequest(
+      (headers) => _client.post(
+        _uri('/api/v1/operations/canteen/laundry/charges/claim'),
+        headers: headers,
+        body: jsonEncode({'qrPayload': qrPayload}),
+      ),
+      json: true,
+    );
+    return _laundryCharge(_data(response));
+  }
+
+  @override
+  Future<LaundryPaymentResult> payLaundryCharge(String chargeId) async {
+    final response = await _authorizedRequest(
+      (headers) => _client.post(
+        _uri('/api/v1/operations/canteen/laundry/charges/$chargeId/pay'),
+        headers: headers,
+      ),
+    );
+    final data = _data(response);
+    return LaundryPaymentResult(
+      balance: _number(data['balance']),
+      charge: _laundryCharge(_map(data['charge'])),
+      transaction: _transaction(_map(data['transaction'])),
+    );
+  }
+
+  LaundryCharge _laundryCharge(Map<String, dynamic> value) => LaundryCharge(
+    id: _text(value['id']),
+    serviceType: _text(value['serviceType']) == 'ironing'
+        ? LaundryServiceType.ironing
+        : LaundryServiceType.wash,
+    name: _text(value['name'], fallback: 'Laundry service'),
+    description: _text(value['description']),
+    quantity: _number(value['quantity']),
+    unitLabel: _text(value['unitLabel'], fallback: 'kg'),
+    unitPrice: _number(value['unitPrice']),
+    total: _number(value['total']),
+    status: switch (_text(value['status'])) {
+      'paid' => LaundryChargeStatus.paid,
+      'cancelled' => LaundryChargeStatus.cancelled,
+      'claimed' => LaundryChargeStatus.claimed,
+      _ => LaundryChargeStatus.pending,
+    },
+    createdAt: _date(value['createdAt']),
+    qrPayload: _text(value['qrPayload']).isEmpty
+        ? null
+        : _text(value['qrPayload']),
+    claimedAt: _nullableDate(value['claimedAt']),
+    paidAt: _nullableDate(value['paidAt']),
+  );
+
   CanteenMenuItem _menuItem(dynamic value) {
     final item = _map(value);
     final imageUrl = _menuImageUrl(item);
@@ -554,3 +650,5 @@ int _integer(dynamic value, int fallback) => value is num
     : int.tryParse(value?.toString() ?? '') ?? fallback;
 DateTime _date(dynamic value) =>
     DateTime.tryParse(value?.toString() ?? '')?.toLocal() ?? DateTime.now();
+DateTime? _nullableDate(dynamic value) =>
+    DateTime.tryParse(value?.toString() ?? '')?.toLocal();

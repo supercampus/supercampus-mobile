@@ -11,6 +11,7 @@ import '../data/canteen_repository.dart';
 import '../data/mock_canteen_repository.dart';
 import 'canteen_cart_screen.dart';
 import 'canteen_captain_home.dart';
+import 'laundry_operator_home.dart';
 import 'canteen_owner_home.dart';
 import 'canteen_orders_screen.dart';
 import 'canteen_scanner_screen.dart';
@@ -63,6 +64,11 @@ class _CanteenShellState extends State<CanteenShell> {
     }.map((role) => role.trim().toLowerCase());
     return roles.contains('stationery_operator');
   }
+
+  bool get _isLaundryOperator =>
+      widget.session.email.trim().toLowerCase() == 'laundry@mec.local' ||
+      (_store?.canManage == true &&
+          _store!.assignedShopKeys.contains('mec-laundry'));
 
   @override
   void initState() {
@@ -155,6 +161,45 @@ class _CanteenShellState extends State<CanteenShell> {
   Future<void> _deleteMenuItem(String itemId) async {
     await _repository.deleteMenuItem(itemId);
     await _loadStore(silent: true);
+  }
+
+  Future<double> _updateLaundryPrice(double price) async {
+    final saved = await _repository.updateLaundryPrice(price);
+    await _loadStore(silent: true);
+    return saved;
+  }
+
+  Future<LaundryCharge> _createLaundryCharge({
+    required LaundryServiceType serviceType,
+    required String name,
+    required String description,
+    required double quantity,
+    double? price,
+  }) async {
+    final charge = await _repository.createLaundryCharge(
+      serviceType: serviceType,
+      name: name,
+      description: description,
+      quantity: quantity,
+      price: price,
+    );
+    await _loadStore(silent: true);
+    return charge;
+  }
+
+  Future<void> _payLaundryCharge(LaundryCharge charge) async {
+    final result = await _repository.payLaundryCharge(charge.id);
+    if (!mounted || _store == null) return;
+    setState(() {
+      _store = _store!.copyWith(
+        walletBalance: result.balance,
+        laundryCharges: [
+          for (final value in _store!.laundryCharges)
+            if (value.id == result.charge.id) result.charge else value,
+        ],
+        walletTransactions: [result.transaction, ..._store!.walletTransactions],
+      );
+    });
   }
 
   void _addItem(CanteenMenuItem item) {
@@ -371,6 +416,16 @@ class _CanteenShellState extends State<CanteenShell> {
       );
     }
 
+    if (_isLaundryOperator) {
+      return LaundryOperatorHome(
+        store: store,
+        onExitModule: widget.onExitModule,
+        onRefresh: () => _loadStore(silent: true),
+        onUpdatePrice: _updateLaundryPrice,
+        onCreateCharge: _createLaundryCharge,
+      );
+    }
+
     if (store.canManage && !store.canManageMenu) {
       return CanteenCaptainHome(
         store: store,
@@ -417,6 +472,10 @@ class _CanteenShellState extends State<CanteenShell> {
         onOpenProfile: () => _openProfile(context),
         onOpenOrders: () => setState(() => _selectedIndex = 1),
         onExitModule: widget.onExitModule,
+        initialShopKey: widget.initialAction == 'laundry'
+            ? 'mec-laundry'
+            : null,
+        onPayLaundryCharge: _payLaundryCharge,
         onWorkMode: _canUseWorkMode
             ? () => _updateOwnerMode(CanteenStaffMode.work)
             : null,

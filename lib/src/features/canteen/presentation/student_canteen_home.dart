@@ -21,6 +21,8 @@ class StudentCanteenHome extends StatefulWidget {
     required this.onOpenProfile,
     required this.onOpenOrders,
     required this.onExitModule,
+    this.initialShopKey,
+    required this.onPayLaundryCharge,
     this.onWorkMode,
   });
 
@@ -33,6 +35,8 @@ class StudentCanteenHome extends StatefulWidget {
   final VoidCallback onOpenProfile;
   final VoidCallback onOpenOrders;
   final VoidCallback onExitModule;
+  final String? initialShopKey;
+  final Future<void> Function(LaundryCharge charge) onPayLaundryCharge;
   final VoidCallback? onWorkMode;
 
   @override
@@ -85,16 +89,26 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
   }
 
   bool get _selectedShopIsOpen => _selectedShop?.isOpen ?? true;
+  bool get _selectedShopIsLaundry =>
+      _selectedShop?.category.toLowerCase() == 'laundry' ||
+      _selectedShopKey == 'mec-laundry';
 
   @override
   void initState() {
     super.initState();
-    _shopKey = _shops.isEmpty ? null : _shops.first.shopKey;
+    _shopKey = _shops.any((shop) => shop.shopKey == widget.initialShopKey)
+        ? widget.initialShopKey
+        : (_shops.isEmpty ? null : _shops.first.shopKey);
   }
 
   @override
   void didUpdateWidget(covariant StudentCanteenHome oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.initialShopKey != oldWidget.initialShopKey &&
+        _shops.any((shop) => shop.shopKey == widget.initialShopKey)) {
+      _shopKey = widget.initialShopKey;
+      _subCategory = null;
+    }
     if (_shops.isNotEmpty && !_shops.any((shop) => shop.shopKey == _shopKey)) {
       _shopKey = _shops.first.shopKey;
       _subCategory = null;
@@ -183,7 +197,9 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                   ),
                   // Food storefronts are a single flat list; only a shop with
                   // several aisles needs a second row of filters.
-                  if (_selectedShopIsOpen && _subCategories.length > 1) ...[
+                  if (_selectedShopIsOpen &&
+                      !_selectedShopIsLaundry &&
+                      _subCategories.length > 1) ...[
                     const SizedBox(height: 12),
                     _SubCategoryFilter(
                       categories: _subCategories,
@@ -195,6 +211,12 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                   const SizedBox(height: 18),
                   if (!_selectedShopIsOpen)
                     _ClosedShopCard(shopName: _selectedShop?.name ?? 'Shop')
+                  else if (_selectedShopIsLaundry)
+                    _LaundryStudentPanel(
+                      charges: widget.store.laundryCharges,
+                      walletBalance: widget.store.walletBalance,
+                      onPay: widget.onPayLaundryCharge,
+                    )
                   else if (_visibleItems.isEmpty)
                     const CanteenSurface(
                       child: Padding(
@@ -335,6 +357,8 @@ class _StoreSelector extends StatelessWidget {
           final category = shop.category.toLowerCase();
           final icon = category.contains('station')
               ? Icons.storefront_outlined
+              : category.contains('laundry')
+              ? Icons.local_laundry_service_outlined
               : Icons.restaurant;
           return Material(
             color: isSelected ? AppColors.primary : Colors.white,
@@ -434,6 +458,213 @@ class _SubCategoryFilter extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _LaundryStudentPanel extends StatelessWidget {
+  const _LaundryStudentPanel({
+    required this.charges,
+    required this.walletBalance,
+    required this.onPay,
+  });
+
+  final List<LaundryCharge> charges;
+  final double walletBalance;
+  final Future<void> Function(LaundryCharge charge) onPay;
+
+  Future<void> _confirmPayment(
+    BuildContext context,
+    LaundryCharge charge,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pay Campus Laundry?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(charge.name),
+            const SizedBox(height: 6),
+            Text(
+              '${charge.quantity.toStringAsFixed(charge.unitLabel == 'kg' ? 1 : 0)} ${charge.unitLabel}',
+            ),
+            const SizedBox(height: 12),
+            Text(
+              formatCurrency(charge.total),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Wallet balance: ${formatCurrency(walletBalance)}',
+              style: const TextStyle(color: AppColors.muted),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: walletBalance >= charge.total
+                ? () => Navigator.pop(context, true)
+                : null,
+            child: const Text('Pay from wallet'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await onPay(charge);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Laundry payment completed.')),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$error')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (charges.isEmpty) {
+      return const CanteenSurface(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 30, horizontal: 18),
+          child: Column(
+            children: [
+              Icon(
+                Icons.qr_code_scanner_rounded,
+                size: 44,
+                color: AppColors.primary,
+              ),
+              SizedBox(height: 12),
+              Text(
+                'Scan your laundry QR',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 6),
+              Text(
+                'The laundry counter will create a QR for your clothes. Scan it using “Scan here” and your payment card will appear here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.muted),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return Column(
+      children: [
+        for (final charge in charges)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: CanteenSurface(
+              color: charge.status == LaundryChargeStatus.paid
+                  ? const Color(0xFFF0FAF3)
+                  : Colors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFE9FF),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          charge.serviceType == LaundryServiceType.wash
+                              ? Icons.local_laundry_service_outlined
+                              : Icons.iron_outlined,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              charge.name,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            Text(
+                              '${charge.quantity.toStringAsFixed(charge.unitLabel == 'kg' ? 1 : 0)} ${charge.unitLabel} · ${charge.serviceType == LaundryServiceType.wash ? 'Washing' : 'Ironing'}',
+                              style: const TextStyle(color: AppColors.muted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        formatCurrency(charge.total),
+                        style: const TextStyle(
+                          color: Color(0xFF2563EB),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (charge.description.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(charge.description),
+                  ],
+                  const SizedBox(height: 14),
+                  if (charge.status == LaundryChargeStatus.claimed)
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: walletBalance >= charge.total
+                            ? () => _confirmPayment(context, charge)
+                            : null,
+                        icon: const Icon(Icons.account_balance_wallet_outlined),
+                        label: Text(
+                          walletBalance >= charge.total
+                              ? 'Pay from wallet'
+                              : 'Insufficient wallet balance',
+                        ),
+                      ),
+                    )
+                  else
+                    Row(
+                      children: [
+                        Icon(
+                          charge.status == LaundryChargeStatus.paid
+                              ? Icons.check_circle
+                              : Icons.info_outline,
+                          size: 18,
+                          color: charge.status == LaundryChargeStatus.paid
+                              ? const Color(0xFF16803C)
+                              : AppColors.muted,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          charge.status == LaundryChargeStatus.paid
+                              ? 'Paid from wallet'
+                              : charge.status.name,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
