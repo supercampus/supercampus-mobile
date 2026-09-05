@@ -1,0 +1,2 @@
+SuperCampus web release: compact academics navigation card spacing
+Flutter source: afb692e
