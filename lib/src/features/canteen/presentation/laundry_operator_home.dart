@@ -176,40 +176,31 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
   Widget build(BuildContext context) {
     final washTotal =
         (double.tryParse(_quantity.text) ?? 0) * widget.store.laundryPricePerKg;
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 130),
-        children: [
-          Row(
-            children: [
-              ModuleBackButton(onPressed: widget.onExitModule),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Campus Laundry',
-                      style: TextStyle(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    Text(
-                      'Create student payment QR',
-                      style: TextStyle(color: AppColors.muted),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: widget.onRefresh,
-                icon: const Icon(Icons.refresh),
-              ),
-              ModuleHomeButton(onPressed: widget.onExitModule),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        leading: ModuleBackButton(onPressed: widget.onExitModule),
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Campus Laundry'),
+            Text(
+              'Create student payment QR',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh laundry data',
+            onPressed: widget.onRefresh,
+            icon: const Icon(Icons.refresh),
           ),
-          const SizedBox(height: 18),
+          ModuleHomeButton(onPressed: widget.onExitModule),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 130),
+        children: [
           CanteenSurface(
             color: const Color(0xFFEFE9FF),
             child: Row(
@@ -248,10 +239,10 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           const Text(
             'New laundry charge',
-            style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
           SegmentedButton<LaundryServiceType>(
@@ -356,10 +347,10 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
               ),
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 18),
           const Text(
             'Recent charges',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 10),
           if (widget.store.laundryCharges.isEmpty)
