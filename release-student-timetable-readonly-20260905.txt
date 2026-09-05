@@ -1,0 +1,2 @@
+SuperCampus web release: separate read-only student timetable module
+Flutter source: 3949cb50850ce4f985733a0d5d90f0343e29f5cb
