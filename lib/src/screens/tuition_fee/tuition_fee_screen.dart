@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/transaction_result_overlay.dart';
 import '../../core/widgets/module_navigation_buttons.dart';
 import '../../features/authentication/data/auth_repository.dart';
 import 'razorpay_checkout.dart';
@@ -695,27 +696,48 @@ class _FeeAccountState extends State<_FeeAccount> {
         signature: checkout.signature,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Payment verified successfully.'),
-          backgroundColor: Color(0xFF167447),
-        ),
+      await showTransactionResult(
+        context,
+        result: TransactionResult.success,
+        title: 'Fee payment successful',
+        message: 'Your payment was verified and your receipt is now available.',
+        amount: _money(outstanding),
+        reference: 'Payment ${checkout.paymentId}',
       );
+      if (!mounted) return;
       widget.onPaymentVerified();
     } on RazorpayCheckoutException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      if (error.cancelled) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Payment cancelled.')));
+      } else {
+        await showTransactionResult(
+          context,
+          result: TransactionResult.failure,
+          title: 'Payment unsuccessful',
+          message: error.message,
+          amount: _money(outstanding),
+        );
+      }
     } on TuitionFeeException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      await showTransactionResult(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+        result: TransactionResult.failure,
+        title: 'Payment unsuccessful',
+        message: error.message,
+        amount: _money(outstanding),
+      );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Payment could not be completed.')),
+      await showTransactionResult(
+        context,
+        result: TransactionResult.failure,
+        title: 'Payment unsuccessful',
+        message: 'Payment could not be completed. Please try again.',
+        amount: _money(outstanding),
       );
     } finally {
       if (mounted) setState(() => _paying = false);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/transaction_result_overlay.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
@@ -67,8 +68,7 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
       ),
       builder: (_) => TransactionPinSheet(
         amount: _total,
-        summary:
-            '${_lines.length} item${_lines.length == 1 ? '' : 's'}',
+        summary: '${_lines.length} item${_lines.length == 1 ? '' : 's'}',
       ),
     );
     if (approved != true || !mounted) return;
@@ -79,6 +79,15 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
     });
     try {
       final result = await widget.onPlaceOrder();
+      if (!mounted) return;
+      await showTransactionResult(
+        context,
+        result: TransactionResult.success,
+        title: 'Order placed',
+        message: 'Your payment is complete and the counter has your order.',
+        amount: formatCurrency(_total),
+        reference: 'Order #${result.order.orderNumber}',
+      );
       if (!mounted) return;
       await showModalBottomSheet<void>(
         context: context,
@@ -93,10 +102,19 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
       if (mounted) Navigator.of(context).pop();
     } catch (error) {
       if (mounted) {
+        final message = error is Exception
+            ? error.toString().replaceFirst('Exception: ', '')
+            : 'Order could not be placed. Try again.';
+        await showTransactionResult(
+          context,
+          result: TransactionResult.failure,
+          title: 'Payment unsuccessful',
+          message: message,
+          amount: formatCurrency(_total),
+        );
+        if (!mounted) return;
         setState(() {
-          _error = error is Exception
-              ? error.toString().replaceFirst('Exception: ', '')
-              : 'Order could not be placed. Try again.';
+          _error = message;
         });
       }
     } finally {

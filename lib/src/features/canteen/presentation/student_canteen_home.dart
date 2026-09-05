@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/transaction_result_overlay.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/campus_nav_bar.dart';
 import '../data/canteen_models.dart';
@@ -520,15 +521,24 @@ class _LaundryStudentPanel extends StatelessWidget {
     try {
       await onPay(charge);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Laundry payment completed.')),
+        await showTransactionResult(
+          context,
+          result: TransactionResult.success,
+          title: 'Laundry payment complete',
+          message: 'The laundry counter has received your payment.',
+          amount: formatCurrency(charge.total),
+          reference: 'Laundry ${charge.id}',
         );
       }
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
+        await showTransactionResult(
           context,
-        ).showSnackBar(SnackBar(content: Text('$error')));
+          result: TransactionResult.failure,
+          title: 'Payment unsuccessful',
+          message: '$error'.replaceFirst('Exception: ', ''),
+          amount: formatCurrency(charge.total),
+        );
       }
     }
   }

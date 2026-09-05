@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/transaction_result_overlay.dart';
 import '../data/canteen_models.dart';
 
 /// Which history the wallet is showing.
@@ -49,12 +50,16 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
           _TopUpSheet(onTopUp: onTopUp, settings: widget.topUpSettings),
     );
     if (result == null || !context.mounted) return;
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${formatCurrency(result.transaction.amount)} added.'),
-      ),
+    await showTransactionResult(
+      context,
+      result: TransactionResult.success,
+      title: 'Wallet recharged',
+      message: 'Your updated balance is ready to use across campus services.',
+      amount: formatCurrency(result.transaction.amount),
+      reference: 'Transaction ${result.transaction.id}',
     );
+    if (!context.mounted) return;
+    Navigator.of(context).pop();
   }
 
   @override
@@ -450,7 +455,17 @@ class _TopUpSheetState extends State<_TopUpSheet> {
       final result = await widget.onTopUp(amount);
       if (mounted) Navigator.of(context).pop(result);
     } catch (error) {
-      if (mounted) setState(() => _error = error.toString());
+      if (mounted) {
+        final message = error.toString().replaceFirst('Exception: ', '');
+        await showTransactionResult(
+          context,
+          result: TransactionResult.failure,
+          title: 'Recharge unsuccessful',
+          message: message,
+          amount: formatCurrency(amount),
+        );
+        if (mounted) setState(() => _error = message);
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
