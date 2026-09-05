@@ -58,6 +58,10 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
       _lines.where((line) => line.item.store == shop).toList(growable: false);
 
   Future<void> _placeOrder() async {
+    // The parent clears the cart as soon as the order succeeds. Preserve the
+    // amount the student approved so the result screen never recomputes an
+    // already-cleared cart as zero.
+    final transactionTotal = _total;
     final approved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -67,7 +71,7 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
       ),
       builder: (_) => TransactionPinSheet(
-        amount: _total,
+        amount: transactionTotal,
         summary: '${_lines.length} item${_lines.length == 1 ? '' : 's'}',
       ),
     );
@@ -85,7 +89,7 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
         result: TransactionResult.success,
         title: 'Order placed',
         message: 'Your payment is complete and the counter has your order.',
-        amount: formatCurrency(_total),
+        amount: formatCurrency(transactionTotal),
         reference: 'Order #${result.order.orderNumber}',
       );
       if (!mounted) return;
@@ -110,7 +114,7 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
           result: TransactionResult.failure,
           title: 'Payment unsuccessful',
           message: message,
-          amount: formatCurrency(_total),
+          amount: formatCurrency(transactionTotal),
         );
         if (!mounted) return;
         setState(() {
