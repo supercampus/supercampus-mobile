@@ -293,6 +293,8 @@ class CanteenStore {
     this.canManageMenu = true,
     this.staffState = const CanteenStaffState(),
     this.analytics = const CanteenAnalytics(),
+    this.laundryPricePerKg = 0,
+    this.laundryCharges = const [],
   });
 
   final CanteenUser user;
@@ -308,6 +310,8 @@ class CanteenStore {
   final bool canManageMenu;
   final CanteenStaffState staffState;
   final CanteenAnalytics analytics;
+  final double laundryPricePerKg;
+  final List<LaundryCharge> laundryCharges;
 
   CanteenStore copyWith({
     double? walletBalance,
@@ -318,6 +322,8 @@ class CanteenStore {
     List<String>? assignedShopKeys,
     CanteenStaffState? staffState,
     CanteenAnalytics? analytics,
+    double? laundryPricePerKg,
+    List<LaundryCharge>? laundryCharges,
   }) {
     return CanteenStore(
       user: user,
@@ -331,8 +337,75 @@ class CanteenStore {
       canManageMenu: canManageMenu,
       staffState: staffState ?? this.staffState,
       analytics: analytics ?? this.analytics,
+      laundryPricePerKg: laundryPricePerKg ?? this.laundryPricePerKg,
+      laundryCharges: laundryCharges ?? this.laundryCharges,
     );
   }
+}
+
+enum LaundryServiceType { wash, ironing }
+
+enum LaundryChargeStatus { pending, claimed, paid, cancelled }
+
+class LaundryCharge {
+  const LaundryCharge({
+    required this.id,
+    required this.serviceType,
+    required this.name,
+    required this.description,
+    required this.quantity,
+    required this.unitLabel,
+    required this.unitPrice,
+    required this.total,
+    required this.status,
+    required this.createdAt,
+    this.qrPayload,
+    this.claimedAt,
+    this.paidAt,
+  });
+
+  final String id;
+  final LaundryServiceType serviceType;
+  final String name;
+  final String description;
+  final double quantity;
+  final String unitLabel;
+  final double unitPrice;
+  final double total;
+  final LaundryChargeStatus status;
+  final DateTime createdAt;
+  final String? qrPayload;
+  final DateTime? claimedAt;
+  final DateTime? paidAt;
+
+  LaundryCharge copyWith({LaundryChargeStatus? status, DateTime? paidAt}) =>
+      LaundryCharge(
+        id: id,
+        serviceType: serviceType,
+        name: name,
+        description: description,
+        quantity: quantity,
+        unitLabel: unitLabel,
+        unitPrice: unitPrice,
+        total: total,
+        status: status ?? this.status,
+        createdAt: createdAt,
+        qrPayload: qrPayload,
+        claimedAt: claimedAt,
+        paidAt: paidAt ?? this.paidAt,
+      );
+}
+
+class LaundryPaymentResult {
+  const LaundryPaymentResult({
+    required this.balance,
+    required this.charge,
+    required this.transaction,
+  });
+
+  final double balance;
+  final LaundryCharge charge;
+  final WalletTransaction transaction;
 }
 
 enum CanteenStaffMode { eat, work }

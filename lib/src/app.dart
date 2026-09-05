@@ -702,9 +702,39 @@ class _SupercampusAppState extends State<SupercampusApp>
     final code = await openScanQr(context);
     if (code == null || !mounted) return;
 
-    // The code is read but not yet acted on: a canteen order QR and a gate pass
-    // go to different endpoints, and neither repository can post one yet. Until
-    // that exists, say plainly what was read rather than swallowing it.
+    if (code.startsWith('supercampus://laundry/')) {
+      try {
+        final repository =
+            widget.canteenRepository ??
+            BackendCanteenRepository(
+              baseUrl: _resolvedBackendBaseUrl,
+              accessTokenProvider: _provideAccessToken,
+            );
+        await repository.claimLaundryCharge(code);
+        if (!mounted) return;
+        messenger?.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Laundry charge added. Review and pay in Campus Laundry.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        setState(() {
+          _openModuleId = ModuleCatalog.canteen;
+          _openModuleAction = 'laundry';
+        });
+      } catch (error) {
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text('$error'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
     messenger?.showSnackBar(
       SnackBar(
         content: Text('Scanned: $code'),

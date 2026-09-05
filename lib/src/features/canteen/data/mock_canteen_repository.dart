@@ -14,6 +14,8 @@ class MockCanteenRepository implements CanteenRepository {
   late final List<CanteenMenuItem> _menu = _seedMenu();
   late final List<CanteenOrder> _orders = _seedOrders();
   late final List<WalletTransaction> _transactions = _seedTransactions();
+  final List<LaundryCharge> _laundryCharges = [];
+  double _laundryPrice = 50;
 
   @override
   Future<CanteenStore> loadStore() async {
@@ -45,11 +47,19 @@ class MockCanteenRepository implements CanteenRepository {
           name: 'Stationery Store',
           category: 'stationery',
         ),
+        CanteenShop(
+          id: 'shop-laundry',
+          shopKey: 'mec-laundry',
+          name: 'Campus Laundry',
+          category: 'laundry',
+        ),
       ],
       assignedShopKeys: const ['classic', 'bites', 'stationery'],
       menu: List.unmodifiable(_menu),
       orders: List.unmodifiable(_orders),
       walletTransactions: List.unmodifiable(_transactions),
+      laundryPricePerKg: _laundryPrice,
+      laundryCharges: List.unmodifiable(_laundryCharges),
     );
   }
 
@@ -106,6 +116,83 @@ class MockCanteenRepository implements CanteenRepository {
     Uint8List bytes, {
     required String filename,
   }) async => 'data:image/png;base64,${base64Encode(bytes)}';
+
+  @override
+  Future<double> updateLaundryPrice(double pricePerKg) async =>
+      _laundryPrice = pricePerKg;
+
+  @override
+  Future<LaundryCharge> createLaundryCharge({
+    required LaundryServiceType serviceType,
+    required String name,
+    required String description,
+    required double quantity,
+    double? price,
+  }) async {
+    final total = serviceType == LaundryServiceType.wash
+        ? quantity * _laundryPrice
+        : price ?? 0;
+    final charge = LaundryCharge(
+      id: 'laundry-${DateTime.now().microsecondsSinceEpoch}',
+      serviceType: serviceType,
+      name: name,
+      description: description,
+      quantity: quantity,
+      unitLabel: serviceType == LaundryServiceType.wash ? 'kg' : 'clothes',
+      unitPrice: serviceType == LaundryServiceType.wash
+          ? _laundryPrice
+          : total / quantity,
+      total: total,
+      status: LaundryChargeStatus.pending,
+      createdAt: DateTime.now(),
+      qrPayload:
+          'supercampus://laundry/mock-${DateTime.now().microsecondsSinceEpoch}',
+    );
+    _laundryCharges.insert(0, charge);
+    return charge;
+  }
+
+  @override
+  Future<LaundryCharge> claimLaundryCharge(String qrPayload) async {
+    final index = _laundryCharges.indexWhere(
+      (charge) => charge.qrPayload == qrPayload,
+    );
+    if (index < 0) throw const CanteenException('Laundry QR is invalid.');
+    final charge = _laundryCharges[index].copyWith(
+      status: LaundryChargeStatus.claimed,
+    );
+    _laundryCharges[index] = charge;
+    return charge;
+  }
+
+  @override
+  Future<LaundryPaymentResult> payLaundryCharge(String chargeId) async {
+    final index = _laundryCharges.indexWhere((charge) => charge.id == chargeId);
+    if (index < 0) throw const CanteenException('Laundry charge not found.');
+    final charge = _laundryCharges[index];
+    if (_balance < charge.total) {
+      throw const CanteenException('Wallet balance is insufficient.');
+    }
+    _balance -= charge.total;
+    final paid = charge.copyWith(
+      status: LaundryChargeStatus.paid,
+      paidAt: DateTime.now(),
+    );
+    _laundryCharges[index] = paid;
+    final transaction = WalletTransaction(
+      id: 'laundry-txn-${DateTime.now().microsecondsSinceEpoch}',
+      type: WalletTransactionType.debit,
+      amount: charge.total,
+      description: 'Campus Laundry payment',
+      createdAt: DateTime.now(),
+    );
+    _transactions.insert(0, transaction);
+    return LaundryPaymentResult(
+      balance: _balance,
+      charge: paid,
+      transaction: transaction,
+    );
+  }
 
   @override
   Future<WalletTopUpResult> topUpWallet(double amount) async {

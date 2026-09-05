@@ -30,6 +30,20 @@ abstract interface class CanteenRepository {
   Future<void> deleteMenuItem(String itemId);
 
   Future<String> uploadMedia(Uint8List bytes, {required String filename});
+
+  Future<double> updateLaundryPrice(double pricePerKg);
+
+  Future<LaundryCharge> createLaundryCharge({
+    required LaundryServiceType serviceType,
+    required String name,
+    required String description,
+    required double quantity,
+    double? price,
+  });
+
+  Future<LaundryCharge> claimLaundryCharge(String qrPayload);
+
+  Future<LaundryPaymentResult> payLaundryCharge(String chargeId);
 }
 
 class CanteenException implements Exception {
