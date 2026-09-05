@@ -665,6 +665,7 @@ class _ProfileSettingsSheet extends StatelessWidget {
         icon: Icons.logout,
         title: 'Sign out',
         subtitle: 'Sign out of this device and end your session',
+        destructive: true,
         onTap: () {
           Navigator.of(context).pop();
           Navigator.of(context).pop();
@@ -891,6 +892,7 @@ class _LegacyProfileOptionsSheet extends StatelessWidget {
                 icon: Icons.logout,
                 title: 'Sign out',
                 subtitle: 'Sign out of this device and end your session',
+                destructive: true,
                 onTap: () {
                   Navigator.of(context).pop();
                   onSignOut();
@@ -1973,19 +1975,25 @@ class _ProfileAction extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.destructive = false,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool destructive;
 
   @override
   Widget build(BuildContext context) {
+    const danger = Color(0xFFC62828);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(top: destructive ? 6 : 0, bottom: 10),
       child: Material(
-        color: AppColors.moduleSoft.withValues(alpha: 0.62),
+        key: destructive ? const ValueKey('sign-out-action') : null,
+        color: destructive
+            ? danger
+            : AppColors.moduleSoft.withValues(alpha: 0.62),
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
@@ -1994,7 +2002,9 @@ class _ProfileAction extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               border: Border.all(
-                color: AppColors.brandLavender.withValues(alpha: 0.2),
+                color: destructive
+                    ? Colors.white.withValues(alpha: .18)
+                    : AppColors.brandLavender.withValues(alpha: 0.2),
               ),
               borderRadius: BorderRadius.circular(18),
             ),
@@ -2004,7 +2014,10 @@ class _ProfileAction extends StatelessWidget {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    gradient: AppColors.violetGradient,
+                    color: destructive
+                        ? Colors.white.withValues(alpha: .16)
+                        : null,
+                    gradient: destructive ? null : AppColors.violetGradient,
                     borderRadius: BorderRadius.circular(13),
                   ),
                   child: Icon(icon, color: Colors.white, size: 21),
@@ -2016,19 +2029,28 @@ class _ProfileAction extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: destructive ? Colors.white : null,
+                              fontWeight: destructive ? FontWeight.w700 : null,
+                            ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: destructive ? Colors.white70 : null,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: AppColors.muted),
+                Icon(
+                  destructive ? Icons.logout_rounded : Icons.chevron_right,
+                  color: destructive ? Colors.white : AppColors.muted,
+                ),
               ],
             ),
           ),
