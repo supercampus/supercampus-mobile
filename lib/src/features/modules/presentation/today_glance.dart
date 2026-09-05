@@ -68,7 +68,7 @@ DayShape dayShapeFor(EffectivePermissions permissions) {
 /// The heading each shape carries. Direct and specific, because a name that
 /// says what is under it is what makes a screen predictable.
 String glanceTitleFor(DayShape shape) => switch (shape) {
-  DayShape.learner => 'Your day',
+  DayShape.learner => '',
   DayShape.teaching => 'Your classes today',
   DayShape.oversight => 'Needs your attention',
   DayShape.counter => 'At the counter',
@@ -264,7 +264,8 @@ class TodayGlance extends StatelessWidget {
       children: [
         if (shape == DayShape.teaching)
           _WeekdayLabel(weekdayLabelFor((date ?? DateTime.now()).weekday)),
-        _GlanceLabel(glanceTitleFor(shape)),
+        if (glanceTitleFor(shape).isNotEmpty)
+          _GlanceLabel(glanceTitleFor(shape)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: body,

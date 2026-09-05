@@ -93,7 +93,7 @@ class ModuleStack extends StatefulWidget {
 
   /// The frame is a fixed slot — one card plus its glass surround — whatever
   /// the module count. Whoever places it hands it this height.
-  static double heightFor(int moduleCount) => _frameHeight;
+  static double heightFor(int moduleCount) => _frameHeight + _captionHeight;
 
   @override
   State<ModuleStack> createState() => _ModuleStackState();
@@ -151,6 +151,7 @@ const _tileGlyph = 60 * _k;
 /// glass above and below the card matches the one either side of it, and two
 /// cards passing are separated by twice that.
 const _frameHeight = _cardHeight + _framePad * 2;
+const _captionHeight = 27.0;
 
 /// How deep the soft edge runs into the frame, top and bottom. Deep enough to
 /// swallow a card's corner radius, so nothing ever meets the frame at a line.
@@ -207,22 +208,44 @@ class _ModuleStackState extends State<ModuleStack> {
   Widget build(BuildContext context) {
     final count = widget.modules.length;
 
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(child: _frame(count)),
-        if (count > 1)
-          SizedBox(
-            width: _railWidth,
-            height: _frameHeight,
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, _) => _DotRail(
-                modules: widget.modules,
-                position: _page,
-                onSelect: _goTo,
+        Row(
+          children: [
+            Expanded(child: _frame(count)),
+            if (count > 1)
+              SizedBox(
+                width: _railWidth,
+                height: _frameHeight,
+                child: AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, _) => _DotRail(
+                    modules: widget.modules,
+                    position: _page,
+                    onSelect: _goTo,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        SizedBox(
+          height: _captionHeight,
+          child: Center(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: Text(
+                widget.modules[_selected].displayName,
+                key: ValueKey('module-caption-${widget.modules[_selected].id}'),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ),
+        ),
       ],
     );
   }

@@ -149,22 +149,22 @@ void main() {
     });
   });
 
-  group('every shape is titled for what is under it', () {
-    test('and no two personas read the same heading', () {
+  group('each operational shape is titled for what is under it', () {
+    test('while the learner glance stays visually compact', () {
       final titles = {
-        glanceTitleFor(dayShapeFor(student)),
         glanceTitleFor(dayShapeFor(faculty)),
         glanceTitleFor(dayShapeFor(hod)),
         glanceTitleFor(dayShapeFor(shopOwner)),
       };
-      expect(titles.length, 4, reason: 'the headings collapsed together');
+      expect(titles.length, 3, reason: 'the headings collapsed together');
+      expect(glanceTitleFor(dayShapeFor(student)), isEmpty);
     });
 
     testWidgets('a student and a teacher do not read the same screen', (
       tester,
     ) async {
       await pumpGlance(tester, student);
-      expect(find.text('Your day'), findsOneWidget);
+      expect(find.text('Your day'), findsNothing);
       expect(find.text('Your classes today'), findsNothing);
 
       await pumpGlance(tester, faculty);
