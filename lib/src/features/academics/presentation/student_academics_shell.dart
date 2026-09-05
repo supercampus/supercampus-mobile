@@ -188,9 +188,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 KeyedSubtree(key: _attendanceKey, child: _attendance()),
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 24),
+                const SizedBox(height: 10),
                 KeyedSubtree(key: _marksKey, child: _marksResultsLink()),
                 const SizedBox(height: 24),
                 const Divider(),
