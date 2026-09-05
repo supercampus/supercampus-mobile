@@ -3,10 +3,9 @@ import 'module_catalog.dart';
 
 /// The modules whose presentation is decided together.
 ///
-/// A learner does not think of attendance, marks, results and the timetable as
-/// four places — they are four things they look up about their own studies. So
-/// for a learner these fold into one entry, and for anyone with authority over
-/// other people's records they stay four separate modules with four names.
+/// Academic permissions participate in deciding whether this is a learner or
+/// staff presentation. Students keep Timetable as a separate, read-only module
+/// while attendance, marks and results remain folded into Academics.
 const List<String> academicModules = [
   ModuleCatalog.academics,
   ModuleCatalog.attendance,
@@ -14,13 +13,19 @@ const List<String> academicModules = [
   ModuleCatalog.timetable,
 ];
 
+const List<String> _learnerFoldedAcademicModules = [
+  ModuleCatalog.academics,
+  ModuleCatalog.attendance,
+  ModuleCatalog.examination,
+];
+
 /// How the academic modules are shown to one person.
 enum AcademicPresentation {
   /// Nothing academic is granted; no entry at all.
   none,
 
-  /// One merged **Academics** entry, with attendance, marks, results and the
-  /// timetable inside it.
+  /// One merged **Academics** entry for attendance, marks and results, plus a
+  /// separate read-only Timetable entry when that permission is granted.
   learner,
 
   /// Attendance, Mark records, Time Table and Examinations listed separately.
@@ -85,7 +90,7 @@ List<ModuleDescriptor> presentedModules(EffectivePermissions permissions) {
   final presented = <ModuleDescriptor>[];
   var folded = false;
   for (final module in visible) {
-    if (!academicModules.contains(module.id)) {
+    if (!_learnerFoldedAcademicModules.contains(module.id)) {
       presented.add(module);
       continue;
     }
@@ -103,7 +108,9 @@ ModuleDescriptor _learnerEntry(List<ModuleDescriptor> visible) {
   for (final module in visible) {
     if (module.id == ModuleCatalog.academics) return module;
   }
-  return visible.firstWhere((m) => academicModules.contains(m.id));
+  return visible.firstWhere(
+    (m) => _learnerFoldedAcademicModules.contains(m.id),
+  );
 }
 
 /// What a module is called for this viewer, resolved from their permissions.
@@ -122,13 +129,14 @@ String academicModuleLabel(
   AcademicPresentation presentation,
 ) {
   if (presentation != AcademicPresentation.staff &&
-      academicModules.contains(module.id)) {
+      _learnerFoldedAcademicModules.contains(module.id)) {
     return 'Academics';
   }
   return switch (module.id) {
     ModuleCatalog.attendance => 'Attendance',
     ModuleCatalog.examination => 'Examinations',
-    ModuleCatalog.timetable => 'Time Table',
+    ModuleCatalog.timetable =>
+      presentation == AcademicPresentation.learner ? 'Timetable' : 'Time Table',
     _ => module.displayName,
   };
 }
