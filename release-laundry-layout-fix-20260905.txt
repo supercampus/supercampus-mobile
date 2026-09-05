@@ -1,0 +1,2 @@
+SuperCampus web release: corrected compact laundry operator layout
+Flutter source: 6a8f82d
