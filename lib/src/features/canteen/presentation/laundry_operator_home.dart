@@ -349,8 +349,13 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
           ),
           const SizedBox(height: 18),
           const Text(
-            'Recent charges',
+            'Charge history',
             style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 3),
+          const Text(
+            'Saved QR charges and their latest payment status',
+            style: TextStyle(color: AppColors.muted, fontSize: 13),
           ),
           const SizedBox(height: 10),
           if (widget.store.laundryCharges.isEmpty)
@@ -363,7 +368,7 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
               ),
             )
           else
-            for (final charge in widget.store.laundryCharges.take(20))
+            for (final charge in widget.store.laundryCharges.take(50))
               Padding(
                 padding: const EdgeInsets.only(bottom: 9),
                 child: CanteenSurface(
@@ -390,6 +395,14 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
                               '${charge.quantity.toStringAsFixed(charge.unitLabel == 'kg' ? 1 : 0)} ${charge.unitLabel} · ${charge.status.name}',
                               style: const TextStyle(color: AppColors.muted),
                             ),
+                            const SizedBox(height: 3),
+                            Text(
+                              _historyTimestamp(charge.createdAt),
+                              style: const TextStyle(
+                                color: AppColors.muted,
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -404,5 +417,17 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
         ],
       ),
     );
+  }
+
+  String _historyTimestamp(DateTime value) {
+    final local = value.toLocal();
+    final hour = local.hour == 0
+        ? 12
+        : local.hour > 12
+        ? local.hour - 12
+        : local.hour;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final suffix = local.hour >= 12 ? 'PM' : 'AM';
+    return '${local.day}/${local.month}/${local.year} · $hour:$minute $suffix';
   }
 }
