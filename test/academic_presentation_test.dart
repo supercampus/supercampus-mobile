@@ -134,7 +134,7 @@ void main() {
   });
 
   group('presented module list', () {
-    test('a learner sees one academic entry, not four', () {
+    test('a learner sees Academics plus a read-only timetable', () {
       final student = grants(
         {
           'academics.attendance.read',
@@ -149,13 +149,18 @@ void main() {
 
       expect(
         presented.where(academicModules.contains).length,
-        1,
-        reason: 'the four academic modules fold into one entry',
+        2,
+        reason: 'attendance and results fold while timetable stays separate',
       );
       // The folded entry opens the learner workspace, and unrelated modules are
       // untouched by any of this.
       expect(presented, contains(ModuleCatalog.academics));
+      expect(presented, contains(ModuleCatalog.timetable));
       expect(presented, contains(ModuleCatalog.canteen));
+      expect(
+        student.accessLevel(ModuleCatalog.timetable),
+        AccessLevel.readOnly,
+      );
     });
 
     test('the folded entry opens somewhere the learner is allowed to be', () {
@@ -213,13 +218,24 @@ void main() {
   group('module labels', () {
     ModuleDescriptor module(String id) => ModuleCatalog.byId(id)!;
 
-    test('a learner sees one name for all of them', () {
-      for (final id in academicModules) {
+    test('a learner sees Academics and a separate Timetable name', () {
+      for (final id in const [
+        ModuleCatalog.academics,
+        ModuleCatalog.attendance,
+        ModuleCatalog.examination,
+      ]) {
         expect(
           academicModuleLabel(module(id), AcademicPresentation.learner),
           'Academics',
         );
       }
+      expect(
+        academicModuleLabel(
+          module(ModuleCatalog.timetable),
+          AcademicPresentation.learner,
+        ),
+        'Timetable',
+      );
     });
 
     test('staff see each module under its own name', () {
@@ -290,7 +306,7 @@ void _cardNamingTests() {
       ),
     );
 
-    expect(find.text('Academics'), findsOneWidget);
+    expect(find.text('Academics'), findsNWidgets(2));
     expect(find.text('Attendance'), findsNothing);
   });
 
@@ -303,7 +319,7 @@ void _cardNamingTests() {
       ),
     );
 
-    expect(find.text('Attendance'), findsOneWidget);
+    expect(find.text('Attendance'), findsNWidgets(2));
     expect(find.text('Academics'), findsNothing);
   });
 
