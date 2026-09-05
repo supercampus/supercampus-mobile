@@ -572,8 +572,10 @@ class _SupercampusAppState extends State<SupercampusApp>
               primary.withValues(alpha: 0.04),
               theme.scaffoldBackgroundColor,
             )
-          : (_parseBrandColor(brand?['surface']) ??
-                theme.scaffoldBackgroundColor),
+          // The tenant surface can style cards, but the light-mode page canvas
+          // stays the shared near-white lavender blush. A green tenant surface
+          // previously washed the entire student app mint.
+          : AppColors.canvas,
       appBarTheme: theme.appBarTheme.copyWith(
         backgroundColor: primary,
         foregroundColor: scheme.onPrimary,
