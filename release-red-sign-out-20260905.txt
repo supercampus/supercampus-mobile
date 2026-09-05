@@ -1,0 +1,2 @@
+SuperCampus web release: destructive red sign-out action
+Flutter source: 79c6b25
