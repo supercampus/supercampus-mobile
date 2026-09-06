@@ -32,6 +32,12 @@ void main() {
     expect(find.text('Apply leave pass'), findsOneWidget);
     expect(find.text('Apply outpass'), findsOneWidget);
     expect(find.text('Finding your location'), findsNothing);
+    expect(find.text('VS'), findsNothing);
+    expect(find.text('Local outing'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Local outing')).dy,
+      greaterThan(tester.getTopLeft(find.text('Recent movement')).dy),
+    );
     expect(find.byType(QrImageView), findsOneWidget);
 
     await tester.tap(find.byType(QrImageView));
