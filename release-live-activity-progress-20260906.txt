@@ -1,0 +1,1 @@
+Student activity cards now render only live records; progress is limited to active time-based workflows.
