@@ -1,0 +1,2 @@
+SuperCampus web release: tenant login accepts only the exact lowercase ID "mec".
+Case variants such as MEC, Mec, and mEC are rejected before credentials are submitted.
