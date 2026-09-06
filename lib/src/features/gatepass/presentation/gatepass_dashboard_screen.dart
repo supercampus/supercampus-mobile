@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../data/gatepass_models.dart';
+import '../data/gatepass_qr_selector.dart';
 import 'widgets/gatepass_ui.dart';
 
 class GatepassDashboardScreen extends StatelessWidget {
@@ -293,17 +294,16 @@ class _PassActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
     final approvedPass = store.requests
         .where(
           (request) =>
               request.status == ApprovalStatus.approved &&
               request.qrPayload?.isNotEmpty == true &&
-              request.returnAt.isAfter(now),
+              request.returnAt.isAfter(DateTime.now()),
         )
         .firstOrNull;
     final dailyPass = store.dailyPass;
-    final payload = approvedPass?.qrPayload ?? dailyPass?.qrPayload;
+    final payload = gatepassCardQr(store);
     final manualCode = approvedPass?.manualCode ?? dailyPass?.manualCode;
     final qrLabel = approvedPass == null
         ? 'DAILY GATE-IN ACCESS'

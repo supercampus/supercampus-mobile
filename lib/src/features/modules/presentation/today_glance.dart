@@ -221,6 +221,7 @@ class GlanceFacts {
     this.classes = const [],
     this.stats = const [],
     this.queue,
+    this.gatepassQr,
     this.loading = false,
   });
 
@@ -229,6 +230,7 @@ class GlanceFacts {
   final List<TodayClass> classes;
   final List<OversightStat> stats;
   final CounterQueue? queue;
+  final String? gatepassQr;
   final bool loading;
 
   static const empty = GlanceFacts();
