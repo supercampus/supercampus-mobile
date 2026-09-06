@@ -4,7 +4,6 @@ import '../../../core/widgets/skeleton_loading.dart';
 import '../../../core/access/academic_presentation.dart';
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
-import '../../../core/theme/app_theme.dart';
 
 /// What a person's day is made of.
 ///
@@ -149,6 +148,32 @@ class AttendanceStanding {
   bool get isUnrecorded => total == 0;
 }
 
+enum StudentActivityKind { canteen, gatepass, library, fees, timetable }
+
+/// A truthful, actionable item in the learner's home activity feed.
+@immutable
+class StudentActivity {
+  const StudentActivity({
+    required this.id,
+    required this.kind,
+    required this.title,
+    required this.supporting,
+    required this.moduleId,
+    required this.priority,
+    this.statusLabel,
+    this.progress,
+  });
+
+  final String id;
+  final StudentActivityKind kind;
+  final String title;
+  final String supporting;
+  final String moduleId;
+  final int priority;
+  final String? statusLabel;
+  final double? progress;
+}
+
 /// One number on the oversight band.
 @immutable
 class OversightStat {
@@ -192,6 +217,7 @@ class CounterQueue {
 class GlanceFacts {
   const GlanceFacts({
     this.standing,
+    this.activities = const [],
     this.classes = const [],
     this.stats = const [],
     this.queue,
@@ -199,6 +225,7 @@ class GlanceFacts {
   });
 
   final AttendanceStanding? standing;
+  final List<StudentActivity> activities;
   final List<TodayClass> classes;
   final List<OversightStat> stats;
   final CounterQueue? queue;
@@ -236,9 +263,9 @@ class TodayGlance extends StatelessWidget {
     final body = switch (shape) {
       DayShape.learner => _LearnerDay(
         standing: facts.standing,
+        activities: facts.activities,
         loading: facts.loading,
         onOpenModule: onOpenModule,
-        permissions: permissions,
       ),
       DayShape.teaching => _TeachingDay(
         classes: facts.classes,
@@ -300,15 +327,15 @@ class _WeekdayLabel extends StatelessWidget {
 class _LearnerDay extends StatelessWidget {
   const _LearnerDay({
     required this.standing,
+    required this.activities,
     required this.loading,
     required this.onOpenModule,
-    required this.permissions,
   });
 
   final AttendanceStanding? standing;
+  final List<StudentActivity> activities;
   final bool loading;
   final ValueChanged<String> onOpenModule;
-  final EffectivePermissions permissions;
 
   @override
   Widget build(BuildContext context) {
@@ -333,31 +360,16 @@ class _LearnerDay extends StatelessWidget {
       );
     }
 
-    if (permissions.can(
-      ModuleCatalog.gatepass,
-      'outpass',
-      ModuleActions.create,
-    )) {
-      rows.add(
-        _DayRow(
-          leading: const _DayIcon(Icons.directions_walk_outlined),
-          headline: 'Gatepass',
-          supporting: 'Request an outpass or check one you raised',
-          onTap: () => onOpenModule(ModuleCatalog.gatepass),
-        ),
-      );
-    }
-
-    if (permissions.can(ModuleCatalog.canteen, 'order', ModuleActions.create)) {
-      rows.add(
-        _DayRow(
-          leading: const _DayIcon(Icons.restaurant_outlined),
-          headline: 'Campus shops',
-          supporting: 'Order ahead and pick up without queueing',
-          onTap: () => onOpenModule(ModuleCatalog.canteen),
-        ),
-      );
-    }
+    rows.addAll(
+      activities
+          .take(5)
+          .map(
+            (activity) => _ActivityRow(
+              activity: activity,
+              onTap: () => onOpenModule(activity.moduleId),
+            ),
+          ),
+    );
 
     if (rows.isEmpty) {
       return _GlanceEmpty(
@@ -367,7 +379,158 @@ class _LearnerDay extends StatelessWidget {
       );
     }
 
-    return Column(children: rows);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Recent activity & progress',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ...rows,
+      ],
+    );
+  }
+}
+
+class _ActivityRow extends StatelessWidget {
+  const _ActivityRow({required this.activity, required this.onTap});
+
+  final StudentActivity activity;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, colour) = switch (activity.kind) {
+      StudentActivityKind.canteen => (
+        Icons.restaurant_outlined,
+        const Color(0xFF5B35D5),
+      ),
+      StudentActivityKind.gatepass => (
+        Icons.directions_walk_outlined,
+        const Color(0xFF3558D4),
+      ),
+      StudentActivityKind.library => (
+        Icons.local_library_outlined,
+        const Color(0xFF7A3DB8),
+      ),
+      StudentActivityKind.fees => (
+        Icons.account_balance_wallet_outlined,
+        const Color(0xFFC06A00),
+      ),
+      StudentActivityKind.timetable => (
+        Icons.schedule_outlined,
+        const Color(0xFF087C68),
+      ),
+    };
+    final theme = Theme.of(context);
+    final progress = activity.progress?.clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: theme.brightness == Brightness.light
+            ? const Color(0xFFF5F0FF)
+            : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colour.withValues(alpha: .10),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, size: 22, color: colour),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              activity.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          if (activity.statusLabel case final label?)
+                            Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colour.withValues(alpha: .10),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  color: colour,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        activity.supporting,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (progress != null) ...[
+                        const SizedBox(height: 8),
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0, end: progress),
+                          duration: const Duration(milliseconds: 850),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, _) => ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: LinearProgressIndicator(
+                              minHeight: 5,
+                              value: value,
+                              color: colour,
+                              backgroundColor: colour.withValues(alpha: .12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: theme.colorScheme.outline,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -791,25 +954,6 @@ class _DayRow extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _DayIcon extends StatelessWidget {
-  const _DayIcon(this.icon);
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: AppColors.moduleSoft,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Icon(icon, size: 22, color: AppColors.brandBlue),
     );
   }
 }

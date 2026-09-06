@@ -12,21 +12,27 @@ abstract interface class GlanceSource {
   Future<GlanceFacts> load(DayShape shape);
 }
 
+abstract interface class StudentActivitySource {
+  Future<List<StudentActivity>> load();
+}
+
 /// The real one, over the operations API.
 class BackendGlanceSource implements GlanceSource {
   const BackendGlanceSource({
     required this.attendance,
     required this.viewerUserId,
+    this.studentActivity,
   });
 
   final AttendanceRepository attendance;
   final String viewerUserId;
+  final StudentActivitySource? studentActivity;
 
   @override
   Future<GlanceFacts> load(DayShape shape) async {
     try {
       return switch (shape) {
-        DayShape.learner => GlanceFacts(standing: await _standing()),
+        DayShape.learner => await _learner(),
         DayShape.teaching => GlanceFacts(classes: await _classes()),
         DayShape.oversight => GlanceFacts(stats: await _stats()),
         // The counter's queue lives behind the canteen store, which the
@@ -42,6 +48,17 @@ class BackendGlanceSource implements GlanceSource {
       // standing, so it is caught broadly and on purpose.
       return GlanceFacts.empty;
     }
+  }
+
+  Future<GlanceFacts> _learner() async {
+    final results = await Future.wait<Object>([
+      _standing(),
+      studentActivity?.load() ?? Future.value(const <StudentActivity>[]),
+    ]);
+    return GlanceFacts(
+      standing: results[0] as AttendanceStanding,
+      activities: results[1] as List<StudentActivity>,
+    );
   }
 
   Future<AttendanceStanding> _standing() async {
