@@ -1,0 +1,2 @@
+Gatepass compact location status and embedded expandable gate-in QR release.
+Source commit: 86cc05f
