@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supercampus_mobile/src/features/gatepass/data/mock_gatepass_repository.dart';
 import 'package:supercampus_mobile/src/features/gatepass/presentation/gatepass_dashboard_screen.dart';
+import 'package:supercampus_mobile/src/features/gatepass/presentation/widgets/gatepass_ui.dart';
 
 void main() {
   testWidgets('shows stacked pass actions with the gate-in QR', (tester) async {
@@ -39,6 +40,20 @@ void main() {
     expect(
       tester.getTopLeft(find.text('Local outing')).dy,
       greaterThan(tester.getTopLeft(find.text('Recent movement')).dy),
+    );
+    final recentSurface = find.ancestor(
+      of: find.text('Recent movement'),
+      matching: find.byType(GatepassSurface),
+    );
+    final outingSurface = find.ancestor(
+      of: find.text('Local outing'),
+      matching: find.byType(GatepassSurface),
+    );
+    expect(recentSurface, findsOneWidget);
+    expect(outingSurface, findsOneWidget);
+    expect(
+      outingSurface.evaluate().single,
+      same(recentSurface.evaluate().single),
     );
     expect(find.byType(QrImageView), findsOneWidget);
 

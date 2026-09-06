@@ -87,49 +87,49 @@ class GatepassDashboardScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 26),
-              Row(
-                children: [
-                  Text(
-                    'Recent movement',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: onOpenAccess,
-                    child: const Text('View all'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              if (active != null) ...[
-                _ActiveRequestCard(
-                  request: active,
-                  workflow: store.workflow,
-                  onTap: onOpenRequests,
-                ),
-                const SizedBox(height: 10),
-              ],
-              if (store.movements.isNotEmpty)
-                GatepassSurface(
-                  child: Column(
-                    children: store.movements
-                        .take(2)
-                        .map((movement) => _MovementRow(movement: movement))
-                        .toList(),
-                  ),
-                )
-              else if (active == null)
-                const GatepassSurface(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 22),
-                    child: Center(
-                      child: Text(
-                        'No recent movement or pass activity.',
-                        style: TextStyle(color: AppColors.muted),
-                      ),
+              GatepassSurface(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Recent movement',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: onOpenAccess,
+                          child: const Text('View all'),
+                        ),
+                      ],
                     ),
-                  ),
+                    if (active != null) ...[
+                      const SizedBox(height: 2),
+                      _ActiveRequestCard(
+                        request: active,
+                        workflow: store.workflow,
+                        onTap: onOpenRequests,
+                      ),
+                    ],
+                    if (store.movements.isNotEmpty) ...[
+                      if (active != null) const SizedBox(height: 10),
+                      ...store.movements
+                          .take(2)
+                          .map((movement) => _MovementRow(movement: movement)),
+                    ] else if (active == null)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 18),
+                        child: Center(
+                          child: Text(
+                            'No recent movement or pass activity.',
+                            style: TextStyle(color: AppColors.muted),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
+              ),
             ],
           ),
         ),
@@ -173,7 +173,7 @@ class _CampusStatusCard extends StatelessWidget {
               : failed
               ? issue
               : '${store.student.rollNumber} · ${store.student.department}',
-          maxLines: 1,
+          maxLines: failed ? 2 : 1,
           overflow: TextOverflow.ellipsis,
         ),
         trailing: inside
@@ -526,7 +526,10 @@ class _ActiveRequestCard extends StatelessWidget {
         workflow.transition(request.workflowState, 'approve') ??
         workflow.transition(request.workflowState, 'verify') ??
         workflow.transition(request.workflowState, 'complete');
-    return GatepassSurface(
+    return Material(
+      color: const Color(0xFFF7F3FF),
+      borderRadius: BorderRadius.circular(10),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
