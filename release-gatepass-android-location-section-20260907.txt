@@ -1,0 +1,2 @@
+Android gatepass location timeout fallback and contained recent movement section.
+Source commit: 7ecce81
