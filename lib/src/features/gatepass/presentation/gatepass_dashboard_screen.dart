@@ -47,34 +47,11 @@ class GatepassDashboardScreen extends StatelessWidget {
                 title: 'Gatepass',
                 subtitle: '${store.student.residency.label} access',
                 leading: ModuleBackButton(onPressed: onExitModule),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: const Color(0xFFECEAFF),
-                      child: Text(
-                        store.student.initials,
-                        style: const TextStyle(
-                          color: AppColors.gateBlue,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    ModuleHomeButton(onPressed: onExitModule),
-                  ],
-                ),
+                trailing: ModuleHomeButton(onPressed: onExitModule),
               ),
               const SizedBox(height: 20),
               _CampusStatusCard(store: store),
               const SizedBox(height: 12),
-              if (active != null) ...[
-                _ActiveRequestCard(
-                  request: active,
-                  workflow: store.workflow,
-                  onTap: onOpenRequests,
-                ),
-                const SizedBox(height: 12),
-              ],
               _PassActions(
                 store: store,
                 onApplyLeavePass: onApplyLeavePass,
@@ -122,6 +99,14 @@ class GatepassDashboardScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 6),
+              if (active != null) ...[
+                _ActiveRequestCard(
+                  request: active,
+                  workflow: store.workflow,
+                  onTap: onOpenRequests,
+                ),
+                const SizedBox(height: 10),
+              ],
               GatepassSurface(
                 child: Column(
                   children: store.movements
@@ -150,18 +135,9 @@ class _CampusStatusCard extends StatelessWidget {
     return GatepassSurface(
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        leading: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: (inside ? const Color(0xFF168A5B) : AppColors.gateBlue)
-                .withValues(alpha: .1),
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: Icon(
-            inside ? Icons.location_on_rounded : Icons.my_location_rounded,
-            color: inside ? const Color(0xFF168A5B) : AppColors.gateBlue,
-          ),
+        leading: _LocationStatusIcon(
+          isChecking: !inside && !outside,
+          isInside: inside,
         ),
         title: Text(
           inside
@@ -181,6 +157,96 @@ class _CampusStatusCard extends StatelessWidget {
         trailing: inside
             ? const Icon(Icons.verified_rounded, color: Color(0xFF168A5B))
             : null,
+      ),
+    );
+  }
+}
+
+class _LocationStatusIcon extends StatefulWidget {
+  const _LocationStatusIcon({required this.isChecking, required this.isInside});
+
+  final bool isChecking;
+  final bool isInside;
+
+  @override
+  State<_LocationStatusIcon> createState() => _LocationStatusIconState();
+}
+
+class _LocationStatusIconState extends State<_LocationStatusIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    if (widget.isChecking) _controller.repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant _LocationStatusIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isChecking && !_controller.isAnimating) {
+      _controller.repeat();
+    } else if (!widget.isChecking && _controller.isAnimating) {
+      _controller.stop();
+      _controller.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.isInside
+        ? const Color(0xFF168A5B)
+        : AppColors.gateBlue;
+    return SizedBox(
+      width: 46,
+      height: 46,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (widget.isChecking)
+            FadeTransition(
+              opacity: Tween<double>(begin: .55, end: 0).animate(_controller),
+              child: ScaleTransition(
+                scale: Tween<double>(begin: .72, end: 1).animate(_controller),
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color, width: 2),
+                  ),
+                ),
+              ),
+            ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .1),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: RotationTransition(
+              turns: widget.isChecking
+                  ? _controller
+                  : const AlwaysStoppedAnimation(0),
+              child: Icon(
+                widget.isInside
+                    ? Icons.location_on_rounded
+                    : Icons.my_location_rounded,
+                color: color,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
