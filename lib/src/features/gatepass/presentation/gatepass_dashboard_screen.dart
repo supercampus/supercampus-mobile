@@ -16,6 +16,7 @@ class GatepassDashboardScreen extends StatelessWidget {
     required this.onOpenAccess,
     required this.onOpenRequests,
     required this.onInviteVisitor,
+    required this.onRetryLocation,
     required this.onExitModule,
   });
 
@@ -25,6 +26,7 @@ class GatepassDashboardScreen extends StatelessWidget {
   final VoidCallback onOpenAccess;
   final VoidCallback onOpenRequests;
   final VoidCallback onInviteVisitor;
+  final VoidCallback onRetryLocation;
   final VoidCallback onExitModule;
 
   @override
@@ -50,7 +52,7 @@ class GatepassDashboardScreen extends StatelessWidget {
                 trailing: ModuleHomeButton(onPressed: onExitModule),
               ),
               const SizedBox(height: 20),
-              _CampusStatusCard(store: store),
+              _CampusStatusCard(store: store, onRetry: onRetryLocation),
               const SizedBox(height: 12),
               _PassActions(
                 store: store,
@@ -107,14 +109,27 @@ class GatepassDashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
               ],
-              GatepassSurface(
-                child: Column(
-                  children: store.movements
-                      .take(2)
-                      .map((movement) => _MovementRow(movement: movement))
-                      .toList(),
+              if (store.movements.isNotEmpty)
+                GatepassSurface(
+                  child: Column(
+                    children: store.movements
+                        .take(2)
+                        .map((movement) => _MovementRow(movement: movement))
+                        .toList(),
+                  ),
+                )
+              else if (active == null)
+                const GatepassSurface(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 22),
+                    child: Center(
+                      child: Text(
+                        'No recent movement or pass activity.',
+                        style: TextStyle(color: AppColors.muted),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -124,19 +139,22 @@ class GatepassDashboardScreen extends StatelessWidget {
 }
 
 class _CampusStatusCard extends StatelessWidget {
-  const _CampusStatusCard({required this.store});
+  const _CampusStatusCard({required this.store, required this.onRetry});
 
   final GatepassStore store;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     final inside = store.zone == CampusZone.inside;
     final outside = store.zone == CampusZone.outside;
+    final issue = store.dailyPassIssue;
+    final failed = !inside && !outside && issue != null;
     return GatepassSurface(
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         leading: _LocationStatusIcon(
-          isChecking: !inside && !outside,
+          isChecking: !inside && !outside && !failed,
           isInside: inside,
         ),
         title: Text(
@@ -144,18 +162,28 @@ class _CampusStatusCard extends StatelessWidget {
               ? 'Campus location verified'
               : outside
               ? 'Outside campus'
+              : failed
+              ? 'Location check needs attention'
               : 'Checking campus location',
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         subtitle: Text(
           outside
               ? (store.dailyPassIssue ?? 'Gate-in QR is available on campus.')
+              : failed
+              ? issue
               : '${store.student.rollNumber} · ${store.student.department}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         trailing: inside
             ? const Icon(Icons.verified_rounded, color: Color(0xFF168A5B))
+            : failed
+            ? IconButton(
+                tooltip: 'Retry location check',
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+              )
             : null,
       ),
     );
@@ -265,8 +293,21 @@ class _PassActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pass = store.dailyPass;
-    final payload = pass?.qrPayload;
+    final now = DateTime.now();
+    final approvedPass = store.requests
+        .where(
+          (request) =>
+              request.status == ApprovalStatus.approved &&
+              request.qrPayload?.isNotEmpty == true &&
+              request.returnAt.isAfter(now),
+        )
+        .firstOrNull;
+    final dailyPass = store.dailyPass;
+    final payload = approvedPass?.qrPayload ?? dailyPass?.qrPayload;
+    final manualCode = approvedPass?.manualCode ?? dailyPass?.manualCode;
+    final qrLabel = approvedPass == null
+        ? 'DAILY GATE-IN ACCESS'
+        : approvedPass.type.label.toUpperCase();
     final isHosteller = store.student.residency == StudentResidency.hosteller;
     return SizedBox(
       height: isHosteller ? 134 : 62,
@@ -335,7 +376,12 @@ class _PassActions extends StatelessWidget {
               child: InkWell(
                 onTap: payload == null || payload.isEmpty
                     ? null
-                    : () => _showGateQr(context, pass!),
+                    : () => _showGateQr(
+                        context,
+                        payload,
+                        manualCode: manualCode,
+                        label: qrLabel,
+                      ),
                 child: Padding(
                   padding: const EdgeInsets.all(10),
                   child: payload == null || payload.isEmpty
@@ -368,20 +414,35 @@ class _PassActions extends StatelessWidget {
     );
   }
 
-  void _showGateQr(BuildContext context, DailyAccessPass pass) {
+  void _showGateQr(
+    BuildContext context,
+    String payload, {
+    required String? manualCode,
+    required String label,
+  }) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         fullscreenDialog: true,
-        builder: (_) => _FullScreenGateQr(pass: pass),
+        builder: (_) => _FullScreenGateQr(
+          payload: payload,
+          manualCode: manualCode,
+          label: label,
+        ),
       ),
     );
   }
 }
 
 class _FullScreenGateQr extends StatelessWidget {
-  const _FullScreenGateQr({required this.pass});
+  const _FullScreenGateQr({
+    required this.payload,
+    required this.manualCode,
+    required this.label,
+  });
 
-  final DailyAccessPass pass;
+  final String payload;
+  final String? manualCode;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -410,18 +471,18 @@ class _FullScreenGateQr extends StatelessWidget {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  child: QrImageView(data: pass.qrPayload, size: qrSize),
+                  child: QrImageView(data: payload, size: qrSize),
                 ),
                 const SizedBox(height: 28),
-                const Text(
-                  'DAILY GATE-IN ACCESS',
-                  style: TextStyle(
+                Text(
+                  label,
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
                     letterSpacing: 1.4,
                   ),
                 ),
-                if (pass.manualCode case final code?) ...[
+                if (manualCode case final code?) ...[
                   const SizedBox(height: 8),
                   Text(
                     code,
@@ -487,7 +548,9 @@ class _ActiveRequestCard extends StatelessWidget {
                     Text(
                       '${formatShortDate(request.departureAt)} • ${request.destination}',
                     ),
-                    if (currentState != null) ...[
+                    if (currentState != null &&
+                        currentState.label.toLowerCase() !=
+                            request.status.label.toLowerCase()) ...[
                       const SizedBox(height: 4),
                       Text(currentState.label),
                     ],
