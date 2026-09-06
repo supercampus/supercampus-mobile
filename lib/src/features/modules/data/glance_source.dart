@@ -16,6 +16,10 @@ abstract interface class StudentActivitySource {
   Future<List<StudentActivity>> load();
 }
 
+abstract interface class GatepassCardSource {
+  Future<String?> loadGatepassQr();
+}
+
 /// The real one, over the operations API.
 class BackendGlanceSource implements GlanceSource {
   const BackendGlanceSource({
@@ -51,13 +55,19 @@ class BackendGlanceSource implements GlanceSource {
   }
 
   Future<GlanceFacts> _learner() async {
-    final results = await Future.wait<Object>([
+    final gatepassFuture = switch (studentActivity) {
+      final GatepassCardSource source => source.loadGatepassQr(),
+      _ => Future<String?>.value(),
+    };
+    final results = await Future.wait<Object?>([
       _standing(),
       studentActivity?.load() ?? Future.value(const <StudentActivity>[]),
+      gatepassFuture,
     ]);
     return GlanceFacts(
       standing: results[0] as AttendanceStanding,
       activities: results[1] as List<StudentActivity>,
+      gatepassQr: results[2] as String?,
     );
   }
 

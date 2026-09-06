@@ -5,6 +5,7 @@ import '../../canteen/data/backend_canteen_repository.dart';
 import '../../canteen/data/canteen_models.dart';
 import '../../gatepass/data/backend_gatepass_repository.dart';
 import '../../gatepass/data/gatepass_models.dart';
+import '../../gatepass/data/gatepass_qr_selector.dart';
 import '../../gatepass/data/gatepass_repository.dart';
 import '../../library/data/backend_library_repository.dart';
 import '../../library/data/library_models.dart';
@@ -16,7 +17,8 @@ import '../presentation/today_glance.dart';
 
 /// Builds the learner home feed from the same live repositories as each module.
 /// A failed optional service contributes no card instead of taking down Home.
-class BackendStudentActivitySource implements StudentActivitySource {
+class BackendStudentActivitySource
+    implements StudentActivitySource, GatepassCardSource {
   const BackendStudentActivitySource({
     required this.baseUrl,
     required this.accessTokenProvider,
@@ -42,6 +44,28 @@ class BackendStudentActivitySource implements StudentActivitySource {
     final activities = groups.expand((group) => group).toList()
       ..sort((a, b) => a.priority.compareTo(b.priority));
     return activities;
+  }
+
+  @override
+  Future<String?> loadGatepassQr() async {
+    if (!permissions.canSeeModule(ModuleCatalog.gatepass) ||
+        session.role != UserRole.student) {
+      return null;
+    }
+    try {
+      final store = await BackendGatepassRepository(
+        baseUrl: baseUrl,
+        accessTokenProvider: accessTokenProvider,
+        studentName: session.displayName,
+        email: session.email,
+        rollNumber: session.idNumber ?? '',
+        department: session.departmentOrWard ?? '',
+      ).loadStore();
+      return gatepassCardQr(store);
+    } catch (_) {
+      // Never substitute a decorative QR when the real credential is absent.
+      return null;
+    }
   }
 
   Future<List<StudentActivity>> _canteen() async {

@@ -291,6 +291,7 @@ class _Feed extends StatelessWidget {
               // than flashing a filled one it is about to correct.
               content: ModuleCardContent(
                 attendanceMarks: glance.standing?.streak,
+                gatepassQr: glance.gatepassQr,
               ),
             ),
           ),
