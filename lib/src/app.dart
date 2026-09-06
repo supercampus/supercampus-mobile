@@ -26,6 +26,8 @@ import 'features/authentication/data/auth_repository.dart';
 import 'features/authentication/data/backend_auth_repository.dart';
 import 'features/authentication/data/mock_auth_repository.dart';
 import 'features/authentication/presentation/login_screen.dart';
+import 'features/maintenance/data/maintenance_repository.dart';
+import 'features/maintenance/presentation/maintenance_gate.dart';
 import 'features/advisor/data/advisor_students_repository.dart';
 import 'features/canteen/presentation/canteen_shell.dart';
 import 'features/scanner/presentation/scan_qr_screen.dart';
@@ -108,6 +110,7 @@ class _SupercampusAppState extends State<SupercampusApp>
 
   late final AuthRepository _authRepository;
   late final PermissionsRepository _permissionsRepository;
+  late final MaintenanceRepository _maintenanceRepository;
 
   UserSession? _session;
   EffectivePermissions? _permissions;
@@ -146,6 +149,10 @@ class _SupercampusAppState extends State<SupercampusApp>
         (_useMockData
             ? const MockPermissionsRepository()
             : BackendPermissionsRepository(baseUrl: backendBaseUrl));
+    _maintenanceRepository = MaintenanceRepository(
+      baseUrl: backendBaseUrl,
+      accessTokenProvider: _provideAccessToken,
+    );
     _pushDeepLinkSubscription = PushNotificationService.instance.deepLinks
         .listen(_openPushDeepLink);
     if (!_useMockData && widget.authRepository == null) {
@@ -595,10 +602,14 @@ class _SupercampusAppState extends State<SupercampusApp>
   Widget _buildHome() {
     final session = _session;
     if (session == null) {
-      return LoginScreen(
-        authRepository: _authRepository,
-        onSignedIn: _onSignedIn,
-      );
+      Widget login() =>
+          LoginScreen(authRepository: _authRepository, onSignedIn: _onSignedIn);
+      return _useMockData || widget.authRepository != null
+          ? login()
+          : MaintenanceGate(
+              repository: _maintenanceRepository,
+              loginBuilder: login,
+            );
     }
 
     final permissions = _permissions;
@@ -919,6 +930,7 @@ class _SupercampusAppState extends State<SupercampusApp>
 
     final module = switch (resolvedModuleId) {
       ModuleCatalog.administration => AdminPortalShell(
+        maintenanceRepository: _maintenanceRepository,
         libraryRepository: LibrarianRepository(
           baseUrl: _resolvedBackendBaseUrl,
           accessTokenProvider: _provideAccessToken,
