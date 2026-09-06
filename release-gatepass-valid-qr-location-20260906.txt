@@ -1,0 +1,2 @@
+Gatepass approved-pass QR, actionable location state, authoritative student identity, and recent activity cleanup.
+Source commit: a409afe
