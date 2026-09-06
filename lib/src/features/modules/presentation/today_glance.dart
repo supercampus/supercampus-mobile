@@ -344,7 +344,7 @@ class _LearnerDay extends StatelessWidget {
 
     final rows = <Widget>[];
 
-    if (standing != null) {
+    if (standing != null && !standing!.isUnrecorded) {
       final value = standing!;
       rows.add(
         _DayRow(
