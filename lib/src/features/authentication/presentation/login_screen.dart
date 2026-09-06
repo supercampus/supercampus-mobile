@@ -4,7 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/skeleton_loading.dart';
 import '../data/auth_repository.dart';
 
-enum _AuthView { welcome, institution, signIn, resetPassword }
+enum _AuthView { institution, signIn, resetPassword }
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
@@ -30,7 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _resetEmailController = TextEditingController();
   final _passwordFocusNode = FocusNode();
 
-  _AuthView _view = _AuthView.welcome;
+  _AuthView _view = _AuthView.institution;
   bool _obscurePassword = true;
   bool _isSubmitting = false;
   bool _isSuccessLeaving = false;
@@ -76,23 +76,18 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   String? _validateInstitution(String? value) {
-    final institution = value?.trim() ?? '';
+    final institution = value?.trim().toLowerCase() ?? '';
     if (institution.isEmpty) return 'Enter your tenant ID.';
-    if (institution != 'mec') return 'Enter the exact tenant ID: mec';
+    if (institution != 'mec') return 'Tenant ID not found.';
     return null;
-  }
-
-  void _showInstitution() {
-    setState(() {
-      _view = _AuthView.institution;
-      _errorMessage = null;
-    });
   }
 
   void _showSignIn() {
     FocusScope.of(context).unfocus();
     if (!_institutionFormKey.currentState!.validate()) return;
-    _institutionController.text = _institutionController.text.trim();
+    _institutionController.text = _institutionController.text
+        .trim()
+        .toLowerCase();
     setState(() {
       _view = _AuthView.signIn;
       _errorMessage = null;
@@ -109,6 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     setState(() => _errorMessage = null);
     if (!_formKey.currentState!.validate()) return;
 
@@ -125,10 +121,14 @@ class _LoginScreenState extends State<LoginScreen> {
         _isSuccessLeaving = false;
         _successSession = session;
       });
-      await Future<void>.delayed(const Duration(milliseconds: 1500));
+      if (!reduceMotion) {
+        await Future<void>.delayed(const Duration(milliseconds: 1400));
+      }
       if (!mounted) return;
       setState(() => _isSuccessLeaving = true);
-      await Future<void>.delayed(const Duration(milliseconds: 180));
+      if (!reduceMotion) {
+        await Future<void>.delayed(const Duration(milliseconds: 180));
+      }
       if (mounted) widget.onSignedIn(session);
     } on AuthenticationException catch (error) {
       if (mounted) setState(() => _errorMessage = error.message);
@@ -185,16 +185,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 switchInCurve: Curves.easeOutCubic,
                 switchOutCurve: Curves.easeInCubic,
                 child: switch (_view) {
-                  _AuthView.welcome => _WelcomeView(
-                    key: const ValueKey('welcome'),
-                    onContinue: _showInstitution,
-                  ),
                   _AuthView.institution => _InstitutionView(
                     key: const ValueKey('institution'),
                     formKey: _institutionFormKey,
                     controller: _institutionController,
                     validateInstitution: _validateInstitution,
-                    onBack: () => setState(() => _view = _AuthView.welcome),
                     onContinue: _showSignIn,
                   ),
                   _AuthView.signIn => _SignInView(
@@ -261,7 +256,9 @@ class _LoginSuccessSplashState extends State<_LoginSuccessSplash>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _signatureReveal;
-  late final Animation<double> _footerOpacity;
+  late final Animation<double> _watermarkArrival;
+  late final Animation<double> _welcomeArrival;
+  late final Animation<double> _successArrival;
 
   @override
   void initState() {
@@ -270,13 +267,21 @@ class _LoginSuccessSplashState extends State<_LoginSuccessSplash>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     )..forward();
+    _watermarkArrival = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0, 0.46, curve: Curves.easeOutCubic),
+    );
+    _welcomeArrival = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.12, 0.46, curve: Curves.easeOutBack),
+    );
     _signatureReveal = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.04, 0.96, curve: Curves.easeInOutCubic),
+      curve: const Interval(0.28, 0.82, curve: Curves.easeInOutCubic),
     );
-    _footerOpacity = CurvedAnimation(
+    _successArrival = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.72, 1, curve: Curves.easeOut),
+      curve: const Interval(0.67, 1, curve: Curves.easeOutBack),
     );
   }
 
@@ -320,9 +325,28 @@ class _LoginSuccessSplashState extends State<_LoginSuccessSplash>
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: Center(
-                        child: Opacity(
-                          opacity: 0.20,
+                      child: AnimatedBuilder(
+                        animation: _controller,
+                        builder: (context, child) {
+                          final sweep = _controller.value;
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Transform.translate(
+                                offset: Offset(
+                                  -54 * (1 - _watermarkArrival.value),
+                                  18 * (1 - _watermarkArrival.value),
+                                ),
+                                child: Opacity(
+                                  opacity: 0.20 * _watermarkArrival.value,
+                                  child: child,
+                                ),
+                              ),
+                              CustomPaint(painter: _SuccessLightPainter(sweep)),
+                            ],
+                          );
+                        },
+                        child: Center(
                           child: FractionallySizedBox(
                             widthFactor: 1.54,
                             child: Image.asset(
@@ -339,13 +363,26 @@ class _LoginSuccessSplashState extends State<_LoginSuccessSplash>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
-                              'Welcome',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 30,
-                                fontWeight: FontWeight.w400,
-                                height: 0.9,
+                            AnimatedBuilder(
+                              animation: _welcomeArrival,
+                              builder: (context, child) => Transform.translate(
+                                offset: Offset(
+                                  0,
+                                  22 * (1 - _welcomeArrival.value),
+                                ),
+                                child: Opacity(
+                                  opacity: _welcomeArrival.value.clamp(0, 1),
+                                  child: child,
+                                ),
+                              ),
+                              child: const Text(
+                                'Welcome',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w400,
+                                  height: 0.9,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -393,16 +430,39 @@ class _LoginSuccessSplashState extends State<_LoginSuccessSplash>
                       left: 0,
                       right: 0,
                       bottom: constraints.maxHeight * 0.08,
-                      child: FadeTransition(
-                        opacity: _footerOpacity,
+                      child: AnimatedBuilder(
+                        animation: _successArrival,
+                        builder: (context, child) => Transform.translate(
+                          offset: Offset(0, 20 * (1 - _successArrival.value)),
+                          child: Opacity(
+                            opacity: _successArrival.value.clamp(0, 1),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 28,
+                                  height: 28,
+                                  child: CustomPaint(
+                                    painter: _SuccessCheckPainter(
+                                      _successArrival.value,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                child!,
+                              ],
+                            ),
+                          ),
+                        ),
                         child: const Text(
                           'login successful',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.2,
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: -0.1,
                           ),
                         ),
                       ),
@@ -418,75 +478,66 @@ class _LoginSuccessSplashState extends State<_LoginSuccessSplash>
   }
 }
 
-class _WelcomeView extends StatelessWidget {
-  const _WelcomeView({super.key, required this.onContinue});
+class _SuccessLightPainter extends CustomPainter {
+  const _SuccessLightPainter(this.progress);
 
-  final VoidCallback onContinue;
+  final double progress;
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxHeight < 700;
-        return Column(
-          children: [
-            Expanded(
-              flex: compact ? 5 : 6,
-              child: _CampusCanvas(compact: compact),
-            ),
-            Expanded(
-              flex: compact ? 4 : 5,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(28, compact ? 22 : 34, 28, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const _BrandLockup(centered: false),
-                    const Spacer(),
-                    Text(
-                      'Your campus, in one place.',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            fontSize: compact ? 27 : 31,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0,
-                          ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Academics, attendance and campus services connected to your institution account.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        height: 1.55,
-                        color: AppColors.muted,
-                      ),
-                    ),
-                    const Spacer(),
-                    FilledButton(
-                      key: const ValueKey('start-sign-in'),
-                      onPressed: onContinue,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.ink,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size.fromHeight(54),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('Continue to sign in'),
-                          SizedBox(width: 10),
-                          Icon(Icons.arrow_forward_rounded, size: 19),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+  void paint(Canvas canvas, Size size) {
+    final x = (progress * 1.75 - 0.38) * size.width;
+    final path = Path()
+      ..moveTo(x - 110, 0)
+      ..lineTo(x + 34, 0)
+      ..lineTo(x - 130, size.height)
+      ..lineTo(x - 274, size.height)
+      ..close();
+    canvas.drawPath(
+      path,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Colors.transparent, Color(0x24FFFFFF), Colors.transparent],
+        ).createShader(Rect.fromLTWH(x - 280, 0, 320, size.height)),
     );
   }
+
+  @override
+  bool shouldRepaint(_SuccessLightPainter oldDelegate) =>
+      oldDelegate.progress != progress;
+}
+
+class _SuccessCheckPainter extends CustomPainter {
+  const _SuccessCheckPainter(this.progress);
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final circlePaint = Paint()..color = const Color(0xFFEDEDED);
+    canvas.drawCircle(
+      size.center(Offset.zero),
+      size.shortestSide / 2,
+      circlePaint,
+    );
+    final path = Path()
+      ..moveTo(size.width * 0.28, size.height * 0.52)
+      ..lineTo(size.width * 0.44, size.height * 0.68)
+      ..lineTo(size.width * 0.74, size.height * 0.34);
+    final metric = path.computeMetrics().first;
+    canvas.drawPath(
+      metric.extractPath(0, metric.length * progress.clamp(0, 1)),
+      Paint()
+        ..color = const Color(0xFF52565B)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_SuccessCheckPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
 class _CampusCanvas extends StatelessWidget {
@@ -601,107 +652,111 @@ class _InstitutionView extends StatelessWidget {
     required this.formKey,
     required this.controller,
     required this.validateInstitution,
-    required this.onBack,
     required this.onContinue,
   });
 
   final GlobalKey<FormState> formKey;
   final TextEditingController controller;
   final String? Function(String?) validateInstitution;
-  final VoidCallback onBack;
   final VoidCallback onContinue;
 
   @override
   Widget build(BuildContext context) {
-    return _AuthPage(
-      onBack: onBack,
-      child: Form(
-        key: formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 54),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                width: 52,
-                height: 52,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF0F2F6),
-                  shape: BoxShape.circle,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxHeight < 760;
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  height: compact ? 235 : 290,
+                  child: _CampusCanvas(compact: compact),
                 ),
-                child: const Icon(
-                  Icons.account_balance_outlined,
-                  color: AppColors.ink,
+                Center(
+                  child: SizedBox(
+                    width: 440,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        24,
+                        compact ? 18 : 26,
+                        24,
+                        28,
+                      ),
+                      child: Form(
+                        key: formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const _BrandLockup(centered: false),
+                            SizedBox(height: compact ? 20 : 28),
+                            Text(
+                              'Find your institution',
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    fontSize: compact ? 27 : 29,
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 0,
+                                  ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Enter the tenant ID provided by your institution administrator.',
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.copyWith(height: 1.45),
+                            ),
+                            SizedBox(height: compact ? 20 : 26),
+                            _FieldLabel(
+                              label: 'Tenant ID',
+                              child: TextFormField(
+                                key: const ValueKey('institution-domain'),
+                                controller: controller,
+                                autofocus: true,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                textCapitalization: TextCapitalization.none,
+                                keyboardType: TextInputType.url,
+                                textInputAction: TextInputAction.next,
+                                decoration: const InputDecoration(
+                                  hintText: 'Enter tenant ID',
+                                  prefixIcon: Icon(Icons.language_rounded),
+                                ),
+                                validator: validateInstitution,
+                                onFieldSubmitted: (_) => onContinue(),
+                              ),
+                            ),
+                            SizedBox(height: compact ? 20 : 26),
+                            FilledButton(
+                              key: const ValueKey('continue-from-institution'),
+                              onPressed: onContinue,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.ink,
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size.fromHeight(54),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text('Next'),
+                                  SizedBox(width: 10),
+                                  Icon(Icons.arrow_forward_rounded, size: 19),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 26),
-            Text(
-              'Find your institution',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontSize: 29,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Enter the domain provided by your institution administrator.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(height: 1.55),
-            ),
-            const SizedBox(height: 34),
-            _FieldLabel(
-              label: 'Institution domain',
-              child: TextFormField(
-                key: const ValueKey('institution-domain'),
-                controller: controller,
-                autofocus: true,
-                autocorrect: false,
-                enableSuggestions: false,
-                textCapitalization: TextCapitalization.none,
-                keyboardType: TextInputType.url,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  hintText: 'mec',
-                  prefixIcon: Icon(Icons.language_rounded),
-                  suffixText: '.supercampus.ai',
-                ),
-                validator: validateInstitution,
-                onFieldSubmitted: (_) => onContinue(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Example: enter mec for mec.supercampus.ai',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.muted),
-            ),
-            const SizedBox(height: 28),
-            FilledButton(
-              key: const ValueKey('continue-from-institution'),
-              onPressed: onContinue,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.ink,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(54),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Continue'),
-                  SizedBox(width: 10),
-                  Icon(Icons.arrow_forward_rounded, size: 19),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -1010,21 +1065,13 @@ class _BrandLockup extends StatelessWidget {
           ? MainAxisAlignment.center
           : MainAxisAlignment.start,
       children: [
-        Container(
+        SizedBox(
           width: 38,
           height: 38,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: AppColors.ink,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Text(
-            'S',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 21,
-              fontWeight: FontWeight.w500,
-            ),
+          child: Image.asset(
+            'assets/branding/supercampus_app_icon.png',
+            fit: BoxFit.contain,
+            semanticLabel: 'SuperCampus logo',
           ),
         ),
         const SizedBox(width: 11),
