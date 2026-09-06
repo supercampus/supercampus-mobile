@@ -753,7 +753,9 @@ class _DayRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: theme.colorScheme.surface,
+        color: theme.brightness == Brightness.light
+            ? const Color(0xFFF5F0FF)
+            : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
