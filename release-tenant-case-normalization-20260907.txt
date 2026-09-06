@@ -1,0 +1,2 @@
+SuperCampus web release: generic tenant field without MEC-specific hints.
+Tenant IDs are normalized case-insensitively before authentication.
