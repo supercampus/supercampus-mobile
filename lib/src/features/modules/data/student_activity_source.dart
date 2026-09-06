@@ -62,13 +62,6 @@ class BackendStudentActivitySource implements StudentActivitySource {
         CanteenOrderStatus.ready => 'Order ready for pickup',
         _ => 'Order ${order.status.label.toLowerCase()}',
       };
-      final progress = switch (order.status) {
-        CanteenOrderStatus.pending => .12,
-        CanteenOrderStatus.accepted => .32,
-        CanteenOrderStatus.preparing => .58,
-        CanteenOrderStatus.ready => .92,
-        _ => 1.0,
-      };
       return [
         StudentActivity(
           id: 'canteen-${order.id}',
@@ -79,7 +72,6 @@ class BackendStudentActivitySource implements StudentActivitySource {
           moduleId: ModuleCatalog.canteen,
           priority: 10,
           statusLabel: order.status.label,
-          progress: progress,
         ),
       ];
     } catch (_) {
@@ -102,15 +94,12 @@ class BackendStudentActivitySource implements StudentActivitySource {
           'Background status refresh does not activate a daily pass.',
         ),
       ).loadStore();
-      final requests =
-          store.requests
-              .where(
-                (request) =>
-                    request.status == ApprovalStatus.pending ||
-                    request.status == ApprovalStatus.approved,
-              )
-              .toList()
-            ..sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
+      final requests = store.requests.where((request) {
+        final liveStatus =
+            request.status == ApprovalStatus.pending ||
+            request.status == ApprovalStatus.approved;
+        return liveStatus && request.returnAt.isAfter(DateTime.now());
+      }).toList()..sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
       if (requests.isEmpty) return const [];
       final request = requests.first;
       final isPending = request.status == ApprovalStatus.pending;
@@ -124,7 +113,6 @@ class BackendStudentActivitySource implements StudentActivitySource {
           moduleId: ModuleCatalog.gatepass,
           priority: 20,
           statusLabel: request.status.label,
-          progress: isPending ? .38 : 1,
         ),
       ];
     } catch (_) {
@@ -138,37 +126,37 @@ class BackendStudentActivitySource implements StudentActivitySource {
         baseUrl: baseUrl,
         accessTokenProvider: accessTokenProvider,
       ).loadBookings();
+      final now = DateTime.now();
       final relevant =
           bookings
               .where(
-                (booking) => const {
-                  LibraryPassStatus.pending,
-                  LibraryPassStatus.approved,
-                  LibraryPassStatus.upcoming,
-                  LibraryPassStatus.active,
-                  LibraryPassStatus.inside,
-                }.contains(booking.status),
+                (booking) =>
+                    const {
+                      LibraryPassStatus.pending,
+                      LibraryPassStatus.approved,
+                      LibraryPassStatus.upcoming,
+                      LibraryPassStatus.active,
+                      LibraryPassStatus.inside,
+                    }.contains(booking.status) &&
+                    booking.end.isAfter(now),
               )
               .toList()
             ..sort((a, b) => a.start.compareTo(b.start));
       if (relevant.isEmpty) return const [];
       final booking = relevant.first;
-      final now = DateTime.now();
       final elapsed = now.difference(booking.start).inSeconds;
       final duration = booking.end.difference(booking.start).inSeconds;
-      final progress = duration <= 0
-          ? 0.0
-          : (elapsed / duration).clamp(0.0, 1.0);
-      final active =
-          booking.status == LibraryPassStatus.active ||
-          booking.status == LibraryPassStatus.inside;
+      final active = !now.isBefore(booking.start) && now.isBefore(booking.end);
+      final progress = active && duration > 0
+          ? (elapsed / duration).clamp(0.0, 1.0)
+          : null;
       return [
         StudentActivity(
           id: 'library-${booking.id}',
           kind: StudentActivityKind.library,
           title: active ? 'Library slot in progress' : 'Upcoming library slot',
           supporting:
-              '${_time(booking.start)}–${_time(booking.end)} · ${booking.durationMinutes} minutes · ${booking.zoneName}',
+              '${_time(booking.start)}–${_time(booking.end)} · ${booking.durationMinutes} minutes',
           moduleId: ModuleCatalog.library,
           priority: active ? 5 : 30,
           statusLabel: booking.status.label,
@@ -227,7 +215,6 @@ class BackendStudentActivitySource implements StudentActivitySource {
         double.infinity,
       );
       if (outstanding < 1) return const [];
-      final total = (assigned + fine - waiver).clamp(0, double.infinity);
       return [
         StudentActivity(
           id: 'fees-outstanding',
@@ -238,7 +225,6 @@ class BackendStudentActivitySource implements StudentActivitySource {
           moduleId: ModuleCatalog.tuitionFee,
           priority: 40,
           statusLabel: 'Payment due',
-          progress: total <= 0 ? 0 : (paid / total).clamp(0.0, 1.0),
         ),
       ];
     } catch (_) {
@@ -291,7 +277,7 @@ class BackendStudentActivitySource implements StudentActivitySource {
           statusLabel: isCurrent ? 'Now' : 'Next class',
           progress: isCurrent && duration > 0
               ? (elapsed / duration).clamp(0.0, 1.0)
-              : 0,
+              : null,
         ),
       ];
     } catch (_) {

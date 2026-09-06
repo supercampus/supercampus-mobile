@@ -174,40 +174,38 @@ void main() {
   });
 
   group('a learner reads their standing', () {
-    testWidgets(
-      'live activity shows status, animated progress, and opens module',
-      (tester) async {
-        final opened = <String>[];
-        await pumpGlance(
-          tester,
-          student,
-          opened: opened,
-          facts: const GlanceFacts(
-            activities: [
-              StudentActivity(
-                id: 'order-21',
-                kind: StudentActivityKind.canteen,
-                title: 'Order waiting for confirmation',
-                supporting: '2 items · ₹71 · Order #21',
-                moduleId: ModuleCatalog.canteen,
-                priority: 10,
-                statusLabel: 'Pending',
-                progress: .12,
-              ),
-            ],
-          ),
-        );
+    testWidgets('non-timed activity shows status without a progress bar', (
+      tester,
+    ) async {
+      final opened = <String>[];
+      await pumpGlance(
+        tester,
+        student,
+        opened: opened,
+        facts: const GlanceFacts(
+          activities: [
+            StudentActivity(
+              id: 'order-21',
+              kind: StudentActivityKind.canteen,
+              title: 'Order waiting for confirmation',
+              supporting: '2 items · ₹71 · Order #21',
+              moduleId: ModuleCatalog.canteen,
+              priority: 10,
+              statusLabel: 'Pending',
+            ),
+          ],
+        ),
+      );
 
-        expect(find.text('Recent activity & progress'), findsOneWidget);
-        expect(find.text('Order waiting for confirmation'), findsOneWidget);
-        expect(find.text('Pending'), findsOneWidget);
-        expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.text('Recent activity & progress'), findsOneWidget);
+      expect(find.text('Order waiting for confirmation'), findsOneWidget);
+      expect(find.text('Pending'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
 
-        await tester.tap(find.text('Order waiting for confirmation'));
-        await tester.pump();
-        expect(opened, [ModuleCatalog.canteen]);
-      },
-    );
+      await tester.tap(find.text('Order waiting for confirmation'));
+      await tester.pump();
+      expect(opened, [ModuleCatalog.canteen]);
+    });
 
     testWidgets('a real percentage, not a placeholder', (tester) async {
       await pumpGlance(
@@ -225,7 +223,7 @@ void main() {
       expect(find.text('8.42'), findsNothing);
     });
 
-    testWidgets('an unmarked term says so instead of showing 0%', (
+    testWidgets('an unmarked term does not create a static status card', (
       tester,
     ) async {
       await pumpGlance(
@@ -236,8 +234,31 @@ void main() {
         ),
       );
 
-      expect(find.text('No attendance recorded yet'), findsOneWidget);
+      expect(find.text('No attendance recorded yet'), findsNothing);
       expect(find.text('0% attendance'), findsNothing);
+    });
+
+    testWidgets('an active time-based workflow shows progress', (tester) async {
+      await pumpGlance(
+        tester,
+        student,
+        facts: const GlanceFacts(
+          activities: [
+            StudentActivity(
+              id: 'library-live',
+              kind: StudentActivityKind.library,
+              title: 'Library slot in progress',
+              supporting: '9:45 PM–10:00 PM · 15 minutes',
+              moduleId: ModuleCatalog.library,
+              priority: 1,
+              statusLabel: 'Active',
+              progress: .5,
+            ),
+          ],
+        ),
+      );
+
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
     });
 
     testWidgets('tapping the standing opens academics', (tester) async {
