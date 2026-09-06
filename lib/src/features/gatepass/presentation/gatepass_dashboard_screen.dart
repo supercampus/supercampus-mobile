@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
@@ -12,6 +11,7 @@ class GatepassDashboardScreen extends StatelessWidget {
   const GatepassDashboardScreen({
     super.key,
     required this.store,
+    required this.onApplyLeavePass,
     required this.onApplyOutpass,
     required this.onOpenAccess,
     required this.onOpenRequests,
@@ -21,6 +21,7 @@ class GatepassDashboardScreen extends StatelessWidget {
 
   final GatepassStore store;
   final VoidCallback onApplyOutpass;
+  final VoidCallback onApplyLeavePass;
   final VoidCallback onOpenAccess;
   final VoidCallback onOpenRequests;
   final VoidCallback onInviteVisitor;
@@ -74,25 +75,10 @@ class GatepassDashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
               ],
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: onApplyOutpass,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.gateBlue,
-                      ),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Apply outpass'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  IconButton.filledTonal(
-                    tooltip: 'Show access QR',
-                    onPressed: onOpenAccess,
-                    icon: const Icon(Icons.qr_code_2),
-                  ),
-                ],
+              _PassActions(
+                store: store,
+                onApplyLeavePass: onApplyLeavePass,
+                onApplyOutpass: onApplyOutpass,
               ),
               const SizedBox(height: 26),
               Text(
@@ -159,207 +145,238 @@ class _CampusStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final location = store.mapLocation;
-    final student = store.student;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: SizedBox(
-        height: 184,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (location != null)
-              _CampusMap(location: location)
-            else
-              const DecoratedBox(
-                decoration: BoxDecoration(gradient: gatepassGradient),
-              ),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0x22000000), Color(0xCC111033)],
-                  stops: [0.3, 1],
-                ),
-              ),
-            ),
-            Positioned(
-              left: 16,
-              top: 14,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.92),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: store.zone == CampusZone.inside
-                            ? const Color(0xFF1BA765)
-                            : const Color(0xFFE74C3C),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 7),
-                    Text(
-                      store.zone == CampusZone.unknown
-                          ? 'Locating…'
-                          : store.zone == CampusZone.outside
-                          ? 'Outside campus'
-                          : 'Live location',
-                      style: const TextStyle(
-                        color: Color(0xFF17152B),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Positioned(
-              left: 18,
-              right: 18,
-              bottom: 17,
-              child: Row(
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white24),
-                    ),
-                    child: const Icon(Icons.my_location, color: Colors.white),
-                  ),
-                  const SizedBox(width: 13),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          store.zone == CampusZone.inside
-                              ? 'You are on campus'
-                              : store.zone == CampusZone.outside
-                              ? 'You are off campus'
-                              : 'Finding your location',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${student.rollNumber}  •  ${student.department}',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.86),
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (location != null)
-                    const Icon(
-                      Icons.verified,
-                      color: AppColors.gateLime,
-                      size: 21,
-                    ),
-                ],
-              ),
-            ),
-          ],
+    final inside = store.zone == CampusZone.inside;
+    final outside = store.zone == CampusZone.outside;
+    return GatepassSurface(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        leading: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: (inside ? const Color(0xFF168A5B) : AppColors.gateBlue)
+                .withValues(alpha: .1),
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: Icon(
+            inside ? Icons.location_on_rounded : Icons.my_location_rounded,
+            color: inside ? const Color(0xFF168A5B) : AppColors.gateBlue,
+          ),
         ),
+        title: Text(
+          inside
+              ? 'Campus location verified'
+              : outside
+              ? 'Outside campus'
+              : 'Checking campus location',
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Text(
+          outside
+              ? (store.dailyPassIssue ?? 'Gate-in QR is available on campus.')
+              : '${store.student.rollNumber} · ${store.student.department}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: inside
+            ? const Icon(Icons.verified_rounded, color: Color(0xFF168A5B))
+            : null,
       ),
     );
   }
 }
 
-class _CampusMap extends StatelessWidget {
-  const _CampusMap({required this.location});
+class _PassActions extends StatelessWidget {
+  const _PassActions({
+    required this.store,
+    required this.onApplyLeavePass,
+    required this.onApplyOutpass,
+  });
 
-  final CampusMapLocation location;
+  final GatepassStore store;
+  final VoidCallback onApplyLeavePass;
+  final VoidCallback onApplyOutpass;
 
   @override
   Widget build(BuildContext context) {
-    final studentPoint = LatLng(
-      location.studentLatitude,
-      location.studentLongitude,
+    final pass = store.dailyPass;
+    final payload = pass?.qrPayload;
+    final isHosteller = store.student.residency == StudentResidency.hosteller;
+    return SizedBox(
+      height: isHosteller ? 134 : 62,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  height: 62,
+                  child: FilledButton.icon(
+                    onPressed: onApplyLeavePass,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFEAEAEA),
+                      foregroundColor: const Color(0xFF18171D),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    icon: const Icon(Icons.add_rounded, size: 26),
+                    label: const Text(
+                      'Apply leave pass',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                if (isHosteller) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 62,
+                    child: FilledButton(
+                      onPressed: onApplyOutpass,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.gateBlue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                      child: const Text(
+                        'Apply outpass',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          AspectRatio(
+            aspectRatio: 1,
+            child: Material(
+              color: const Color(0xFFEAEAEA),
+              borderRadius: BorderRadius.circular(18),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: payload == null || payload.isEmpty
+                    ? null
+                    : () => _showGateQr(context, pass!),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: payload == null || payload.isEmpty
+                      ? const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.qr_code_2_rounded, size: 42),
+                            SizedBox(height: 6),
+                            Text(
+                              'Gate-in QR\nnot ready',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 11),
+                            ),
+                          ],
+                        )
+                      : QrImageView(
+                          data: payload,
+                          padding: EdgeInsets.zero,
+                          eyeStyle: const QrEyeStyle(color: Color(0xFF151419)),
+                          dataModuleStyle: const QrDataModuleStyle(
+                            color: Color(0xFF151419),
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
-    final campusPoint = LatLng(
-      location.campusLatitude,
-      location.campusLongitude,
+  }
+
+  void _showGateQr(BuildContext context, DailyAccessPass pass) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => _FullScreenGateQr(pass: pass),
+      ),
     );
-    return FlutterMap(
-      options: MapOptions(
-        initialCenter: studentPoint,
-        initialZoom: 17,
-        interactionOptions: const InteractionOptions(
-          flags: InteractiveFlag.none,
+  }
+}
+
+class _FullScreenGateQr extends StatelessWidget {
+  const _FullScreenGateQr({required this.pass});
+
+  final DailyAccessPass pass;
+
+  @override
+  Widget build(BuildContext context) {
+    final qrSize = (MediaQuery.sizeOf(context).width - 92).clamp(200.0, 300.0);
+    return Scaffold(
+      backgroundColor: const Color(0xFF111014),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF111014),
+        foregroundColor: Colors.white,
+        title: const Text('Gate-in QR'),
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.close_rounded),
         ),
       ),
-      children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'ai.supercampus.mobile',
-        ),
-        CircleLayer(
-          circles: [
-            CircleMarker(
-              point: campusPoint,
-              radius: location.radiusMetres,
-              useRadiusInMeter: true,
-              color: const Color(0x332D20FF),
-              borderColor: const Color(0xFF3424F5),
-              borderStrokeWidth: 2,
-            ),
-            if (location.accuracyMetres > 0)
-              CircleMarker(
-                point: studentPoint,
-                radius: location.accuracyMetres,
-                useRadiusInMeter: true,
-                color: const Color(0x223427FF),
-                borderColor: const Color(0x663427FF),
-                borderStrokeWidth: 1,
-              ),
-          ],
-        ),
-        MarkerLayer(
-          markers: [
-            Marker(
-              point: studentPoint,
-              width: 42,
-              height: 42,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3424F5),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black38, blurRadius: 8),
-                  ],
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: QrImageView(data: pass.qrPayload, size: qrSize),
                 ),
-                child: const Icon(Icons.person_pin_circle, color: Colors.white),
-              ),
+                const SizedBox(height: 28),
+                const Text(
+                  'DAILY GATE-IN ACCESS',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    letterSpacing: 1.4,
+                  ),
+                ),
+                if (pass.manualCode case final code?) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    code,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 34,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 8,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                const Text(
+                  'Present this code at the campus gate',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-        const RichAttributionWidget(
-          attributions: [TextSourceAttribution('OpenStreetMap contributors')],
-          popupInitialDisplayDuration: Duration.zero,
-        ),
-      ],
+      ),
     );
   }
 }
