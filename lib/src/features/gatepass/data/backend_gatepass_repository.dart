@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -210,19 +211,44 @@ class BackendGatepassRepository implements GatepassRepository {
     // Android normally already has a recent fused fix. Reusing it makes the
     // Gatepass dashboard open immediately instead of displaying a full-screen
     // loader while the GPS radio starts from cold.
-    final cached = await Geolocator.getLastKnownPosition();
+    Position? cached;
+    try {
+      cached = await Geolocator.getLastKnownPosition();
+    } catch (_) {
+      // Some mobile browsers do not implement a last-known fix. A fresh fix
+      // below is still valid and must not be skipped because of that.
+    }
     if (cached != null &&
         DateTime.now().difference(cached.timestamp).abs() <
             const Duration(minutes: 5) &&
         cached.accuracy <= 150) {
       return cached;
     }
-    return Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        timeLimit: Duration(seconds: 6),
-      ),
-    );
+    try {
+      // A cold Android GPS regularly needs longer than six seconds, especially
+      // when Chrome has only just received location permission.
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 20),
+        ),
+      );
+    } on TimeoutException {
+      try {
+        // Network-assisted location is less precise, but it gives the API a
+        // useful fix on devices that cannot acquire satellites indoors.
+        return await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.medium,
+            timeLimit: Duration(seconds: 15),
+          ),
+        );
+      } on TimeoutException {
+        throw const GatepassException(
+          'Location timed out. Keep GPS on, allow precise location, then retry.',
+        );
+      }
+    }
   }
 
   @override
