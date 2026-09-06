@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/module_section_switcher.dart';
 import '../../library/data/librarian_repository.dart';
+import '../../maintenance/data/maintenance_repository.dart';
 import '../data/admin_student_repository.dart';
 
 /// Focused admin surface for student management and pending approvals.
@@ -11,10 +12,12 @@ class AdminPortalShell extends StatefulWidget {
     super.key,
     required this.libraryRepository,
     required this.studentRepository,
+    required this.maintenanceRepository,
   });
 
   final LibrarianRepository libraryRepository;
   final AdminStudentRepository studentRepository;
+  final MaintenanceRepository maintenanceRepository;
 
   @override
   State<AdminPortalShell> createState() => _AdminPortalShellState();
@@ -28,6 +31,7 @@ class _AdminPortalShellState extends State<AdminPortalShell> {
     final pages = [
       _AdminStudentsPage(repository: widget.studentRepository),
       _AdminApprovalsPage(repository: widget.libraryRepository),
+      _AdminMaintenancePage(repository: widget.maintenanceRepository),
     ];
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -40,6 +44,10 @@ class _AdminPortalShellState extends State<AdminPortalShell> {
                 ModuleSection(
                   label: 'Approvals',
                   icon: Icons.approval_outlined,
+                ),
+                ModuleSection(
+                  label: 'Maintenance',
+                  icon: Icons.construction_rounded,
                 ),
               ],
               selectedIndex: _selected,
@@ -311,4 +319,273 @@ class _AdminApprovalsPageState extends State<_AdminApprovalsPage> {
             ),
           ),
   );
+}
+
+class _AdminMaintenancePage extends StatefulWidget {
+  const _AdminMaintenancePage({required this.repository});
+
+  final MaintenanceRepository repository;
+
+  @override
+  State<_AdminMaintenancePage> createState() => _AdminMaintenancePageState();
+}
+
+class _AdminMaintenancePageState extends State<_AdminMaintenancePage> {
+  final _messageController = TextEditingController(
+    text: 'We are making a few improvements. Please check back shortly.',
+  );
+  DateTime _startsAt = DateTime.now();
+  DateTime _endsAt = DateTime.now().add(const Duration(hours: 1));
+  bool _enabled = false;
+  bool _loading = true;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final window = await widget.repository.adminStatus();
+      if (!mounted) return;
+      setState(() {
+        _enabled = window.enabled;
+        _startsAt = window.startsAt ?? DateTime.now();
+        _endsAt = window.endsAt ?? DateTime.now().add(const Duration(hours: 1));
+        if (window.message.isNotEmpty) _messageController.text = window.message;
+        _loading = false;
+        _error = null;
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = error.toString();
+        });
+      }
+    }
+  }
+
+  Future<void> _pick(bool start) async {
+    final initial = start ? _startsAt : _endsAt;
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (time == null) return;
+    final value = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    setState(() {
+      if (start) {
+        _startsAt = value;
+        if (_endsAt.isBefore(value.add(const Duration(minutes: 1)))) {
+          _endsAt = value.add(const Duration(hours: 1));
+        }
+      } else {
+        _endsAt = value;
+      }
+    });
+  }
+
+  Future<void> _save() async {
+    if (_endsAt.isBefore(_startsAt) || _endsAt.isAtSameMomentAs(_startsAt)) {
+      setState(() => _error = 'End time must be after the start time.');
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final saved = await widget.repository.save(
+        enabled: _enabled,
+        startsAt: _startsAt,
+        endsAt: _endsAt,
+        message: _messageController.text,
+      );
+      if (!mounted) return;
+      setState(() {
+        _enabled = saved.enabled;
+        _saving = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            saved.enabled
+                ? 'Maintenance window scheduled.'
+                : 'Maintenance mode is off.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = error.toString();
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Maintenance control'),
+        actions: [
+          IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded)),
+        ],
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 32),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: _enabled
+                        ? const Color(0xFFFFECEC)
+                        : const Color(0xFFF0ECFF),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    value: _enabled,
+                    activeThumbColor: Colors.red.shade700,
+                    onChanged: _saving
+                        ? null
+                        : (value) => setState(() => _enabled = value),
+                    title: Text(
+                      _enabled
+                          ? 'Maintenance scheduled'
+                          : 'Maintenance mode off',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    subtitle: const Text(
+                      'During the active window, only an administrator can sign in.',
+                    ),
+                    secondary: Icon(
+                      Icons.construction_rounded,
+                      color: _enabled ? Colors.red.shade700 : AppColors.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Text(
+                  'Time window',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 10),
+                _TimeTile(
+                  label: 'Starts',
+                  value: _formatDateTime(_startsAt),
+                  onTap: () => _pick(true),
+                ),
+                const SizedBox(height: 10),
+                _TimeTile(
+                  label: 'Ends',
+                  value: _formatDateTime(_endsAt),
+                  onTap: () => _pick(false),
+                ),
+                const SizedBox(height: 18),
+                TextField(
+                  controller: _messageController,
+                  maxLength: 280,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Message shown to users',
+                    alignLabelWithHint: true,
+                    prefixIcon: Icon(Icons.message_outlined),
+                  ),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(_error!, style: TextStyle(color: Colors.red.shade700)),
+                ],
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _enabled
+                        ? Colors.red.shade700
+                        : AppColors.primary,
+                    minimumSize: const Size.fromHeight(52),
+                  ),
+                  onPressed: _saving ? null : _save,
+                  icon: _saving
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.schedule_send_rounded),
+                  label: Text(
+                    _enabled ? 'Schedule maintenance' : 'Save as off',
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  String _formatDateTime(DateTime value) {
+    final hour = value.hour % 12 == 0 ? 12 : value.hour % 12;
+    final minute = value.minute.toString().padLeft(2, '0');
+    final period = value.hour >= 12 ? 'PM' : 'AM';
+    return '${value.day}/${value.month}/${value.year}  $hour:$minute $period';
+  }
+}
+
+class _TimeTile extends StatelessWidget {
+  const _TimeTile({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: ListTile(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFE5DDF8)),
+        ),
+        leading: const Icon(Icons.event_outlined, color: AppColors.primary),
+        title: Text(label),
+        subtitle: Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        trailing: const Icon(Icons.edit_calendar_outlined),
+        onTap: onTap,
+      ),
+    );
+  }
 }
