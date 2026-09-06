@@ -1,0 +1,2 @@
+Gatepass module card now renders the exact active server-issued credential.
+Source commit: 6206b8e
