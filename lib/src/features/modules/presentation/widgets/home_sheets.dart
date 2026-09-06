@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/access/academic_presentation.dart';
 import '../../../../core/access/effective_permissions.dart';
 import '../../../../core/access/module_catalog.dart';
+import '../../../../core/access/portal_module_presentation.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/auth_repository.dart';
 import '../../../insights/data/insight.dart';
@@ -69,10 +70,12 @@ Future<T?> showHomeSheet<T>({
 class CampusSearchSheet extends StatefulWidget {
   const CampusSearchSheet({
     super.key,
+    this.session,
     required this.permissions,
     required this.onOpenModule,
   });
 
+  final UserSession? session;
   final EffectivePermissions permissions;
   final ValueChanged<String> onOpenModule;
 
@@ -152,15 +155,18 @@ class _CampusSearchSheetState extends State<CampusSearchSheet> {
 
   List<_SearchResult> _search(String raw) {
     final query = raw.trim().toLowerCase();
+    final modules = widget.session == null
+        ? presentedModules(widget.permissions)
+        : portalModules(widget.session!, widget.permissions);
     if (query.isEmpty) {
       return [
-        for (final m in presentedModules(widget.permissions))
+        for (final m in modules)
           _SearchResult(module: m, title: m.title, subtitle: m.tagline),
       ];
     }
 
     final results = <_SearchResult>[];
-    for (final module in presentedModules(widget.permissions)) {
+    for (final module in modules) {
       final matchesModule =
           module.title.toLowerCase().contains(query) ||
           module.tagline.toLowerCase().contains(query) ||
@@ -207,21 +213,28 @@ class _SearchResult {
 class ModuleListSheet extends StatelessWidget {
   const ModuleListSheet({
     super.key,
+    this.session,
     required this.permissions,
     required this.onOpenModule,
+    this.moduleOrder = const [],
   });
 
+  final UserSession? session;
   final EffectivePermissions permissions;
   final ValueChanged<String> onOpenModule;
+  final List<String> moduleOrder;
 
   @override
   Widget build(BuildContext context) {
-    final modules = [
-      for (final module in presentedModules(permissions))
+    final presented = session == null
+        ? presentedModules(permissions)
+        : portalModules(session!, permissions);
+    final modules = orderModules([
+      for (final module in presented)
         if (module.status != ModuleStatus.planned &&
             permissions.grantedFeatures(module).isNotEmpty)
           module,
-    ];
+    ], moduleOrder);
 
     if (modules.isEmpty) {
       return Padding(
@@ -428,6 +441,8 @@ class ProfileSheet extends StatelessWidget {
     required this.onOpenModule,
     required this.onSignOut,
     required this.onThemeModeChanged,
+    this.moduleOrder = const [],
+    this.onModuleOrderChanged,
   });
 
   final UserSession session;
@@ -435,10 +450,12 @@ class ProfileSheet extends StatelessWidget {
   final ValueChanged<String> onOpenModule;
   final VoidCallback onSignOut;
   final ValueChanged<ThemeMode> onThemeModeChanged;
+  final List<String> moduleOrder;
+  final ValueChanged<List<String>>? onModuleOrderChanged;
 
   @override
   Widget build(BuildContext context) {
-    final modules = presentedModules(permissions);
+    final modules = portalModules(session, permissions);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -468,6 +485,9 @@ class ProfileSheet extends StatelessWidget {
               onOpenModule: onOpenModule,
               onSignOut: onSignOut,
               onThemeModeChanged: onThemeModeChanged,
+              modules: modules,
+              moduleOrder: moduleOrder,
+              onModuleOrderChanged: onModuleOrderChanged,
             ),
           ),
         ),
@@ -611,11 +631,17 @@ class _ProfileSettingsSheet extends StatelessWidget {
     required this.onOpenModule,
     required this.onSignOut,
     required this.onThemeModeChanged,
+    required this.modules,
+    required this.moduleOrder,
+    required this.onModuleOrderChanged,
   });
 
   final ValueChanged<String> onOpenModule;
   final VoidCallback onSignOut;
   final ValueChanged<ThemeMode> onThemeModeChanged;
+  final List<ModuleDescriptor> modules;
+  final List<String> moduleOrder;
+  final ValueChanged<List<String>>? onModuleOrderChanged;
 
   @override
   Widget build(BuildContext context) => ListView(
@@ -643,7 +669,13 @@ class _ProfileSettingsSheet extends StatelessWidget {
         icon: Icons.palette_outlined,
         title: 'Customization',
         subtitle: 'Theme, appearance and display preferences',
-        onTap: () => _openCustomization(context, onThemeModeChanged),
+        onTap: () => _openCustomization(
+          context,
+          onThemeModeChanged,
+          modules,
+          moduleOrder,
+          onModuleOrderChanged,
+        ),
       ),
       _ProfileAction(
         icon: Icons.feedback_outlined,
@@ -695,7 +727,7 @@ class _LegacyProfileOptionsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final modules = presentedModules(permissions);
+    final modules = portalModules(session, permissions);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1055,41 +1087,166 @@ void _showUnavailableMessage(BuildContext context, String feature) {
 
 void _openCustomization(
   BuildContext context,
-  ValueChanged<ThemeMode> onThemeModeChanged,
-) {
-  showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    builder: (context) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Customization',
-              style: Theme.of(context).textTheme.titleLarge,
+  ValueChanged<ThemeMode> onThemeModeChanged, [
+  List<ModuleDescriptor> modules = const [],
+  List<String> moduleOrder = const [],
+  ValueChanged<List<String>>? onModuleOrderChanged,
+]) {
+  Navigator.of(context, rootNavigator: true).push<void>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => _CustomizationPage(
+        modules: modules,
+        moduleOrder: moduleOrder,
+        onThemeModeChanged: onThemeModeChanged,
+        onModuleOrderChanged: onModuleOrderChanged,
+      ),
+    ),
+  );
+}
+
+class _CustomizationPage extends StatefulWidget {
+  const _CustomizationPage({
+    required this.modules,
+    required this.moduleOrder,
+    required this.onThemeModeChanged,
+    required this.onModuleOrderChanged,
+  });
+
+  final List<ModuleDescriptor> modules;
+  final List<String> moduleOrder;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ValueChanged<List<String>>? onModuleOrderChanged;
+
+  @override
+  State<_CustomizationPage> createState() => _CustomizationPageState();
+}
+
+class _CustomizationPageState extends State<_CustomizationPage> {
+  late List<ModuleDescriptor> _modules;
+
+  @override
+  void initState() {
+    super.initState();
+    _modules = orderModules(widget.modules, widget.moduleOrder).toList();
+  }
+
+  void _reorder(int oldIndex, int newIndex) {
+    setState(() {
+      final module = _modules.removeAt(oldIndex);
+      _modules.insert(newIndex, module);
+    });
+    widget.onModuleOrderChanged?.call([
+      for (final module in _modules) module.id,
+    ]);
+  }
+
+  void _resetOrder() {
+    setState(() => _modules = widget.modules.toList());
+    widget.onModuleOrderChanged?.call(const []);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Default module order restored.')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      leading: IconButton(
+        tooltip: 'Back',
+        onPressed: () => Navigator.of(context).pop(),
+        icon: const Icon(Icons.arrow_back_rounded),
+      ),
+      title: const Text('Customization'),
+    ),
+    body: SafeArea(
+      top: false,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        children: [
+          Text(
+            'Make SuperCampus work the way you prefer.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Personalize how SuperCampus looks and behaves.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 14),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
+          ),
+          const SizedBox(height: 20),
+          Card(
+            margin: EdgeInsets.zero,
+            child: ListTile(
               leading: const CircleAvatar(
                 child: Icon(Icons.brightness_6_outlined),
               ),
               title: const Text('Theme'),
               subtitle: const Text('Dark, light or follow device settings'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _openThemePicker(context, onThemeModeChanged),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => _openThemePicker(context, widget.onThemeModeChanged),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 28),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Module sequence',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              TextButton(onPressed: _resetOrder, child: const Text('Reset')),
+            ],
+          ),
+          Text(
+            'Drag the handle to choose which module appears first on Home.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (_modules.isEmpty)
+            const Card(
+              margin: EdgeInsets.zero,
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text('No modules are currently assigned to you.'),
+              ),
+            )
+          else
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              itemCount: _modules.length,
+              onReorderItem: _reorder,
+              itemBuilder: (context, index) {
+                final module = _modules[index];
+                return Card(
+                  key: ValueKey('module-order-${module.id}'),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    minTileHeight: 72,
+                    leading: CircleAvatar(
+                      backgroundColor: module.color.withValues(alpha: 0.12),
+                      foregroundColor: module.color,
+                      child: Icon(module.icon),
+                    ),
+                    title: Text(module.displayName),
+                    subtitle: Text(
+                      index == 0
+                          ? 'Shown first on Home'
+                          : 'Position ${index + 1}',
+                    ),
+                    trailing: ReorderableDragStartListener(
+                      index: index,
+                      child: const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: Icon(Icons.drag_handle_rounded),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
       ),
     ),
   );
@@ -1123,7 +1280,6 @@ void _openThemePicker(
                 title: Text(option.$2),
                 onTap: () {
                   onThemeModeChanged(option.$1);
-                  Navigator.of(context).pop();
                   Navigator.of(context).pop();
                 },
               ),

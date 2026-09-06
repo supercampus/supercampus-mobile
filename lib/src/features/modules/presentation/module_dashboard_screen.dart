@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../core/access/academic_presentation.dart';
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
+import '../../../core/access/portal_module_presentation.dart';
+import '../../../core/notifications/notification_deep_link.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/campus_nav_bar.dart';
 import '../../authentication/data/auth_repository.dart';
@@ -12,6 +13,8 @@ import '../../advisor/presentation/advisor_students_section.dart';
 import '../../faculty/data/faculty_models.dart';
 import '../../faculty/data/mock_faculty_repository.dart';
 import '../../insights/data/insight.dart';
+import '../../notifications/data/notification_repository.dart';
+import '../../notifications/presentation/notification_inbox_sheet.dart';
 import '../data/glance_source.dart';
 import 'module_stack.dart';
 import 'today_glance.dart';
@@ -33,12 +36,17 @@ class ModuleDashboardScreen extends StatefulWidget {
     required this.onOpenModule,
     required this.onSignOut,
     required this.onThemeModeChanged,
+    this.moduleOrder = const [],
+    this.onModuleOrderChanged,
     this.onQuickAction,
     this.onOpenAttendanceClass,
     this.onScan,
     this.dashboard,
     this.glanceSource,
+    this.glanceRevision = 0,
     this.advisorStudentsSource,
+    this.notificationRepository,
+    this.notificationRevision = 0,
   });
 
   final UserSession session;
@@ -46,6 +54,8 @@ class ModuleDashboardScreen extends StatefulWidget {
   final ValueChanged<String> onOpenModule;
   final VoidCallback onSignOut;
   final ValueChanged<ThemeMode> onThemeModeChanged;
+  final List<String> moduleOrder;
+  final ValueChanged<List<String>>? onModuleOrderChanged;
   final void Function(
     String moduleId,
     String actionId,
@@ -66,7 +76,10 @@ class ModuleDashboardScreen extends StatefulWidget {
   /// Supplies "your day". Null leaves the section empty rather than inventing
   /// numbers for it.
   final GlanceSource? glanceSource;
+  final int glanceRevision;
   final AdvisorStudentsSource? advisorStudentsSource;
+  final NotificationRepository? notificationRepository;
+  final int notificationRevision;
 
   @override
   State<ModuleDashboardScreen> createState() => _ModuleDashboardScreenState();
@@ -76,11 +89,13 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
   List<Insight> _insights = const [];
   GlanceFacts _glance = GlanceFacts.empty;
   String _selectedNavId = 'home';
+  int _unreadNotifications = 0;
 
   @override
   void initState() {
     super.initState();
     _loadGlance();
+    _loadNotifications();
   }
 
   @override
@@ -88,19 +103,37 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
     super.didUpdateWidget(oldWidget);
     // Grants decide the shape, and the shape decides what is fetched, so a
     // permission change has to re-ask rather than keep the previous day.
-    if (oldWidget.permissions != widget.permissions ||
-        oldWidget.glanceSource != widget.glanceSource) {
-      _loadGlance();
+    if (oldWidget.permissions != widget.permissions) {
+      _loadGlance(showLoading: true);
+    } else if (oldWidget.glanceRevision != widget.glanceRevision) {
+      _loadGlance(showLoading: false);
+    }
+    if (oldWidget.notificationRepository != widget.notificationRepository ||
+        oldWidget.notificationRevision != widget.notificationRevision) {
+      _loadNotifications();
     }
   }
 
-  Future<void> _loadGlance() async {
+  Future<void> _loadNotifications() async {
+    final repository = widget.notificationRepository;
+    if (repository == null) return;
+    try {
+      final inbox = await repository.inbox();
+      if (mounted) setState(() => _unreadNotifications = inbox.unreadCount);
+    } catch (_) {
+      // Notification availability must never block the dashboard.
+    }
+  }
+
+  Future<void> _loadGlance({bool showLoading = true}) async {
     final source = widget.glanceSource;
     if (source == null || !glanceNeedsLoading(widget.permissions)) {
       if (mounted) setState(() => _glance = GlanceFacts.empty);
       return;
     }
-    setState(() => _glance = GlanceFacts.pending);
+    // Keep the last truthful result visible for socket-driven invalidations.
+    // Loading skeletons are useful only for the first load or a changed shape.
+    if (showLoading) setState(() => _glance = GlanceFacts.pending);
     final facts = await source.load(dayShapeFor(widget.permissions));
     if (mounted) setState(() => _glance = facts);
   }
@@ -116,7 +149,10 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final modules = presentedModules(widget.permissions);
+    final modules = orderModules(
+      portalModules(widget.session, widget.permissions),
+      widget.moduleOrder,
+    );
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -131,7 +167,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                   displayName: widget.session.displayName,
                   onAlertsTap: _openAlerts,
                   onSettingsTap: _openProfile,
-                  hasAlerts: _alerts.isNotEmpty,
+                  hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
                 ),
                 Expanded(
                   child: Stack(
@@ -177,14 +213,49 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
     );
   }
 
-  void _openAlerts() => showHomeSheet(
-    context: context,
-    title: 'Alerts',
-    child: InsightListSheet(
-      insights: _alerts,
-      emptyText: 'You are all clear. Nothing needs attention.',
-    ),
-  );
+  void _openAlerts() {
+    final repository = widget.notificationRepository;
+    if (repository == null) {
+      showHomeSheet(
+        context: context,
+        title: 'Alerts',
+        child: InsightListSheet(
+          insights: _alerts,
+          emptyText: 'You are all clear. Nothing needs attention.',
+        ),
+      );
+      return;
+    }
+    showHomeSheet(
+      context: context,
+      title: 'Notifications',
+      expand: true,
+      child: NotificationInboxSheet(
+        repository: repository,
+        onChanged: (inbox) {
+          if (mounted) {
+            setState(() => _unreadNotifications = inbox.unreadCount);
+          }
+        },
+        onOpen: _openNotification,
+      ),
+    );
+  }
+
+  void _openNotification(AppNotification notification) {
+    if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+    final moduleId = notificationModuleId(
+      deepLink: notification.deepLink,
+      category: notification.category,
+      preferAttendanceModule: widget.permissions.canSeeModule(
+        ModuleCatalog.attendance,
+      ),
+    );
+    if (moduleId != null && widget.permissions.canSeeModule(moduleId)) {
+      widget.onOpenModule(moduleId);
+    }
+    _loadNotifications();
+  }
 
   void _openProfile() => showHomeSheet(
     context: context,
@@ -196,6 +267,8 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       onOpenModule: widget.onOpenModule,
       onSignOut: widget.onSignOut,
       onThemeModeChanged: widget.onThemeModeChanged,
+      moduleOrder: widget.moduleOrder,
+      onModuleOrderChanged: widget.onModuleOrderChanged,
     ),
   );
 
@@ -206,8 +279,10 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       title: 'Modules',
       expand: true,
       child: ModuleListSheet(
+        session: widget.session,
         permissions: widget.permissions,
         onOpenModule: widget.onOpenModule,
+        moduleOrder: widget.moduleOrder,
       ),
     );
     if (mounted) setState(() => _selectedNavId = 'home');
@@ -263,7 +338,7 @@ class _Feed extends StatelessWidget {
       ),
       children: [
         SizedBox(
-          height: 154,
+          height: 176,
           child:
               dashboard ??
               _PriorityDashboardCard(
@@ -371,8 +446,8 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
           title: notice.title,
           message: notice.content,
           icon: Icons.campaign_outlined,
-          day: notice.postedAt.day.toString().padLeft(2, '0'),
-          month: _noticeMonthName(notice.postedAt.month),
+          day: notice.announcementDate.day.toString().padLeft(2, '0'),
+          month: _noticeMonthName(notice.announcementDate.month),
           action: notice.pdfUrl == null ? 'View update' : 'View details',
           onTap: () => _openNoticePdf(context, notice),
         ),
@@ -418,62 +493,107 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
     ];
 
     if (_selectedIndex >= cards.length) _selectedIndex = 0;
-    // The reference layout treats the date as the fixed notice-board spine.
-    // Only the copy to its right pages horizontally.
-    final anchor = cards.first;
+    final selectedNotice = cards[_selectedIndex];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+      child: Column(
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: 72,
-            height: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: AppColors.violetGradient,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(18),
-                bottomLeft: Radius.circular(18),
+          Expanded(
+            child: Material(
+              key: const ValueKey('announcement-card'),
+              color: const Color(0xFFF0F1F3),
+              borderRadius: BorderRadius.circular(20),
+              clipBehavior: Clip.antiAlias,
+              child: Row(
+                children: [
+                  AnimatedContainer(
+                    key: const ValueKey('announcement-date-panel'),
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    width: 82,
+                    height: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE3E5E8),
+                      border: Border(
+                        right: BorderSide(color: Color(0xFFCDD0D4)),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: Column(
+                        key: ValueKey(
+                          '${selectedNotice.day}-${selectedNotice.month}',
+                        ),
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            selectedNotice.icon,
+                            color: AppColors.ink,
+                            size: 23,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            selectedNotice.day,
+                            style: const TextStyle(
+                              color: AppColors.ink,
+                              fontSize: 24,
+                              height: 1,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            selectedNotice.month,
+                            style: const TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: PageView.builder(
+                      key: const ValueKey('announcement-carousel'),
+                      controller: _pageController,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: cards.length,
+                      onPageChanged: (index) =>
+                          setState(() => _selectedIndex = index),
+                      itemBuilder: (context, index) =>
+                          _DashboardNoticeContent(notice: cards[index]),
+                    ),
+                  ),
+                ],
               ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(anchor.icon, color: Colors.white, size: 21),
-                const SizedBox(height: 7),
-                Text(
-                  anchor.day,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 19,
-                    height: 1,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  anchor.month,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.9,
-                  ),
-                ),
-              ],
-            ),
           ),
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              physics: const BouncingScrollPhysics(),
-              itemCount: cards.length,
-              onPageChanged: (index) => setState(() => _selectedIndex = index),
-              itemBuilder: (context, index) =>
-                  _DashboardNoticeContent(notice: cards[index]),
-            ),
+          const SizedBox(height: 10),
+          Row(
+            key: const ValueKey('announcement-carousel-indicator'),
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(cards.length, (index) {
+              final isSelected = index == _selectedIndex;
+              return AnimatedContainer(
+                key: ValueKey('announcement-dot-$index'),
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                width: 7,
+                height: 7,
+                margin: EdgeInsets.only(left: index == 0 ? 0 : 5),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFF666A70)
+                      : const Color(0xFFD2D4D7),
+                  shape: BoxShape.circle,
+                ),
+              );
+            }),
           ),
         ],
       ),
@@ -515,7 +635,7 @@ class _DashboardNoticeContent extends StatelessWidget {
       child: InkWell(
         onTap: notice.onTap,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(17, 9, 4, 8),
+          padding: const EdgeInsets.fromLTRB(20, 14, 18, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,

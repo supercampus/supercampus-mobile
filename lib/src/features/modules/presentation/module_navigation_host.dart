@@ -16,6 +16,8 @@ class ModuleNavigationHost extends StatelessWidget {
     required this.onOpenModule,
     required this.onSignOut,
     required this.onThemeModeChanged,
+    this.moduleOrder = const [],
+    this.onModuleOrderChanged,
     this.onScan,
     this.selectedId,
   });
@@ -27,18 +29,26 @@ class ModuleNavigationHost extends StatelessWidget {
   final ValueChanged<String> onOpenModule;
   final VoidCallback onSignOut;
   final ValueChanged<ThemeMode> onThemeModeChanged;
+  final List<String> moduleOrder;
+  final ValueChanged<List<String>>? onModuleOrderChanged;
   final void Function(BuildContext context)? onScan;
   final String? selectedId;
 
   @override
   Widget build(BuildContext context) {
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    final navHeight = CampusNavBar.heightFor(context);
+    // The official bar owns the complete bottom lane. Module Scaffolds are
+    // deliberately laid out above it, so a page action or an accidentally
+    // retained dock can never sit behind the official navigation controls.
+    final reservedBottom = safeBottom + navHeight + 20;
     return Stack(
       children: [
-        Positioned.fill(child: child),
+        Positioned.fill(bottom: reservedBottom, child: child),
         Positioned(
           left: 0,
           right: 0,
-          bottom: MediaQuery.paddingOf(context).bottom + 10,
+          bottom: safeBottom + 10,
           child: CampusNavBar(
             selectedId: selectedId,
             initials: initialsOf(session.displayName),
@@ -58,8 +68,10 @@ class ModuleNavigationHost extends StatelessWidget {
     title: 'Modules',
     expand: true,
     child: ModuleListSheet(
+      session: session,
       permissions: permissions,
       onOpenModule: onOpenModule,
+      moduleOrder: moduleOrder,
     ),
   );
 
@@ -73,6 +85,8 @@ class ModuleNavigationHost extends StatelessWidget {
       onOpenModule: onOpenModule,
       onSignOut: onSignOut,
       onThemeModeChanged: onThemeModeChanged,
+      moduleOrder: moduleOrder,
+      onModuleOrderChanged: onModuleOrderChanged,
     ),
   );
 }

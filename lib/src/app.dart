@@ -107,6 +107,7 @@ class _SupercampusAppState extends State<SupercampusApp>
   );
   static const _useMockData = bool.fromEnvironment('SUPERCAMPUS_USE_MOCK_DATA');
   static const _themePreferencePrefix = 'supercampus.theme.';
+  static const _moduleOrderPreferencePrefix = 'supercampus.module-order.';
 
   late final AuthRepository _authRepository;
   late final PermissionsRepository _permissionsRepository;
@@ -118,6 +119,7 @@ class _SupercampusAppState extends State<SupercampusApp>
   String? _openModuleAction;
   TodayClass? _attendanceClass;
   ThemeMode _themeMode = ThemeMode.light;
+  List<String> _moduleOrder = const [];
   bool _permissionRefreshInProgress = false;
   Future<UserSession>? _sessionRenewal;
   MediaRepository? _mediaRepository;
@@ -235,16 +237,19 @@ class _SupercampusAppState extends State<SupercampusApp>
       _openModuleAction = null;
       _attendanceClass = null;
       _themeMode = ThemeMode.light;
+      _moduleOrder = const [];
     });
 
     final results = await Future.wait<Object?>([
       _permissionsRepository.loadFor(session),
       _loadThemeMode(session),
+      _loadModuleOrder(session),
     ]);
     if (!mounted) return;
     setState(() {
       _permissions = results[0] as EffectivePermissions;
       _themeMode = results[1] as ThemeMode;
+      _moduleOrder = results[2] as List<String>;
     });
     unawaited(_realtimeClient?.start());
     final notificationRepository = _notificationRepository();
@@ -272,6 +277,7 @@ class _SupercampusAppState extends State<SupercampusApp>
       _openModuleAction = null;
       _attendanceClass = null;
       _themeMode = ThemeMode.light;
+      _moduleOrder = const [];
     });
   }
 
@@ -381,6 +387,44 @@ class _SupercampusAppState extends State<SupercampusApp>
 
   String _themePreferenceKey(UserSession session) =>
       '$_themePreferencePrefix${session.email.trim().toLowerCase()}';
+
+  Future<List<String>> _loadModuleOrder(UserSession session) async {
+    try {
+      final preferences = SharedPreferencesAsync();
+      return await preferences.getStringList(
+            _moduleOrderPreferenceKey(session),
+          ) ??
+          const [];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  void _changeModuleOrder(List<String> moduleOrder) {
+    final normalized = List<String>.unmodifiable(moduleOrder.toSet());
+    setState(() => _moduleOrder = normalized);
+    final session = _session;
+    if (session == null) return;
+    unawaited(_saveModuleOrder(session, normalized));
+  }
+
+  Future<void> _saveModuleOrder(
+    UserSession session,
+    List<String> moduleOrder,
+  ) async {
+    try {
+      final preferences = SharedPreferencesAsync();
+      await preferences.setStringList(
+        _moduleOrderPreferenceKey(session),
+        moduleOrder,
+      );
+    } catch (_) {
+      // Keep the active ordering even if this device blocks local storage.
+    }
+  }
+
+  String _moduleOrderPreferenceKey(UserSession session) =>
+      '$_moduleOrderPreferencePrefix${session.email.trim().toLowerCase()}';
 
   Future<void> _refreshPermissions() async {
     var session = _session;
@@ -645,6 +689,8 @@ class _SupercampusAppState extends State<SupercampusApp>
         },
         onSignOut: _signOut,
         onThemeModeChanged: _changeThemeMode,
+        moduleOrder: _moduleOrder,
+        onModuleOrderChanged: _changeModuleOrder,
         // The scan button only earns its place in the nav bar if there is
         // something on campus to scan.
         onScan:
@@ -1169,6 +1215,8 @@ class _SupercampusAppState extends State<SupercampusApp>
       },
       onSignOut: _signOut,
       onThemeModeChanged: _changeThemeMode,
+      moduleOrder: _moduleOrder,
+      onModuleOrderChanged: _changeModuleOrder,
       onScan:
           _permissions!.canSeeModule(ModuleCatalog.canteen) ||
               _permissions!.canSeeModule(ModuleCatalog.gatepass)
