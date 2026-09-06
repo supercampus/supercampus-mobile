@@ -1,0 +1,2 @@
+SuperCampus web release: full-screen Customization page with per-user module ordering.
+Users can drag granted modules into their preferred Home sequence or reset the default order.
