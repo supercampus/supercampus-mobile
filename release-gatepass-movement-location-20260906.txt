@@ -1,0 +1,2 @@
+Gatepass active request moved to Recent movement, header initials removed, and animated location check added.
+Source commit: dbf2c0e
