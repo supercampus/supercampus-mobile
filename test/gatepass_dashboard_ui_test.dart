@@ -23,6 +23,7 @@ void main() {
             onOpenAccess: () {},
             onOpenRequests: () {},
             onInviteVisitor: () {},
+            onRetryLocation: () {},
             onExitModule: () {},
           ),
         ),
@@ -34,6 +35,7 @@ void main() {
     expect(find.text('Finding your location'), findsNothing);
     expect(find.text('VS'), findsNothing);
     expect(find.text('Local outing'), findsOneWidget);
+    expect(find.text('Approved'), findsOneWidget);
     expect(
       tester.getTopLeft(find.text('Local outing')).dy,
       greaterThan(tester.getTopLeft(find.text('Recent movement')).dy),
@@ -45,6 +47,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('Gate-in QR'), findsOneWidget);
-    expect(find.text('DAILY GATE-IN ACCESS'), findsOneWidget);
+    expect(find.text('LOCAL OUTING'), findsOneWidget);
   });
 }

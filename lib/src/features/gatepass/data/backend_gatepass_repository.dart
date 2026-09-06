@@ -94,6 +94,9 @@ class BackendGatepassRepository implements GatepassRepository {
         validFrom: _date(daily['validFrom']),
         validUntil: _date(daily['validUntil']),
         qrPayload: _text(daily['qrPayload']),
+        manualCode: _text(daily['manualCode']).isEmpty
+            ? null
+            : _text(daily['manualCode']),
       );
       final location = _map(daily['location']);
       final geofence = _map(daily['campusGeofence']);
@@ -133,15 +136,35 @@ class BackendGatepassRepository implements GatepassRepository {
           'Check your location and try again.';
     }
 
+    final studentData = _map(data['student']);
+    final currentRollNumber = _text(
+      studentData['rollNumber'],
+      fallback: rollNumber,
+    );
+    final currentDepartment = _text(
+      studentData['department'],
+      fallback: department,
+    );
+    final residency = _text(studentData['residency']) == 'hosteller'
+        ? StudentResidency.hosteller
+        : StudentResidency.dayScholar;
     return GatepassStore(
       student: GatepassStudent(
         name: studentName,
         email: email,
-        rollNumber: rollNumber.isEmpty ? 'Not assigned' : rollNumber,
-        department: department.isEmpty ? 'Not assigned' : department,
-        residency: StudentResidency.dayScholar,
-        hostel: null,
-        room: null,
+        rollNumber: currentRollNumber.isEmpty
+            ? 'Not assigned'
+            : currentRollNumber,
+        department: currentDepartment.isEmpty
+            ? 'Not assigned'
+            : currentDepartment,
+        residency: residency,
+        hostel: _text(studentData['hostel']).isEmpty
+            ? null
+            : _text(studentData['hostel']),
+        room: _text(studentData['room']).isEmpty
+            ? null
+            : _text(studentData['room']),
         isOnCampus: zone == CampusZone.inside,
       ),
       workflow: _workflow,
@@ -204,18 +227,18 @@ class BackendGatepassRepository implements GatepassRepository {
 
   @override
   Future<GatepassRequest> submitRequest(GatepassRequestDraft draft) async {
-    final passType = switch (draft.type) {
-      GatepassRequestType.localOuting ||
-      GatepassRequestType.homeVisit => 'outpass',
-      _ => 'leave_pass',
-    };
+    final passType = draft.passKind == GatepassPassKind.leavePass
+        ? 'leave_pass'
+        : 'outpass';
     final response = await _authorizedRequest(
       (headers) => _client.post(
         _uri('/api/v1/operations/gatepass/requests'),
         headers: headers,
         body: jsonEncode({
           'passType': passType,
-          'residency': passType == 'outpass' ? 'hosteller' : 'day_scholar',
+          'residency': draft.residency == StudentResidency.hosteller
+              ? 'hosteller'
+              : 'day_scholar',
           'destination': draft.destination,
           'reason': draft.reason,
           'guardianPhone': draft.guardianPhone,
@@ -304,7 +327,13 @@ class BackendGatepassRepository implements GatepassRepository {
       qrPayload: _text(value['qrPayload']).isEmpty
           ? null
           : _text(value['qrPayload']),
+      manualCode: _text(value['manualCode']).isEmpty
+          ? null
+          : _text(value['manualCode']),
       workflowState: state,
+      passKind: {'leave', 'leave_pass'}.contains(_text(value['passType']))
+          ? GatepassPassKind.leavePass
+          : GatepassPassKind.outpass,
     );
   }
 

@@ -116,7 +116,7 @@ class _GatepassShellState extends State<GatepassShell> {
         setState(() => _store = store);
         if (widget.initialAction == 'outpass') {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _openApply();
+            if (mounted) _openApply(GatepassPassKind.outpass);
           });
         }
       }
@@ -167,7 +167,7 @@ class _GatepassShellState extends State<GatepassShell> {
           .toList();
       setState(() => _store = _store!.copyWith(requests: requests));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Outpass request cancelled.')),
+        SnackBar(content: Text('${request.passKind.label} request cancelled.')),
       );
     } catch (error) {
       if (!mounted) return;
@@ -177,7 +177,17 @@ class _GatepassShellState extends State<GatepassShell> {
     }
   }
 
-  Future<void> _openApply() async {
+  Future<void> _openApply(GatepassPassKind passKind) async {
+    final store = _store!;
+    if (passKind == GatepassPassKind.outpass &&
+        store.student.residency != StudentResidency.hosteller) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Outpass is available only to hostellers.'),
+        ),
+      );
+      return;
+    }
     final request = await showModalBottomSheet<GatepassRequest>(
       context: context,
       isScrollControlled: true,
@@ -188,7 +198,11 @@ class _GatepassShellState extends State<GatepassShell> {
       ),
       builder: (_) => FractionallySizedBox(
         heightFactor: 0.96,
-        child: ApplyOutpassSheet(onSubmit: _submitRequest),
+        child: ApplyOutpassSheet(
+          onSubmit: _submitRequest,
+          passKind: passKind,
+          student: store.student,
+        ),
       ),
     );
     if (request == null || !mounted) return;
@@ -257,16 +271,20 @@ class _GatepassShellState extends State<GatepassShell> {
     final pages = [
       GatepassDashboardScreen(
         store: store,
-        onApplyOutpass: _openApply,
+        onApplyLeavePass: () => _openApply(GatepassPassKind.leavePass),
+        onApplyOutpass: () => _openApply(GatepassPassKind.outpass),
         onOpenAccess: () => setState(() => _selectedIndex = 3),
         onOpenRequests: () => setState(() => _selectedIndex = 1),
         onInviteVisitor: _openInvite,
+        onRetryLocation: _load,
         onExitModule: widget.onExitModule,
       ),
       GatepassRequestsScreen(
         requests: store.requests,
         workflow: store.workflow,
-        onApply: _openApply,
+        residency: store.student.residency,
+        onApplyLeavePass: () => _openApply(GatepassPassKind.leavePass),
+        onApplyOutpass: () => _openApply(GatepassPassKind.outpass),
         onCancel: _cancelRequest,
       ),
       GatepassVisitorsScreen(visitors: store.visitors, onInvite: _openInvite),
