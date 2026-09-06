@@ -153195,7 +153195,9 @@ m=n.rx
 n=m==null?n.k3:m
 return new A.S(B.agM,A.Z(A.a([r,new A.afz(p.d,p.f,o),A.cv(n,B.oO,o,B.asS,o,B.bT0,p.e,B.a3,o,o,"Settings")],q),B.u,o,B.n,B.o,0,o),o)}}
 A.afz.prototype={
-q(a){var s=null,r=A.a([A.cv(A.o(a).ax.b,B.oO,s,B.asW,s,B.bTr,this.c,B.a3,s,s,"Alerts")],t.p)
+q(a){var s=null,r=A.o(a).ax,q=r.rx
+r=q==null?r.k3:q
+r=A.a([A.cv(r,B.oO,s,B.asW,s,B.bTr,this.c,B.a3,s,s,"Alerts")],t.p)
 if(this.d)r.push(A.fO(s,A.a0(s,s,B.x,s,s,new A.N(B.wH,s,A.aT(A.o(a).fx,B.J,1.5),s,s,s,B.bt),s,9,s,s,s,s,s,9),s,s,s,6,6,s))
 return A.dC(B.b7,r,B.x,B.bL,s)}}
 A.rj.prototype={}
