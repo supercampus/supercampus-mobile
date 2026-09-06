@@ -76,13 +76,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   String? _validateInstitution(String? value) {
-    final institution = value?.trim().toLowerCase() ?? '';
-    if (institution.isEmpty) return 'Enter your institution domain.';
-    if (!RegExp(
-      r'^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$',
-    ).hasMatch(institution)) {
-      return 'Use only letters, numbers, or hyphens.';
-    }
+    final institution = value?.trim() ?? '';
+    if (institution.isEmpty) return 'Enter your tenant ID.';
+    if (institution != 'mec') return 'Enter the exact tenant ID: mec';
     return null;
   }
 
@@ -96,9 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showSignIn() {
     FocusScope.of(context).unfocus();
     if (!_institutionFormKey.currentState!.validate()) return;
-    _institutionController.text = _institutionController.text
-        .trim()
-        .toLowerCase();
+    _institutionController.text = _institutionController.text.trim();
     setState(() {
       _view = _AuthView.signIn;
       _errorMessage = null;
