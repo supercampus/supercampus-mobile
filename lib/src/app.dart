@@ -55,6 +55,7 @@ import 'features/vendor_management/presentation/vendor_management_shell.dart';
 import 'features/admin_portal/presentation/admin_portal_shell.dart';
 import 'features/admin_portal/data/admin_student_repository.dart';
 import 'features/modules/data/glance_source.dart';
+import 'features/modules/data/student_activity_source.dart';
 import 'features/modules/presentation/module_dashboard_screen.dart';
 import 'features/modules/presentation/module_navigation_host.dart';
 import 'features/modules/presentation/today_glance.dart';
@@ -671,6 +672,12 @@ class _SupercampusAppState extends State<SupercampusApp>
         accessTokenProvider: _provideAccessToken,
       ),
       viewerUserId: viewerUserId,
+      studentActivity: BackendStudentActivitySource(
+        baseUrl: _resolvedBackendBaseUrl,
+        accessTokenProvider: _provideAccessToken,
+        session: session,
+        permissions: _permissions!,
+      ),
     );
   }
 

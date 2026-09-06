@@ -174,6 +174,41 @@ void main() {
   });
 
   group('a learner reads their standing', () {
+    testWidgets(
+      'live activity shows status, animated progress, and opens module',
+      (tester) async {
+        final opened = <String>[];
+        await pumpGlance(
+          tester,
+          student,
+          opened: opened,
+          facts: const GlanceFacts(
+            activities: [
+              StudentActivity(
+                id: 'order-21',
+                kind: StudentActivityKind.canteen,
+                title: 'Order waiting for confirmation',
+                supporting: '2 items · ₹71 · Order #21',
+                moduleId: ModuleCatalog.canteen,
+                priority: 10,
+                statusLabel: 'Pending',
+                progress: .12,
+              ),
+            ],
+          ),
+        );
+
+        expect(find.text('Recent activity & progress'), findsOneWidget);
+        expect(find.text('Order waiting for confirmation'), findsOneWidget);
+        expect(find.text('Pending'), findsOneWidget);
+        expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+        await tester.tap(find.text('Order waiting for confirmation'));
+        await tester.pump();
+        expect(opened, [ModuleCatalog.canteen]);
+      },
+    );
+
     testWidgets('a real percentage, not a placeholder', (tester) async {
       await pumpGlance(
         tester,
