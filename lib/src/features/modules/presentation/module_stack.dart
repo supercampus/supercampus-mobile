@@ -1019,7 +1019,7 @@ class _ModuleCardState extends State<_ModuleCard> {
         SizedBox(width: _cellGap),
         // The pass is the reason this card exists. It owns the full height of
         // the right half instead of sharing space with decorative actions.
-        Expanded(child: _passPanel(module)),
+        AspectRatio(aspectRatio: 1, child: _passPanel(module)),
       ],
     );
   }
@@ -1060,11 +1060,11 @@ class _ModuleCardState extends State<_ModuleCard> {
                         padding: EdgeInsets.zero,
                         backgroundColor: Colors.white,
                         eyeStyle: const QrEyeStyle(
-                          eyeShape: QrEyeShape.circle,
+                          eyeShape: QrEyeShape.square,
                           color: Color(0xFF171719),
                         ),
                         dataModuleStyle: const QrDataModuleStyle(
-                          dataModuleShape: QrDataModuleShape.circle,
+                          dataModuleShape: QrDataModuleShape.square,
                           color: Color(0xFF171719),
                         ),
                       ),

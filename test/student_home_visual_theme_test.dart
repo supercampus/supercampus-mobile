@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supercampus_mobile/src/core/access/effective_permissions.dart';
 import 'package:supercampus_mobile/src/core/access/module_catalog.dart';
 import 'package:supercampus_mobile/src/core/theme/app_theme.dart';
@@ -46,10 +47,14 @@ void main() {
     final qrRect = tester.getRect(
       find.byKey(const ValueKey('gatepass-qr-code-frame')),
     );
+    final qr = tester.widget<QrImageView>(find.byType(QrImageView));
 
+    expect(panelRect.width, closeTo(panelRect.height, 0.01));
     expect(qrRect.width, closeTo(qrRect.height, 0.01));
     expect(qrRect.center.dx, closeTo(panelRect.center.dx, 0.01));
     expect(qrRect.center.dy, closeTo(panelRect.center.dy, 0.01));
+    expect(qr.eyeStyle.eyeShape, QrEyeShape.square);
+    expect(qr.dataModuleStyle.dataModuleShape, QrDataModuleShape.square);
   });
 
   testWidgets('announcement card uses high-contrast dark theme colors', (
