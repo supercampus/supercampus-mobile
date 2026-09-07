@@ -18,45 +18,51 @@ Future<T?> showHomeSheet<T>({
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-    ),
+    backgroundColor: Colors.transparent,
     builder: (context) => Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: SafeArea(
-        top: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight:
-                MediaQuery.of(context).size.height * (expand ? 0.85 : 0.7),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 10),
-              Center(
-                child: Container(
-                  width: 38,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2),
+      child: Material(
+        key: const ValueKey('home-sheet-surface'),
+        color: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        clipBehavior: Clip.antiAlias,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight:
+                  MediaQuery.of(context).size.height * (expand ? 0.85 : 0.7),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 10),
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleLarge,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                 ),
-              ),
-              Flexible(child: child),
-            ],
+                Flexible(child: child),
+              ],
+            ),
           ),
         ),
       ),
@@ -2143,13 +2149,22 @@ class _ProfileAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const danger = Color(0xFFC62828);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final actionSurface = isDark
+        ? theme.colorScheme.surfaceContainerHigh
+        : AppColors.moduleSoft.withValues(alpha: 0.62);
+    final actionBorder = isDark
+        ? AppColors.brandLavender.withValues(alpha: 0.4)
+        : AppColors.brandLavender.withValues(alpha: 0.2);
+
     return Padding(
       padding: EdgeInsets.only(top: destructive ? 6 : 0, bottom: 10),
       child: Material(
-        key: destructive ? const ValueKey('sign-out-action') : null,
-        color: destructive
-            ? danger
-            : AppColors.moduleSoft.withValues(alpha: 0.62),
+        key: destructive
+            ? const ValueKey('sign-out-action')
+            : ValueKey('profile-action-$title'),
+        color: destructive ? danger : actionSurface,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
@@ -2160,7 +2175,7 @@ class _ProfileAction extends StatelessWidget {
               border: Border.all(
                 color: destructive
                     ? Colors.white.withValues(alpha: .18)
-                    : AppColors.brandLavender.withValues(alpha: 0.2),
+                    : actionBorder,
               ),
               borderRadius: BorderRadius.circular(18),
             ),
@@ -2185,17 +2200,20 @@ class _ProfileAction extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: destructive ? Colors.white : null,
-                              fontWeight: destructive ? FontWeight.w700 : null,
-                            ),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: destructive
+                              ? Colors.white
+                              : theme.colorScheme.onSurface,
+                          fontWeight: destructive ? FontWeight.w700 : null,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: destructive ? Colors.white70 : null,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: destructive
+                              ? Colors.white70
+                              : theme.colorScheme.onSurfaceVariant,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -2205,7 +2223,9 @@ class _ProfileAction extends StatelessWidget {
                 ),
                 Icon(
                   destructive ? Icons.logout_rounded : Icons.chevron_right,
-                  color: destructive ? Colors.white : AppColors.muted,
+                  color: destructive
+                      ? Colors.white
+                      : theme.colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
