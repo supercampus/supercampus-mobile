@@ -232,17 +232,8 @@ bool _isLegacySessionModeRejection(http.Response response) {
   return body.contains('sessionmode') && body.contains('unknown field');
 }
 
-String _connectionMessage(http.ClientException error, Uri baseUri) {
-  final origin = baseUri.replace(path: '', query: '', fragment: '').toString();
-  if (kReleaseMode) {
-    return 'The SuperCampus API is unavailable at $origin. Check your connection and try again.';
-  }
-  final detail = error.message.trim();
-  if (detail.isEmpty) {
-    return 'The SuperCampus API is unavailable at $origin.';
-  }
-  return 'The SuperCampus API is unavailable at $origin. $detail';
-}
+String _connectionMessage(http.ClientException _, Uri __) =>
+    'We couldn’t connect to SuperCampus. Check your internet connection and try again.';
 
 UserRole _roleFromBackend(String role, {required UserRole fallback}) {
   final normalized = role.toLowerCase().replaceAll('-', '_');
