@@ -136,6 +136,7 @@ class _SupercampusAppState extends State<SupercampusApp>
   int _glanceRevision = 0;
   int _notificationRevision = 0;
   bool _isRestoringSession = true;
+  String? _sessionNotice;
 
   @override
   void initState() {
@@ -201,6 +202,9 @@ class _SupercampusAppState extends State<SupercampusApp>
       } on AuthenticationException catch (error) {
         if (error.sessionExpired) {
           await _sessionStore.clear();
+          if (error.signedInElsewhere && mounted) {
+            setState(() => _sessionNotice = _signedInElsewhereMessage);
+          }
           return;
         }
         // An offline launch must not discard a valid saved login. The app will
@@ -279,6 +283,7 @@ class _SupercampusAppState extends State<SupercampusApp>
       _attendanceClass = null;
       _themeMode = ThemeMode.light;
       _moduleOrder = const [];
+      _sessionNotice = null;
     });
     if (_persistSessions) await _sessionStore.save(session);
 
@@ -497,7 +502,9 @@ class _SupercampusAppState extends State<SupercampusApp>
       _applyPermissions(permissions);
     } on AuthenticationException catch (error) {
       if (!mounted) return;
-      if (error.sessionExpired) _expireSession();
+      if (error.sessionExpired) {
+        _expireSession(signedInElsewhere: error.signedInElsewhere);
+      }
     } on PermissionsException catch (error) {
       if (!mounted) return;
       if (error.sessionExpired) {
@@ -559,12 +566,17 @@ class _SupercampusAppState extends State<SupercampusApp>
     try {
       return _accessToken(await _ensureFreshSession(force: forceRefresh));
     } on AuthenticationException catch (error) {
-      if (error.sessionExpired && mounted) _expireSession();
+      if (error.sessionExpired && mounted) {
+        _expireSession(signedInElsewhere: error.signedInElsewhere);
+      }
       rethrow;
     }
   }
 
-  void _expireSession() {
+  static const _signedInElsewhereMessage =
+      'This account was signed in on another device. For your security, you were signed out here.';
+
+  void _expireSession({bool signedInElsewhere = false}) {
     _realtimeRefreshDebounce?.cancel();
     unawaited(_realtimeClient?.stop());
     unawaited(PushNotificationService.instance.deactivate());
@@ -575,6 +587,7 @@ class _SupercampusAppState extends State<SupercampusApp>
       _permissions = null;
       _openModuleId = null;
       _openModuleAction = null;
+      _sessionNotice = signedInElsewhere ? _signedInElsewhereMessage : null;
     });
   }
 
@@ -702,8 +715,11 @@ class _SupercampusAppState extends State<SupercampusApp>
     }
     final session = _session;
     if (session == null) {
-      Widget login() =>
-          LoginScreen(authRepository: _authRepository, onSignedIn: _onSignedIn);
+      Widget login() => LoginScreen(
+        authRepository: _authRepository,
+        onSignedIn: _onSignedIn,
+        sessionNotice: _sessionNotice,
+      );
       return _useMockData || widget.authRepository != null
           ? login()
           : MaintenanceGate(
