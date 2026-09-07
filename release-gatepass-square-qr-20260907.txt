@@ -1,0 +1,3 @@
+Gatepass home module now uses a true square QR panel with centered, square QR modules.
+Includes the latest dark-theme and production connectivity-message fixes.
+Source commit: f5eaf73
