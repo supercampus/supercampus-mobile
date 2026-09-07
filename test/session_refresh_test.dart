@@ -15,11 +15,12 @@ void main() {
     final client = MockClient((request) async {
       expect(request.headers['x-tenant-id'], 'mec');
       expect(request.headers['x-client-surface'], 'app');
-      expect(jsonDecode(request.body), {
-        'email': 'student@mec.edu',
-        'password': 'password123',
-        'sessionMode': 'token',
-      });
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      expect(body['email'], 'student@mec.edu');
+      expect(body['password'], 'password123');
+      expect(body['sessionMode'], 'token');
+      expect(body['deviceId'], isA<String>());
+      expect(body['deviceName'], isA<String>());
       return http.Response(
         jsonEncode({
           'data': {

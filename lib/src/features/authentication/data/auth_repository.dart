@@ -158,6 +158,68 @@ class UserSession {
     }
     return true;
   }
+
+  Map<String, dynamic> toJson() => {
+    'email': email,
+    'displayName': displayName,
+    'role': role.name,
+    'roleId': roleId,
+    'roleName': roleName,
+    'idNumber': idNumber,
+    'departmentOrWard': departmentOrWard,
+    'photoUrl': photoUrl,
+    'departmentId': departmentId,
+    'sectionId': sectionId,
+    'staffId': staffId,
+    'jwtToken': jwtToken,
+    'refreshToken': refreshToken,
+    'accessTokenExpiresAt': accessTokenExpiresAt?.toIso8601String(),
+    'portalFamilies': portalFamilies.map((value) => value.name).toList(),
+    'activePortalFamily': activePortalFamily?.name,
+    'roleIds': roleIds,
+  };
+
+  static UserSession? fromJson(Map<String, dynamic> json) {
+    final email = json['email'];
+    final displayName = json['displayName'];
+    final roleName = json['role'];
+    if (email is! String || displayName is! String || roleName is! String) {
+      return null;
+    }
+    final role = UserRole.values
+        .where((value) => value.name == roleName)
+        .firstOrNull;
+    if (role == null) return null;
+    PortalFamily? parseFamily(Object? value) => value is String
+        ? PortalFamily.values.where((item) => item.name == value).firstOrNull
+        : null;
+    return UserSession(
+      email: email,
+      displayName: displayName,
+      role: role,
+      roleId: json['roleId'] as String?,
+      roleName: json['roleName'] as String?,
+      idNumber: json['idNumber'] as String?,
+      departmentOrWard: json['departmentOrWard'] as String?,
+      photoUrl: json['photoUrl'] as String?,
+      departmentId: json['departmentId'] as String?,
+      sectionId: json['sectionId'] as String?,
+      staffId: json['staffId'] as String?,
+      jwtToken: json['jwtToken'] as String?,
+      refreshToken: json['refreshToken'] as String?,
+      accessTokenExpiresAt: DateTime.tryParse(
+        json['accessTokenExpiresAt']?.toString() ?? '',
+      ),
+      portalFamilies: (json['portalFamilies'] as List? ?? const [])
+          .map(parseFamily)
+          .whereType<PortalFamily>()
+          .toList(),
+      activePortalFamily: parseFamily(json['activePortalFamily']),
+      roleIds: (json['roleIds'] as List? ?? const [])
+          .map((value) => value.toString())
+          .toList(),
+    );
+  }
 }
 
 typedef StudentSession = UserSession;
@@ -179,6 +241,10 @@ abstract interface class AuthRepository {
   Future<UserSession> refresh(UserSession session);
 
   Future<void> sendPasswordReset(String email);
+}
+
+abstract interface class SessionLogoutRepository {
+  Future<void> signOut(UserSession session);
 }
 
 class AuthenticationException implements Exception {

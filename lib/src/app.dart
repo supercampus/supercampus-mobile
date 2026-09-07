@@ -25,6 +25,7 @@ import 'core/widgets/skeleton_loading.dart';
 import 'features/authentication/data/auth_repository.dart';
 import 'features/authentication/data/backend_auth_repository.dart';
 import 'features/authentication/data/mock_auth_repository.dart';
+import 'features/authentication/data/session_store.dart';
 import 'features/authentication/presentation/login_screen.dart';
 import 'features/maintenance/data/maintenance_repository.dart';
 import 'features/maintenance/presentation/maintenance_gate.dart';
@@ -77,6 +78,7 @@ class SupercampusApp extends StatefulWidget {
     this.gatepassRepository,
     this.attendanceRepository,
     this.approvalPortalRepository,
+    this.sessionStore,
   });
 
   final AuthRepository? authRepository;
@@ -91,6 +93,7 @@ class SupercampusApp extends StatefulWidget {
   final GatepassRepository? gatepassRepository;
   final AttendanceRepository? attendanceRepository;
   final ApprovalPortalRepository? approvalPortalRepository;
+  final SessionStore? sessionStore;
 
   @override
   State<SupercampusApp> createState() => _SupercampusAppState();
@@ -112,6 +115,8 @@ class _SupercampusAppState extends State<SupercampusApp>
   late final AuthRepository _authRepository;
   late final PermissionsRepository _permissionsRepository;
   late final MaintenanceRepository _maintenanceRepository;
+  late final SessionStore _sessionStore;
+  late final bool _persistSessions;
 
   UserSession? _session;
   EffectivePermissions? _permissions;
@@ -130,6 +135,7 @@ class _SupercampusAppState extends State<SupercampusApp>
   int _surfaceRevision = 0;
   int _glanceRevision = 0;
   int _notificationRevision = 0;
+  bool _isRestoringSession = true;
 
   @override
   void initState() {
@@ -141,11 +147,17 @@ class _SupercampusAppState extends State<SupercampusApp>
             widget.permissionsRepository == null)) {
       _validateBackendBaseUrl(backendBaseUrl);
     }
+    _sessionStore = widget.sessionStore ?? SessionStore();
+    _persistSessions =
+        widget.authRepository == null || widget.sessionStore != null;
     _authRepository =
         widget.authRepository ??
         (_useMockData
             ? MockAuthRepository()
-            : BackendAuthRepository(baseUrl: backendBaseUrl));
+            : BackendAuthRepository(
+                baseUrl: backendBaseUrl,
+                sessionStore: _sessionStore,
+              ));
     _permissionsRepository =
         widget.permissionsRepository ??
         (_useMockData
@@ -171,6 +183,35 @@ class _SupercampusAppState extends State<SupercampusApp>
       _realtimeEventSubscription = _realtimeClient!.events.listen(
         _onRealtimeEvent,
       );
+    }
+    if (widget.authRepository != null && widget.sessionStore == null) {
+      _isRestoringSession = false;
+    } else {
+      unawaited(_restorePersistedSession());
+    }
+  }
+
+  Future<void> _restorePersistedSession() async {
+    UserSession? session;
+    try {
+      session = await _sessionStore.load();
+      if (session == null) return;
+      try {
+        session = await _authRepository.refresh(session);
+      } on AuthenticationException catch (error) {
+        if (error.sessionExpired) {
+          await _sessionStore.clear();
+          return;
+        }
+        // An offline launch must not discard a valid saved login. The app will
+        // validate it when connectivity resumes.
+      }
+      await _onSignedIn(session!);
+    } catch (_) {
+      // Keep the saved account selected through transient startup failures.
+      // Permission refresh is retried when the app resumes.
+    } finally {
+      if (mounted) setState(() => _isRestoringSession = false);
     }
   }
 
@@ -239,6 +280,7 @@ class _SupercampusAppState extends State<SupercampusApp>
       _themeMode = ThemeMode.light;
       _moduleOrder = const [];
     });
+    if (_persistSessions) await _sessionStore.save(session);
 
     final results = await Future.wait<Object?>([
       _permissionsRepository.loadFor(session),
@@ -251,6 +293,9 @@ class _SupercampusAppState extends State<SupercampusApp>
       _themeMode = results[1] as ThemeMode;
       _moduleOrder = results[2] as List<String>;
     });
+    if (_shouldRefreshSession(session)) {
+      unawaited(_refreshPermissions());
+    }
     unawaited(_realtimeClient?.start());
     final notificationRepository = _notificationRepository();
     if (notificationRepository != null) {
@@ -265,9 +310,11 @@ class _SupercampusAppState extends State<SupercampusApp>
   }
 
   Future<void> _completeSignOut() async {
+    final session = _session;
     _realtimeRefreshDebounce?.cancel();
     unawaited(_realtimeClient?.stop());
     await PushNotificationService.instance.deactivate();
+    if (_persistSessions) await _sessionStore.clear();
     if (!mounted) return;
     setState(() {
       _sessionRenewal = null;
@@ -279,6 +326,10 @@ class _SupercampusAppState extends State<SupercampusApp>
       _themeMode = ThemeMode.light;
       _moduleOrder = const [];
     });
+    final authRepository = _authRepository;
+    if (session != null && authRepository is SessionLogoutRepository) {
+      await (authRepository as SessionLogoutRepository).signOut(session);
+    }
   }
 
   void _openPushDeepLink(String deepLink) {
@@ -478,6 +529,7 @@ class _SupercampusAppState extends State<SupercampusApp>
       );
     }
     setState(() => _session = refreshed);
+    if (_persistSessions) await _sessionStore.save(refreshed);
     return refreshed;
   }
 
@@ -516,6 +568,7 @@ class _SupercampusAppState extends State<SupercampusApp>
     _realtimeRefreshDebounce?.cancel();
     unawaited(_realtimeClient?.stop());
     unawaited(PushNotificationService.instance.deactivate());
+    if (_persistSessions) unawaited(_sessionStore.clear());
     _sessionRenewal = null;
     setState(() {
       _session = null;
@@ -644,6 +697,9 @@ class _SupercampusAppState extends State<SupercampusApp>
   }
 
   Widget _buildHome() {
+    if (_isRestoringSession) {
+      return const Scaffold(body: SkeletonList(rows: 7, rowHeight: 72));
+    }
     final session = _session;
     if (session == null) {
       Widget login() =>
