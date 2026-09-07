@@ -437,6 +437,23 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = isDark
+        ? const Color(0xFF1D1A24)
+        : const Color(0xFFF0F1F3);
+    final datePanelColor = isDark
+        ? const Color(0xFF292431)
+        : const Color(0xFFE3E5E8);
+    final dividerColor = isDark
+        ? const Color(0xFF443C50)
+        : const Color(0xFFCDD0D4);
+    final selectedDotColor = isDark
+        ? const Color(0xFFB8AEFF)
+        : const Color(0xFF666A70);
+    final idleDotColor = isDark
+        ? const Color(0xFF514A5D)
+        : const Color(0xFFD2D4D7);
     final notices = MockFacultyRepository().getNotices();
     final notice = notices.isEmpty ? null : notices.first;
     final cards = <_DashboardNotice>[
@@ -502,7 +519,7 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
           Expanded(
             child: Material(
               key: const ValueKey('announcement-card'),
-              color: const Color(0xFFF0F1F3),
+              color: cardColor,
               borderRadius: BorderRadius.circular(20),
               clipBehavior: Clip.antiAlias,
               child: Row(
@@ -513,11 +530,9 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
                     curve: Curves.easeOutCubic,
                     width: 82,
                     height: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE3E5E8),
-                      border: Border(
-                        right: BorderSide(color: Color(0xFFCDD0D4)),
-                      ),
+                    decoration: BoxDecoration(
+                      color: datePanelColor,
+                      border: Border(right: BorderSide(color: dividerColor)),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: AnimatedSwitcher(
@@ -530,14 +545,14 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
                         children: [
                           Icon(
                             selectedNotice.icon,
-                            color: AppColors.ink,
+                            color: theme.colorScheme.onSurface,
                             size: 23,
                           ),
                           const SizedBox(height: 8),
                           Text(
                             selectedNotice.day,
-                            style: const TextStyle(
-                              color: AppColors.ink,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
                               fontSize: 24,
                               height: 1,
                               fontWeight: FontWeight.w800,
@@ -546,8 +561,8 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
                           const SizedBox(height: 5),
                           Text(
                             selectedNotice.month,
-                            style: const TextStyle(
-                              color: AppColors.muted,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1,
@@ -587,9 +602,7 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
                 height: 7,
                 margin: EdgeInsets.only(left: index == 0 ? 0 : 5),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF666A70)
-                      : const Color(0xFFD2D4D7),
+                  color: isSelected ? selectedDotColor : idleDotColor,
                   shape: BoxShape.circle,
                 ),
               );
@@ -630,6 +643,11 @@ class _DashboardNoticeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = isDark ? const Color(0xFFB8AEFF) : AppColors.brandLavender;
+    final actionColor = isDark ? accent : AppColors.brandBlue;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -642,8 +660,8 @@ class _DashboardNoticeContent extends StatelessWidget {
             children: [
               Text(
                 notice.eyebrow,
-                style: const TextStyle(
-                  color: AppColors.brandLavender,
+                style: TextStyle(
+                  color: accent,
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.1,
@@ -654,8 +672,8 @@ class _DashboardNoticeContent extends StatelessWidget {
                 notice.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.ink,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
                   fontSize: 15,
                   height: 1.15,
                   fontWeight: FontWeight.w700,
@@ -666,8 +684,8 @@ class _DashboardNoticeContent extends StatelessWidget {
                 notice.message,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.muted,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
                   fontSize: 11,
                   height: 1.28,
                 ),
@@ -677,16 +695,16 @@ class _DashboardNoticeContent extends StatelessWidget {
                 children: [
                   Text(
                     notice.action,
-                    style: const TextStyle(
-                      color: AppColors.brandBlue,
+                    style: TextStyle(
+                      color: actionColor,
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(width: 3),
-                  const Icon(
+                  Icon(
                     Icons.arrow_forward_rounded,
-                    color: AppColors.brandBlue,
+                    color: actionColor,
                     size: 13,
                   ),
                 ],

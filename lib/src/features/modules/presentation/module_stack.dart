@@ -1046,18 +1046,31 @@ class _ModuleCardState extends State<_ModuleCard> {
                 color: const Color(0xFF171719),
                 size: _tileGlyph,
               )
-            : QrImageView(
-                data: data,
-                padding: EdgeInsets.zero,
-                backgroundColor: Colors.white,
-                eyeStyle: const QrEyeStyle(
-                  eyeShape: QrEyeShape.circle,
-                  color: Color(0xFF171719),
-                ),
-                dataModuleStyle: const QrDataModuleStyle(
-                  dataModuleShape: QrDataModuleShape.circle,
-                  color: Color(0xFF171719),
-                ),
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  final side = constraints.maxWidth < constraints.maxHeight
+                      ? constraints.maxWidth
+                      : constraints.maxHeight;
+                  return Center(
+                    child: SizedBox.square(
+                      key: const ValueKey('gatepass-qr-code-frame'),
+                      dimension: side,
+                      child: QrImageView(
+                        data: data,
+                        padding: EdgeInsets.zero,
+                        backgroundColor: Colors.white,
+                        eyeStyle: const QrEyeStyle(
+                          eyeShape: QrEyeShape.circle,
+                          color: Color(0xFF171719),
+                        ),
+                        dataModuleStyle: const QrDataModuleStyle(
+                          dataModuleShape: QrDataModuleShape.circle,
+                          color: Color(0xFF171719),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
       ),
     );
