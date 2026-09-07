@@ -184,7 +184,7 @@ void main() {
     expect(session.roleId, 'knowledge_centre_incharge');
   });
 
-  test('login connection failures name the configured API origin', () async {
+  test('login connection failures hide infrastructure details', () async {
     final client = MockClient((request) async {
       throw http.ClientException('Failed host lookup', request.url);
     });
@@ -203,7 +203,10 @@ void main() {
         isA<AuthenticationException>().having(
           (error) => error.message,
           'message',
-          contains('https://api.supercampus.ai'),
+          allOf(
+            'We couldn’t connect to SuperCampus. Check your internet connection and try again.',
+            isNot(contains('api.supercampus.ai')),
+          ),
         ),
       ),
     );
