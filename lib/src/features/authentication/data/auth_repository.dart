@@ -248,8 +248,13 @@ abstract interface class SessionLogoutRepository {
 }
 
 class AuthenticationException implements Exception {
-  const AuthenticationException(this.message, {this.sessionExpired = false});
+  const AuthenticationException(
+    this.message, {
+    this.sessionExpired = false,
+    this.signedInElsewhere = false,
+  });
 
   final String message;
   final bool sessionExpired;
+  final bool signedInElsewhere;
 }

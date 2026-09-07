@@ -11,10 +11,12 @@ class LoginScreen extends StatefulWidget {
     super.key,
     required this.authRepository,
     required this.onSignedIn,
+    this.sessionNotice,
   });
 
   final AuthRepository authRepository;
   final ValueChanged<UserSession> onSignedIn;
+  final String? sessionNotice;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -36,6 +38,46 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isSuccessLeaving = false;
   String? _errorMessage;
   UserSession? _successSession;
+  bool _sessionNoticeShown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _showSessionNotice();
+  }
+
+  @override
+  void didUpdateWidget(covariant LoginScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.sessionNotice != widget.sessionNotice) {
+      _sessionNoticeShown = false;
+      _showSessionNotice();
+    }
+  }
+
+  void _showSessionNotice() {
+    final message = widget.sessionNotice;
+    if (message == null || message.isEmpty || _sessionNoticeShown) return;
+    _sessionNoticeShown = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          icon: const Icon(Icons.devices_rounded, color: Color(0xFF5B21FF)),
+          title: const Text('Signed out on this device'),
+          content: Text(message, textAlign: TextAlign.center),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Okay'),
+            ),
+          ],
+        ),
+      );
+    });
+  }
 
   @override
   void dispose() {

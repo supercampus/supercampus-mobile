@@ -85,6 +85,13 @@ class BackendAuthRepository implements AuthRepository, SessionLogoutRepository {
       throw AuthenticationException(_connectionMessage(error, _baseUri));
     }
     if (response.statusCode == 401) {
+      if (_errorCode(response) == 'session_replaced') {
+        throw const AuthenticationException(
+          'This account was signed in on another device.',
+          sessionExpired: true,
+          signedInElsewhere: true,
+        );
+      }
       throw const AuthenticationException(
         'Your session has expired. Sign in again.',
         sessionExpired: true,
@@ -265,6 +272,15 @@ String _errorMessage(http.Response response) {
     // Fall through to the status-based message.
   }
   return 'Unable to sign in right now. (${response.statusCode})';
+}
+
+String? _errorCode(http.Response response) {
+  try {
+    final body = jsonDecode(response.body);
+    return body is Map<String, dynamic> ? body['code']?.toString() : null;
+  } catch (_) {
+    return null;
+  }
 }
 
 bool _isLegacySessionModeRejection(http.Response response) {
