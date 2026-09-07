@@ -5,14 +5,20 @@ import 'package:http/http.dart' as http;
 
 import 'auth_http_client.dart';
 import 'auth_repository.dart';
+import 'session_store.dart';
 
-class BackendAuthRepository implements AuthRepository {
-  BackendAuthRepository({required String baseUrl, http.Client? client})
-    : _baseUri = _normalizeBaseUri(baseUrl),
-      _client = client ?? createAuthHttpClient();
+class BackendAuthRepository implements AuthRepository, SessionLogoutRepository {
+  BackendAuthRepository({
+    required String baseUrl,
+    http.Client? client,
+    SessionStore? sessionStore,
+  }) : _baseUri = _normalizeBaseUri(baseUrl),
+       _client = client ?? createAuthHttpClient(),
+       _sessionStore = sessionStore ?? SessionStore();
 
   final Uri _baseUri;
   final http.Client _client;
+  final SessionStore _sessionStore;
 
   @override
   Future<UserSession> signIn({
@@ -174,14 +180,37 @@ class BackendAuthRepository implements AuthRepository {
     );
   }
 
+  @override
+  Future<void> signOut(UserSession session) async {
+    try {
+      await _client.post(
+        _uri('/api/auth/logout'),
+        headers: {
+          'content-type': 'application/json',
+          'x-client-surface': 'app',
+          if (session.jwtToken case final token?)
+            'authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'refreshToken': session.refreshToken}),
+      );
+    } on http.ClientException {
+      // Signing out locally must still work while the device is offline. The
+      // server session expires naturally and can also be revoked by an admin.
+    }
+  }
+
   Future<http.Response> _postLogin({
     required String email,
     required String password,
     required String tenantDomain,
     required bool tokenMode,
-  }) {
+  }) async {
     final body = <String, String>{'email': email, 'password': password};
-    if (tokenMode) body['sessionMode'] = 'token';
+    if (tokenMode) {
+      body['sessionMode'] = 'token';
+      body['deviceId'] = await _sessionStore.deviceId();
+      body['deviceName'] = _deviceName();
+    }
     return _client.post(
       _uri('/api/auth/login'),
       headers: {
@@ -194,6 +223,18 @@ class BackendAuthRepository implements AuthRepository {
   }
 
   Uri _uri(String path) => _baseUri.replace(path: path);
+}
+
+String _deviceName() {
+  if (kIsWeb) return 'Web browser';
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.android => 'Android device',
+    TargetPlatform.iOS => 'iPhone or iPad',
+    TargetPlatform.windows => 'Windows device',
+    TargetPlatform.macOS => 'Mac device',
+    TargetPlatform.linux => 'Linux device',
+    TargetPlatform.fuchsia => 'Mobile device',
+  };
 }
 
 Uri _normalizeBaseUri(String baseUrl) {
