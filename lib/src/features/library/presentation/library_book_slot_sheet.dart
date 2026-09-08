@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../data/mock_library_repository.dart';
+import '../data/library_repository.dart';
 import 'library_wheel_picker.dart';
 
 /// Bottom sheet for booking a new library slot with segmented wheel pickers.
 class LibraryBookSlotSheet extends StatefulWidget {
-  const LibraryBookSlotSheet({
-    super.key,
-    required this.repository,
-  });
+  const LibraryBookSlotSheet({super.key, required this.repository});
 
-  final MockLibraryRepository repository;
+  final LibraryRepository repository;
 
   @override
   State<LibraryBookSlotSheet> createState() => _LibraryBookSlotSheetState();
@@ -38,8 +35,18 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
 
   // Month names
   static const _monthNames = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   static const _minuteSteps = [0, 15, 30, 45];
@@ -76,11 +83,11 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
     setState(() => _activePicker = _activePicker == id ? null : id);
   }
 
-  void _confirm() {
+  Future<void> _confirm() async {
     if (!_isValidTimeRange) return;
 
     try {
-      final pass = widget.repository.book(
+      final pass = await widget.repository.book(
         date: DateTime(DateTime.now().year, _month, _day),
         startHour: _startHour,
         startMinute: _startMinute,
@@ -90,10 +97,14 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
             ? null
             : _descriptionController.text.trim(),
       );
+      if (!mounted) return;
       Navigator.of(context).pop(pass);
     } catch (error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString().replaceFirst('Bad state: ', ''))),
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Bad state: ', '')),
+        ),
       );
     }
   }
@@ -129,7 +140,10 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
             child: Row(
               children: [
-                const Icon(Icons.local_library_outlined, color: Color(0xFF6D357F)),
+                const Icon(
+                  Icons.local_library_outlined,
+                  color: Color(0xFF6D357F),
+                ),
                 const SizedBox(width: 10),
                 Text(
                   'Book Slot',
@@ -234,9 +248,13 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
                   visible: _activePicker == 'startMinute',
                   child: LibraryWheelPicker(
                     itemCount: _minuteSteps.length,
-                    initialIndex: _minuteSteps.indexOf(_startMinute).clamp(0, _minuteSteps.length - 1),
-                    labelBuilder: (i) => _minuteSteps[i].toString().padLeft(2, '0'),
-                    onChanged: (i) => setState(() => _startMinute = _minuteSteps[i]),
+                    initialIndex: _minuteSteps
+                        .indexOf(_startMinute)
+                        .clamp(0, _minuteSteps.length - 1),
+                    labelBuilder: (i) =>
+                        _minuteSteps[i].toString().padLeft(2, '0'),
+                    onChanged: (i) =>
+                        setState(() => _startMinute = _minuteSteps[i]),
                   ),
                 ),
 
@@ -289,9 +307,13 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
                   visible: _activePicker == 'endMinute',
                   child: LibraryWheelPicker(
                     itemCount: _minuteSteps.length,
-                    initialIndex: _minuteSteps.indexOf(_endMinute).clamp(0, _minuteSteps.length - 1),
-                    labelBuilder: (i) => _minuteSteps[i].toString().padLeft(2, '0'),
-                    onChanged: (i) => setState(() => _endMinute = _minuteSteps[i]),
+                    initialIndex: _minuteSteps
+                        .indexOf(_endMinute)
+                        .clamp(0, _minuteSteps.length - 1),
+                    labelBuilder: (i) =>
+                        _minuteSteps[i].toString().padLeft(2, '0'),
+                    onChanged: (i) =>
+                        setState(() => _endMinute = _minuteSteps[i]),
                   ),
                 ),
 
@@ -320,7 +342,11 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.warning_amber_rounded, color: Color(0xFFB71C1C), size: 20),
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: Color(0xFFB71C1C),
+                          size: 20,
+                        ),
                         SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -429,10 +455,7 @@ class _AnimatedPickerContainer extends StatelessWidget {
       duration: const Duration(milliseconds: 260),
       curve: Curves.easeInOut,
       child: visible
-          ? Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: child,
-            )
+          ? Padding(padding: const EdgeInsets.only(top: 10), child: child)
           : const SizedBox.shrink(),
     );
   }

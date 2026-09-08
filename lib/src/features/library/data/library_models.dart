@@ -2,7 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 
-enum LibraryPassStatus { upcoming, active, inside, used, expired, cancelled }
+enum LibraryPassStatus {
+  pending,
+  approved,
+  upcoming,
+  active,
+  inside,
+  used,
+  rejected,
+  expired,
+  cancelled,
+}
 
 class LibraryVisitPass {
   const LibraryVisitPass({
@@ -40,67 +50,87 @@ class LibraryVisitPass {
     String? description,
     DateTime? checkInAt,
     DateTime? checkOutAt,
-  }) =>
-      LibraryVisitPass(
-        id: id,
-        date: date,
-        start: start,
-        end: end,
-        durationMinutes: durationMinutes,
-        status: status ?? this.status,
-        qrToken: qrToken,
-        zoneName: zoneName ?? this.zoneName,
-        seatNumber: seatNumber ?? this.seatNumber,
-        description: description ?? this.description,
-        checkInAt: checkInAt ?? this.checkInAt,
-        checkOutAt: checkOutAt ?? this.checkOutAt,
-      );
+  }) => LibraryVisitPass(
+    id: id,
+    date: date,
+    start: start,
+    end: end,
+    durationMinutes: durationMinutes,
+    status: status ?? this.status,
+    qrToken: qrToken,
+    zoneName: zoneName ?? this.zoneName,
+    seatNumber: seatNumber ?? this.seatNumber,
+    description: description ?? this.description,
+    checkInAt: checkInAt ?? this.checkInAt,
+    checkOutAt: checkOutAt ?? this.checkOutAt,
+  );
 }
 
 extension LibraryPassStatusLabel on LibraryPassStatus {
   String get label => switch (this) {
+    LibraryPassStatus.pending => 'Pending approval',
+    LibraryPassStatus.approved => 'Approved',
     LibraryPassStatus.upcoming => 'Upcoming',
     LibraryPassStatus.active => 'Active',
     LibraryPassStatus.inside => 'Inside',
     LibraryPassStatus.used => 'Completed',
+    LibraryPassStatus.rejected => 'Rejected',
     LibraryPassStatus.expired => 'Expired',
     LibraryPassStatus.cancelled => 'Cancelled',
   };
 
   Color get badgeColor => switch (this) {
+    LibraryPassStatus.pending => AppColors.amber,
+    LibraryPassStatus.approved => AppColors.success,
     LibraryPassStatus.upcoming => AppColors.amber,
     LibraryPassStatus.active => AppColors.success,
     LibraryPassStatus.inside => AppColors.primary,
     LibraryPassStatus.used => AppColors.muted,
+    LibraryPassStatus.rejected => const Color(0xFFB71C1C),
     LibraryPassStatus.expired => const Color(0xFFB71C1C),
     LibraryPassStatus.cancelled => const Color(0xFFB71C1C),
   };
 
   Color get badgeBackground => switch (this) {
+    LibraryPassStatus.pending => const Color(0xFFFFF3D9),
+    LibraryPassStatus.approved => const Color(0xFFE8F5E9),
     LibraryPassStatus.upcoming => const Color(0xFFFFF3D9),
     LibraryPassStatus.active => const Color(0xFFE8F5E9),
     LibraryPassStatus.inside => const Color(0xFFE3F2FD),
     LibraryPassStatus.used => const Color(0xFFF5F5F5),
+    LibraryPassStatus.rejected => const Color(0xFFFFEBEE),
     LibraryPassStatus.expired => const Color(0xFFFFEBEE),
     LibraryPassStatus.cancelled => const Color(0xFFFFEBEE),
   };
 
   Color get badgeColorDark => switch (this) {
+    LibraryPassStatus.pending => const Color(0xFFFFD54F),
+    LibraryPassStatus.approved => const Color(0xFF81C784),
     LibraryPassStatus.upcoming => const Color(0xFFFFD54F),
     LibraryPassStatus.active => const Color(0xFF81C784),
     LibraryPassStatus.inside => const Color(0xFF64B5F6),
     LibraryPassStatus.used => const Color(0xFF9E9E9E),
+    LibraryPassStatus.rejected => const Color(0xFFEF5350),
     LibraryPassStatus.expired => const Color(0xFFEF5350),
     LibraryPassStatus.cancelled => const Color(0xFFEF5350),
   };
 
   Color get badgeBackgroundDark => switch (this) {
+    LibraryPassStatus.pending => const Color(0xFF3E2723),
+    LibraryPassStatus.approved => const Color(
+      0xFF1B5E20,
+    ).withValues(alpha: 0.3),
     LibraryPassStatus.upcoming => const Color(0xFF3E2723),
     LibraryPassStatus.active => const Color(0xFF1B5E20).withValues(alpha: 0.3),
     LibraryPassStatus.inside => const Color(0xFF0D47A1).withValues(alpha: 0.3),
     LibraryPassStatus.used => const Color(0xFF424242).withValues(alpha: 0.3),
+    LibraryPassStatus.rejected => const Color(
+      0xFFB71C1C,
+    ).withValues(alpha: 0.3),
     LibraryPassStatus.expired => const Color(0xFFB71C1C).withValues(alpha: 0.3),
-    LibraryPassStatus.cancelled => const Color(0xFFB71C1C).withValues(alpha: 0.3),
+    LibraryPassStatus.cancelled => const Color(
+      0xFFB71C1C,
+    ).withValues(alpha: 0.3),
   };
 }
 
@@ -121,6 +151,7 @@ class LibraryBookingSlot {
   final int totalCapacity;
   final int bookedCount;
 
-  int get availableCount => (totalCapacity - bookedCount).clamp(0, totalCapacity);
+  int get availableCount =>
+      (totalCapacity - bookedCount).clamp(0, totalCapacity);
   bool get isFull => availableCount <= 0;
 }

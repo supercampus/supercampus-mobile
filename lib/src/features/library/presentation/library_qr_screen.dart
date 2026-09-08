@@ -15,8 +15,8 @@ class LibraryQrScreen extends StatelessWidget {
   });
 
   final LibraryVisitPass pass;
-  final ValueChanged<String> onCancel;
-  final ValueChanged<String> onEarlyCheckOut;
+  final Future<void> Function(String) onCancel;
+  final Future<void> Function(String) onEarlyCheckOut;
 
   @override
   Widget build(BuildContext context) {
@@ -25,8 +25,12 @@ class LibraryQrScreen extends StatelessWidget {
     final surfaceColor = isDark ? Colors.black : AppColors.canvas;
     final textColor = isDark ? Colors.white : AppColors.ink;
     final mutedColor = isDark ? Colors.white54 : AppColors.muted;
-    final badgeColor = isDark ? pass.status.badgeColorDark : pass.status.badgeColor;
-    final badgeBg = isDark ? pass.status.badgeBackgroundDark : pass.status.badgeBackground;
+    final badgeColor = isDark
+        ? pass.status.badgeColorDark
+        : pass.status.badgeColor;
+    final badgeBg = isDark
+        ? pass.status.badgeBackgroundDark
+        : pass.status.badgeBackground;
 
     return Scaffold(
       backgroundColor: surfaceColor,
@@ -83,7 +87,9 @@ class LibraryQrScreen extends StatelessWidget {
                                 ? null
                                 : [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.06),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.06,
+                                      ),
                                       blurRadius: 20,
                                       offset: const Offset(0, 4),
                                     ),
@@ -149,7 +155,9 @@ class LibraryQrScreen extends StatelessWidget {
                             children: [
                               _InfoChip(
                                 icon: Icons.calendar_today_outlined,
-                                label: DateFormat('d MMM yyyy').format(pass.date),
+                                label: DateFormat(
+                                  'd MMM yyyy',
+                                ).format(pass.date),
                                 color: mutedColor,
                                 textColor: textColor,
                               ),
@@ -162,7 +170,8 @@ class LibraryQrScreen extends StatelessWidget {
                               ),
                               _InfoChip(
                                 icon: Icons.access_time_outlined,
-                                label: '${DateFormat('HH:mm').format(pass.start)} – ${DateFormat('HH:mm').format(pass.end)}',
+                                label:
+                                    '${DateFormat('HH:mm').format(pass.start)} – ${DateFormat('HH:mm').format(pass.end)}',
                                 color: mutedColor,
                                 textColor: textColor,
                               ),
@@ -215,7 +224,9 @@ class LibraryQrScreen extends StatelessWidget {
             ),
 
             // Bottom action bar
-            if (pass.status == LibraryPassStatus.upcoming ||
+            if (pass.status == LibraryPassStatus.pending ||
+                pass.status == LibraryPassStatus.approved ||
+                pass.status == LibraryPassStatus.upcoming ||
                 pass.status == LibraryPassStatus.active ||
                 pass.status == LibraryPassStatus.inside)
               Container(
@@ -224,9 +235,7 @@ class LibraryQrScreen extends StatelessWidget {
                   color: cardColor,
                   border: Border(
                     top: BorderSide(
-                      color: isDark
-                          ? Colors.white10
-                          : const Color(0xFFE1E5E3),
+                      color: isDark ? Colors.white10 : const Color(0xFFE1E5E3),
                     ),
                   ),
                 ),
@@ -234,12 +243,15 @@ class LibraryQrScreen extends StatelessWidget {
                   top: false,
                   child: Row(
                     children: [
-                      if (pass.status == LibraryPassStatus.upcoming ||
+                      if (pass.status == LibraryPassStatus.pending ||
+                          pass.status == LibraryPassStatus.approved ||
+                          pass.status == LibraryPassStatus.upcoming ||
                           pass.status == LibraryPassStatus.active)
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () {
-                              onCancel(pass.id);
+                            onPressed: () async {
+                              await onCancel(pass.id);
+                              if (!context.mounted) return;
                               Navigator.of(context).pop('cancelled');
                             },
                             style: OutlinedButton.styleFrom(
@@ -257,8 +269,9 @@ class LibraryQrScreen extends StatelessWidget {
                           const SizedBox(width: 12),
                         Expanded(
                           child: FilledButton.icon(
-                            onPressed: () {
-                              onEarlyCheckOut(pass.id);
+                            onPressed: () async {
+                              await onEarlyCheckOut(pass.id);
+                              if (!context.mounted) return;
                               Navigator.of(context).pop('checked_out');
                             },
                             style: FilledButton.styleFrom(
