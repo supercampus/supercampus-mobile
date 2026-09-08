@@ -33,6 +33,36 @@ class ManagedStudent {
   final String? photoUrl;
 }
 
+class ManagedUserRole {
+  const ManagedUserRole({
+    required this.id,
+    required this.key,
+    required this.name,
+    this.active = true,
+  });
+
+  final String id;
+  final String key;
+  final String name;
+  final bool active;
+}
+
+class ManagedTenantUser {
+  const ManagedTenantUser({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.roles,
+    required this.active,
+  });
+
+  final String id;
+  final String name;
+  final String email;
+  final List<ManagedUserRole> roles;
+  final bool active;
+}
+
 class AdminStudentRepository {
   AdminStudentRepository({
     required String baseUrl,
@@ -56,6 +86,78 @@ class AdminStudentRepository {
     final values = data['data'];
     if (values is! List) return const [];
     return values.whereType<Map<String, dynamic>>().map(_student).toList();
+  }
+
+  Future<List<ManagedTenantUser>> listUsers() async {
+    final data = await _request(
+      (headers) => _client.get(
+        _baseUri.resolve('/api/v1/authorization/users'),
+        headers: headers,
+      ),
+    );
+    final values = data['data'];
+    if (values is! List) return const [];
+    return values.whereType<Map<String, dynamic>>().map(_user).toList();
+  }
+
+  Future<List<ManagedUserRole>> listRoles() async {
+    final data = await _request(
+      (headers) => _client.get(
+        _baseUri.resolve('/api/v1/authorization/roles'),
+        headers: headers,
+      ),
+    );
+    final values = data['data'];
+    if (values is! List) return const [];
+    return values
+        .whereType<Map<String, dynamic>>()
+        .map(_role)
+        .where((role) => role.active)
+        .toList();
+  }
+
+  Future<void> setUserRoles(String userId, List<String> roleIds) async {
+    await _request(
+      (headers) => _client.put(
+        _baseUri.resolve(
+          '/api/v1/authorization/users/${Uri.encodeComponent(userId)}/roles',
+        ),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({'roleIds': roleIds}),
+      ),
+    );
+  }
+
+  Future<void> setUserPassword(String userId, String password) async {
+    await _request(
+      (headers) => _client.put(
+        _baseUri.resolve(
+          '/api/v1/authorization/users/${Uri.encodeComponent(userId)}/password',
+        ),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({'password': password}),
+      ),
+    );
+  }
+
+  Future<void> createUser({
+    required String name,
+    required String email,
+    required String password,
+    required List<String> roleIds,
+  }) async {
+    await _request(
+      (headers) => _client.post(
+        _baseUri.resolve('/api/v1/authorization/users'),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({
+          'name': name.trim(),
+          'email': email.trim().toLowerCase(),
+          'temporaryPassword': password,
+          'roleIds': roleIds,
+        }),
+      ),
+    );
   }
 
   Future<ManagedStudentResidency> setResidency(
@@ -86,6 +188,24 @@ class AdminStudentRepository {
         ? ManagedStudentResidency.hosteller
         : ManagedStudentResidency.dayScholar,
     photoUrl: value['photoUrl']?.toString(),
+  );
+
+  ManagedUserRole _role(Map<String, dynamic> value) => ManagedUserRole(
+    id: value['id']?.toString() ?? '',
+    key: value['key']?.toString() ?? '',
+    name: value['name']?.toString() ?? 'Role',
+    active: value['active'] != false,
+  );
+
+  ManagedTenantUser _user(Map<String, dynamic> value) => ManagedTenantUser(
+    id: value['id']?.toString() ?? '',
+    name: value['name']?.toString() ?? 'User',
+    email: value['email']?.toString() ?? '',
+    active: value['active'] != false,
+    roles: (value['roles'] as List? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(_role)
+        .toList(),
   );
 
   Future<Map<String, dynamic>> _request(

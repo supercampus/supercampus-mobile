@@ -5,6 +5,7 @@ import '../../../core/widgets/module_section_switcher.dart';
 import '../../library/data/librarian_repository.dart';
 import '../../maintenance/data/maintenance_repository.dart';
 import '../data/admin_student_repository.dart';
+import 'admin_users_page.dart';
 
 /// Focused admin surface for student management and pending approvals.
 class AdminPortalShell extends StatefulWidget {
@@ -29,6 +30,7 @@ class _AdminPortalShellState extends State<AdminPortalShell> {
   @override
   Widget build(BuildContext context) {
     final pages = [
+      AdminUsersPage(repository: widget.studentRepository),
       _AdminStudentsPage(repository: widget.studentRepository),
       _AdminApprovalsPage(repository: widget.libraryRepository),
       _AdminMaintenancePage(repository: widget.maintenanceRepository),
@@ -40,6 +42,10 @@ class _AdminPortalShellState extends State<AdminPortalShell> {
           children: [
             ModuleSectionSwitcher(
               sections: const [
+                ModuleSection(
+                  label: 'Users',
+                  icon: Icons.manage_accounts_outlined,
+                ),
                 ModuleSection(label: 'Students', icon: Icons.school_outlined),
                 ModuleSection(
                   label: 'Approvals',
