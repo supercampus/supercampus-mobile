@@ -44,6 +44,7 @@ class MockGatepassRepository implements GatepassRepository {
       status: ApprovalStatus.pending,
       submittedAt: DateTime.now(),
       workflowVersion: store.workflow.version,
+      passKind: draft.passKind,
     );
     _store = store.copyWith(requests: [request, ...store.requests]);
     return request;
@@ -91,6 +92,7 @@ class MockGatepassRepository implements GatepassRepository {
       guardianPhone: current.guardianPhone,
       status: ApprovalStatus.cancelled,
       submittedAt: current.submittedAt,
+      passKind: current.passKind,
     );
     final requests = [...store.requests]..[index] = cancelled;
     _store = store.copyWith(requests: requests);
@@ -104,7 +106,7 @@ class MockGatepassRepository implements GatepassRepository {
       student: GatepassStudent(
         name: _studentName,
         email: _email,
-        rollNumber: 'MEC25AD48',
+        rollNumber: '413225243049',
         department: 'AIDS',
         residency: StudentResidency.hosteller,
         hostel: 'Bharathi Hostel',
@@ -118,7 +120,8 @@ class MockGatepassRepository implements GatepassRepository {
         validFrom: today.add(const Duration(hours: 6)),
         validUntil: today.add(const Duration(hours: 21)),
         qrPayload:
-            'supercampus://gate/day/MEC25AD48/${today.toIso8601String()}',
+            'supercampus://gate/day/413225243049/${today.toIso8601String()}',
+        manualCode: '5678',
       ),
       zone: CampusZone.inside,
       requests: [
@@ -134,6 +137,7 @@ class MockGatepassRepository implements GatepassRepository {
           submittedAt: today.subtract(const Duration(hours: 5)),
           approver: 'Dr. Priya, HOD',
           qrPayload: 'supercampus://gate/outpass/GP-240803',
+          manualCode: '1234',
           workflowState: _approvedWorkflowState(),
         ),
         GatepassRequest(
