@@ -1,0 +1,1 @@
+Library visit-slot booking is embedded in the student Library lending page.
