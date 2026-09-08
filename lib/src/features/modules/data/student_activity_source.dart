@@ -11,6 +11,7 @@ import '../../library/data/backend_library_repository.dart';
 import '../../library/data/library_models.dart';
 import '../../timetable/data/backend_timetable_repository.dart';
 import '../../timetable/data/timetable_models.dart';
+import '../../timetable/data/timetable_repository.dart';
 import '../../../screens/tuition_fee/tuition_fee_repository.dart';
 import 'glance_source.dart';
 import '../presentation/today_glance.dart';
@@ -262,9 +263,11 @@ class BackendStudentActivitySource
         baseUrl: baseUrl,
         accessTokenProvider: accessTokenProvider,
       );
-      final entries = repository.getEntriesForClass(
-        session.sectionId ?? session.idNumber ?? '',
+      final className = studentTimetableClassFor(
+        availableClasses: repository.getAvailableClasses(),
+        claimedSectionId: session.sectionId,
       );
+      final entries = repository.getEntriesForClass(className);
       final now = DateTime.now();
       final weekday = weekdayLabelFor(now.weekday);
       final today =

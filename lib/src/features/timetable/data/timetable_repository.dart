@@ -1,6 +1,29 @@
 import 'dart:async';
 import 'timetable_models.dart';
 
+/// Resolves the class whose published timetable a learner should see.
+///
+/// Session claims normally carry a section UUID while timetable rows expose a
+/// friendly class name. When they differ, use the first server-authorized
+/// class, matching the timetable screen, instead of passing the UUID into a
+/// repository fallback that may return rows from multiple visible classes.
+String studentTimetableClassFor({
+  required Iterable<String> availableClasses,
+  String? claimedSectionId,
+}) {
+  final available = availableClasses.toList(growable: false);
+  final claim = claimedSectionId?.trim() ?? '';
+  if (claim.isNotEmpty) {
+    for (final className in available) {
+      if (className.trim().toLowerCase() == claim.toLowerCase()) {
+        return className;
+      }
+    }
+  }
+  if (available.isNotEmpty) return available.first;
+  return claim.isEmpty ? 'Assigned class' : claim;
+}
+
 abstract interface class TimetableRepository {
   // Config & Master Matrix
   TimetableConfig getConfig();
