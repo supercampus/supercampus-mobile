@@ -40,12 +40,10 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
   @override
   void initState() {
     super.initState();
-    final available = widget.repository.getAvailableClasses();
-    // The server already limits a learner to their enrolled section. Prefer
-    // its friendly class name over the UUID stored in the session claim.
-    _targetClass = available.isNotEmpty
-        ? available.first
-        : widget.session.sectionId ?? 'Assigned class';
+    _targetClass = studentTimetableClassFor(
+      availableClasses: widget.repository.getAvailableClasses(),
+      claimedSectionId: widget.session.sectionId,
+    );
   }
 
   @override
