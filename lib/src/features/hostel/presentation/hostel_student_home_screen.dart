@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../data/hostel_models.dart';
 
@@ -27,237 +28,240 @@ class HostelStudentHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final residency = store.activeResidency;
-
     if (residency == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Hostel Residency')),
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.night_shelter_outlined,
-                    size: 64,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'No Active Hostel Residency',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'You currently do not have an active hostel bed allotment for Academic Year 2026-27.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.muted),
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: onApplyAccommodation,
-                  icon: const Icon(Icons.add_home_outlined),
-                  label: const Text('Apply for Accommodation'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+      return _NoResidencyView(onApply: onApplyAccommodation);
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Main Active Residency Header Card
-          _buildResidencyCard(context, residency),
-          const SizedBox(height: 20),
-
-          // Outpass Status Banner if active
-          _buildOutpassBanner(context),
-
-          const SizedBox(height: 20),
-
-          // Quick Action Tools Grid
-          Text(
-            'Hostel Operations & Services',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          _buildActionsGrid(context),
-
-          const SizedBox(height: 24),
-
-          // Mess Meal Passes Section
-          _buildMessSection(context),
-
-          const SizedBox(height: 24),
-
-          // Recent Gate Movements Feed
-          _buildMovementHistory(context),
+    final outpass = _activeOutpass;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      children: [
+        _ResidencyCard(residency: residency),
+        if (outpass != null) ...[
+          const SizedBox(height: 14),
+          _ActiveOutpassCard(outpass: outpass, onPressed: onOpenOutpass),
         ],
-      ),
+        const SizedBox(height: 24),
+        const _SectionHeader(
+          title: 'Services',
+          subtitle: 'Everything you need for your hostel stay',
+        ),
+        const SizedBox(height: 12),
+        _ServicesGrid(items: _serviceItems),
+        const SizedBox(height: 24),
+        _MealOverview(tokens: store.messTokens, onPressed: onOpenMess),
+        const SizedBox(height: 24),
+        _MovementHistory(movements: store.movements),
+      ],
     );
   }
 
-  Widget _buildResidencyCard(BuildContext context, HostelResidency residency) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.gateBlue, AppColors.gateMagenta],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  HostelOutpass? get _activeOutpass {
+    for (final outpass in store.outpasses) {
+      if (outpass.status == OutpassStatus.approved ||
+          outpass.status == OutpassStatus.active) {
+        return outpass;
+      }
+    }
+    return null;
+  }
+
+  List<_ServiceItem> get _serviceItems => [
+    _ServiceItem(
+      title: 'Leave & outpass',
+      subtitle: 'Apply and show your QR',
+      icon: Icons.logout_rounded,
+      color: const Color(0xFF2455A4),
+      onTap: onOpenOutpass,
+    ),
+    _ServiceItem(
+      title: 'Mess & meals',
+      subtitle: 'View today\'s meal tokens',
+      icon: Icons.restaurant_rounded,
+      color: const Color(0xFFD97706),
+      onTap: onOpenMess,
+    ),
+    _ServiceItem(
+      title: 'Report an issue',
+      subtitle: 'Request hostel maintenance',
+      icon: Icons.handyman_rounded,
+      color: const Color(0xFFC2413B),
+      onTap: onOpenComplaints,
+    ),
+    _ServiceItem(
+      title: 'Room change',
+      subtitle: 'Request a room or bed move',
+      icon: Icons.swap_horiz_rounded,
+      color: const Color(0xFF7357C8),
+      onTap: onOpenRoomChange,
+    ),
+    if (onOpenVisitors != null)
+      _ServiceItem(
+        title: 'Visitors',
+        subtitle: 'Manage visitor passes',
+        icon: Icons.people_alt_outlined,
+        color: const Color(0xFF0F8B74),
+        onTap: onOpenVisitors!,
+      ),
+    _ServiceItem(
+      title: 'Vacate & clearance',
+      subtitle: 'Track your clearance steps',
+      icon: Icons.fact_check_outlined,
+      color: const Color(0xFF52606D),
+      onTap: onOpenVacateClearance,
+    ),
+  ];
+}
+
+class _NoResidencyView extends StatelessWidget {
+  const _NoResidencyView({required this.onApply});
+
+  final VoidCallback onApply;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: colors.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.night_shelter_outlined,
+                size: 48,
+                color: colors.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'No active hostel stay',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Apply for accommodation to access room, mess and hostel services.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: onApply,
+              icon: const Icon(Icons.add_home_outlined),
+              label: const Text('Apply for accommodation'),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(16),
+      ),
+    );
+  }
+}
+
+class _ResidencyCard extends StatelessWidget {
+  const _ResidencyCard({required this.residency});
+
+  final HostelResidency residency;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: AppColors.violetGradient,
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: AppColors.primary.withValues(alpha: 0.18),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.verified, size: 14, color: Colors.white),
-                    const SizedBox(width: 4),
-                    Text(
-                      residency.residencyStatus.label.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _GradientBadge(
+                    icon: Icons.verified_rounded,
+                    label: residency.residencyStatus.label,
+                  ),
                 ),
               ),
-
-              // Presence Badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: residency.presenceStatus.color,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      residency.presenceStatus.label,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+              const SizedBox(width: 8),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: _GradientBadge(
+                    icon: Icons.circle,
+                    label: residency.presenceStatus.label,
+                    iconColor: const Color(0xFFB9F6CA),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           Text(
             residency.hostelName,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            'Room ${residency.roomNumber}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 25,
+              height: 1.15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            residency.bedCode,
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            'Room ${residency.roomNumber} · ${residency.bedCode}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Divider(color: Colors.white24, height: 1),
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
+          Container(height: 1, color: Colors.white.withValues(alpha: 0.2)),
+          const SizedBox(height: 14),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Resident Student',
-                    style: TextStyle(color: Colors.white60, fontSize: 11),
-                  ),
-                  Text(
-                    residency.studentName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+              Expanded(
+                child: _ResidencyDetail(
+                  label: 'RESIDENT',
+                  value: residency.studentName,
+                ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    'Hostel Dues',
-                    style: TextStyle(color: Colors.white60, fontSize: 11),
-                  ),
-                  Text(
-                    residency.dueAmount == 0
-                        ? '₹0 Due'
-                        : '₹${residency.dueAmount.toStringAsFixed(0)} Due',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+              Container(
+                width: 1,
+                height: 36,
+                color: Colors.white.withValues(alpha: 0.2),
+              ),
+              const SizedBox(width: 16),
+              _ResidencyDetail(
+                label: 'HOSTEL DUES',
+                value: residency.dueAmount == 0
+                    ? 'No dues'
+                    : '₹${residency.dueAmount.toStringAsFixed(0)} due',
+                alignEnd: true,
               ),
             ],
           ),
@@ -265,299 +269,87 @@ class HostelStudentHomeScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildOutpassBanner(BuildContext context) {
-    final activeOutpass = store.outpasses.firstWhere(
-      (o) =>
-          o.status == OutpassStatus.approved ||
-          o.status == OutpassStatus.active,
-      orElse: () => store.outpasses.first,
-    );
+class _GradientBadge extends StatelessWidget {
+  const _GradientBadge({
+    required this.icon,
+    required this.label,
+    this.iconColor = Colors.white,
+  });
 
+  final IconData icon;
+  final String label;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.amber.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.shade300),
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
       ),
-      padding: const EdgeInsets.all(14),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade100,
-              shape: BoxShape.circle,
+          Icon(icon, color: iconColor, size: 13),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            child: Icon(Icons.qr_code_2, color: Colors.amber.shade900),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Approved Outpass (${activeOutpass.id})',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.amber.shade900,
-                  ),
-                ),
-                Text(
-                  'Return by ${activeOutpass.expectedReturnAt.hour}:${activeOutpass.expectedReturnAt.minute.toString().padLeft(2, '0')} PM · ${activeOutpass.destination}',
-                  style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
-                ),
-              ],
-            ),
-          ),
-          FilledButton.icon(
-            onPressed: onOpenOutpass,
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.amber.shade900,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-            ),
-            icon: const Icon(Icons.qr_code, size: 16),
-            label: const Text('Show QR', style: TextStyle(fontSize: 12)),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildActionsGrid(BuildContext context) {
-    final items = [
-      _ActionItem(
-        title: 'Leave / Outpass',
-        subtitle: 'Apply exit pass & QR',
-        icon: Icons.output_rounded,
-        color: const Color(0xFF2455A4),
-        onTap: onOpenOutpass,
-      ),
-      _ActionItem(
-        title: 'Mess Meals',
-        subtitle: '3 Daily meal QR tokens',
-        icon: Icons.restaurant_menu_rounded,
-        color: const Color(0xFFD97706),
-        onTap: onOpenMess,
-      ),
-      _ActionItem(
-        title: 'Report Problem',
-        subtitle: 'Maintenance complaints',
-        icon: Icons.build_outlined,
-        color: const Color(0xFFDC2626),
-        onTap: onOpenComplaints,
-      ),
-      _ActionItem(
-        title: 'Room Change',
-        subtitle: 'Request bed transfer',
-        icon: Icons.swap_horiz_rounded,
-        color: const Color(0xFF7C3AED),
-        onTap: onOpenRoomChange,
-      ),
-      _ActionItem(
-        title: 'Vacate & Clearance',
-        subtitle: '7-Point clearance check',
-        icon: Icons.assignment_turned_in_outlined,
-        color: const Color(0xFF4B5563),
-        onTap: onOpenVacateClearance,
-      ),
-    ];
+class _ResidencyDetail extends StatelessWidget {
+  const _ResidencyDetail({
+    required this.label,
+    required this.value,
+    this.alignEnd = false,
+  });
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 1.6,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-      ),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return Material(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          elevation: 1,
-          shadowColor: Colors.black.withValues(alpha: 0.05),
-          child: InkWell(
-            onTap: item.onTap,
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: item.color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(item.icon, color: item.color, size: 20),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                  Text(
-                    item.subtitle,
-                    style: const TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+  final String label;
+  final String value;
+  final bool alignEnd;
 
-  Widget _buildMessSection(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.flatware, color: AppColors.primary),
-                  SizedBox(width: 8),
-                  Text(
-                    'Today\'s Mess Meal QR Tokens',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                ],
-              ),
-              TextButton(onPressed: onOpenMess, child: const Text('View All')),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: store.messTokens.map((t) {
-              final isUsed = t.status == MealTokenStatus.used;
-              return Expanded(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isUsed
-                        ? Colors.grey.shade100
-                        : AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isUsed ? Colors.grey.shade300 : AppColors.primary,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        t.mealType.label,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: isUsed ? AppColors.muted : AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Icon(
-                        isUsed ? Icons.check_circle : Icons.qr_code_2,
-                        color: isUsed ? Colors.green : AppColors.primary,
-                        size: 24,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        isUsed ? 'REDEEMED' : 'READY',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: isUsed ? Colors.green : AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMovementHistory(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
         Text(
-          'Recent Gate Movement Log',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
+          label,
+          style: const TextStyle(
+            color: Colors.white60,
+            fontSize: 9,
+            letterSpacing: 0.8,
+            fontWeight: FontWeight.w600,
           ),
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: store.movements.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final m = store.movements[index];
-              final isExit = m.movementType == 'EXIT';
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: isExit
-                      ? Colors.orange.shade50
-                      : Colors.green.shade50,
-                  child: Icon(
-                    isExit ? Icons.north_east : Icons.south_west,
-                    color: isExit
-                        ? Colors.orange.shade800
-                        : Colors.green.shade800,
-                  ),
-                ),
-                title: Text(
-                  '${m.movementType} · ${m.gateName}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-                subtitle: Text(
-                  'Method: ${m.method} ${m.outpassId != null ? "(${m.outpassId})" : ""}',
-                  style: const TextStyle(fontSize: 12),
-                ),
-                trailing: Text(
-                  '${m.timestamp.hour}:${m.timestamp.minute.toString().padLeft(2, '0')}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.muted,
-                  ),
-                ),
-              );
-            },
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -565,8 +357,403 @@ class HostelStudentHomeScreen extends StatelessWidget {
   }
 }
 
-class _ActionItem {
-  const _ActionItem({
+class _ActiveOutpassCard extends StatelessWidget {
+  const _ActiveOutpassCard({required this.outpass, required this.onPressed});
+
+  final HostelOutpass outpass;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final returnTime = TimeOfDay.fromDateTime(
+      outpass.expectedReturnAt,
+    ).format(context);
+
+    return Material(
+      color: colors.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: colors.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: colors.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  Icons.qr_code_2_rounded,
+                  color: colors.onTertiaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Active outpass',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primaryContainer,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text(
+                            outpass.status.label,
+                            style: TextStyle(
+                              color: colors.onPrimaryContainer,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${outpass.destination} · Return by $returnTime',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 2),
+        Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+}
+
+class _ServicesGrid extends StatelessWidget {
+  const _ServicesGrid({required this.items});
+
+  final List<_ServiceItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 10.0;
+        final width = (constraints.maxWidth - gap) / 2;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final item in items)
+              SizedBox(
+                width: width,
+                child: _ServiceTile(item: item),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ServiceTile extends StatelessWidget {
+  const _ServiceTile({required this.item});
+
+  final _ServiceItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Material(
+      color: colors.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colors.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: item.onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 124),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: item.color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(item.icon, color: item.color, size: 21),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  item.subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MealOverview extends StatelessWidget {
+  const _MealOverview({required this.tokens, required this.onPressed});
+
+  final List<MessMealToken> tokens;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final readyCount = tokens
+        .where((token) => token.status == MealTokenStatus.unused)
+        .length;
+
+    return Material(
+      color: colors.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: colors.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: colors.secondaryContainer,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(
+                  Icons.restaurant_menu_rounded,
+                  color: colors.onSecondaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Today\'s meal passes',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      tokens.isEmpty
+                          ? 'No meal passes available'
+                          : '$readyCount of ${tokens.length} ready to use',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MovementHistory extends StatelessWidget {
+  const _MovementHistory({required this.movements});
+
+  final List<HostelMovement> movements;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final visibleMovements = movements.take(3).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader(
+          title: 'Recent movement',
+          subtitle: 'Your latest hostel gate activity',
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: colors.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.outlineVariant),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: visibleMovements.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.history_rounded,
+                        color: colors.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'No recent gate movements',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: [
+                    for (
+                      var index = 0;
+                      index < visibleMovements.length;
+                      index++
+                    ) ...[
+                      _MovementTile(movement: visibleMovements[index]),
+                      if (index < visibleMovements.length - 1)
+                        Divider(height: 1, color: colors.outlineVariant),
+                    ],
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MovementTile extends StatelessWidget {
+  const _MovementTile({required this.movement});
+
+  final HostelMovement movement;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isExit = movement.movementType == 'EXIT';
+    final time = TimeOfDay.fromDateTime(movement.timestamp).format(context);
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: isExit ? colors.tertiaryContainer : colors.primaryContainer,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          isExit ? Icons.north_east_rounded : Icons.south_west_rounded,
+          color: isExit
+              ? colors.onTertiaryContainer
+              : colors.onPrimaryContainer,
+          size: 20,
+        ),
+      ),
+      title: Text(
+        isExit ? 'Checked out' : 'Checked in',
+        style: theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(
+        movement.gateName,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodySmall,
+      ),
+      trailing: Text(
+        time,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: colors.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _ServiceItem {
+  const _ServiceItem({
     required this.title,
     required this.subtitle,
     required this.icon,
