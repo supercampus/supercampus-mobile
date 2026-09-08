@@ -45,9 +45,13 @@ class _LibraryWheelPickerState extends State<LibraryWheelPicker> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fillColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE1E5E3);
+    final borderColor = isDark
+        ? const Color(0xFF3A3A3A)
+        : const Color(0xFFE1E5E3);
     final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
-    final fadedTextColor = isDark ? Colors.white38 : const Color(0xFF1C1C1E).withValues(alpha: 0.3);
+    final fadedTextColor = isDark
+        ? Colors.white38
+        : const Color(0xFF1C1C1E).withValues(alpha: 0.3);
 
     return Container(
       width: widget.width,
@@ -108,7 +112,9 @@ class _LibraryWheelPickerState extends State<LibraryWheelPicker> {
             child: IgnorePointer(
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(10),
+                  ),
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -127,7 +133,9 @@ class _LibraryWheelPickerState extends State<LibraryWheelPicker> {
             child: IgnorePointer(
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(10),
+                  ),
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,

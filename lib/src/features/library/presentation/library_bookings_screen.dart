@@ -5,7 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/library_models.dart';
-import '../data/mock_library_repository.dart';
+import '../data/library_repository.dart';
 import 'library_book_slot_sheet.dart';
 import 'library_qr_screen.dart';
 
@@ -20,7 +20,7 @@ class LibraryBookingsScreen extends StatefulWidget {
   });
 
   final UserSession session;
-  final MockLibraryRepository repository;
+  final LibraryRepository repository;
   final VoidCallback onExitModule;
   final String? initialAction;
 
@@ -34,7 +34,23 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _openInitialAction());
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      await widget.repository.loadBookings();
+      if (!mounted) return;
+      setState(() {});
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openInitialAction());
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Bad state: ', '')),
+        ),
+      );
+    }
   }
 
   void _openInitialAction() {
@@ -63,6 +79,8 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
       .where(
         (b) =>
             b.status == LibraryPassStatus.active ||
+            b.status == LibraryPassStatus.pending ||
+            b.status == LibraryPassStatus.approved ||
             b.status == LibraryPassStatus.upcoming ||
             b.status == LibraryPassStatus.inside,
       )
@@ -73,6 +91,7 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
         (b) =>
             b.status == LibraryPassStatus.used ||
             b.status == LibraryPassStatus.cancelled ||
+            b.status == LibraryPassStatus.rejected ||
             b.status == LibraryPassStatus.expired,
       )
       .toList();
@@ -104,11 +123,11 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
       MaterialPageRoute(
         builder: (_) => LibraryQrScreen(
           pass: pass,
-          onCancel: (id) {
-            widget.repository.cancelBooking(id);
+          onCancel: (id) async {
+            await widget.repository.cancelBooking(id);
           },
-          onEarlyCheckOut: (id) {
-            widget.repository.earlyCheckOut(id);
+          onEarlyCheckOut: (id) async {
+            await widget.repository.earlyCheckOut(id);
           },
         ),
       ),
@@ -116,8 +135,9 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
     if (mounted) setState(() {});
   }
 
-  void _cancelBooking(String id) {
-    widget.repository.cancelBooking(id);
+  Future<void> _cancelBooking(String id) async {
+    await widget.repository.cancelBooking(id);
+    if (!mounted) return;
     setState(() {});
     ScaffoldMessenger.of(
       context,
