@@ -1,0 +1,4 @@
+SuperCampus student account import
+Release: 2026-09-09
+Admin Users: bulk-upload template, preview and create-only student accounts.
+Admin Students: profile photo upload.
