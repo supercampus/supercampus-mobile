@@ -37312,7 +37312,7 @@ h=A.dU(B.m.P(j.h(l,5)),f)
 g=A.bl("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",!0,!1)
 if(!g.b.test(i))throw A.e(A.cN("Row "+k+": invalid email.",f,f))
 if(h==null||h<1||h>6)throw A.e(A.cN("Row "+k+": year must be 1\u20136. Use 1 for first-year students.",f,f))
-if(new A.mp(j.h(l,7)).gA(0)<12||B.c1.c9(j.h(l,7)).length>72)throw A.e(A.cN("Row "+k+": password must be at least 12 characters and at most 72 bytes.",f,f))
+if(new A.mp(j.h(l,7)).gA(0)<8||B.c1.c9(j.h(l,7)).length>72)throw A.e(A.cN("Row "+k+": password must be at least 8 characters and at most 72 bytes.",f,f))
 if(!p.D(0,i)||!o.D(0,B.m.P(j.h(l,1)).toLowerCase()))throw A.e(A.cN("Row "+k+": duplicate email or roll number.",f,f))
 n.push(A.a7(["name",B.m.P(j.h(l,0)),"rollNo",B.m.P(j.h(l,1)),"email",i,"mobileNumber",B.m.P(j.h(l,3)),"department",B.m.P(j.h(l,4)),"year",h,"section",B.m.P(j.h(l,6)),"password",j.h(l,7)],q,m))}return n},
 bB7:function bB7(){},
