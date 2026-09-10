@@ -14,18 +14,7 @@
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
   -->
-  <base id="supercampus-base" href="/">
-  <script>
-    // The same immutable web release serves the temporary sslip.io origin at
-    // `/` and the canonical campus portal at `supercampus.ai/login`. Resolve
-    // relative Flutter assets beneath `/login/` only on the canonical route.
-    if (
-      window.location.pathname === '/login' ||
-      window.location.pathname.startsWith('/login/')
-    ) {
-      document.getElementById('supercampus-base').setAttribute('href', '/login/');
-    }
-  </script>
+  <base href="/">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
