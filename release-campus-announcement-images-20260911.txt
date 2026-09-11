@@ -1,0 +1,4 @@
+SuperCampus campus announcement image release.
+
+Admins can publish tenant announcements with optional cover images, approved
+announcements populate the home carousel, and each card opens a full detail view.
