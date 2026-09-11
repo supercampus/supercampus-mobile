@@ -1,0 +1,3 @@
+SuperCampus announcement image cropping release
+Build date: 2026-09-11
+Includes: admin 16:7 drag-and-zoom crop, normalized 1280x560 cover output, and hosted image URL detection.
