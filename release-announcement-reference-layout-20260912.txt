@@ -1,0 +1,3 @@
+SuperCampus announcement reference-layout release
+Build date: 2026-09-12
+Includes: compact rounded date tile, announcement header and arrow, full-width cropped cover image, rounded card, and page indicators.
