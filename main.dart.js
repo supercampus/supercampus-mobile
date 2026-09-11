@@ -136486,7 +136486,7 @@ p(a){var s,r,q,p=this,o=null,n=A.bFx(a),m=A.az(a,B.dq,t.w).w,l=t.p,k=A.a([A.c(p.
 B.f.E(k,A.a([B.bF,A.c(p.a.e,o,o,o,o,o,o,o,o,o)],l))
 k.push(B.ax)
 l=p.gaTc()
-k.push(A.e9(o,!1,p.e,B.ay9,!1,o,o,o,o,o,1,o,!1,o,o,o,o,!1,o,o,B.a_,B.a0b,o,l))
+k.push(A.e9(o,!1,p.e,B.ay8,!1,o,o,o,o,o,1,o,!1,o,o,o,o,!1,o,o,B.a_,B.a0b,o,l))
 k.push(B.T)
 s=A.G(12)
 if(p.w==null)r="Choose announcement date"
@@ -137240,7 +137240,7 @@ if(p===0)p="programme"
 else p=p===1?"subject":"batch"
 p=A.c("Add "+p,r,r,r,r,r,A.q(a).ok.r,r,r,r)
 p=A.a([p,B.au,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.d,r,r,r,r,r,2,A.ik(r,r,r,r,r,r,r,r,!0,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,s.a.c===2?"Batch name":"Name",!0,!0,!1,r,r,r,r,r,r,r,r,r,r,r,r,r,r),B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r)],t.p)
-if(s.a.c!==2)p.push(A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.e,r,r,r,r,r,2,B.ayp,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r))
+if(s.a.c!==2)p.push(A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.e,r,r,r,r,r,2,B.ayo,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r))
 p.push(B.ax)
 p.push(A.dl(B.uD,r,s.gaxA(),r))
 return A.dp(!0,new A.K(new A.I(20,20,20,q.f.d+20),A.B(p,B.bb,r,B.n,B.a8,0,B.t),r),B.X,!0)}}
@@ -138391,27 +138391,27 @@ r===$&&A.b()
 r=A.e9(f,!1,r,B.axO,!1,f,f,f,f,f,1,f,!1,f,f,f,f,!1,f,f,B.a_,B.ae,f,s)
 q=g.x
 q===$&&A.b()
-q=A.e9(f,!1,q,B.ayl,!1,f,f,f,f,B.op,1,f,!1,f,f,f,f,!1,f,f,B.a_,B.ae,f,new A.bb4(g))
+q=A.e9(f,!1,q,B.ayk,!1,f,f,f,f,B.op,1,f,!1,f,f,f,f,!1,f,f,B.a_,B.ae,f,new A.bb4(g))
 p=g.w
 p===$&&A.b()
-p=A.e9(f,!1,p,B.ay1,!1,f,f,f,f,B.oo,1,f,!1,f,f,f,f,!1,f,f,B.a_,B.ae,f,f)
+p=A.e9(f,!1,p,B.ay0,!1,f,f,f,f,B.oo,1,f,!1,f,f,f,f,!1,f,f,B.a_,B.ae,f,f)
 o=g.r
 o===$&&A.b()
-s=A.e9(f,!1,o,B.aym,!1,f,f,f,f,f,1,f,!1,f,f,f,f,!1,f,f,B.a_,B.a0f,f,s)
+s=A.e9(f,!1,o,B.ayl,!1,f,f,f,f,f,1,f,!1,f,f,f,f,!1,f,f,B.a_,B.a0f,f,s)
 o=g.z
 o===$&&A.b()
 n=A.a([],t.M9)
 for(m=t.kZ,l=1;l<=6;++l)n.push(new A.bG(l,A.c("Year "+l,f,f,f,f,f,f,f,f,f),B.b8,f,m))
-o=A.a2(A.f0(B.aye,f,f,f,o,!1,n,f,new A.bb5(g),f,f,t.S),1)
+o=A.a2(A.f0(B.ayd,f,f,f,o,!1,n,f,new A.bb5(g),f,f,t.S),1)
 n=g.y
 n===$&&A.b()
 m=t.p
-n=A.Q(A.a([o,B.aB,A.a2(A.e9(f,!1,n,B.ay8,!1,f,f,f,f,f,1,f,!1,f,f,f,f,!1,f,f,B.a_,B.a0f,f,f),1)],m),B.u,f,B.n,B.o,0,f)
+n=A.Q(A.a([o,B.aB,A.a2(A.e9(f,!1,n,B.ay7,!1,f,f,f,f,f,1,f,!1,f,f,f,f,!1,f,f,B.a_,B.a0f,f,f),1)],m),B.u,f,B.n,B.o,0,f)
 o=g.as
 o===$&&A.b()
 k=A.a([],t.Uu)
 for(j=t.t2,i=0;i<2;++i){h=B.blU[i]
-k.push(new A.bG(h,A.c(h===B.i8?"Hosteller":"Day scholar",f,f,f,f,f,f,f,f,f),B.b8,f,j))}o=A.f0(B.ayj,f,f,f,o,!1,k,f,new A.bb6(g),f,f,t.dS)
+k.push(new A.bG(h,A.c(h===B.i8?"Hosteller":"Day scholar",f,f,f,f,f,f,f,f,f),B.b8,f,j))}o=A.f0(B.ayi,f,f,f,o,!1,k,f,new A.bb6(g),f,f,t.dS)
 k=g.Q
 k===$&&A.b()
 k=A.a([d,B.au,c,B.ax,b,B.T,r,B.T,q,B.T,p,B.T,s,B.T,n,B.T,o,B.T,A.f0(B.axI,f,f,f,k,!1,B.bjh,f,new A.bb7(g),f,f,t.N)],m)
@@ -138621,7 +138621,7 @@ r=s?B.ab5:B.acp
 q=A.G(22)
 p=n.x?m:new A.b1F(n)
 o=A.c(s?"Maintenance scheduled":"Maintenance mode off",m,m,m,m,m,B.uz,m,m,m)
-s=A.a([A.a1(m,A.aY2(B.fs,B.X,m,p,A.aH(B.yM,s?B.fs:B.P,m,m),B.bMa,o,s),B.x,m,m,new A.U(r,m,m,q,m,m,B.C),m,m,m,m,B.co,m,m,m),B.cL,A.c("Time window",m,m,m,m,m,A.q(a).ok.r,m,m,m),B.a2,new A.a_S("Starts",n.a8v(n.e),new A.b1G(n),m),B.a2,new A.a_S("Ends",n.a8v(n.f),new A.b1H(n),m),B.ax,A.cs(m,B.am,!1,m,!0,B.J,m,A.cn(),n.d,m,m,m,m,m,2,B.ay4,B.S,!0,m,!0,m,!1,m,B.aK,m,m,m,m,m,m,m,280,m,3,m,m,!1,"\u2022",m,m,m,m,m,!1,m,m,!1,m,!0,m,B.as,m,m,m,m,m,m,m,m,m,m,m,m,!0,B.a_,m,B.ae,m,m,m,m)],l)
+s=A.a([A.a1(m,A.aY2(B.fs,B.X,m,p,A.aH(B.yM,s?B.fs:B.P,m,m),B.bMa,o,s),B.x,m,m,new A.U(r,m,m,q,m,m,B.C),m,m,m,m,B.co,m,m,m),B.cL,A.c("Time window",m,m,m,m,m,A.q(a).ok.r,m,m,m),B.a2,new A.a_S("Starts",n.a8v(n.e),new A.b1G(n),m),B.a2,new A.a_S("Ends",n.a8v(n.f),new A.b1H(n),m),B.ax,A.cs(m,B.am,!1,m,!0,B.J,m,A.cn(),n.d,m,m,m,m,m,2,B.ay3,B.S,!0,m,!0,m,!1,m,B.aK,m,m,m,m,m,m,m,280,m,3,m,m,!1,"\u2022",m,m,m,m,m,!1,m,m,!1,m,!0,m,B.as,m,m,m,m,m,m,m,m,m,m,m,m,!0,B.a_,m,B.ae,m,m,m,m)],l)
 r=n.y
 if(r!=null)B.f.E(s,A.a([B.aL,A.c(r,m,m,m,m,m,A.ax(m,m,B.fs,m,m,m,m,m,m,m,m,m,m,m,m,m,m,!0,m,m,m,m,m,m,m,m),m,m,m)],l))
 s.push(B.ax)
@@ -139011,17 +139011,17 @@ s.U$=r
 s.O$=0
 this.am()},
 IY(){var s,r=this,q=r.d.a.a
-if(q.length<12)r.t(new A.bn9(r))
+if(q.length<8)r.t(new A.bn9(r))
 else if(q!==r.e.a.a)r.t(new A.bna(r))
 else{s=r.c
 s.toString
 A.aV(s,!1).bu(q)}},
-p(a){var s=this,r=null,q=t.p,p=A.a([A.c(s.a.c+" will be signed out from all existing devices.",r,r,r,r,r,r,r,r,r),B.au,A.cs(r,B.am,!0,r,!0,B.J,r,A.cn(),s.d,r,r,r,r,r,2,B.axX,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!0,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.e,r,r,r,r,r,2,B.axk,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!0,"\u2022",r,r,r,new A.bnb(s),r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r)],q),o=s.f
+p(a){var s=this,r=null,q=t.p,p=A.a([A.c(s.a.c+" will be signed out from all existing devices.",r,r,r,r,r,r,r,r,r),B.au,A.cs(r,B.am,!0,r,!0,B.J,r,A.cn(),s.d,r,r,r,r,r,2,B.ayE,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!0,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.e,r,r,r,r,r,2,B.axk,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!0,"\u2022",r,r,r,new A.bnb(s),r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r)],q),o=s.f
 if(o!=null)B.f.E(p,A.a([B.a2,A.c(o,r,r,r,r,r,A.ax(r,r,A.q(a).ax.fy,r,r,r,r,r,r,r,r,r,r,r,r,r,r,!0,r,r,r,r,r,r,r,r),r,r,r)],q))
 p=A.aE(A.B(p,B.B,r,B.n,B.a8,0,B.t),r,420)
 return A.jt(A.a([A.du(B.dm,r,r,new A.bnc(a),r,r),A.dl(B.Cf,r,s.gSN(),r)],q),r,p,r,r,B.Cf)}}
 A.bn9.prototype={
-$0(){return this.a.f="Use at least 12 characters."},
+$0(){return this.a.f="Use at least 8 characters."},
 $S:0}
 A.bna.prototype={
 $0(){return this.a.f="Passwords do not match."},
@@ -139049,7 +139049,7 @@ s.am()},
 IY(){var s,r,q,p,o=this,n=B.l.M(o.d.a.a)
 if(n.length===0||!B.l.m(o.e.a.a,"@"))o.t(new A.b8p(o))
 else{s=o.f.a.a
-if(s.length<12)o.t(new A.b8q(o))
+if(s.length<8)o.t(new A.b8q(o))
 else{r=o.r
 if(r.a===0)o.t(new A.b8r(o))
 else{q=o.c
@@ -139067,7 +139067,7 @@ A.b8p.prototype={
 $0(){return this.a.w="Enter a name and valid email address."},
 $S:0}
 A.b8q.prototype={
-$0(){return this.a.w="The temporary password needs 12 characters."},
+$0(){return this.a.w="The temporary password needs 8 characters."},
 $S:0}
 A.b8r.prototype={
 $0(){return this.a.w="Choose at least one role."},
@@ -139795,14 +139795,14 @@ q===$&&A.b()
 q=A.e9(l,!1,q,B.axT,!1,l,l,l,l,B.jA,1,l,!1,l,l,l,l,!1,l,l,B.a_,B.ae,l,new A.b3B())
 p=m.w
 p===$&&A.b()
-p=A.a2(A.e9(l,!1,p,B.ayn,!1,l,l,l,l,B.e7,1,l,!1,l,l,l,l,!1,l,l,B.a_,B.ae,l,new A.b3C()),1)
+p=A.a2(A.e9(l,!1,p,B.aym,!1,l,l,l,l,B.e7,1,l,!1,l,l,l,l,!1,l,l,B.a_,B.ae,l,new A.b3C()),1)
 o=m.x
 o===$&&A.b()
 n=t.p
-o=A.Q(A.a([p,B.aB,A.a2(A.e9(l,!1,o,B.ay5,!1,l,l,l,l,B.e7,1,l,!1,l,l,l,l,!1,l,l,B.a_,B.ae,l,new A.b3D(m)),1)],n),B.u,l,B.n,B.o,0,l)
+o=A.Q(A.a([p,B.aB,A.a2(A.e9(l,!1,o,B.ay4,!1,l,l,l,l,B.e7,1,l,!1,l,l,l,l,!1,l,l,B.a_,B.ae,l,new A.b3D(m)),1)],n),B.u,l,B.n,B.o,0,l)
 p=m.y
 p===$&&A.b()
-p=A.aE(A.nb(l,A.cE(A.B(A.a([j,B.T,s,B.T,q,B.T,o,B.T,A.e9(l,!1,p,B.ayD,!1,l,l,l,l,l,2,l,!1,l,l,l,l,!1,l,l,B.a_,B.ae,l,l)],n),B.u,l,B.n,B.a8,0,B.t),l,B.S,l,l,l,l,B.N),m.d),l,420)
+p=A.aE(A.nb(l,A.cE(A.B(A.a([j,B.T,s,B.T,q,B.T,o,B.T,A.e9(l,!1,p,B.ayC,!1,l,l,l,l,l,2,l,!1,l,l,l,l,!1,l,l,B.a_,B.ae,l,l)],n),B.u,l,B.n,B.a8,0,B.t),l,B.S,l,l,l,l,B.N),m.d),l,420)
 return A.jt(A.a([A.du(B.dm,l,l,new A.b3E(a),l,l),A.dl(B.bMg,l,m.gaU7(),l)],n),l,p,l,l,k)}}
 A.b3y.prototype={
 $1(a){var s=null
@@ -142333,7 +142333,7 @@ this.am()},
 XO(a){var s,r=a==null?"":a
 if(r.length===0)return"Create a new password."
 s=new A.h5(r)
-if(s.gv(0)<12)return"Use at least 12 characters."
+if(s.gv(0)<8)return"Use at least 8 characters."
 if(B.bY.c5(r).length>72)return"Password must be at most 72 bytes."
 return null},
 aZk(a){if(a==null||a.length===0)return"Confirm your new password."
@@ -142403,7 +142403,7 @@ $0(){return this.a.x=!1},
 $S:0}
 A.bno.prototype={
 $2(a,b){var s,r,q=null,p="Show password",o="Hide password",n=A.G(24),m=A.aY(B.aT,1),l=this.a,k=A.a1(q,B.atB,B.x,q,q,new A.U(q,q,q,A.G(15),q,B.hg,B.C),q,50,q,q,q,q,q,50),j=l.r,i=j?p:o
-j=A.e9(B.Pb,!1,l.e,A.ik(q,q,q,q,q,q,q,q,!0,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,"At least 12 characters",q,q,q,q,q,q,q,q,q,!0,!0,!1,q,B.z1,q,q,q,q,q,q,A.c7(q,q,q,A.aH(j?B.yL:B.qt,q,q,q),q,q,new A.bnl(l),q,q,q,i),q,q,q,q,q),!1,q,q,q,q,q,1,q,j,q,q,q,q,!1,q,q,B.a_,B.ae,B.hv,l.gXN())
+j=A.e9(B.Pb,!1,l.e,A.ik(q,q,q,q,q,q,q,q,!0,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,q,"At least 8 characters",q,q,q,q,q,q,q,q,q,!0,!0,!1,q,B.z1,q,q,q,q,q,q,A.c7(q,q,q,A.aH(j?B.yL:B.qt,q,q,q),q,q,new A.bnl(l),q,q,q,i),q,q,q,q,q),!1,q,q,q,q,q,1,q,j,q,q,q,q,!1,q,q,B.a_,B.ae,B.hv,l.gXN())
 i=l.w
 s=i?p:o
 r=t.p
@@ -143539,7 +143539,7 @@ l=A.cs(o,B.am,!1,o,!0,B.J,o,A.cn(),l,o,o,o,o,o,2,B.ayH,B.S,!0,o,!0,o,!1,o,B.aK,o
 s=p.e
 s===$&&A.b()
 r=t.p
-s=A.a([l,B.au,A.cs(o,B.am,!1,o,!0,B.J,o,A.cn(),s,o,o,o,o,o,2,B.ayz,B.S,!0,o,!0,o,!1,o,B.aK,o,o,o,B.bWu,o,B.e7,o,o,o,1,o,o,!1,"\u2022",o,o,o,o,o,!1,o,o,!1,o,!0,o,B.as,o,o,o,o,o,o,o,o,o,o,o,o,!0,B.a_,o,B.ae,o,o,o,o)],r)
+s=A.a([l,B.au,A.cs(o,B.am,!1,o,!0,B.J,o,A.cn(),s,o,o,o,o,o,2,B.ayy,B.S,!0,o,!0,o,!1,o,B.aK,o,o,o,B.bWu,o,B.e7,o,o,o,1,o,o,!1,"\u2022",o,o,o,o,o,!1,o,o,!1,o,!0,o,B.as,o,o,o,o,o,o,o,o,o,o,o,o,!0,B.a_,o,B.ae,o,o,o,o)],r)
 l=p.r
 if(l!=null)B.f.E(s,A.a([B.T,A.c(l,o,o,o,o,o,A.ax(o,o,A.q(a).ax.fy,o,o,o,o,o,o,o,o,o,o,o,o,o,o,!0,o,o,o,o,o,o,o,o),o,o,o)],r))
 s.push(B.cL)
@@ -143616,7 +143616,7 @@ k=A.c(k.c+" \xb7 "+k.b,n,n,n,n,n,n,n,n,n)
 s=t.p
 r=A.a([],s)
 for(q=0;q<4;++q){p=B.aA1[q]
-r.push(new A.a2j(A.c(""+p,n,n,n,n,n,n,n,n,n),new A.b8v(o,p),n))}return new A.K(new A.I(22,18,22,m.f.d+24),A.B(A.a([l,B.aJ,k,B.ax,A.jj(r,B.d3,0,8),B.T,A.cs(n,B.am,!1,n,!0,B.J,n,A.cn(),o.d,n,n,n,n,n,2,B.ayc,B.S,!0,n,!0,n,!1,n,B.aK,n,n,n,n,n,B.e7,n,n,n,1,n,n,!1,"\u2022",n,n,n,n,n,!1,n,n,!1,n,!0,n,B.as,n,n,n,n,n,n,n,n,n,n,n,n,!0,B.a_,n,B.ae,n,n,n,n),B.T,A.cs(n,B.am,!1,n,!0,B.J,n,A.cn(),o.e,n,n,n,n,n,2,B.axF,B.S,!0,n,!0,n,!1,n,B.aK,n,n,n,n,n,n,n,n,n,1,n,n,!1,"\u2022",n,n,n,n,n,!1,n,n,!1,n,!0,n,B.as,n,n,n,n,n,n,n,n,n,n,n,n,!0,B.a_,n,B.ae,n,n,n,n),B.b6,A.cl(B.asZ,B.bWC,B.bPR,new A.b8w(o,a),n)],s),B.bb,n,B.n,B.a8,0,B.t),n)}}
+r.push(new A.a2j(A.c(""+p,n,n,n,n,n,n,n,n,n),new A.b8v(o,p),n))}return new A.K(new A.I(22,18,22,m.f.d+24),A.B(A.a([l,B.aJ,k,B.ax,A.jj(r,B.d3,0,8),B.T,A.cs(n,B.am,!1,n,!0,B.J,n,A.cn(),o.d,n,n,n,n,n,2,B.ayb,B.S,!0,n,!0,n,!1,n,B.aK,n,n,n,n,n,B.e7,n,n,n,1,n,n,!1,"\u2022",n,n,n,n,n,!1,n,n,!1,n,!0,n,B.as,n,n,n,n,n,n,n,n,n,n,n,n,!0,B.a_,n,B.ae,n,n,n,n),B.T,A.cs(n,B.am,!1,n,!0,B.J,n,A.cn(),o.e,n,n,n,n,n,2,B.axF,B.S,!0,n,!0,n,!1,n,B.aK,n,n,n,n,n,n,n,n,n,1,n,n,!1,"\u2022",n,n,n,n,n,!1,n,n,!1,n,!0,n,B.as,n,n,n,n,n,n,n,n,n,n,n,n,!0,B.a_,n,B.ae,n,n,n,n),B.b6,A.cl(B.asZ,B.bWC,B.bPR,new A.b8w(o,a),n)],s),B.bb,n,B.n,B.a8,0,B.t),n)}}
 A.b8v.prototype={
 $0(){var s=""+this.b
 this.a.d.sdt(0,s)
@@ -145278,11 +145278,11 @@ s=A.Q(A.a([B.a9u,B.aB,s,A.G5(A.c(f.a.c.Q>0?"Change":"Set rate",e,e,e,e,e,e,e,e,e
 o=t.aZ
 o=A.jd(new A.bhz(f),B.bnC,A.bU([f.x],o),!0,e,o)
 n=A.e9(e,!1,f.e,B.axV,!1,e,e,e,e,e,1,e,!1,e,e,e,e,!1,e,e,B.a_,B.ae,e,new A.bhA())
-m=A.e9(e,!1,f.f,B.ayr,!1,e,e,e,e,e,2,e,!1,e,e,e,e,!1,e,e,B.a_,B.ae,e,e)
+m=A.e9(e,!1,f.f,B.ayq,!1,e,e,e,e,e,2,e,!1,e,e,e,e,!1,e,e,B.a_,B.ae,e,e)
 l=f.x===B.i5
 k=l?"Weight of clothes":"Number of clothes"
 d=A.a([n,B.T,m,B.T,A.e9(e,!1,d,A.ik(e,e,e,e,e,e,e,e,!0,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,e,k,!0,!0,!1,e,e,e,e,e,e,e,e,e,e,e,e,l?"kg":"clothes",e),!1,e,e,e,e,B.e7,1,e,!1,new A.bhB(f),e,e,e,!1,e,e,B.a_,B.ae,e,new A.bhC())],p)
-if(f.x===B.qI)B.f.E(d,A.a([B.T,A.e9(e,!1,f.w,B.ayh,!1,e,e,e,e,B.e7,1,e,!1,e,e,e,e,!1,e,e,B.a_,B.ae,e,new A.bhD())],p))
+if(f.x===B.qI)B.f.E(d,A.a([B.T,A.e9(e,!1,f.w,B.ayg,!1,e,e,e,e,B.e7,1,e,!1,e,e,e,e,!1,e,e,B.a_,B.ae,e,new A.bhD())],p))
 d.push(B.ax)
 c=A.a2(A.c(f.x===B.i5?"Total: "+A.e2(c*r.Q,!1):"Enter the agreed total price",e,e,e,e,e,B.c2,e,e,e),1)
 r=f.y
@@ -145305,7 +145305,7 @@ h=B.l.b6(B.r.j(A.fk(j)),2,"0")
 g=A.d5(j)>=12?"PM":"AM"
 d.push(new A.K(B.kr,new A.es(A.Q(A.a([o,B.aB,new A.co(1,B.b1,A.B(A.a([n,m,B.ck,A.c(""+A.de(j)+"/"+A.c6(j)+"/"+A.bJ(j)+" \xb7 "+i+":"+h+" "+g,e,e,e,e,e,B.bl,e,e,e)],p),B.B,e,B.n,B.o,0,B.t),e),A.c(A.e2(r.w,!1),e,e,e,e,e,B.uz,e,e,e)],p),B.u,e,B.n,B.o,0,e),B.aA,B.v,e,e),e))}return A.cK(q,e,A.cd(d,e,B.ahy,e,e,B.N,!1),e,e)}}
 A.bhw.prototype={
-$1(a){var s=null,r=this.a,q=A.cs(s,B.am,!0,s,!0,B.J,s,A.cn(),r,s,s,s,s,s,2,B.ayC,B.S,!0,s,!0,s,!1,s,B.aK,s,s,s,s,s,B.e7,s,s,s,1,s,s,!1,"\u2022",s,s,s,s,s,!1,s,s,!1,s,!0,s,B.as,s,s,s,s,s,s,s,s,s,s,s,s,!0,B.a_,s,B.ae,s,s,s,s)
+$1(a){var s=null,r=this.a,q=A.cs(s,B.am,!0,s,!0,B.J,s,A.cn(),r,s,s,s,s,s,2,B.ayB,B.S,!0,s,!0,s,!1,s,B.aK,s,s,s,s,s,B.e7,s,s,s,1,s,s,!1,"\u2022",s,s,s,s,s,!1,s,s,!1,s,!0,s,B.as,s,s,s,s,s,s,s,s,s,s,s,s,!0,B.a_,s,B.ae,s,s,s,s)
 return A.jt(A.a([A.du(B.dm,s,s,new A.bhu(a),s,s),A.dl(B.bO4,s,new A.bhv(r,a),s)],t.p),s,q,s,s,B.bLt)},
 $S:48}
 A.bhu.prototype={
@@ -145726,7 +145726,7 @@ h===$&&A.b()
 h=A.e9(m,!1,h,B.axs,!1,m,m,m,B.bWM,m,1,m,!1,m,m,m,m,!1,m,m,B.a_,B.ae,m,l.gaWI())
 s=l.f
 s===$&&A.b()
-s=A.e9(m,!1,s,B.ayA,!1,m,m,m,B.bWB,m,4,2,!1,m,m,m,m,!1,m,m,B.a_,B.ae,m,m)
+s=A.e9(m,!1,s,B.ayz,!1,m,m,m,B.bWB,m,4,2,!1,m,m,m,m,!1,m,m,B.a_,B.ae,m,m)
 r=l.r
 r===$&&A.b()
 q=l.gaRZ()
@@ -146851,10 +146851,10 @@ return new A.ahV(A.a([A.a7(["id","1","item","Academic Calendar Defined","role","
 A.ahV.prototype={
 p(a){return A.dY(new A.bbZ(this))},
 a5B(a){var s,r=this,q=null,p="Internal Assessment (IA): ",o="External End-Sem Exam: ",n=a?14:20,m=A.G(16),l=A.aY(B.aT,1),k=r.d,j=t.s,i=t.fo,h=i.i("ao.E"),g=A.T(new A.O(A.a(["2026-2027","2025-2026","2024-2025"],j),new A.bbN(),i),h),f=t.N
-g=A.f0(B.ay2,q,q,q,k,!1,g,q,new A.bbO(r),q,q,f)
+g=A.f0(B.ay1,q,q,q,k,!1,g,q,new A.bbO(r),q,q,f)
 k=r.e
 s=A.T(new A.O(A.a(["B.Tech Computer Science & Engineering","B.Tech Electronics & Communication","B.Tech Mechanical Engineering","MBA Business Analytics"],j),new A.bbP(),i),h)
-k=A.f0(B.ayE,q,q,q,k,!0,s,q,new A.bbR(r),q,q,f)
+k=A.f0(B.ayD,q,q,q,k,!0,s,q,new A.bbR(r),q,q,f)
 s=r.f
 j=A.T(new A.O(A.a([u.R,"60-40 Continuous Evaluation Pattern","50-50 Theory & Practical Split"],j),new A.bbS(),i),h)
 i=t.p
@@ -147427,7 +147427,7 @@ p(a){return A.dY(new A.bkr(this))},
 aVq(a){var s,r,q,p,o,n=this,m=null,l=n.e,k=A.a([],t.FG)
 for(s=n.d,r=s.length,q=t.R,p=0;p<s.length;s.length===r||(0,A.E)(s),++p){o=s[p]
 k.push(new A.bG(o,A.c(o,m,m,B.a5,m,m,m,m,m,m),B.b8,m,q))}s=t.p
-l=A.a([B.by7,B.ak,A.f0(B.ay7,m,m,m,l,!0,k,new A.b_("marks-subject-"+l,t.O),new A.bki(n),m,m,t.N),B.a2],s)
+l=A.a([B.by7,B.ak,A.f0(B.ay6,m,m,m,l,!0,k,new A.b_("marks-subject-"+l,t.O),new A.bki(n),m,m,t.N),B.a2],s)
 if(a)l.push(A.B(A.a([n.a58(),B.a2,n.abA()],s),B.u,m,B.n,B.o,0,B.t))
 else l.push(A.Q(A.a([A.a2(n.a58(),1),B.b0,A.a2(n.abA(),1)],s),B.u,m,B.n,B.o,0,m))
 return n.yI(A.B(l,B.bb,m,B.n,B.o,0,B.t))},
@@ -148478,7 +148478,7 @@ break
 case 6:case 1:return A.m(q,r)
 case 2:return A.l(o.at(-1),r)}})
 return A.n($async$JP,r)},
-p(a){var s=this,r=null,q=A.az(a,B.dq,t.w).w,p=t.p,o=A.Q(A.a([A.c("Create feedback",r,r,r,r,r,A.q(a).ok.r,r,r,r),B.c4,A.c7(r,r,r,B.hd,r,r,new A.bdt(a),r,r,r,"Close")],p),B.u,r,B.n,B.o,0,r),n=A.f0(B.ayt,r,r,r,r,!1,B.big,r,new A.bdu(s),r,s.r,t.CL),m=A.f0(B.axm,r,r,r,r,!1,B.bki,r,new A.bdv(s),r,s.w,t.mm),l=A.e9(r,!1,s.e,B.z2,!1,r,r,r,r,r,1,r,!1,r,r,r,r,!1,r,r,B.a_,B.ae,B.hv,new A.bdw()),k=A.e9(r,!1,s.f,B.axZ,!1,r,r,r,r,r,7,4,!1,r,r,r,r,!1,r,r,B.a_,B.ae,r,new A.bdx()),j=s.x,i=j?r:s.gUn(),h=j?B.uj:B.awM
+p(a){var s=this,r=null,q=A.az(a,B.dq,t.w).w,p=t.p,o=A.Q(A.a([A.c("Create feedback",r,r,r,r,r,A.q(a).ok.r,r,r,r),B.c4,A.c7(r,r,r,B.hd,r,r,new A.bdt(a),r,r,r,"Close")],p),B.u,r,B.n,B.o,0,r),n=A.f0(B.ays,r,r,r,r,!1,B.big,r,new A.bdu(s),r,s.r,t.CL),m=A.f0(B.axm,r,r,r,r,!1,B.bki,r,new A.bdv(s),r,s.w,t.mm),l=A.e9(r,!1,s.e,B.z2,!1,r,r,r,r,r,1,r,!1,r,r,r,r,!1,r,r,B.a_,B.ae,B.hv,new A.bdw()),k=A.e9(r,!1,s.f,B.axY,!1,r,r,r,r,r,7,4,!1,r,r,r,r,!1,r,r,B.a_,B.ae,r,new A.bdx()),j=s.x,i=j?r:s.gUn(),h=j?B.uj:B.awM
 return new A.K(new A.I(20,16,20,q.f.d+20),A.nb(r,A.cd(A.a([o,B.a2,B.bZe,B.ak,n,B.T,m,B.T,l,B.T,k,B.ax,A.cl(h,r,A.c(j?"Submitting":"Submit anonymous feedback",r,r,r,r,r,r,r,r,r),i,r)],p),r,r,r,r,B.N,!1),s.d),r)}}
 A.bdp.prototype={
 $0(){return this.a.x=!0},
@@ -149110,18 +149110,18 @@ if(n.a.d===B.i1){q=A.c("Outpass type",m,m,m,m,m,A.q(a).ok.w,m,m,m)
 p=n.w
 o=t.CO
 o=A.T(new A.O(B.bkk,new A.b3c(),o),o.i("ao.E"))
-B.f.E(r,A.a([q,B.og,A.f0(B.ayk,m,m,m,p,!1,o,m,new A.b3d(n),m,m,t.WM),B.au],s))}q=n.x
+B.f.E(r,A.a([q,B.og,A.f0(B.ayj,m,m,m,p,!1,o,m,new A.b3d(n),m,m,t.WM),B.au],s))}q=n.x
 q===$&&A.b()
 q=A.a2(new A.W2("Departure",q,new A.b3e(n),m),1)
 p=n.y
 p===$&&A.b()
 r.push(A.Q(A.a([q,B.b0,A.a2(new A.W2("Return",p,new A.b3f(n),m),1)],s),B.u,m,B.n,B.o,0,m))
 r.push(B.au)
-r.push(A.e9(m,!1,n.e,B.ay_,!1,m,m,m,m,m,1,m,!1,m,m,m,m,n.a.d===B.eg,m,m,B.a_,B.ae,B.hv,new A.b3g()))
+r.push(A.e9(m,!1,n.e,B.axZ,!1,m,m,m,m,m,1,m,!1,m,m,m,m,n.a.d===B.eg,m,m,B.a_,B.ae,B.hv,new A.b3g()))
 r.push(B.au)
-r.push(A.e9(m,!1,n.f,B.ayo,!1,m,m,m,m,m,4,3,!1,m,m,m,m,!1,m,m,B.a_,B.ae,m,new A.b3h()))
+r.push(A.e9(m,!1,n.f,B.ayn,!1,m,m,m,m,m,4,3,!1,m,m,m,m,!1,m,m,B.a_,B.ae,m,new A.b3h()))
 r.push(B.au)
-if(n.a.d===B.i1)r.push(A.e9(m,!1,n.r,B.ayf,!1,m,m,m,m,B.oo,1,m,!1,m,m,m,m,!1,m,m,B.a_,B.ae,m,new A.b3i()))
+if(n.a.d===B.i1)r.push(A.e9(m,!1,n.r,B.aye,!1,m,m,m,m,B.oo,1,m,!1,m,m,m,m,!1,m,m,B.a_,B.ae,m,new A.b3i()))
 r.push(B.ak)
 q=A.G(10)
 r.push(A.a1(m,A.Q(A.a([B.awD,B.b0,A.a2(A.c(n.a.d===B.eg?"Advisor / HOD approval is followed by principal approval. Security scans the QR before you exit. Hostellers go to the hostel; day scholars go home.":"Outpass is only for hostellers. Parent consent is followed by warden approval before the gate QR is generated.",m,m,m,m,m,m,m,m,m),1)],s),B.B,m,B.n,B.o,0,m),B.x,m,m,new A.U(B.wg,m,m,q,m,m,B.C),m,m,m,m,B.by,m,m,m))
@@ -150030,8 +150030,8 @@ break
 case 6:case 1:return A.m(q,r)
 case 2:return A.l(o.at(-1),r)}})
 return A.n($async$JX,r)},
-p(a){var s,r,q=this,p=null,o=t.p,n=A.ds(A.a([A.c7(p,p,p,B.hd,p,p,new A.bhc(a),p,p,p,"Close"),B.aZ],o),!1,p,p,p,p,B.bMj,p),m=q.gaFp(),l=A.e9(p,!1,q.e,B.ay0,!1,p,p,p,p,p,1,p,!1,p,p,p,p,!1,p,p,B.a_,B.ae,B.hv,m),k=A.e9(p,!1,q.f,B.axv,!1,p,p,p,p,B.oo,1,p,!1,p,p,p,p,!1,p,p,B.a_,B.ae,B.hv,new A.bhd()),j=A.e9(p,!1,q.r,B.axU,!1,p,p,p,p,p,1,p,!1,p,p,p,p,!1,p,p,B.a_,B.ae,B.hv,m)
-m=A.e9(p,!1,q.w,B.ayq,!1,p,p,p,p,p,3,2,!1,p,p,p,p,!1,p,p,B.a_,B.ae,p,m)
+p(a){var s,r,q=this,p=null,o=t.p,n=A.ds(A.a([A.c7(p,p,p,B.hd,p,p,new A.bhc(a),p,p,p,"Close"),B.aZ],o),!1,p,p,p,p,B.bMj,p),m=q.gaFp(),l=A.e9(p,!1,q.e,B.ay_,!1,p,p,p,p,p,1,p,!1,p,p,p,p,!1,p,p,B.a_,B.ae,B.hv,m),k=A.e9(p,!1,q.f,B.axv,!1,p,p,p,p,B.oo,1,p,!1,p,p,p,p,!1,p,p,B.a_,B.ae,B.hv,new A.bhd()),j=A.e9(p,!1,q.r,B.axU,!1,p,p,p,p,p,1,p,!1,p,p,p,p,!1,p,p,B.a_,B.ae,B.hv,m)
+m=A.e9(p,!1,q.w,B.ayp,!1,p,p,p,p,p,3,2,!1,p,p,p,p,!1,p,p,B.a_,B.ae,p,m)
 s=A.G(10)
 r=q.x
 r===$&&A.b()
@@ -150888,7 +150888,7 @@ return A.cz(new A.K(B.aA,A.B(A.a([A.Q(A.a([q,A.a1(s,A.c(a.r.b.toUpperCase(),s,s,
 $S:1012}
 A.aGA.prototype={
 $1(a){var s=this,r=null,q=A.az(a,r,t.w).w,p=A.q(a).ok.r,o=s.b,n=s.c
-return new A.K(new A.I(20,20,20,q.f.d+20),A.B(A.a([A.c("Request Room Change",r,r,r,r,r,p==null?r:p.d0(B.Q),r,r,r),B.au,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),o,r,r,r,r,r,2,B.aya,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),n,r,r,r,r,r,2,B.axw,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,2,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.b6,A.aE(A.dl(B.bT0,r,new A.aGz(s.a,o,n,a,s.d),r),r,1/0)],t.p),B.B,r,B.n,B.a8,0,B.t),r)},
+return new A.K(new A.I(20,20,20,q.f.d+20),A.B(A.a([A.c("Request Room Change",r,r,r,r,r,p==null?r:p.d0(B.Q),r,r,r),B.au,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),o,r,r,r,r,r,2,B.ay9,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),n,r,r,r,r,r,2,B.axw,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,2,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.b6,A.aE(A.dl(B.bT0,r,new A.aGz(s.a,o,n,a,s.d),r),r,1/0)],t.p),B.B,r,B.n,B.a8,0,B.t),r)},
 $S:56}
 A.aGz.prototype={
 $0(){var s=0,r=A.o(t.H),q,p=this,o,n
@@ -150996,7 +150996,7 @@ $0(){return this.a.r=0},
 $S:0}
 A.bfK.prototype={
 $1(a){var s=null,r=A.az(a,s,t.w).w,q=A.q(a).ok.r,p=this.b,o=this.c
-return new A.K(new A.I(20,20,20,r.f.d+20),A.B(A.a([A.c("Apply for Hostel Accommodation",s,s,s,s,s,q==null?s:q.d0(B.Q),s,s,s),B.au,A.f0(B.axY,s,s,s,"Double Sharing",!1,B.bmy,s,new A.bfI(p),s,s,t.N),B.T,A.cs(s,B.am,!1,s,!0,B.J,s,A.cn(),o,s,s,s,s,s,2,B.axf,B.S,!0,s,!0,s,!1,s,B.aK,s,s,s,s,s,s,s,s,s,1,s,s,!1,"\u2022",s,s,s,s,s,!1,s,s,!1,s,!0,s,B.as,s,s,s,s,s,s,s,s,s,s,s,s,!0,B.a_,s,B.ae,s,s,s,s),B.b6,A.aE(A.dl(B.bPj,s,new A.bfJ(this.a,p,o,a),s),s,1/0)],t.p),B.B,s,B.n,B.a8,0,B.t),s)},
+return new A.K(new A.I(20,20,20,r.f.d+20),A.B(A.a([A.c("Apply for Hostel Accommodation",s,s,s,s,s,q==null?s:q.d0(B.Q),s,s,s),B.au,A.f0(B.axX,s,s,s,"Double Sharing",!1,B.bmy,s,new A.bfI(p),s,s,t.N),B.T,A.cs(s,B.am,!1,s,!0,B.J,s,A.cn(),o,s,s,s,s,s,2,B.axf,B.S,!0,s,!0,s,!1,s,B.aK,s,s,s,s,s,s,s,s,s,1,s,s,!1,"\u2022",s,s,s,s,s,!1,s,s,!1,s,!0,s,B.as,s,s,s,s,s,s,s,s,s,s,s,s,!0,B.a_,s,B.ae,s,s,s,s),B.b6,A.aE(A.dl(B.bPj,s,new A.bfJ(this.a,p,o,a),s),s,1/0)],t.p),B.B,s,B.n,B.a8,0,B.t),s)},
 $S:56}
 A.bfI.prototype={
 $1(a){if(a!=null)this.a.sdt(0,a)},
@@ -151475,7 +151475,7 @@ return A.cz(new A.K(B.aA,A.B(A.a([A.Q(A.a([q,A.a1(s,A.c(a.x,s,s,s,s,s,A.ax(s,s,B
 $S:1015}
 A.aGE.prototype={
 $1(a){var s=this,r=null,q=A.az(a,r,t.w).w,p=A.q(a).ok.r,o=s.b,n=s.c,m=s.d
-return new A.K(new A.I(20,20,20,q.f.d+20),A.B(A.a([A.c("Generate Hostel Visitor Pass",r,r,r,r,r,p==null?r:p.d0(B.Q),r,r,r),B.au,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),o,r,r,r,r,r,2,B.axc,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),n,r,r,r,r,r,2,B.axe,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,B.oo,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),m,r,r,r,r,r,2,B.ayv,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.b6,A.aE(A.dl(B.bSA,r,new A.aGD(s.a,o,n,m,a,s.e),r),r,1/0)],t.p),B.B,r,B.n,B.a8,0,B.t),r)},
+return new A.K(new A.I(20,20,20,q.f.d+20),A.B(A.a([A.c("Generate Hostel Visitor Pass",r,r,r,r,r,p==null?r:p.d0(B.Q),r,r,r),B.au,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),o,r,r,r,r,r,2,B.axc,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),n,r,r,r,r,r,2,B.axe,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,B.oo,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),m,r,r,r,r,r,2,B.ayu,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.b6,A.aE(A.dl(B.bSA,r,new A.aGD(s.a,o,n,m,a,s.e),r),r,1/0)],t.p),B.B,r,B.n,B.a8,0,B.t),r)},
 $S:56}
 A.aGD.prototype={
 $0(){var s=0,r=A.o(t.H),q,p=this,o,n,m,l
@@ -152443,7 +152443,7 @@ $0(){A.aV(this.a,!1).bu(!0)
 return null},
 $S:0}
 A.bhR.prototype={
-$1(a){var s=this,r=null,q="\u2022",p=t.p,o=A.aE(A.cE(A.B(A.a([A.cs(r,B.am,!0,r,!0,B.J,r,A.cn(),s.a,r,r,r,r,r,2,B.axh,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.a2,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.b,r,r,r,r,r,2,B.ay3,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.a2,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.c,r,r,r,r,r,2,B.axx,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.a2,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.d,r,r,r,r,r,2,B.axt,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.a2,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.e,r,r,r,r,r,2,B.qC,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.a2,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.f,r,r,r,r,r,2,B.axq,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.a2,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.r,r,r,r,r,r,2,B.ayy,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,B.jA,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r)],p),B.u,r,B.n,B.a8,0,B.t),r,B.S,r,r,r,r,B.N),r,520)
+$1(a){var s=this,r=null,q="\u2022",p=t.p,o=A.aE(A.cE(A.B(A.a([A.cs(r,B.am,!0,r,!0,B.J,r,A.cn(),s.a,r,r,r,r,r,2,B.axh,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.a2,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.b,r,r,r,r,r,2,B.ay2,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.a2,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.c,r,r,r,r,r,2,B.axx,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.a2,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.d,r,r,r,r,r,2,B.axt,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.a2,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.e,r,r,r,r,r,2,B.qC,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.a2,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.f,r,r,r,r,r,2,B.axq,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.a2,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.r,r,r,r,r,r,2,B.ayx,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,B.jA,r,r,r,1,r,r,!1,q,r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r)],p),B.u,r,B.n,B.a8,0,B.t),r,B.S,r,r,r,r,B.N),r,520)
 return A.jt(A.a([A.du(B.dm,r,r,new A.bhP(a),r,r),A.dl(B.a0R,r,new A.bhQ(a),r)],p),r,o,r,r,B.bN_)},
 $S:48}
 A.bhP.prototype={
@@ -152784,7 +152784,7 @@ $1(a){var s,r,q=null,p=A.az(a,B.dq,t.w).w,o=this.a.c
 o.toString
 s=this.b
 r=t.p
-return new A.K(new A.I(24,24,24,p.f.d+24),A.B(A.a([A.c("Validate request",q,q,q,q,q,A.q(o).ok.f,q,q,q),B.ak,A.c(s.b,q,q,q,q,q,B.C5,q,q,q),A.c(s.c,q,q,q,q,q,q,q,q,q),A.c(A.e7("d MMM, h:mm a",q).cv(s.d)+" \u2013 "+A.e7("h:mm a",q).cv(s.e),q,q,q,q,q,q,q,q,q),B.ak,A.cs(q,B.am,!1,q,!0,B.J,q,A.cn(),this.c,q,q,q,q,q,2,B.ayi,B.S,!0,q,!0,q,!1,q,B.aK,q,q,q,q,q,q,q,q,q,1,q,q,!1,"\u2022",q,q,q,q,q,!1,q,q,!1,q,!0,q,B.as,q,q,q,q,q,q,q,q,q,q,q,q,!0,B.a_,q,B.ae,q,q,q,q),B.ax,A.Q(A.a([A.a2(A.eM(B.hd,q,B.ox,new A.biw(a),q),1),B.aB,A.a2(A.cl(B.qz,q,B.uE,new A.bix(a),q),1)],r),B.u,q,B.n,B.o,0,q)],r),B.B,q,B.n,B.a8,0,B.t),q)},
+return new A.K(new A.I(24,24,24,p.f.d+24),A.B(A.a([A.c("Validate request",q,q,q,q,q,A.q(o).ok.f,q,q,q),B.ak,A.c(s.b,q,q,q,q,q,B.C5,q,q,q),A.c(s.c,q,q,q,q,q,q,q,q,q),A.c(A.e7("d MMM, h:mm a",q).cv(s.d)+" \u2013 "+A.e7("h:mm a",q).cv(s.e),q,q,q,q,q,q,q,q,q),B.ak,A.cs(q,B.am,!1,q,!0,B.J,q,A.cn(),this.c,q,q,q,q,q,2,B.ayh,B.S,!0,q,!0,q,!1,q,B.aK,q,q,q,q,q,q,q,q,q,1,q,q,!1,"\u2022",q,q,q,q,q,!1,q,q,!1,q,!0,q,B.as,q,q,q,q,q,q,q,q,q,q,q,q,!0,B.a_,q,B.ae,q,q,q,q),B.ax,A.Q(A.a([A.a2(A.eM(B.hd,q,B.ox,new A.biw(a),q),1),B.aB,A.a2(A.cl(B.qz,q,B.uE,new A.bix(a),q),1)],r),B.u,q,B.n,B.o,0,q)],r),B.B,q,B.n,B.a8,0,B.t),q)},
 $S:56}
 A.biw.prototype={
 $0(){A.aV(this.a,!1).bu("rejected")
@@ -155404,7 +155404,7 @@ s=r.c
 s.toString
 A.aV(s,!1).bu(new A.D_(r.f,q,B.l.M(r.e.a.a),"Submitted"))},
 p(a){var s=this,r=null
-return A.dp(!0,new A.K(new A.I(20,20,20,A.az(a,B.dq,t.w).w.f.d+20),A.cE(A.B(A.a([A.c("New support ticket",r,r,r,r,r,A.q(a).ok.r,r,r,r),B.au,A.f0(B.qC,r,r,r,s.f,!1,B.bix,r,new A.b8o(s),r,r,t.N),A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.d,r,r,r,r,r,2,B.z2,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.e,r,r,r,r,r,2,B.ays,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,4,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.ax,A.dl(B.bLJ,r,s.gX6(),r)],t.p),B.bb,r,B.n,B.o,0,B.t),r,B.S,r,r,r,r,B.N),r),B.X,!0)}}
+return A.dp(!0,new A.K(new A.I(20,20,20,A.az(a,B.dq,t.w).w.f.d+20),A.cE(A.B(A.a([A.c("New support ticket",r,r,r,r,r,A.q(a).ok.r,r,r,r),B.au,A.f0(B.qC,r,r,r,s.f,!1,B.bix,r,new A.b8o(s),r,r,t.N),A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.d,r,r,r,r,r,2,B.z2,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.e,r,r,r,r,r,2,B.ayr,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,4,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.ax,A.dl(B.bLJ,r,s.gX6(),r)],t.p),B.bb,r,B.n,B.o,0,B.t),r,B.S,r,r,r,r,B.N),r),B.X,!0)}}
 A.b8o.prototype={
 $1(a){var s=this.a
 return s.t(new A.b8n(s,a))},
@@ -155473,7 +155473,7 @@ s=r.c
 s.toString
 A.aV(s,!1).bu(new A.CY(r.e,r.f,r.r,q,"Pending"))},
 p(a){var s=this,r=null
-return A.dp(!0,new A.K(new A.I(20,20,20,A.az(a,B.dq,t.w).w.f.d+20),A.cE(A.B(A.a([A.c("New leave application",r,r,r,r,r,A.q(a).ok.r,r,r,r),B.au,A.f0(B.ayg,r,r,r,s.e,!1,B.bkE,r,new A.b8k(s),r,r,t.N),B.a2,A.eM(B.IX,r,A.c("Start: "+s.Cz(s.f),r,r,r,r,r,r,r,r,r),new A.b8l(s),r),A.eM(B.yQ,r,A.c("End: "+s.Cz(s.r),r,r,r,r,r,r,r,r,r),new A.b8m(s),r),A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.d,r,r,r,r,r,2,B.axn,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,3,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.ax,A.dl(B.bPi,r,s.gX6(),r)],t.p),B.bb,r,B.n,B.o,0,B.t),r,B.S,r,r,r,r,B.N),r),B.X,!0)},
+return A.dp(!0,new A.K(new A.I(20,20,20,A.az(a,B.dq,t.w).w.f.d+20),A.cE(A.B(A.a([A.c("New leave application",r,r,r,r,r,A.q(a).ok.r,r,r,r),B.au,A.f0(B.ayf,r,r,r,s.e,!1,B.bkE,r,new A.b8k(s),r,r,t.N),B.a2,A.eM(B.IX,r,A.c("Start: "+s.Cz(s.f),r,r,r,r,r,r,r,r,r),new A.b8l(s),r),A.eM(B.yQ,r,A.c("End: "+s.Cz(s.r),r,r,r,r,r,r,r,r,r),new A.b8m(s),r),A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.d,r,r,r,r,r,2,B.axn,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,3,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.ax,A.dl(B.bPi,r,s.gX6(),r)],t.p),B.bb,r,B.n,B.o,0,B.t),r,B.S,r,r,r,r,B.N),r),B.X,!0)},
 Cz(a){return B.l.b6(B.r.j(a.gc6()),2,"0")+"/"+B.l.b6(B.r.j(a.gb8()),2,"0")+"/"+a.gbr()}}
 A.b8i.prototype={
 $0(){var s=this.a,r=this.c
@@ -157588,7 +157588,7 @@ r=p.f
 q=B.l.M(p.e.a.a)
 s.bu(new A.qV(o,r,q.length===0?"Contact pending":q,B.a1B))},
 p(a){var s=this,r=null
-return A.dp(!0,new A.K(new A.I(20,20,20,A.az(a,B.dq,t.w).w.f.d+20),A.cE(A.B(A.a([A.c("Add vendor",r,r,r,r,r,A.q(a).ok.r,r,r,r),B.au,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.d,r,r,r,r,r,2,B.ax9,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),A.f0(B.qC,r,r,r,s.f,!1,B.bno,r,new A.b0Q(s),r,r,t.N),A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.e,r,r,r,r,r,2,B.ay6,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.ax,A.dl(B.bSi,r,s.gaZx(),r)],t.p),B.bb,r,B.n,B.o,0,B.t),r,B.S,r,r,r,r,B.N),r),B.X,!0)}}
+return A.dp(!0,new A.K(new A.I(20,20,20,A.az(a,B.dq,t.w).w.f.d+20),A.cE(A.B(A.a([A.c("Add vendor",r,r,r,r,r,A.q(a).ok.r,r,r,r),B.au,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.d,r,r,r,r,r,2,B.ax9,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),A.f0(B.qC,r,r,r,s.f,!1,B.bno,r,new A.b0Q(s),r,r,t.N),A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.e,r,r,r,r,r,2,B.ay5,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.ax,A.dl(B.bSi,r,s.gaZx(),r)],t.p),B.bb,r,B.n,B.o,0,B.t),r,B.S,r,r,r,r,B.N),r),B.X,!0)}}
 A.b0Q.prototype={
 $1(a){var s=this.a
 return s.t(new A.b0P(s,a))},
@@ -158197,7 +158197,7 @@ A.b10.prototype={
 $2(a,b){var s=this,r=null,q=A.az(a,B.dq,t.w).w,p=A.bq(A.a1(r,r,B.x,r,r,new A.U(B.aI.Z(0.5),r,r,A.G(8),r,r,B.C),r,4,r,r,r,r,r,42),r,r),o=A.c("Assign student fee",r,r,r,r,r,A.q(a).ok.f,r,r,r),n=s.a,m=n.a,l=s.b.a.c.b,k=A.N(l).i("O<1,bG<kB>>")
 l=A.T(new A.O(l,new A.b0Y(),k),k.i("ao.E"))
 l.$flags=1
-return new A.K(new A.I(20,12,20,q.f.d+24),A.cE(A.B(A.a([p,B.ax,o,B.ax,A.f0(B.axQ,r,r,r,m,!0,l,B.bW3,new A.b0Z(n,b),r,r,t.o1),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.c,r,r,r,r,r,2,B.ayb,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.d,r,r,r,r,r,2,B.ayB,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.e,r,r,r,r,r,2,B.ayu,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,B.bWU,r,B.e7,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.ax,A.aE(A.dl(B.bKL,r,new A.b1_(s.f),r),r,1/0)],t.p),B.B,r,B.n,B.a8,0,B.t),r,B.S,r,r,r,r,B.N),r)},
+return new A.K(new A.I(20,12,20,q.f.d+24),A.cE(A.B(A.a([p,B.ax,o,B.ax,A.f0(B.axQ,r,r,r,m,!0,l,B.bW3,new A.b0Z(n,b),r,r,t.o1),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.c,r,r,r,r,r,2,B.aya,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.d,r,r,r,r,r,2,B.ayA,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,r,r,r,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.T,A.cs(r,B.am,!1,r,!0,B.J,r,A.cn(),s.e,r,r,r,r,r,2,B.ayt,B.S,!0,r,!0,r,!1,r,B.aK,r,r,r,B.bWU,r,B.e7,r,r,r,1,r,r,!1,"\u2022",r,r,r,r,r,!1,r,r,!1,r,!0,r,B.as,r,r,r,r,r,r,r,r,r,r,r,r,!0,B.a_,r,B.ae,r,r,r,r),B.ax,A.aE(A.dl(B.bKL,r,new A.b1_(s.f),r),r,1/0)],t.p),B.B,r,B.n,B.a8,0,B.t),r,B.S,r,r,r,r,B.N),r)},
 $S:113}
 A.b0Y.prototype={
 $1(a){var s=null
@@ -158228,7 +158228,7 @@ n=A.T(new A.O(n,new A.b1g(),m),m.i("ao.E"))
 n.$flags=1
 m=r.a
 s=t.p
-return new A.K(new A.I(20,14,20,p.f.d+24),A.cE(A.B(A.a([o,B.bF,B.bP3,B.ax,A.f0(B.ayw,q,q,q,q,!0,n,q,new A.b1h(m,b),q,q,t.o1),B.T,A.cs(q,B.am,!1,q,!0,B.J,q,A.cn(),r.c,q,q,q,q,q,2,B.ayx,B.S,!0,q,!0,q,!1,q,B.aK,q,q,q,q,q,q,q,q,q,1,q,q,!1,"\u2022",q,q,q,q,q,!1,q,q,!1,q,!0,q,B.as,q,q,q,q,q,q,q,q,q,q,q,q,!0,B.a_,q,B.ae,q,q,q,q),B.T,A.Q(A.a([A.a2(new A.W_("Access starts",m.b,new A.b1i(m,a,b),q),1),B.b0,A.a2(new A.W_("Access ends",m.c,new A.b1j(m,a,b),q),1)],s),B.u,q,B.n,B.o,0,q),B.ax,A.aE(A.cl(B.IV,q,B.bPL,new A.b1k(r.d),q),q,1/0)],s),B.B,q,B.n,B.a8,0,B.t),q,B.S,q,q,q,q,B.N),q)},
+return new A.K(new A.I(20,14,20,p.f.d+24),A.cE(A.B(A.a([o,B.bF,B.bP3,B.ax,A.f0(B.ayv,q,q,q,q,!0,n,q,new A.b1h(m,b),q,q,t.o1),B.T,A.cs(q,B.am,!1,q,!0,B.J,q,A.cn(),r.c,q,q,q,q,q,2,B.ayw,B.S,!0,q,!0,q,!1,q,B.aK,q,q,q,q,q,q,q,q,q,1,q,q,!1,"\u2022",q,q,q,q,q,!1,q,q,!1,q,!0,q,B.as,q,q,q,q,q,q,q,q,q,q,q,q,!0,B.a_,q,B.ae,q,q,q,q),B.T,A.Q(A.a([A.a2(new A.W_("Access starts",m.b,new A.b1i(m,a,b),q),1),B.b0,A.a2(new A.W_("Access ends",m.c,new A.b1j(m,a,b),q),1)],s),B.u,q,B.n,B.o,0,q),B.ax,A.aE(A.cl(B.IV,q,B.bPL,new A.b1k(r.d),q),q,1/0)],s),B.B,q,B.n,B.a8,0,B.t),q,B.S,q,q,q,q,B.N),q)},
 $S:113}
 A.b1g.prototype={
 $1(a){var s=null
@@ -166931,7 +166931,7 @@ B.axL=new A.b3(null,null,null,"Maximum students per time slot",null,null,null,nu
 B.axM=new A.b3(null,null,null,"Select date",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,B.yS,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.axN=new A.b3(null,null,null,"Release Scope",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.axO=new A.b3(null,null,null,"Roll number",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.axP=new A.b3(null,null,null,"Temporary password",null,null,null,"Minimum 12 characters",null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.axP=new A.b3(null,null,null,"Temporary password",null,null,null,"Minimum 8 characters",null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.qC=new A.b3(null,null,null,"Category",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.arr=new A.V(62080,"MaterialIcons",!1)
 B.avh=new A.a6(B.arr,null,null,null,null)
@@ -166946,63 +166946,63 @@ B.axU=new A.b3(null,null,null,"Relationship",null,null,null,null,null,null,null,
 B.axV=new A.b3(null,null,null,"Name",null,null,null,null,null,null,"Student or bundle name",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.awk=new A.a6(B.n3,null,null,null,null)
 B.axW=new A.b3(null,null,null,"Roll number",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.awk,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.axX=new A.b3(null,null,null,"New password",null,null,null,"Minimum 12 characters",null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.axY=new A.b3(null,null,null,"Preferred Room Type",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.axZ=new A.b3(null,null,null,"Details",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.axX=new A.b3(null,null,null,"Preferred Room Type",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.axY=new A.b3(null,null,null,"Details",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.arv=new A.V(62124,"MaterialIcons",!1)
 B.atx=new A.a6(B.arv,null,null,null,null)
-B.ay_=new A.b3(null,null,null,"Destination",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.atx,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ay0=new A.b3(null,null,null,"Visitor name",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.z_,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ay1=new A.b3(null,null,null,"Mobile number",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ay2=new A.b3(null,null,null,"Academic Year",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ay3=new A.b3(null,null,null,"Author",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.axZ=new A.b3(null,null,null,"Destination",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.atx,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ay_=new A.b3(null,null,null,"Visitor name",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.z_,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ay0=new A.b3(null,null,null,"Mobile number",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ay1=new A.b3(null,null,null,"Academic Year",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ay2=new A.b3(null,null,null,"Author",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.arm=new A.V(61894,"MaterialIcons",!1)
 B.av1=new A.a6(B.arm,null,null,null,null)
-B.ay4=new A.b3(null,null,null,"Message shown to users",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.av1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,!0,null,null)
-B.ay5=new A.b3(null,null,null,"Out of",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ay6=new A.b3(null,null,null,"Contact email or phone",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ay7=new A.b3(null,null,null,"Assigned subject",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ay8=new A.b3(null,null,null,"Section",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ay3=new A.b3(null,null,null,"Message shown to users",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.av1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,!0,null,null)
+B.ay4=new A.b3(null,null,null,"Out of",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ay5=new A.b3(null,null,null,"Contact email or phone",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ay6=new A.b3(null,null,null,"Assigned subject",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ay7=new A.b3(null,null,null,"Section",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.J4=new A.b3(null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,B.xu,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,B.tG,!0,null,null,null,null)
-B.ay9=new A.b3(null,null,null,"Announcement type",null,null,null,null,null,null,"Campus event, exam results, fee reminder\u2026",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.aya=new A.b3(null,null,null,"Preferred Hostel / Block / Room Type",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayb=new A.b3(null,null,null,"Fee title",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayc=new A.b3(null,null,null,"Credits to add",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.IS,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.aye=new A.b3(null,null,null,"Year",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayf=new A.b3(null,null,null,"Guardian phone",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.IG,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayg=new A.b3(null,null,null,"Leave type",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayh=new A.b3(null,null,null,"Total ironing price",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,"\u20b9 ",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayi=new A.b3(null,null,null,"Decision note (optional)",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayj=new A.b3(null,null,null,"Residency",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ay8=new A.b3(null,null,null,"Announcement type",null,null,null,null,null,null,"Campus event, exam results, fee reminder\u2026",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ay9=new A.b3(null,null,null,"Preferred Hostel / Block / Room Type",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.aya=new A.b3(null,null,null,"Fee title",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayb=new A.b3(null,null,null,"Credits to add",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.IS,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayd=new A.b3(null,null,null,"Year",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.aye=new A.b3(null,null,null,"Guardian phone",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.IG,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayf=new A.b3(null,null,null,"Leave type",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayg=new A.b3(null,null,null,"Total ironing price",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,"\u20b9 ",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayh=new A.b3(null,null,null,"Decision note (optional)",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayi=new A.b3(null,null,null,"Residency",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.asy=new A.V(984417,"MaterialIcons",!1)
 B.awI=new A.a6(B.asy,null,null,null,null)
-B.ayk=new A.b3(null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.awI,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayl=new A.b3(null,null,null,"Email",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.aym=new A.b3(null,null,null,"Department",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayn=new A.b3(null,null,null,"Marks",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayo=new A.b3(null,null,null,"Reason",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,!0,null,null)
-B.ayp=new A.b3(null,null,null,"Code",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayq=new A.b3(null,null,null,"Purpose of visit",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,!0,null,null)
-B.ayr=new A.b3(null,null,null,"Description",null,null,null,null,null,null,"Colour, room, instructions\u2026",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ays=new A.b3(null,null,null,"Describe the issue",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayt=new A.b3(null,null,null,"Type",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayu=new A.b3(null,null,null,"Amount",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,"\u20b9 ",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayv=new A.b3(null,null,null,"Purpose of Visit",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayj=new A.b3(null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.awI,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayk=new A.b3(null,null,null,"Email",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayl=new A.b3(null,null,null,"Department",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.aym=new A.b3(null,null,null,"Marks",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayn=new A.b3(null,null,null,"Reason",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,!0,null,null)
+B.ayo=new A.b3(null,null,null,"Code",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayp=new A.b3(null,null,null,"Purpose of visit",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,!0,null,null)
+B.ayq=new A.b3(null,null,null,"Description",null,null,null,null,null,null,"Colour, room, instructions\u2026",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayr=new A.b3(null,null,null,"Describe the issue",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ays=new A.b3(null,null,null,"Type",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayt=new A.b3(null,null,null,"Amount",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,"\u20b9 ",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayu=new A.b3(null,null,null,"Purpose of Visit",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.ask=new A.V(983154,"MaterialIcons",!1)
 B.atQ=new A.a6(B.ask,null,null,null,null)
-B.ayw=new A.b3(null,null,null,"Hosteller",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.atQ,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayv=new A.b3(null,null,null,"Hosteller",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.atQ,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.asa=new A.V(63643,"MaterialIcons",!1)
 B.awH=new A.a6(B.asa,null,null,null,null)
 B.J5=new A.b3(null,null,null,null,null,null,null,null,null,null,"name@college.edu",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.awH,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayx=new A.b3(null,null,null,"Payment reference (optional)",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.nb,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayw=new A.b3(null,null,null,"Payment reference (optional)",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.nb,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.z3=new A.b3(null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,B.xt,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,B.tG,!0,null,null,null,null)
-B.ayy=new A.b3(null,null,null,"Total copies *",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayz=new A.b3(null,null,null,"Maximum top-up",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,"\u20b9 ",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayA=new A.b3(null,null,null,"Item description",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,!0,null,null)
-B.ayB=new A.b3(null,null,null,"Academic context",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayC=new A.b3(null,null,null,null,null,null,null,null,null,null,"Price",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,"\u20b9 ",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayD=new A.b3(null,null,null,"Notes (optional)",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.ayE=new A.b3(null,null,null,"Programme",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayx=new A.b3(null,null,null,"Total copies *",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayy=new A.b3(null,null,null,"Maximum top-up",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,"\u20b9 ",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayz=new A.b3(null,null,null,"Item description",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,!0,null,null)
+B.ayA=new A.b3(null,null,null,"Academic context",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayB=new A.b3(null,null,null,null,null,null,null,null,null,null,"Price",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,"\u20b9 ",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayC=new A.b3(null,null,null,"Notes (optional)",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayD=new A.b3(null,null,null,"Programme",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayE=new A.b3(null,null,null,"New password",null,null,null,"Minimum 8 characters",null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.ayG=new A.b3(null,null,null,"Email address",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.ayH=new A.b3(null,null,null,"Minimum top-up",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,"\u20b9 ",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.ayI=new A.Fn(0,"neutral")
@@ -174087,9 +174087,9 @@ B.BV=new A.acK(1,"rtl")
 B.BY=new A.kY(0,0,B.Z,!1,0,0)
 B.on=new A.cb("",B.BY,B.b2)
 B.aK=A.bu("EM")
-B.ayd=new A.b3(null,null,null,"Student Roll No / Hall Ticket ID",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.ayc=new A.b3(null,null,null,"Student Roll No / Hall Ticket ID",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.BX=new A.mB(0,null,null)
-B.bDZ=new A.xd(null,B.aK,null,null,B.ayd,B.BX,null,B.ae,null,null,B.a_,null,null,!1,null,"\u2022",!1,null,B.oh,B.oi,!0,1,null,!1,!1,null,null,null,null,null,null,null,null,null,null,null,2,null,null,null,null,null,null,null,null,B.as,!0,null,null,B.S,null,!1,null,null,null,null,null,null,B.am,B.J,null,!0,!0,!0,null,A.cn(),!0,null,null,null,null)
+B.bDZ=new A.xd(null,B.aK,null,null,B.ayc,B.BX,null,B.ae,null,null,B.a_,null,null,!1,null,"\u2022",!1,null,B.oh,B.oi,!0,1,null,!1,!1,null,null,null,null,null,null,null,null,null,null,null,2,null,null,null,null,null,null,null,null,B.as,!0,null,null,B.S,null,!1,null,null,null,null,null,null,B.am,B.J,null,!0,!0,!0,null,A.cn(),!0,null,null,null,null)
 B.ayF=new A.b3(null,null,null,"Incident Description & Action Taken",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.uo=new A.mB(1,null,null)
 B.bE_=new A.xd(null,B.aK,null,null,B.ayF,B.uo,null,B.ae,null,null,B.a_,null,null,!1,null,"\u2022",!1,null,B.oh,B.oi,!0,3,null,!1,!1,null,null,null,null,null,null,null,null,null,null,null,2,null,null,null,null,null,null,null,null,B.as,!0,null,null,B.S,null,!1,null,null,null,null,null,null,B.am,B.J,null,!0,!0,!0,null,A.cn(),!0,null,null,null,null)
