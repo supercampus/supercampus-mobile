@@ -138640,7 +138640,8 @@ return A.f(n.$1$forceRefresh(!0),$async$jm)
 case 8:s=7
 return A.f(k.$1(j.a7([i,"Bearer "+c,"x-client-surface","app","accept","application/json"],m,m)),$async$jm)
 case 7:l=c
-case 6:o=t.P.a(B.ak.dV(0,A.eD(A.eC(l.e)).bN(0,l.w),null))
+case 6:o=A.eD(A.eC(l.e)).bN(0,l.w)
+o=t.P.a(B.ak.dV(0,o.length===0?"{}":o,null))
 n=l.b
 if(n<200||n>=300){n=J.a0(o,"error")
 n=n==null?null:J.H(n)
