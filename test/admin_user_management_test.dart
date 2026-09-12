@@ -58,6 +58,9 @@ void main() {
             200,
           );
         }
+        if (request.url.path.endsWith('/password')) {
+          return http.Response('', 204);
+        }
         return http.Response(jsonEncode({'data': {}}), 200);
       }),
     );

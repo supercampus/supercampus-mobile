@@ -225,9 +225,29 @@ class AdminStudentRepository {
         'accept': 'application/json',
       });
     }
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final responseText = response.body.trim();
+    Map<String, dynamic> body = const {};
+    if (responseText.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(responseText);
+        if (decoded is Map<String, dynamic>) body = decoded;
+      } on FormatException {
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          throw Exception('The server returned an invalid response.');
+        }
+      }
+    }
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(body['error']?.toString() ?? 'Request failed');
+      final error = body['error'];
+      final message = error is Map<String, dynamic>
+          ? error['message']?.toString()
+          : error?.toString();
+      throw Exception(
+        message ??
+            (responseText.isNotEmpty
+                ? responseText
+                : 'Request failed (${response.statusCode})'),
+      );
     }
     return body;
   }
