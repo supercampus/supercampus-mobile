@@ -121,7 +121,7 @@ class MockGatepassRepository implements GatepassRepository {
         validUntil: today.add(const Duration(hours: 21)),
         qrPayload:
             'supercampus://gate/day/413225243049/${today.toIso8601String()}',
-        manualCode: '5678',
+        manualCode: '567890',
       ),
       zone: CampusZone.inside,
       requests: [
@@ -137,7 +137,7 @@ class MockGatepassRepository implements GatepassRepository {
           submittedAt: today.subtract(const Duration(hours: 5)),
           approver: 'Dr. Priya, HOD',
           qrPayload: 'supercampus://gate/outpass/GP-240803',
-          manualCode: '1234',
+          manualCode: '123456',
           workflowState: _approvedWorkflowState(),
         ),
         GatepassRequest(

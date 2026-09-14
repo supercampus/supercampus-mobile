@@ -60,13 +60,16 @@ Future<void> _openModule(WidgetTester tester, String moduleId) async {
 }
 
 Future<void> _signIn(WidgetTester tester) async {
-  await tester.tap(find.byKey(const ValueKey('start-sign-in')));
-  await tester.pumpAndSettle();
   await tester.enterText(
     find.byKey(const ValueKey('institution-domain')),
     'mec',
   );
-  await tester.tap(find.byKey(const ValueKey('continue-from-institution')));
+  final continueButton = find.byKey(
+    const ValueKey('continue-from-institution'),
+  );
+  await tester.ensureVisible(continueButton);
+  await tester.pumpAndSettle();
+  await tester.tap(continueButton);
   await tester.pumpAndSettle();
   await tester.enterText(
     find.byType(TextFormField).at(0),
@@ -101,20 +104,48 @@ void main() {
 
     await tester.pumpWidget(_testApp());
 
-    expect(find.text('Your campus, in one place.'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('start-sign-in')));
-    await tester.pumpAndSettle();
+    expect(find.text('Find your institution'), findsOneWidget);
+    expect(find.text('Tenant ID'), findsOneWidget);
     await tester.enterText(
       find.byKey(const ValueKey('institution-domain')),
       'mec',
     );
-    await tester.tap(find.byKey(const ValueKey('continue-from-institution')));
+    final continueButton = find.byKey(
+      const ValueKey('continue-from-institution'),
+    );
+    await tester.ensureVisible(continueButton);
+    await tester.pumpAndSettle();
+    await tester.tap(continueButton);
     await tester.pumpAndSettle();
 
     expect(find.text('SuperCampus'), findsNothing);
     expect(find.text('Email address or mobile number'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
     expect(find.text('Sign in'), findsOneWidget);
+  });
+
+  testWidgets('accepts tenant ID in any letter case', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    for (final tenantId in ['MEC', 'mec', 'Mec', 'mEC']) {
+      await tester.pumpWidget(
+        KeyedSubtree(key: ValueKey(tenantId), child: _testApp()),
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('institution-domain')),
+        tenantId,
+      );
+      final continueButton = find.byKey(
+        const ValueKey('continue-from-institution'),
+      );
+      await tester.ensureVisible(continueButton);
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+      expect(find.text('Sign in'), findsOneWidget);
+    }
   });
 
   testWidgets('validates empty login fields', (tester) async {
@@ -124,13 +155,16 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(_testApp());
-    await tester.tap(find.byKey(const ValueKey('start-sign-in')));
-    await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('institution-domain')),
       'mec',
     );
-    await tester.tap(find.byKey(const ValueKey('continue-from-institution')));
+    final continueButton = find.byKey(
+      const ValueKey('continue-from-institution'),
+    );
+    await tester.ensureVisible(continueButton);
+    await tester.pumpAndSettle();
+    await tester.tap(continueButton);
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField).at(0), '');
@@ -281,7 +315,13 @@ void main() {
     await tester.tap(find.text('Settings').first);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Sign out'));
+    final signOutAction = find.byKey(const ValueKey('sign-out-action'));
+    expect(signOutAction, findsOneWidget);
+    expect(
+      tester.widget<Material>(signOutAction).color,
+      const Color(0xFFC62828),
+    );
+    await tester.tap(signOutAction);
     await tester.pumpAndSettle();
 
     expect(find.text('SuperCampus'), findsOneWidget);

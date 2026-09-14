@@ -11,41 +11,38 @@ enum ResidencyStatus {
 
 extension ResidencyStatusX on ResidencyStatus {
   String get label => switch (this) {
-        ResidencyStatus.reserved => 'Reserved',
-        ResidencyStatus.checkInPending => 'Check-In Pending',
-        ResidencyStatus.active => 'Active Resident',
-        ResidencyStatus.vacating => 'Vacating',
-        ResidencyStatus.completed => 'Completed / Checked-Out',
-        ResidencyStatus.cancelled => 'Cancelled',
-      };
+    ResidencyStatus.reserved => 'Reserved',
+    ResidencyStatus.checkInPending => 'Check-In Pending',
+    ResidencyStatus.active => 'Active Resident',
+    ResidencyStatus.vacating => 'Vacating',
+    ResidencyStatus.completed => 'Completed / Checked-Out',
+    ResidencyStatus.cancelled => 'Cancelled',
+  };
 
   Color get color => switch (this) {
-        ResidencyStatus.active => const Color(0xFF1B5E20),
-        ResidencyStatus.checkInPending || ResidencyStatus.reserved => const Color(0xFFE65100),
-        ResidencyStatus.vacating => const Color(0xFFC2185B),
-        ResidencyStatus.completed => const Color(0xFF424242),
-        ResidencyStatus.cancelled => const Color(0xFFB71C1C),
-      };
+    ResidencyStatus.active => const Color(0xFF1B5E20),
+    ResidencyStatus.checkInPending ||
+    ResidencyStatus.reserved => const Color(0xFFE65100),
+    ResidencyStatus.vacating => const Color(0xFFC2185B),
+    ResidencyStatus.completed => const Color(0xFF424242),
+    ResidencyStatus.cancelled => const Color(0xFFB71C1C),
+  };
 }
 
-enum PresenceStatus {
-  insideHostel,
-  outsideHostel,
-  away,
-}
+enum PresenceStatus { insideHostel, outsideHostel, away }
 
 extension PresenceStatusX on PresenceStatus {
   String get label => switch (this) {
-        PresenceStatus.insideHostel => 'Inside Hostel',
-        PresenceStatus.outsideHostel => 'Outside Hostel',
-        PresenceStatus.away => 'Away on Leave',
-      };
+    PresenceStatus.insideHostel => 'Inside Hostel',
+    PresenceStatus.outsideHostel => 'Outside Hostel',
+    PresenceStatus.away => 'Away on Leave',
+  };
 
   Color get color => switch (this) {
-        PresenceStatus.insideHostel => const Color(0xFF2E7D32),
-        PresenceStatus.outsideHostel => const Color(0xFFEF6C00),
-        PresenceStatus.away => const Color(0xFF1565C0),
-      };
+    PresenceStatus.insideHostel => const Color(0xFF2E7D32),
+    PresenceStatus.outsideHostel => const Color(0xFFEF6C00),
+    PresenceStatus.away => const Color(0xFF1565C0),
+  };
 }
 
 enum ApplicationStatus {
@@ -59,37 +56,37 @@ enum ApplicationStatus {
 
 extension ApplicationStatusX on ApplicationStatus {
   String get label => switch (this) {
-        ApplicationStatus.submitted => 'Submitted',
-        ApplicationStatus.underReview => 'Under Review',
-        ApplicationStatus.approved => 'Approved',
-        ApplicationStatus.waitlisted => 'Waitlisted',
-        ApplicationStatus.rejected => 'Rejected',
-        ApplicationStatus.cancelled => 'Cancelled',
-      };
+    ApplicationStatus.submitted => 'Submitted',
+    ApplicationStatus.underReview => 'Under Review',
+    ApplicationStatus.approved => 'Approved',
+    ApplicationStatus.waitlisted => 'Waitlisted',
+    ApplicationStatus.rejected => 'Rejected',
+    ApplicationStatus.cancelled => 'Cancelled',
+  };
 }
 
 enum RoomStatus { available, partiallyOccupied, full, maintenance, blocked }
 
 extension RoomStatusX on RoomStatus {
   String get label => switch (this) {
-        RoomStatus.available => 'Available',
-        RoomStatus.partiallyOccupied => 'Partially Occupied',
-        RoomStatus.full => 'Full',
-        RoomStatus.maintenance => 'Maintenance',
-        RoomStatus.blocked => 'Blocked',
-      };
+    RoomStatus.available => 'Available',
+    RoomStatus.partiallyOccupied => 'Partially Occupied',
+    RoomStatus.full => 'Full',
+    RoomStatus.maintenance => 'Maintenance',
+    RoomStatus.blocked => 'Blocked',
+  };
 }
 
 enum BedStatus { available, reserved, occupied, maintenance, blocked }
 
 extension BedStatusX on BedStatus {
   String get label => switch (this) {
-        BedStatus.available => 'Available',
-        BedStatus.reserved => 'Reserved',
-        BedStatus.occupied => 'Occupied',
-        BedStatus.maintenance => 'Maintenance',
-        BedStatus.blocked => 'Blocked',
-      };
+    BedStatus.available => 'Available',
+    BedStatus.reserved => 'Reserved',
+    BedStatus.occupied => 'Occupied',
+    BedStatus.maintenance => 'Maintenance',
+    BedStatus.blocked => 'Blocked',
+  };
 }
 
 enum OutpassStatus {
@@ -107,33 +104,33 @@ enum OutpassStatus {
 
 extension OutpassStatusX on OutpassStatus {
   String get label => switch (this) {
-        OutpassStatus.draft => 'Draft',
-        OutpassStatus.submitted => 'Submitted',
-        OutpassStatus.underReview => 'Under Review',
-        OutpassStatus.approved => 'Approved',
-        OutpassStatus.active => 'Active Away',
-        OutpassStatus.completed => 'Completed',
-        OutpassStatus.lateReturn => 'Late Return Flagged',
-        OutpassStatus.rejected => 'Rejected',
-        OutpassStatus.cancelled => 'Cancelled',
-        OutpassStatus.expired => 'Expired',
-      };
+    OutpassStatus.draft => 'Draft',
+    OutpassStatus.submitted => 'Submitted',
+    OutpassStatus.underReview => 'Under Review',
+    OutpassStatus.approved => 'Approved',
+    OutpassStatus.active => 'Active Away',
+    OutpassStatus.completed => 'Completed',
+    OutpassStatus.lateReturn => 'Late Return Flagged',
+    OutpassStatus.rejected => 'Rejected',
+    OutpassStatus.cancelled => 'Cancelled',
+    OutpassStatus.expired => 'Expired',
+  };
 }
 
 enum MealType { breakfast, lunch, dinner }
 
 extension MealTypeX on MealType {
   String get label => switch (this) {
-        MealType.breakfast => 'Breakfast',
-        MealType.lunch => 'Lunch',
-        MealType.dinner => 'Dinner',
-      };
+    MealType.breakfast => 'Breakfast',
+    MealType.lunch => 'Lunch',
+    MealType.dinner => 'Dinner',
+  };
 
   String get timeWindow => switch (this) {
-        MealType.breakfast => '7:30 AM – 9:30 AM',
-        MealType.lunch => '12:30 PM – 2:30 PM',
-        MealType.dinner => '7:30 PM – 9:30 PM',
-      };
+    MealType.breakfast => '7:30 AM – 9:30 AM',
+    MealType.lunch => '12:30 PM – 2:30 PM',
+    MealType.dinner => '7:30 PM – 9:30 PM',
+  };
 }
 
 enum MealTokenStatus { unused, used, expired, rejected }
@@ -142,12 +139,12 @@ enum ComplaintStatus { submitted, assigned, inProgress, resolved, closed }
 
 extension ComplaintStatusX on ComplaintStatus {
   String get label => switch (this) {
-        ComplaintStatus.submitted => 'Submitted',
-        ComplaintStatus.assigned => 'Assigned',
-        ComplaintStatus.inProgress => 'In Progress',
-        ComplaintStatus.resolved => 'Resolved',
-        ComplaintStatus.closed => 'Closed',
-      };
+    ComplaintStatus.submitted => 'Submitted',
+    ComplaintStatus.assigned => 'Assigned',
+    ComplaintStatus.inProgress => 'In Progress',
+    ComplaintStatus.resolved => 'Resolved',
+    ComplaintStatus.closed => 'Closed',
+  };
 }
 
 enum RoomChangeStatus {
@@ -210,10 +207,7 @@ class HostelRoom {
 
 /// A Floor inside a Block
 class HostelFloor {
-  const HostelFloor({
-    required this.floorNumber,
-    required this.rooms,
-  });
+  const HostelFloor({required this.floorNumber, required this.rooms});
 
   final int floorNumber;
   final List<HostelRoom> rooms;
@@ -443,10 +437,7 @@ class MessMealToken {
   final String qrCode;
   final DateTime? redeemedAt;
 
-  MessMealToken copyWith({
-    MealTokenStatus? status,
-    DateTime? redeemedAt,
-  }) {
+  MessMealToken copyWith({MealTokenStatus? status, DateTime? redeemedAt}) {
     return MessMealToken(
       id: id,
       residencyId: residencyId,
@@ -625,6 +616,10 @@ class HostelStore {
     required this.roomChangeRequests,
     required this.visitorPasses,
     required this.clearance,
+    this.menuEnabled = true,
+    this.messEnabled = true,
+    this.hostelFeeValidFrom,
+    this.hostelFeeValidUntil,
   });
 
   final HostelResidency? activeResidency;
@@ -637,6 +632,21 @@ class HostelStore {
   final List<RoomChangeRequest> roomChangeRequests;
   final List<VisitorPass> visitorPasses;
   final HostelClearance? clearance;
+  final bool menuEnabled;
+  final bool messEnabled;
+  final DateTime? hostelFeeValidFrom;
+  final DateTime? hostelFeeValidUntil;
+
+  bool get hasActiveHostelFeeAccess {
+    final today = DateTime.now();
+    final day = DateTime(today.year, today.month, today.day);
+    final from = hostelFeeValidFrom;
+    final until = hostelFeeValidUntil;
+    return from != null &&
+        until != null &&
+        !day.isBefore(DateTime(from.year, from.month, from.day)) &&
+        !day.isAfter(DateTime(until.year, until.month, until.day));
+  }
 
   HostelStore copyWith({
     HostelResidency? activeResidency,
@@ -649,6 +659,10 @@ class HostelStore {
     List<RoomChangeRequest>? roomChangeRequests,
     List<VisitorPass>? visitorPasses,
     HostelClearance? clearance,
+    bool? menuEnabled,
+    bool? messEnabled,
+    DateTime? hostelFeeValidFrom,
+    DateTime? hostelFeeValidUntil,
   }) {
     return HostelStore(
       activeResidency: activeResidency ?? this.activeResidency,
@@ -661,6 +675,10 @@ class HostelStore {
       roomChangeRequests: roomChangeRequests ?? this.roomChangeRequests,
       visitorPasses: visitorPasses ?? this.visitorPasses,
       clearance: clearance ?? this.clearance,
+      menuEnabled: menuEnabled ?? this.menuEnabled,
+      messEnabled: messEnabled ?? this.messEnabled,
+      hostelFeeValidFrom: hostelFeeValidFrom ?? this.hostelFeeValidFrom,
+      hostelFeeValidUntil: hostelFeeValidUntil ?? this.hostelFeeValidUntil,
     );
   }
 }

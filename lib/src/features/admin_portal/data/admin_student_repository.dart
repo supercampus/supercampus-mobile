@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../authentication/data/auth_http_client.dart';
 import '../../authentication/data/auth_repository.dart';
+import '../../../core/students/student_year.dart';
 
 enum ManagedStudentResidency { dayScholar, hosteller }
 
@@ -22,6 +23,16 @@ class ManagedStudent {
     required this.rollNumber,
     required this.department,
     required this.residency,
+    required this.mobileNumber,
+    required this.email,
+    required this.status,
+    this.departmentId,
+    this.sectionId,
+    this.guardianName = '',
+    this.guardianPhone = '',
+    this.guardianRelationship = '',
+    this.yearOfStudy,
+    this.section,
     this.photoUrl,
   });
 
@@ -30,7 +41,52 @@ class ManagedStudent {
   final String rollNumber;
   final String department;
   final ManagedStudentResidency residency;
+  final String mobileNumber;
+  final String email;
+  final String status;
+  final String? departmentId;
+  final String? sectionId;
+  final String guardianName;
+  final String guardianPhone;
+  final String guardianRelationship;
+  final int? yearOfStudy;
+  final String? section;
   final String? photoUrl;
+
+  ManagedStudent copyWith({
+    String? name,
+    String? rollNumber,
+    String? department,
+    ManagedStudentResidency? residency,
+    String? mobileNumber,
+    String? email,
+    String? status,
+    String? departmentId,
+    String? sectionId,
+    String? guardianName,
+    String? guardianPhone,
+    String? guardianRelationship,
+    int? yearOfStudy,
+    String? section,
+    String? photoUrl,
+  }) => ManagedStudent(
+    id: id,
+    name: name ?? this.name,
+    rollNumber: rollNumber ?? this.rollNumber,
+    department: department ?? this.department,
+    residency: residency ?? this.residency,
+    mobileNumber: mobileNumber ?? this.mobileNumber,
+    email: email ?? this.email,
+    status: status ?? this.status,
+    departmentId: departmentId ?? this.departmentId,
+    sectionId: sectionId ?? this.sectionId,
+    guardianName: guardianName ?? this.guardianName,
+    guardianPhone: guardianPhone ?? this.guardianPhone,
+    guardianRelationship: guardianRelationship ?? this.guardianRelationship,
+    yearOfStudy: yearOfStudy ?? this.yearOfStudy,
+    section: section ?? this.section,
+    photoUrl: photoUrl ?? this.photoUrl,
+  );
 }
 
 class ManagedUserRole {
@@ -54,6 +110,7 @@ class ManagedTenantUser {
     required this.email,
     required this.roles,
     required this.active,
+    this.yearOfStudy,
   });
 
   final String id;
@@ -61,6 +118,7 @@ class ManagedTenantUser {
   final String email;
   final List<ManagedUserRole> roles;
   final bool active;
+  final int? yearOfStudy;
 }
 
 class AdminStudentRepository {
@@ -86,6 +144,32 @@ class AdminStudentRepository {
     final values = data['data'];
     if (values is! List) return const [];
     return values.whereType<Map<String, dynamic>>().map(_student).toList();
+  }
+
+  Future<void> setStudentPhoto(String studentId, String photoUrl) async {
+    await _request(
+      (headers) => _client.put(
+        _baseUri.resolve(
+          '/api/v1/student-master/${Uri.encodeComponent(studentId)}/photo',
+        ),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({'photoUrl': photoUrl}),
+      ),
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> importStudentAccounts(
+    List<Map<String, dynamic>> rows,
+  ) async {
+    final response = await _request(
+      (headers) => _client.post(
+        _baseUri.resolve('/api/v1/student-master/accounts/import'),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({'rows': rows}),
+      ),
+    );
+    return ((response['data'] as Map<String, dynamic>)['results'] as List)
+        .cast<Map<String, dynamic>>();
   }
 
   Future<List<ManagedTenantUser>> listUsers() async {
@@ -179,6 +263,44 @@ class AdminStudentRepository {
         : ManagedStudentResidency.dayScholar;
   }
 
+  Future<ManagedStudent> updateStudent(ManagedStudent student) async {
+    final response = await _request(
+      (headers) => _client.put(
+        _baseUri.resolve(
+          '/api/v1/student-master/${Uri.encodeComponent(student.id)}',
+        ),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({
+          'name': student.name.trim(),
+          'rollNo': student.rollNumber.trim(),
+          'department': student.department.trim(),
+          if (student.departmentId case final departmentId?)
+            'departmentId': departmentId,
+          'mobileNumber': student.mobileNumber.trim(),
+          'email': student.email.trim().toLowerCase(),
+          'status': student.status,
+          'yearOfStudy': student.yearOfStudy,
+          'section': student.section?.trim() ?? '',
+          if (student.sectionId case final sectionId?) 'sectionId': sectionId,
+          'residency': student.residency.apiValue,
+          if (student.guardianName.trim().isNotEmpty &&
+              student.guardianPhone.trim().isNotEmpty) ...{
+            'guardianName': student.guardianName.trim(),
+            'guardianPhone': student.guardianPhone.trim(),
+            'guardianRelationship': student.guardianRelationship.trim().isEmpty
+                ? 'Parent'
+                : student.guardianRelationship.trim(),
+          },
+        }),
+      ),
+    );
+    final value = response['data'];
+    if (value is! Map<String, dynamic>) {
+      throw const FormatException('The server returned an invalid student.');
+    }
+    return _student(value);
+  }
+
   ManagedStudent _student(Map<String, dynamic> value) => ManagedStudent(
     id: value['id']?.toString() ?? '',
     name: value['name']?.toString() ?? 'Student',
@@ -187,6 +309,16 @@ class AdminStudentRepository {
     residency: value['residency'] == 'hosteller'
         ? ManagedStudentResidency.hosteller
         : ManagedStudentResidency.dayScholar,
+    mobileNumber: value['mobileNumber']?.toString() ?? '',
+    email: value['email']?.toString() ?? '',
+    status: value['status']?.toString() ?? 'active',
+    departmentId: value['departmentId']?.toString(),
+    sectionId: value['sectionId']?.toString(),
+    guardianName: value['guardianName']?.toString() ?? '',
+    guardianPhone: value['guardianPhone']?.toString() ?? '',
+    guardianRelationship: value['guardianRelationship']?.toString() ?? '',
+    yearOfStudy: parseStudentYear(value['yearOfStudy'] ?? value['year']),
+    section: value['section']?.toString(),
     photoUrl: value['photoUrl']?.toString(),
   );
 
@@ -202,6 +334,7 @@ class AdminStudentRepository {
     name: value['name']?.toString() ?? 'User',
     email: value['email']?.toString() ?? '',
     active: value['active'] != false,
+    yearOfStudy: parseStudentYear(value['yearOfStudy'] ?? value['year']),
     roles: (value['roles'] as List? ?? const [])
         .whereType<Map<String, dynamic>>()
         .map(_role)

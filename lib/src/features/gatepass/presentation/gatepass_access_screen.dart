@@ -13,11 +13,21 @@ class GatepassAccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final approved = store.requests
-        .where((request) => request.status == ApprovalStatus.approved)
-        .firstOrNull;
+    final now = DateTime.now();
+    final approvedPasses =
+        store.requests
+            .where(
+              (request) =>
+                  request.status == ApprovalStatus.approved &&
+                  request.qrPayload?.isNotEmpty == true &&
+                  request.returnAt.isAfter(now),
+            )
+            .toList()
+          ..sort((left, right) => left.returnAt.compareTo(right.returnAt));
+    final approved = approvedPasses.firstOrNull;
     final daily = store.dailyPass;
     final pass = approved?.qrPayload ?? daily?.qrPayload;
+    final manualCode = approved?.manualCode ?? daily?.manualCode;
     return SafeArea(
       child: Center(
         child: ConstrainedBox(
@@ -33,106 +43,74 @@ class GatepassAccessScreen extends StatelessWidget {
               if (pass == null)
                 _NoPassCard(zone: store.zone, reason: store.dailyPassIssue)
               else
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF171719),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 5,
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF171719),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: QrImageView(
+                          data: pass,
+                          size: 210,
+                          eyeStyle: const QrEyeStyle(color: Color(0xFF171719)),
+                          dataModuleStyle: const QrDataModuleStyle(
+                            color: Color(0xFF171719),
                           ),
-                          decoration: BoxDecoration(
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        approved == null
+                            ? 'DAILY ACCESS'
+                            : approved.type.label.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        manualCode ?? '----',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 8,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Use this 6-digit code if the QR cannot be scanned',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                      const SizedBox(height: 10),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.verified_user_outlined,
                             color: AppColors.gateLime,
-                            borderRadius: BorderRadius.circular(10),
+                            size: 16,
                           ),
-                          child: const Text(
-                            'ACTIVE',
+                          SizedBox(width: 6),
+                          Text(
+                            'Server-verified gate QR',
                             style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+                              color: Colors.white70,
+                              fontSize: 12,
                             ),
                           ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          store.student.residency.label,
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 22),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: QrImageView(
-                        data: pass,
-                        size: 210,
-                        eyeStyle: const QrEyeStyle(color: Color(0xFF171719)),
-                        dataModuleStyle: const QrDataModuleStyle(
-                          color: Color(0xFF171719),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      approved == null
-                          ? 'DAILY ACCESS'
-                          : approved.type.label.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      approved?.id ?? daily!.id,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      approved == null
-                          ? 'Valid ${formatTime(daily!.validFrom)} - ${formatTime(daily.validUntil)}'
-                          : 'Valid until ${formatShortDate(approved.returnAt)}, ${formatTime(approved.returnAt)}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (pass != null)
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F0FF),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.brightness_7_outlined,
-                        color: AppColors.gateBlue,
-                      ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Increase screen brightness before presenting the QR.',
-                        ),
+                        ],
                       ),
                     ],
                   ),
@@ -144,31 +122,50 @@ class GatepassAccessScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               GatepassSurface(
-                child: Column(
-                  children: store.movements
-                      .map(
-                        (movement) => ListTile(
-                          leading: Icon(
-                            movement.direction == MovementDirection.entry
-                                ? Icons.login
-                                : Icons.logout,
-                            color: movement.direction == MovementDirection.entry
-                                ? const Color(0xFF087A4B)
-                                : AppColors.gateMagenta,
-                          ),
-                          title: Text(
-                            movement.direction == MovementDirection.entry
-                                ? 'Entry'
-                                : 'Exit',
-                          ),
-                          subtitle: Text(
-                            '${formatShortDate(movement.recordedAt)} • ${movement.gate}',
-                          ),
-                          trailing: Text(formatTime(movement.recordedAt)),
+                child: store.movements.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 22),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.history, color: AppColors.muted),
+                            SizedBox(width: 10),
+                            Flexible(
+                              child: Text(
+                                'No gate movements recorded yet.',
+                                style: TextStyle(color: AppColors.muted),
+                              ),
+                            ),
+                          ],
                         ),
                       )
-                      .toList(),
-                ),
+                    : Column(
+                        children: store.movements
+                            .map(
+                              (movement) => ListTile(
+                                leading: Icon(
+                                  movement.direction == MovementDirection.entry
+                                      ? Icons.login
+                                      : Icons.logout,
+                                  color:
+                                      movement.direction ==
+                                          MovementDirection.entry
+                                      ? const Color(0xFF087A4B)
+                                      : AppColors.gateMagenta,
+                                ),
+                                title: Text(
+                                  movement.direction == MovementDirection.entry
+                                      ? 'Entry'
+                                      : 'Exit',
+                                ),
+                                subtitle: Text(
+                                  '${formatShortDate(movement.recordedAt)} • ${movement.gate}',
+                                ),
+                                trailing: Text(formatTime(movement.recordedAt)),
+                              ),
+                            )
+                            .toList(),
+                      ),
               ),
             ],
           ),

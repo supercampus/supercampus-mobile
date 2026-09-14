@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/students/student_year.dart';
 import '../data/admin_student_repository.dart';
+import 'student_account_import_page.dart';
 
 class AdminUsersPage extends StatefulWidget {
   const AdminUsersPage({super.key, required this.repository});
@@ -117,11 +119,34 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       return query.isEmpty ||
           '${user.name} ${user.email} $roles'.toLowerCase().contains(query);
     }).toList();
+    final studentUsers = users
+        .where((user) => user.roles.any((role) => role.key == 'student'))
+        .toList();
+    final otherUsers = users
+        .where((user) => !user.roles.any((role) => role.key == 'student'))
+        .toList();
+    final studentGroups = groupStudentsByYear(
+      studentUsers,
+      (user) => user.yearOfStudy,
+    );
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('User management'),
         actions: [
+          IconButton(
+            tooltip: 'Bulk upload students',
+            icon: const Icon(Icons.upload_file),
+            onPressed: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      StudentAccountImportPage(repository: widget.repository),
+                ),
+              );
+              await _load();
+            },
+          ),
           IconButton(
             tooltip: 'Refresh users',
             onPressed: _load,
@@ -182,17 +207,39 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                   else
                     SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
-                      sliver: SliverList.builder(
-                        itemCount: users.length,
-                        itemBuilder: (context, index) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _UserCard(
-                            user: users[index],
-                            onEditRoles: () => _editRoles(users[index]),
-                            onChangePassword: () =>
-                                _changePassword(users[index]),
-                          ),
-                        ),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          for (final group in studentGroups) ...[
+                            _UserSectionHeader(
+                              label: group.label,
+                              count: group.students.length,
+                            ),
+                            for (final user in group.students)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: _UserCard(
+                                  user: user,
+                                  onEditRoles: () => _editRoles(user),
+                                  onChangePassword: () => _changePassword(user),
+                                ),
+                              ),
+                          ],
+                          if (otherUsers.isNotEmpty) ...[
+                            _UserSectionHeader(
+                              label: 'Staff and other users',
+                              count: otherUsers.length,
+                            ),
+                            for (final user in otherUsers)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: _UserCard(
+                                  user: user,
+                                  onEditRoles: () => _editRoles(user),
+                                  onChangePassword: () => _changePassword(user),
+                                ),
+                              ),
+                          ],
+                        ]),
                       ),
                     ),
                 ],
@@ -200,6 +247,35 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
             ),
     );
   }
+}
+
+class _UserSectionHeader extends StatelessWidget {
+  const _UserSectionHeader({required this.label, required this.count});
+
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(2, 10, 2, 8),
+    child: Row(
+      children: [
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const Spacer(),
+        Text(
+          '$count',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _UserCard extends StatelessWidget {
@@ -411,8 +487,8 @@ class _PasswordDialogState extends State<_PasswordDialog> {
   }
 
   void _submit() {
-    if (_password.text.length < 12) {
-      setState(() => _error = 'Use at least 12 characters.');
+    if (_password.text.length < 8) {
+      setState(() => _error = 'Use at least 8 characters.');
     } else if (_password.text != _confirm.text) {
       setState(() => _error = 'Passwords do not match.');
     } else {
@@ -439,7 +515,7 @@ class _PasswordDialogState extends State<_PasswordDialog> {
             autofocus: true,
             decoration: const InputDecoration(
               labelText: 'New password',
-              helperText: 'Minimum 12 characters',
+              helperText: 'Minimum 8 characters',
             ),
           ),
           const SizedBox(height: 12),
@@ -495,8 +571,8 @@ class _CreateUserDialogState extends State<_CreateUserDialog> {
   void _submit() {
     if (_name.text.trim().isEmpty || !_email.text.contains('@')) {
       setState(() => _error = 'Enter a name and valid email address.');
-    } else if (_password.text.length < 12) {
-      setState(() => _error = 'The temporary password needs 12 characters.');
+    } else if (_password.text.length < 8) {
+      setState(() => _error = 'The temporary password needs 8 characters.');
     } else if (_selected.isEmpty) {
       setState(() => _error = 'Choose at least one role.');
     } else {
@@ -538,7 +614,7 @@ class _CreateUserDialogState extends State<_CreateUserDialog> {
               obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'Temporary password',
-                helperText: 'Minimum 12 characters',
+                helperText: 'Minimum 8 characters',
               ),
             ),
             const SizedBox(height: 12),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/students/student_year.dart';
 import '../../../core/widgets/skeleton_loading.dart';
 import '../data/accountant_wallet_repository.dart';
 import '../data/canteen_models.dart';
@@ -568,6 +569,9 @@ class _StudentWalletDirectoryPageState
   @override
   Widget build(BuildContext context) {
     final wallets = _wallets;
+    final groups = wallets == null
+        ? const <StudentYearGroup<StudentWalletAccount>>[]
+        : groupStudentsByYear(wallets, (wallet) => wallet.yearOfStudy);
     return Scaffold(
       backgroundColor: const Color(0xFFF3F7F5),
       appBar: AppBar(title: const Text('Student wallets')),
@@ -638,12 +642,34 @@ class _StudentWalletDirectoryPageState
                 child: Center(child: Text('No student wallets found.')),
               )
             else
-              ...wallets.map(
-                (wallet) => _WalletCard(
-                  wallet: wallet,
-                  onCredit: () => _openCredit(wallet),
+              for (final group in groups) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(2, 10, 2, 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        group.label,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${group.students.length}',
+                        style: const TextStyle(
+                          color: Color(0xFF147745),
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                for (final wallet in group.students)
+                  _WalletCard(
+                    wallet: wallet,
+                    onCredit: () => _openCredit(wallet),
+                  ),
+              ],
           ],
         ),
       ),

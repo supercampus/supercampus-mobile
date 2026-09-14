@@ -65,13 +65,16 @@ Future<void> _signIn(WidgetTester tester) async {
   addTearDown(tester.view.resetDevicePixelRatio);
 
   await tester.pumpWidget(_testApp());
-  await tester.tap(find.byKey(const ValueKey('start-sign-in')));
-  await tester.pumpAndSettle();
   await tester.enterText(
     find.byKey(const ValueKey('institution-domain')),
     'mec',
   );
-  await tester.tap(find.byKey(const ValueKey('continue-from-institution')));
+  final continueButton = find.byKey(
+    const ValueKey('continue-from-institution'),
+  );
+  await tester.ensureVisible(continueButton);
+  await tester.pumpAndSettle();
+  await tester.tap(continueButton);
   await tester.pumpAndSettle();
 
   await tester.enterText(

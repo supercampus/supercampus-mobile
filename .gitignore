@@ -46,3 +46,8 @@ app.*.map.json
 
 # Golden-test diff output
 test/failures/
+# Android release signing material
+/android/key.properties
+/android/release/
+*.jks
+*.keystore

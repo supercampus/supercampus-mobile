@@ -1,11 +1,11 @@
 {
-    "name": "supercampus_mobile",
-    "short_name": "supercampus_mobile",
+    "name": "SuperCampus",
+    "short_name": "SuperCampus",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#5700FF",
+    "theme_color": "#5700FF",
+    "description": "Integrated campus services in one place.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

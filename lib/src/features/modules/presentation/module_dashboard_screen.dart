@@ -7,12 +7,14 @@ import '../../../core/access/portal_module_presentation.dart';
 import '../../../core/notifications/notification_deep_link.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/campus_nav_bar.dart';
+import '../../../core/widgets/announcement_image_cropper.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../advisor/data/advisor_students_repository.dart';
 import '../../advisor/presentation/advisor_students_section.dart';
 import '../../faculty/data/faculty_models.dart';
 import '../../faculty/data/mock_faculty_repository.dart';
 import '../../insights/data/insight.dart';
+import '../../library/data/librarian_repository.dart';
 import '../../notifications/data/notification_repository.dart';
 import '../../notifications/presentation/notification_inbox_sheet.dart';
 import '../data/glance_source.dart';
@@ -47,6 +49,7 @@ class ModuleDashboardScreen extends StatefulWidget {
     this.advisorStudentsSource,
     this.notificationRepository,
     this.notificationRevision = 0,
+    this.announcementRepository,
   });
 
   final UserSession session;
@@ -80,6 +83,7 @@ class ModuleDashboardScreen extends StatefulWidget {
   final AdvisorStudentsSource? advisorStudentsSource;
   final NotificationRepository? notificationRepository;
   final int notificationRevision;
+  final LibrarianRepository? announcementRepository;
 
   @override
   State<ModuleDashboardScreen> createState() => _ModuleDashboardScreenState();
@@ -185,6 +189,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                         glance: _glance,
                         advisorStudentsSource: widget.advisorStudentsSource,
                         onOpenAttendanceClass: widget.onOpenAttendanceClass,
+                        announcementRepository: widget.announcementRepository,
                       ),
                       Positioned(
                         left: 0,
@@ -301,6 +306,7 @@ class _Feed extends StatelessWidget {
     required this.glance,
     required this.advisorStudentsSource,
     required this.onOpenAttendanceClass,
+    required this.announcementRepository,
   });
 
   final UserSession session;
@@ -319,6 +325,7 @@ class _Feed extends StatelessWidget {
   final ValueChanged<List<Insight>> onInsightsChanged;
   final AdvisorStudentsSource? advisorStudentsSource;
   final ValueChanged<TodayClass>? onOpenAttendanceClass;
+  final LibrarianRepository? announcementRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -338,7 +345,7 @@ class _Feed extends StatelessWidget {
       ),
       children: [
         SizedBox(
-          height: 176,
+          height: 252,
           child:
               dashboard ??
               _PriorityDashboardCard(
@@ -346,6 +353,7 @@ class _Feed extends StatelessWidget {
                 permissions: permissions,
                 onOpenModule: onOpenModule,
                 onQuickAction: onQuickAction,
+                announcementRepository: announcementRepository,
               ),
         ),
         const SizedBox(height: 22),
@@ -408,6 +416,7 @@ class _PriorityDashboardCard extends StatefulWidget {
     required this.permissions,
     required this.onOpenModule,
     required this.onQuickAction,
+    required this.announcementRepository,
   });
 
   final UserSession session;
@@ -420,6 +429,7 @@ class _PriorityDashboardCard extends StatefulWidget {
     String requiredAction,
   )?
   onQuickAction;
+  final LibrarianRepository? announcementRepository;
 
   @override
   State<_PriorityDashboardCard> createState() => _PriorityDashboardCardState();
@@ -428,6 +438,105 @@ class _PriorityDashboardCard extends StatefulWidget {
 class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
   final _pageController = PageController();
   int _selectedIndex = 0;
+  List<LibraryAnnouncement>? _announcements;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAnnouncements();
+  }
+
+  @override
+  void didUpdateWidget(_PriorityDashboardCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.announcementRepository != widget.announcementRepository) {
+      _loadAnnouncements();
+    }
+  }
+
+  Future<void> _loadAnnouncements() async {
+    final repository = widget.announcementRepository;
+    if (repository == null) return;
+    try {
+      final values = await repository.announcements();
+      if (!mounted) return;
+      setState(() {
+        _announcements = values
+            .where((item) => item.status.toLowerCase() == 'approved')
+            .toList(growable: false);
+        _selectedIndex = 0;
+      });
+      if (_pageController.hasClients) _pageController.jumpToPage(0);
+    } catch (_) {
+      if (mounted) setState(() => _announcements = const []);
+    }
+  }
+
+  void _openAnnouncement(BuildContext context, LibraryAnnouncement item) {
+    showHomeSheet(
+      context: context,
+      title: item.type,
+      expand: true,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+        children: [
+          if (_isImageAttachment(item.attachmentName, item.attachmentUrl)) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Image.network(
+                  item.attachmentUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const ColoredBox(
+                    color: Color(0xFFF0EDF8),
+                    child: Center(child: Icon(Icons.broken_image_outlined)),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+          Text(item.title, style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 10),
+          Text(item.message, style: Theme.of(context).textTheme.bodyLarge),
+          const SizedBox(height: 16),
+          Text(
+            '${item.announcementDate.day.toString().padLeft(2, '0')} '
+            '${_noticeMonthName(item.announcementDate.month)} '
+            '${item.announcementDate.year} · ${item.createdByName}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          if (item.attachmentUrl != null &&
+              !_isImageAttachment(item.attachmentName, item.attachmentUrl)) ...[
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: () =>
+                  _openExternalAttachment(context, item.attachmentUrl!),
+              icon: const Icon(Icons.open_in_new_rounded),
+              label: Text(item.attachmentName ?? 'Open attachment'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openExternalAttachment(
+    BuildContext context,
+    String value,
+  ) async {
+    final uri = Uri.tryParse(value);
+    if (uri != null &&
+        await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      return;
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('The attachment could not be opened.')),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -445,73 +554,57 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
     final datePanelColor = isDark
         ? const Color(0xFF292431)
         : const Color(0xFFE3E5E8);
-    final dividerColor = isDark
-        ? const Color(0xFF443C50)
-        : const Color(0xFFCDD0D4);
     final selectedDotColor = isDark
         ? const Color(0xFFB8AEFF)
         : const Color(0xFF666A70);
     final idleDotColor = isDark
         ? const Color(0xFF514A5D)
         : const Color(0xFFD2D4D7);
-    final notices = MockFacultyRepository().getNotices();
-    final notice = notices.isEmpty ? null : notices.first;
-    final cards = <_DashboardNotice>[
-      if (notice != null)
+    final mockNotices = MockFacultyRepository().getNotices();
+    final cards = widget.announcementRepository == null
+        ? <_DashboardNotice>[
+            for (final notice in mockNotices)
+              _DashboardNotice(
+                eyebrow: notice.type.toUpperCase(),
+                title: notice.title,
+                message: notice.content,
+                icon: Icons.campaign_outlined,
+                day: notice.announcementDate.day.toString().padLeft(2, '0'),
+                month: _noticeMonthName(notice.announcementDate.month),
+                onTap: () => _openNoticePdf(context, notice),
+              ),
+          ]
+        : <_DashboardNotice>[
+            for (final item in _announcements ?? const <LibraryAnnouncement>[])
+              _DashboardNotice(
+                eyebrow: item.type.toUpperCase(),
+                title: item.title,
+                message: item.message,
+                icon: Icons.campaign_outlined,
+                day: item.announcementDate.day.toString().padLeft(2, '0'),
+                month: _noticeMonthName(item.announcementDate.month),
+                imageUrl:
+                    _isImageAttachment(item.attachmentName, item.attachmentUrl)
+                    ? item.attachmentUrl
+                    : null,
+                onTap: () => _openAnnouncement(context, item),
+              ),
+          ];
+
+    if (cards.isEmpty) {
+      cards.add(
         _DashboardNotice(
-          eyebrow: 'ANNOUNCEMENT',
-          title: notice.title,
-          message: notice.content,
-          icon: Icons.campaign_outlined,
-          day: notice.announcementDate.day.toString().padLeft(2, '0'),
-          month: _noticeMonthName(notice.announcementDate.month),
-          action: notice.pdfUrl == null ? 'View update' : 'View details',
-          onTap: () => _openNoticePdf(context, notice),
+          eyebrow: 'CAMPUS UPDATES',
+          title: 'You are all caught up',
+          message: 'New announcements from your campus will appear here.',
+          icon: Icons.notifications_none_rounded,
+          day: DateTime.now().day.toString().padLeft(2, '0'),
+          month: _noticeMonthName(DateTime.now().month),
         ),
-      _DashboardNotice(
-        eyebrow: 'FEE REMINDER',
-        title: 'Semester fee window is open',
-        message: 'Review your dues and complete payment before the due date.',
-        icon: Icons.account_balance_wallet_outlined,
-        day: '30',
-        month: 'AUG',
-        action: 'Check fees',
-        onTap: () => widget.onOpenModule(ModuleCatalog.tuitionFee),
-      ),
-      _DashboardNotice(
-        eyebrow: 'CAMPUS EVENT',
-        title: 'Innovation Day registrations',
-        message: 'Teams can register projects and reserve a presentation slot.',
-        icon: Icons.celebration_outlined,
-        day: '05',
-        month: 'SEP',
-        action: 'View event',
-        onTap: () => showHomeSheet(
-          context: context,
-          title: 'Campus event',
-          child: const Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, 28),
-            child: Text(
-              'Innovation Day registrations are open. Teams can submit a project and reserve a presentation slot from the event desk.',
-            ),
-          ),
-        ),
-      ),
-      _DashboardNotice(
-        eyebrow: 'EXAM RESULTS',
-        title: 'Internal assessment published',
-        message: 'Your latest subject-wise marks are ready in Academics.',
-        icon: Icons.workspace_premium_outlined,
-        day: '27',
-        month: 'AUG',
-        action: 'View results',
-        onTap: () => widget.onOpenModule(ModuleCatalog.academics),
-      ),
-    ];
+      );
+    }
 
     if (_selectedIndex >= cards.length) _selectedIndex = 0;
-    final selectedNotice = cards[_selectedIndex];
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
       child: Column(
@@ -520,71 +613,21 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
             child: Material(
               key: const ValueKey('announcement-card'),
               color: cardColor,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(26),
               clipBehavior: Clip.antiAlias,
-              child: Row(
-                children: [
-                  AnimatedContainer(
-                    key: const ValueKey('announcement-date-panel'),
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutCubic,
-                    width: 82,
-                    height: double.infinity,
-                    decoration: BoxDecoration(
-                      color: datePanelColor,
-                      border: Border(right: BorderSide(color: dividerColor)),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
-                      child: Column(
-                        key: ValueKey(
-                          '${selectedNotice.day}-${selectedNotice.month}',
-                        ),
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            selectedNotice.icon,
-                            color: theme.colorScheme.onSurface,
-                            size: 23,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            selectedNotice.day,
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurface,
-                              fontSize: 24,
-                              height: 1,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            selectedNotice.month,
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: PageView.builder(
-                      key: const ValueKey('announcement-carousel'),
-                      controller: _pageController,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: cards.length,
-                      onPageChanged: (index) =>
-                          setState(() => _selectedIndex = index),
-                      itemBuilder: (context, index) =>
-                          _DashboardNoticeContent(notice: cards[index]),
-                    ),
-                  ),
-                ],
+              child: PageView.builder(
+                key: const ValueKey('announcement-carousel'),
+                controller: _pageController,
+                physics: const BouncingScrollPhysics(),
+                itemCount: cards.length,
+                onPageChanged: (index) =>
+                    setState(() => _selectedIndex = index),
+                itemBuilder: (context, index) => _DashboardNoticeContent(
+                  notice: cards[index],
+                  datePanelColor: datePanelColor,
+                  isSelected: index == _selectedIndex,
+                  index: index,
+                ),
               ),
             ),
           ),
@@ -622,7 +665,7 @@ class _DashboardNotice {
     required this.icon,
     required this.day,
     required this.month,
-    required this.action,
+    this.imageUrl,
     this.onTap,
   });
 
@@ -632,89 +675,179 @@ class _DashboardNotice {
   final IconData icon;
   final String day;
   final String month;
-  final String action;
+  final String? imageUrl;
   final VoidCallback? onTap;
 }
 
 class _DashboardNoticeContent extends StatelessWidget {
-  const _DashboardNoticeContent({required this.notice});
+  const _DashboardNoticeContent({
+    required this.notice,
+    required this.datePanelColor,
+    required this.isSelected,
+    required this.index,
+  });
 
   final _DashboardNotice notice;
+  final Color datePanelColor;
+  final bool isSelected;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final accent = isDark ? const Color(0xFFB8AEFF) : AppColors.brandLavender;
-    final actionColor = isDark ? accent : AppColors.brandBlue;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: notice.onTap,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 18, 14),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                notice.eyebrow,
-                style: TextStyle(
-                  color: accent,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
+              SizedBox(
+                height: 82,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AnimatedContainer(
+                      key: isSelected
+                          ? const ValueKey('announcement-date-panel')
+                          : ValueKey('announcement-date-panel-$index'),
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      width: 72,
+                      decoration: BoxDecoration(
+                        color: datePanelColor,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            notice.icon,
+                            color: theme.colorScheme.onSurface,
+                            size: 19,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            notice.day,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                              fontSize: 23,
+                              height: 1,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            notice.month,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              notice.eyebrow,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: accent,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.15,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    notice.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: theme.colorScheme.onSurface,
+                                      fontSize: 16,
+                                      height: 1.15,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: theme.colorScheme.onSurface,
+                                  size: 23,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Expanded(
+                              child: Text(
+                                notice.message,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 11,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                notice.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface,
-                  fontSize: 15,
-                  height: 1.15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                notice.message,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontSize: 11,
-                  height: 1.28,
-                ),
-              ),
-              const Spacer(),
-              Row(
-                children: [
-                  Text(
-                    notice.action,
-                    style: TextStyle(
-                      color: actionColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
+              if (notice.imageUrl != null) ...[
+                const SizedBox(height: 10),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Image.network(
+                        notice.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => ColoredBox(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          child: const Center(
+                            child: Icon(Icons.broken_image_outlined),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 3),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    color: actionColor,
-                    size: 13,
-                  ),
-                ],
-              ),
+                ),
+              ] else
+                const Spacer(),
             ],
           ),
         ),
       ),
     );
   }
+}
+
+bool _isImageAttachment(String? name, String? url) {
+  return isAnnouncementImageAttachment(name, url);
 }
 
 String _noticeMonthName(int month) => const [

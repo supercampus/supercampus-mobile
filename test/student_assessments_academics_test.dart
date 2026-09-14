@@ -35,6 +35,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('marks-results-page')), findsOneWidget);
+    expect(find.text('Internal assessments'), findsOneWidget);
+    expect(find.text('1 subject'), findsOneWidget);
     expect(find.text('Data Structures Internal 1'), findsOneWidget);
     expect(
       find.text('MA301  •  Internal assessment  •  Semester 2'),
@@ -42,6 +44,8 @@ void main() {
     );
     expect(find.text('42 / 50'), findsOneWidget);
     expect(find.text('84%'), findsOneWidget);
+    expect(find.text('Current CGPA'), findsNothing);
+    expect(find.text('Credits'), findsNothing);
     expect(source.loads, 1);
   });
 }

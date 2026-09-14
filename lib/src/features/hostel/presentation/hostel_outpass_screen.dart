@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/hostel_models.dart';
 import '../data/hostel_repository.dart';
@@ -24,27 +25,64 @@ class HostelOutpassScreen extends StatelessWidget {
         leading: onBack != null ? BackButton(onPressed: onBack) : null,
         title: const Text('Leave / Outpass System'),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openApplyOutpassSheet(context),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add),
-        label: const Text('Request Outpass'),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 34),
+        children: [
+          Text(
+            'Plan your leave',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Submit the destination and return time. Approval and QR status stay together.',
+            style: TextStyle(color: AppColors.muted),
+          ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: () => _openApplyOutpassSheet(context),
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Request outpass'),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Requests',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              Text(
+                '${outpasses.length}',
+                style: const TextStyle(color: AppColors.muted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (outpasses.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(22),
+                child: Text(
+                  'No outpass requests yet.',
+                  style: TextStyle(color: AppColors.muted),
+                ),
+              ),
+            )
+          else
+            ...outpasses.map((outpass) => _buildOutpassCard(context, outpass)),
+        ],
       ),
-      body: outpasses.isEmpty
-          ? const Center(child: Text('No outpasses requested yet.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: outpasses.length,
-              itemBuilder: (context, index) {
-                final o = outpasses[index];
-                return _buildOutpassCard(context, o);
-              },
-            ),
     );
   }
 
   Widget _buildOutpassCard(BuildContext context, HostelOutpass outpass) {
-    final isApproved = outpass.status == OutpassStatus.approved ||
+    final isApproved =
+        outpass.status == OutpassStatus.approved ||
         outpass.status == OutpassStatus.active;
 
     return Card(
@@ -62,8 +100,10 @@ class HostelOutpassScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
@@ -78,8 +118,10 @@ class HostelOutpassScreen extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: isApproved
                         ? Colors.green.shade50
@@ -115,7 +157,7 @@ class HostelOutpassScreen extends StatelessWidget {
                 Expanded(
                   child: _buildTimeTile(
                     'Leaving Time',
-                    '${outpass.leavingAt.hour}:${outpass.leavingAt.minute.toString().padLeft(2, '0')} PM',
+                    _formatTime(outpass.leavingAt),
                     Icons.north_east,
                     Colors.orange.shade700,
                   ),
@@ -123,7 +165,7 @@ class HostelOutpassScreen extends StatelessWidget {
                 Expanded(
                   child: _buildTimeTile(
                     'Expected Return',
-                    '${outpass.expectedReturnAt.hour}:${outpass.expectedReturnAt.minute.toString().padLeft(2, '0')} PM',
+                    _formatTime(outpass.expectedReturnAt),
                     Icons.south_west,
                     Colors.green.shade700,
                   ),
@@ -150,7 +192,11 @@ class HostelOutpassScreen extends StatelessWidget {
   }
 
   Widget _buildTimeTile(
-      String title, String timeStr, IconData icon, Color color) {
+    String title,
+    String timeStr,
+    IconData icon,
+    Color color,
+  ) {
     return Row(
       children: [
         Icon(icon, size: 16, color: color),
@@ -158,11 +204,14 @@ class HostelOutpassScreen extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: const TextStyle(fontSize: 10, color: AppColors.muted)),
-            Text(timeStr,
-                style:
-                    const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 10, color: AppColors.muted),
+            ),
+            Text(
+              timeStr,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       ],
@@ -191,9 +240,9 @@ class HostelOutpassScreen extends StatelessWidget {
             children: [
               Text(
                 'Apply Hostel Outpass / Leave',
-                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  ctx,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               TextField(
@@ -205,9 +254,7 @@ class HostelOutpassScreen extends StatelessWidget {
               const SizedBox(height: 12),
               TextField(
                 controller: reasonCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Reason for Exit',
-                ),
+                decoration: const InputDecoration(labelText: 'Reason for Exit'),
               ),
               const SizedBox(height: 20),
               SizedBox(
@@ -229,7 +276,8 @@ class HostelOutpassScreen extends StatelessWidget {
                       onRefresh();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content: Text('Outpass submitted & auto-approved!')),
+                          content: Text('Outpass submitted & auto-approved!'),
+                        ),
                       );
                     }
                   },
@@ -248,14 +296,17 @@ class HostelOutpassScreen extends StatelessWidget {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text('HOSTEL OUTPASS QR',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'HOSTEL OUTPASS QR',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Simulated QR Code Frame
               Container(
                 width: 180,
                 height: 180,
@@ -264,11 +315,11 @@ class HostelOutpassScreen extends StatelessWidget {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.grey.shade400, width: 2),
-                  boxShadow: const [BoxShadow(blurRadius: 8, color: Colors.black12)],
+                  boxShadow: const [
+                    BoxShadow(blurRadius: 8, color: Colors.black12),
+                  ],
                 ),
-                child: CustomPaint(
-                  painter: _QrPainter(),
-                ),
+                child: QrImageView(data: outpass.qrPayload ?? '', size: 156),
               ),
               const SizedBox(height: 16),
               Text(
@@ -281,7 +332,10 @@ class HostelOutpassScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade50,
                   borderRadius: BorderRadius.circular(20),
@@ -295,55 +349,11 @@ class HostelOutpassScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Simulation Buttons for Gate Exit & Gate Return
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () async {
-                        await repository.scanOutpassGate(
-                          outpassId: outpass.id,
-                          gateName: 'Hostel Main Gate',
-                          action: 'EXIT',
-                        );
-                        if (ctx.mounted) {
-                          Navigator.pop(ctx);
-                          onRefresh();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Gate EXIT Recorded successfully! Presence set to OUTSIDE.'),
-                            ),
-                          );
-                        }
-                      },
-                      child: const Text('Simulate EXIT'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () async {
-                        await repository.scanOutpassGate(
-                          outpassId: outpass.id,
-                          gateName: 'Hostel Main Gate',
-                          action: 'ENTRY',
-                        );
-                        if (ctx.mounted) {
-                          Navigator.pop(ctx);
-                          onRefresh();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Gate ENTRY Recorded! Outpass Completed.'),
-                            ),
-                          );
-                        }
-                      },
-                      child: const Text('Simulate RETURN'),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 12),
+              const Text(
+                'Security scans this code for exit and return. The student cannot change its state.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.muted, fontSize: 12),
               ),
             ],
           ),
@@ -353,40 +363,8 @@ class HostelOutpassScreen extends StatelessWidget {
   }
 }
 
-class _QrPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.fill;
-
-    // Corner squares
-    canvas.drawRect(Rect.fromLTWH(0, 0, 40, 40), paint);
-    canvas.drawRect(Rect.fromLTWH(size.width - 40, 0, 40, 40), paint);
-    canvas.drawRect(Rect.fromLTWH(0, size.height - 40, 40, 40), paint);
-
-    final whitePaint = Paint()..color = Colors.white;
-    canvas.drawRect(Rect.fromLTWH(8, 8, 24, 24), whitePaint);
-    canvas.drawRect(Rect.fromLTWH(size.width - 32, 8, 24, 24), whitePaint);
-    canvas.drawRect(Rect.fromLTWH(8, size.height - 32, 24, 24), whitePaint);
-
-    canvas.drawRect(Rect.fromLTWH(14, 14, 12, 12), paint);
-    canvas.drawRect(Rect.fromLTWH(size.width - 26, 14, 12, 12), paint);
-    canvas.drawRect(Rect.fromLTWH(14, size.height - 26, 12, 12), paint);
-
-    // Random pattern grid
-    for (int i = 0; i < 6; i++) {
-      for (int j = 0; j < 6; j++) {
-        if ((i + j) % 2 == 0) {
-          canvas.drawRect(
-            Rect.fromLTWH(50.0 + i * 15, 50.0 + j * 15, 10, 10),
-            paint,
-          );
-        }
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+String _formatTime(DateTime value) {
+  final local = value.toLocal();
+  final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+  return '$hour:${local.minute.toString().padLeft(2, '0')} ${local.hour >= 12 ? 'PM' : 'AM'}';
 }

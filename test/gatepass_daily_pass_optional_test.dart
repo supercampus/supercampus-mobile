@@ -156,6 +156,7 @@ void main() {
           'validFrom': '2026-08-23T04:00:00Z',
           'validUntil': '2026-08-24T00:00:00Z',
           'qrPayload': 'live-token-abc',
+          'manualCode': '567890',
           'location': {
             'latitude': 13.0105,
             'longitude': 80.2357,
@@ -172,6 +173,7 @@ void main() {
 
     expect(store.zone, CampusZone.inside);
     expect(store.dailyPass?.qrPayload, 'live-token-abc');
+    expect(store.dailyPass?.manualCode, '567890');
     expect(store.dailyPassIssue, isNull);
     expect(store.student.isOnCampus, isTrue);
     expect(store.mapLocation?.studentLatitude, 13.0105);

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/access/backend_permissions_repository.dart';
@@ -50,6 +51,7 @@ import 'features/gatepass/data/gatepass_repository.dart';
 import 'features/gatepass/presentation/approval_portal_screen.dart';
 import 'features/library/presentation/library_shell.dart';
 import 'features/library/data/librarian_repository.dart';
+import 'features/library/data/library_lending_repository.dart';
 import 'features/library/presentation/librarian_portal_screen.dart';
 import 'features/academics/presentation/academic_management_shell.dart';
 import 'features/academics/presentation/student_academics_shell.dart';
@@ -66,6 +68,7 @@ import 'features/parent/presentation/parent_portal_screen.dart';
 import 'features/notifications/data/notification_repository.dart';
 import 'features/timetable/presentation/timetable_shell.dart';
 import 'features/hostel/presentation/hostel_shell.dart';
+import 'features/hostel/data/backend_hostel_repository.dart';
 import 'screens/tuition_fee/tuition_fee_repository.dart';
 import 'screens/tuition_fee/tuition_fee_screen.dart';
 
@@ -128,6 +131,7 @@ class _SupercampusAppState extends State<SupercampusApp>
   bool _permissionRefreshInProgress = false;
   Future<UserSession>? _sessionRenewal;
   MediaRepository? _mediaRepository;
+  LibrarianRepository? _announcementRepository;
   RealtimeClient? _realtimeClient;
   StreamSubscription<RealtimeEvent>? _realtimeEventSubscription;
   StreamSubscription<String>? _pushDeepLinkSubscription;
@@ -137,11 +141,17 @@ class _SupercampusAppState extends State<SupercampusApp>
   int _notificationRevision = 0;
   bool _isRestoringSession = true;
   String? _sessionNotice;
+  bool _showPasswordReset = false;
+  String? _passwordResetToken;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (kIsWeb && Uri.base.path == '/reset-password') {
+      _showPasswordReset = true;
+      _passwordResetToken = Uri.base.queryParameters['token']?.trim();
+    }
     final backendBaseUrl = _resolvedBackendBaseUrl;
     if (!_useMockData &&
         (widget.authRepository == null ||
@@ -174,6 +184,10 @@ class _SupercampusAppState extends State<SupercampusApp>
       // Only against a real backend: with mocks there is nothing to upload to,
       // and the screens hide their upload control when no scope is installed.
       _mediaRepository = MediaRepository(
+        baseUrl: backendBaseUrl,
+        accessTokenProvider: _provideAccessToken,
+      );
+      _announcementRepository = LibrarianRepository(
         baseUrl: backendBaseUrl,
         accessTokenProvider: _provideAccessToken,
       );
@@ -306,6 +320,39 @@ class _SupercampusAppState extends State<SupercampusApp>
     if (notificationRepository != null) {
       unawaited(
         PushNotificationService.instance.activate(notificationRepository),
+      );
+    }
+  }
+
+  Future<void> _resetPassword(String token, String password) async {
+    final repository = _authRepository;
+    if (repository is! PasswordResetCompletionRepository) {
+      throw const AuthenticationException(
+        'Password reset is unavailable in this build.',
+      );
+    }
+    await (repository as PasswordResetCompletionRepository).resetPassword(
+      token: token,
+      password: password,
+    );
+  }
+
+  void _returnToLoginFromPasswordReset() {
+    unawaited(_sessionStore.clear());
+    setState(() {
+      _showPasswordReset = false;
+      _passwordResetToken = null;
+      _session = null;
+      _permissions = null;
+      _openModuleId = null;
+      _openModuleAction = null;
+    });
+    if (kIsWeb) {
+      unawaited(
+        SystemNavigator.routeInformationUpdated(
+          uri: Uri(path: '/'),
+          replace: true,
+        ),
       );
     }
   }
@@ -626,6 +673,7 @@ class _SupercampusAppState extends State<SupercampusApp>
       MaterialApp(
         title: 'SuperCampus',
         debugShowCheckedModeBanner: false,
+        initialRoute: '/',
         theme: _applyTenantBrand(AppTheme.light, brand, Brightness.light),
         darkTheme: _applyTenantBrand(AppTheme.dark, brand, Brightness.dark),
         themeMode: _themeMode,
@@ -710,6 +758,13 @@ class _SupercampusAppState extends State<SupercampusApp>
   }
 
   Widget _buildHome() {
+    if (_showPasswordReset) {
+      return PasswordResetCompletionScreen(
+        token: _passwordResetToken,
+        onResetPassword: _resetPassword,
+        onBackToLogin: _returnToLoginFromPasswordReset,
+      );
+    }
     if (_isRestoringSession) {
       return const Scaffold(body: SkeletonList(rows: 7, rowHeight: 72));
     }
@@ -738,6 +793,7 @@ class _SupercampusAppState extends State<SupercampusApp>
       return ModuleDashboardScreen(
         session: session,
         permissions: permissions,
+        announcementRepository: _announcementRepository,
         onOpenModule: (id) {
           if (!permissions.canSeeModule(id)) return;
           setState(() {
@@ -1062,6 +1118,14 @@ class _SupercampusAppState extends State<SupercampusApp>
         session: session,
         onExitModule: exit,
         initialAction: _openModuleAction,
+        repository: _useMockData
+            ? null
+            : BackendHostelRepository(
+                baseUrl: _resolvedBackendBaseUrl,
+                accessTokenProvider: _provideAccessToken,
+                studentName: session.displayName,
+                studentCode: session.idNumber ?? '',
+              ),
       ),
       ModuleCatalog.examination => ExaminationShell(
         session: session,
@@ -1153,6 +1217,10 @@ class _SupercampusAppState extends State<SupercampusApp>
                 session: session,
                 initialAction: _openModuleAction,
                 repository: LibrarianRepository(
+                  baseUrl: _resolvedBackendBaseUrl,
+                  accessTokenProvider: _provideAccessToken,
+                ),
+                lendingRepository: LibraryLendingRepository(
                   baseUrl: _resolvedBackendBaseUrl,
                   accessTokenProvider: _provideAccessToken,
                 ),

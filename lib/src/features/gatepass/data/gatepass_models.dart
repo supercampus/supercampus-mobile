@@ -1,5 +1,12 @@
 enum StudentResidency { dayScholar, hosteller }
 
+enum GatepassPassKind { leavePass, outpass }
+
+extension GatepassPassKindLabel on GatepassPassKind {
+  String get label =>
+      this == GatepassPassKind.leavePass ? 'Leave pass' : 'Outpass';
+}
+
 extension StudentResidencyLabel on StudentResidency {
   String get label =>
       this == StudentResidency.dayScholar ? 'Day scholar' : 'Hosteller';
@@ -136,8 +143,10 @@ class GatepassRequest {
     this.approver,
     this.reviewNote,
     this.qrPayload,
+    this.manualCode,
     this.workflowState = 'submitted',
     this.workflowVersion = 1,
+    this.passKind = GatepassPassKind.outpass,
   });
 
   final String id;
@@ -152,8 +161,10 @@ class GatepassRequest {
   final String? approver;
   final String? reviewNote;
   final String? qrPayload;
+  final String? manualCode;
   final String workflowState;
   final int workflowVersion;
+  final GatepassPassKind passKind;
 }
 
 class VisitorInvitation {
@@ -205,6 +216,7 @@ class DailyAccessPass {
     required this.validFrom,
     required this.validUntil,
     required this.qrPayload,
+    this.manualCode,
   });
 
   final String id;
@@ -212,6 +224,7 @@ class DailyAccessPass {
   final DateTime validFrom;
   final DateTime validUntil;
   final String qrPayload;
+  final String? manualCode;
 }
 
 /// Where the device stands relative to the campus fence.
@@ -316,6 +329,8 @@ class GatepassRequestDraft {
     required this.destination,
     required this.reason,
     required this.guardianPhone,
+    this.passKind = GatepassPassKind.outpass,
+    this.residency = StudentResidency.dayScholar,
   });
 
   final GatepassRequestType type;
@@ -324,6 +339,8 @@ class GatepassRequestDraft {
   final String destination;
   final String reason;
   final String guardianPhone;
+  final GatepassPassKind passKind;
+  final StudentResidency residency;
 }
 
 class VisitorInvitationDraft {

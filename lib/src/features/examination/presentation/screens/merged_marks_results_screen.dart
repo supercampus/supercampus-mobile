@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../authentication/data/auth_repository.dart';
+import '../../data/marks_batch_repository.dart';
 import 'grade_gpa_screen.dart';
 import 'marks_entry_screen.dart';
 import 'moderation_screen.dart';
@@ -7,7 +9,14 @@ import 'result_publishing_screen.dart';
 import 'revaluation_screen.dart';
 
 class MergedMarksResultsScreen extends StatefulWidget {
-  const MergedMarksResultsScreen({super.key});
+  const MergedMarksResultsScreen({
+    super.key,
+    required this.session,
+    this.repository,
+  });
+
+  final UserSession session;
+  final MarksBatchRepository? repository;
 
   @override
   State<MergedMarksResultsScreen> createState() =>
@@ -19,6 +28,18 @@ class _MergedMarksResultsScreenState extends State<MergedMarksResultsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final roles = {
+      widget.session.roleKey.toLowerCase(),
+      ...widget.session.roleIds.map((role) => role.toLowerCase()),
+    };
+    if (roles.any(
+      const {'staff', 'class_advisor', 'hod', 'principal'}.contains,
+    )) {
+      return MarksEntryScreen(
+        session: widget.session,
+        repository: widget.repository,
+      );
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth <= 600;
@@ -71,12 +92,15 @@ class _MergedMarksResultsScreenState extends State<MergedMarksResultsScreen> {
             Expanded(
               child: IndexedStack(
                 index: _selectedSection,
-                children: const [
-                  MarksEntryScreen(),
-                  ModerationScreen(),
-                  GradeGpaScreen(),
-                  ResultPublishingScreen(),
-                  RevaluationScreen(),
+                children: [
+                  MarksEntryScreen(
+                    session: widget.session,
+                    repository: widget.repository,
+                  ),
+                  const ModerationScreen(),
+                  const GradeGpaScreen(),
+                  const ResultPublishingScreen(),
+                  const RevaluationScreen(),
                 ],
               ),
             ),

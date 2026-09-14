@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/module_section_switcher.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../scanner/presentation/scan_qr_screen.dart';
 import '../data/security_gate_repository.dart';
@@ -15,11 +17,13 @@ class SecurityPortalScreen extends StatefulWidget {
     required this.session,
     required this.repository,
     required this.onSignOut,
+    this.initialAction,
   });
 
   final UserSession session;
   final SecurityGateRepository repository;
   final VoidCallback onSignOut;
+  final String? initialAction;
 
   @override
   State<SecurityPortalScreen> createState() => _SecurityPortalScreenState();
@@ -45,6 +49,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedTab = widget.initialAction == 'movement_logs' ? 1 : 0;
     _loadHistory();
   }
 
@@ -83,6 +88,10 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
 
   Future<void> _submitManualCode() async {
     FocusScope.of(context).unfocus();
+    if (!RegExp(r'^\d{6}$').hasMatch(_manualCode.text.trim())) {
+      await _showRejected('Enter the student’s six-digit gate code.');
+      return;
+    }
     await _submitCode(_manualCode.text);
   }
 
@@ -191,25 +200,27 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
       ),
       body: SafeArea(
         top: false,
-        child: IndexedStack(
-          index: _selectedTab,
-          children: [_scannerPage(), _historyPage()],
+        child: Column(
+          children: [
+            ModuleSectionSwitcher(
+              sections: const [
+                ModuleSection(
+                  label: 'Scanner',
+                  icon: Icons.qr_code_scanner_rounded,
+                ),
+                ModuleSection(label: 'History', icon: Icons.history_rounded),
+              ],
+              selectedIndex: _selectedTab,
+              onSelected: (value) => setState(() => _selectedTab = value),
+            ),
+            Expanded(
+              child: IndexedStack(
+                index: _selectedTab,
+                children: [_scannerPage(), _historyPage()],
+              ),
+            ),
+          ],
         ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedTab,
-        onDestinationSelected: (value) => setState(() => _selectedTab = value),
-        indicatorColor: _softPurple.withValues(alpha: 0.16),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.qr_code_scanner_rounded),
-            label: 'Scanner',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.history_rounded),
-            label: 'Scan history',
-          ),
-        ],
       ),
     );
   }
@@ -368,10 +379,17 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
           TextField(
             controller: _manualCode,
             enabled: !_submitting,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(6),
+            ],
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _submitManualCode(),
             decoration: InputDecoration(
-              hintText: 'Paste gatepass code',
+              hintText: 'Enter 6-digit gate code',
+              counterText: '',
               prefixIcon: const Icon(Icons.password_rounded),
               suffixIcon: IconButton(
                 tooltip: 'Verify code',

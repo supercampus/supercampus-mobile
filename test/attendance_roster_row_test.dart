@@ -174,14 +174,20 @@ void main() {
   });
 
   group('the mark is always readable', () {
-    testWidgets('the badge carries the mark colour and glyph', (tester) async {
+    testWidgets('the badge names the mark without check or cross glyphs', (
+      tester,
+    ) async {
       for (final mark in AttendanceMark.values) {
         await pumpRow(tester, marked: <AttendanceMark>[], mark: mark);
         expect(
-          find.byIcon(mark.icon),
+          find.text(
+            mark == AttendanceMark.onDuty ? 'OD' : mark.label.toUpperCase(),
+          ),
           findsOneWidget,
-          reason: '${mark.label} glyph missing',
+          reason: '${mark.label} label missing',
         );
+        expect(find.byIcon(Icons.check_circle), findsNothing);
+        expect(find.byIcon(Icons.cancel), findsNothing);
       }
     });
 

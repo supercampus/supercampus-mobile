@@ -234,6 +234,10 @@ class _HostelShellState extends State<HostelShell> {
       HostelMessScreen(
         messTokens: store.messTokens,
         activeResidency: store.activeResidency,
+        menuEnabled: store.menuEnabled,
+        messEnabled: store.messEnabled,
+        feeValidFrom: store.hostelFeeValidFrom,
+        feeValidUntil: store.hostelFeeValidUntil,
         repository: _repository,
         onRefresh: _load,
         onBack: _handleBack,

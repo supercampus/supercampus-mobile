@@ -85,6 +85,7 @@ void main() {
       find.byKey(const ValueKey('announcement-card')),
     );
     expect(card.color, const Color(0xFF1D1A24));
+    expect(card.borderRadius, BorderRadius.circular(26));
 
     final datePanel = tester.widget<AnimatedContainer>(
       find.byKey(const ValueKey('announcement-date-panel')),
@@ -92,6 +93,10 @@ void main() {
     expect(
       (datePanel.decoration as BoxDecoration).color,
       const Color(0xFF292431),
+    );
+    expect(
+      tester.getSize(find.byKey(const ValueKey('announcement-date-panel'))),
+      const Size(72, 82),
     );
 
     final title = tester.widget<Text>(

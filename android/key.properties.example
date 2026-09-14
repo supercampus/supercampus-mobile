@@ -1,0 +1,6 @@
+# Copy this file to android/key.properties after creating the institution-owned
+# release keystore. Never commit either the real properties file or keystore.
+storePassword=replace-with-secure-store-password
+keyPassword=replace-with-secure-key-password
+keyAlias=supercampus
+storeFile=../release/supercampus-upload.jks

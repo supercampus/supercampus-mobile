@@ -1,10 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/skeleton_loading.dart';
 import '../data/auth_repository.dart';
 
-enum _AuthView { institution, signIn, resetPassword }
+enum _AuthView { signIn, resetPassword }
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
@@ -24,15 +26,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _institutionFormKey = GlobalKey<FormState>();
   final _resetFormKey = GlobalKey<FormState>();
-  final _institutionController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _resetEmailController = TextEditingController();
   final _passwordFocusNode = FocusNode();
 
-  _AuthView _view = _AuthView.institution;
+  _AuthView _view = _AuthView.signIn;
   bool _obscurePassword = true;
   bool _isSubmitting = false;
   bool _isSuccessLeaving = false;
@@ -82,7 +82,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _emailController.dispose();
-    _institutionController.dispose();
     _passwordController.dispose();
     _resetEmailController.dispose();
     _passwordFocusNode.dispose();
@@ -98,38 +97,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  String? _validateIdentifier(String? value) {
-    final identifier = value?.trim() ?? '';
-    if (identifier.isEmpty) return 'Enter your email address or mobile number.';
-    final isEmail = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(identifier);
-    final phoneDigits = identifier.replaceAll(RegExp(r'\D'), '');
-    if (identifier.contains('@')) {
-      return isEmail ? null : 'Enter a valid email address or mobile number.';
-    }
-    return phoneDigits.length >= 10 && phoneDigits.length <= 15
-        ? null
-        : 'Enter a valid email address or mobile number.';
-  }
-
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) return 'Enter your password.';
     if (value.length < 6) return 'Password must be at least 6 characters.';
     return null;
   }
 
-  String? _validateInstitution(String? value) {
-    final institution = value?.trim().toLowerCase() ?? '';
-    if (institution.isEmpty) return 'Enter your tenant ID.';
-    if (institution != 'mec') return 'Tenant ID not found.';
-    return null;
-  }
-
   void _showSignIn() {
-    FocusScope.of(context).unfocus();
-    if (!_institutionFormKey.currentState!.validate()) return;
-    _institutionController.text = _institutionController.text
-        .trim()
-        .toLowerCase();
     setState(() {
       _view = _AuthView.signIn;
       _errorMessage = null;
@@ -155,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final session = await widget.authRepository.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        tenantDomain: _institutionController.text,
+        tenantDomain: '',
       );
       if (!mounted) return;
       setState(() {
@@ -227,13 +201,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 switchInCurve: Curves.easeOutCubic,
                 switchOutCurve: Curves.easeInCubic,
                 child: switch (_view) {
-                  _AuthView.institution => _InstitutionView(
-                    key: const ValueKey('institution'),
-                    formKey: _institutionFormKey,
-                    controller: _institutionController,
-                    validateInstitution: _validateInstitution,
-                    onContinue: _showSignIn,
-                  ),
                   _AuthView.signIn => _SignInView(
                     key: const ValueKey('sign-in'),
                     formKey: _formKey,
@@ -243,9 +210,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     obscurePassword: _obscurePassword,
                     isSubmitting: _isSubmitting,
                     errorMessage: _errorMessage,
-                    validateEmail: _validateIdentifier,
+                    validateEmail: _validateEmail,
                     validatePassword: _validatePassword,
-                    onBack: () => setState(() => _view = _AuthView.institution),
+                    onBack: _showSignIn,
                     onTogglePassword: () =>
                         setState(() => _obscurePassword = !_obscurePassword),
                     onForgotPassword: _showResetPassword,
@@ -582,227 +549,6 @@ class _SuccessCheckPainter extends CustomPainter {
       oldDelegate.progress != progress;
 }
 
-class _CampusCanvas extends StatelessWidget {
-  const _CampusCanvas({required this.compact});
-
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: _CanvasClipper(),
-      child: ColoredBox(
-        color: const Color(0xFF10182B),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            const CustomPaint(painter: _CampusGridPainter()),
-            Center(
-              child: Transform.translate(
-                offset: Offset(0, compact ? 0 : 8),
-                child: const _CampusIllustration(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CampusIllustration extends StatelessWidget {
-  const _CampusIllustration();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 270,
-      height: 210,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 156,
-            height: 156,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white24),
-            ),
-          ),
-          Container(
-            width: 112,
-            height: 112,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.account_balance_rounded,
-              size: 49,
-              color: Color(0xFF10182B),
-            ),
-          ),
-          const Positioned(
-            left: 17,
-            top: 38,
-            child: _OrbitIcon(icon: Icons.school_outlined),
-          ),
-          const Positioned(
-            right: 12,
-            top: 54,
-            child: _OrbitIcon(icon: Icons.badge_outlined),
-          ),
-          const Positioned(
-            left: 34,
-            bottom: 18,
-            child: _OrbitIcon(icon: Icons.calendar_month_outlined),
-          ),
-          const Positioned(
-            right: 31,
-            bottom: 10,
-            child: _OrbitIcon(icon: Icons.qr_code_rounded),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OrbitIcon extends StatelessWidget {
-  const _OrbitIcon({required this.icon});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 46,
-      height: 46,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1D2942),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white24),
-      ),
-      child: Icon(icon, size: 21, color: Colors.white),
-    );
-  }
-}
-
-class _InstitutionView extends StatelessWidget {
-  const _InstitutionView({
-    super.key,
-    required this.formKey,
-    required this.controller,
-    required this.validateInstitution,
-    required this.onContinue,
-  });
-
-  final GlobalKey<FormState> formKey;
-  final TextEditingController controller;
-  final String? Function(String?) validateInstitution;
-  final VoidCallback onContinue;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxHeight < 760;
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  height: compact ? 235 : 290,
-                  child: _CampusCanvas(compact: compact),
-                ),
-                Center(
-                  child: SizedBox(
-                    width: 440,
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        24,
-                        compact ? 18 : 26,
-                        24,
-                        28,
-                      ),
-                      child: Form(
-                        key: formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const _BrandLockup(centered: false),
-                            SizedBox(height: compact ? 20 : 28),
-                            Text(
-                              'Find your institution',
-                              style: Theme.of(context).textTheme.headlineMedium
-                                  ?.copyWith(
-                                    fontSize: compact ? 27 : 29,
-                                    fontWeight: FontWeight.w500,
-                                    letterSpacing: 0,
-                                  ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Enter the tenant ID provided by your institution administrator.',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodyMedium?.copyWith(height: 1.45),
-                            ),
-                            SizedBox(height: compact ? 20 : 26),
-                            _FieldLabel(
-                              label: 'Tenant ID',
-                              child: TextFormField(
-                                key: const ValueKey('institution-domain'),
-                                controller: controller,
-                                autofocus: true,
-                                autocorrect: false,
-                                enableSuggestions: false,
-                                textCapitalization: TextCapitalization.none,
-                                keyboardType: TextInputType.url,
-                                textInputAction: TextInputAction.next,
-                                decoration: const InputDecoration(
-                                  hintText: 'Enter tenant ID',
-                                  prefixIcon: Icon(Icons.language_rounded),
-                                ),
-                                validator: validateInstitution,
-                                onFieldSubmitted: (_) => onContinue(),
-                              ),
-                            ),
-                            SizedBox(height: compact ? 20 : 26),
-                            FilledButton(
-                              key: const ValueKey('continue-from-institution'),
-                              onPressed: onContinue,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.ink,
-                                foregroundColor: Colors.white,
-                                minimumSize: const Size.fromHeight(54),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text('Next'),
-                                  SizedBox(width: 10),
-                                  Icon(Icons.arrow_forward_rounded, size: 19),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
 class _SignInView extends StatelessWidget {
   const _SignInView({
     super.key,
@@ -845,7 +591,8 @@ class _SignInView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 64),
+              const _BrandLockup(centered: false),
+              const SizedBox(height: 44),
               Text(
                 'Welcome back',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -861,15 +608,15 @@ class _SignInView extends StatelessWidget {
               ),
               const SizedBox(height: 34),
               _FieldLabel(
-                label: 'Email address or mobile number',
+                label: 'Email address',
                 child: TextFormField(
                   controller: emailController,
-                  keyboardType: TextInputType.text,
+                  keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.username],
                   decoration: const InputDecoration(
-                    hintText: 'name@college.edu or mobile number',
-                    prefixIcon: Icon(Icons.person_outline_rounded),
+                    hintText: 'name@college.edu',
+                    prefixIcon: Icon(Icons.mail_outline_rounded),
                   ),
                   validator: validateEmail,
                   onFieldSubmitted: (_) => passwordFocusNode.requestFocus(),
@@ -974,6 +721,7 @@ class _ResetPasswordView extends StatelessWidget {
   Widget build(BuildContext context) {
     return _AuthPage(
       onBack: onBack,
+      showBack: false,
       child: Form(
         key: formKey,
         child: Column(
@@ -1054,11 +802,297 @@ class _ResetPasswordView extends StatelessWidget {
   }
 }
 
+class PasswordResetCompletionScreen extends StatefulWidget {
+  const PasswordResetCompletionScreen({
+    super.key,
+    required this.token,
+    required this.onResetPassword,
+    required this.onBackToLogin,
+  });
+
+  final String? token;
+  final Future<void> Function(String token, String password) onResetPassword;
+  final VoidCallback onBackToLogin;
+
+  @override
+  State<PasswordResetCompletionScreen> createState() =>
+      _PasswordResetCompletionScreenState();
+}
+
+class _PasswordResetCompletionScreenState
+    extends State<PasswordResetCompletionScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  bool _obscurePassword = true;
+  bool _obscureConfirmation = true;
+  bool _isSubmitting = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  String? _validatePassword(String? value) {
+    final password = value ?? '';
+    if (password.isEmpty) return 'Create a new password.';
+    if (password.characters.length < 8) {
+      return 'Use at least 8 characters.';
+    }
+    if (utf8.encode(password).length > 72) {
+      return 'Password must be at most 72 bytes.';
+    }
+    return null;
+  }
+
+  String? _validateConfirmation(String? value) {
+    if (value == null || value.isEmpty) return 'Confirm your new password.';
+    if (value != _passwordController.text) return 'Passwords do not match.';
+    return null;
+  }
+
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    setState(() => _errorMessage = null);
+    if (!_formKey.currentState!.validate()) return;
+
+    final token = widget.token?.trim();
+    if (token == null || token.isEmpty) {
+      setState(() {
+        _errorMessage =
+            'This reset link is incomplete. Request a new link from sign in.';
+      });
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      await widget.onResetPassword(token, _passwordController.text);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password updated. Sign in with your new password.'),
+        ),
+      );
+      widget.onBackToLogin();
+    } on AuthenticationException catch (error) {
+      if (mounted) setState(() => _errorMessage = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'We could not update your password. Please try again.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final missingToken = widget.token?.trim().isEmpty ?? true;
+    return Theme(
+      data: AppTheme.light,
+      child: Scaffold(
+        backgroundColor: AppColors.canvas,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(22, 28, 22, 32),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight - 60,
+                ),
+                child: Center(
+                  child: SizedBox(
+                    width: 440,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const _BrandLockup(centered: true),
+                        const SizedBox(height: 34),
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: AppColors.border),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x120E00B8),
+                                blurRadius: 30,
+                                offset: Offset(0, 14),
+                              ),
+                            ],
+                          ),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      gradient: AppColors.violetGradient,
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                    child: const Icon(
+                                      Icons.lock_reset_rounded,
+                                      color: Colors.white,
+                                      size: 27,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 22),
+                                const Text(
+                                  'Create new password',
+                                  style: TextStyle(
+                                    color: AppColors.ink,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.15,
+                                  ),
+                                ),
+                                const SizedBox(height: 9),
+                                const Text(
+                                  'Choose a secure password for your SuperCampus account.',
+                                  style: TextStyle(
+                                    color: AppColors.muted,
+                                    fontSize: 14,
+                                    height: 1.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 26),
+                                _FieldLabel(
+                                  label: 'New password',
+                                  child: TextFormField(
+                                    controller: _passwordController,
+                                    obscureText: _obscurePassword,
+                                    autofillHints: const [
+                                      AutofillHints.newPassword,
+                                    ],
+                                    textInputAction: TextInputAction.next,
+                                    validator: _validatePassword,
+                                    decoration: InputDecoration(
+                                      hintText: 'At least 8 characters',
+                                      prefixIcon: const Icon(
+                                        Icons.lock_outline_rounded,
+                                      ),
+                                      suffixIcon: IconButton(
+                                        tooltip: _obscurePassword
+                                            ? 'Show password'
+                                            : 'Hide password',
+                                        onPressed: () => setState(
+                                          () => _obscurePassword =
+                                              !_obscurePassword,
+                                        ),
+                                        icon: Icon(
+                                          _obscurePassword
+                                              ? Icons.visibility_outlined
+                                              : Icons.visibility_off_outlined,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                _FieldLabel(
+                                  label: 'Confirm password',
+                                  child: TextFormField(
+                                    controller: _confirmPasswordController,
+                                    obscureText: _obscureConfirmation,
+                                    autofillHints: const [
+                                      AutofillHints.newPassword,
+                                    ],
+                                    textInputAction: TextInputAction.done,
+                                    validator: _validateConfirmation,
+                                    onFieldSubmitted: (_) => _submit(),
+                                    decoration: InputDecoration(
+                                      hintText: 'Enter it again',
+                                      prefixIcon: const Icon(
+                                        Icons.verified_user_outlined,
+                                      ),
+                                      suffixIcon: IconButton(
+                                        tooltip: _obscureConfirmation
+                                            ? 'Show password'
+                                            : 'Hide password',
+                                        onPressed: () => setState(
+                                          () => _obscureConfirmation =
+                                              !_obscureConfirmation,
+                                        ),
+                                        icon: Icon(
+                                          _obscureConfirmation
+                                              ? Icons.visibility_outlined
+                                              : Icons.visibility_off_outlined,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                if (missingToken || _errorMessage != null) ...[
+                                  const SizedBox(height: 18),
+                                  _ErrorBanner(
+                                    message: _errorMessage ??
+                                        'This reset link is incomplete. Request a new link from sign in.',
+                                  ),
+                                ],
+                                const SizedBox(height: 24),
+                                FilledButton(
+                                  onPressed:
+                                      _isSubmitting || missingToken ? null : _submit,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                  ),
+                                  child: _isSubmitting
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Text('Create password'),
+                                ),
+                                const SizedBox(height: 10),
+                                TextButton(
+                                  onPressed: widget.onBackToLogin,
+                                  child: const Text('Back to login'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AuthPage extends StatelessWidget {
-  const _AuthPage({required this.onBack, required this.child});
+  const _AuthPage({
+    required this.onBack,
+    required this.child,
+    this.showBack = true,
+  });
 
   final VoidCallback onBack;
   final Widget child;
+  final bool showBack;
 
   @override
   Widget build(BuildContext context) {
@@ -1074,15 +1108,18 @@ class _AuthPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: IconButton(
-                        tooltip: 'Back',
-                        onPressed: onBack,
-                        icon: const Icon(Icons.arrow_back_rounded),
+                    if (showBack) ...[
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: IconButton(
+                          tooltip: 'Back',
+                          onPressed: onBack,
+                          icon: const Icon(Icons.arrow_back_rounded),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
+                      const SizedBox(height: 12),
+                    ] else
+                      const SizedBox(height: 28),
                     child,
                   ],
                 ),
@@ -1203,44 +1240,4 @@ class _ErrorBanner extends StatelessWidget {
       ),
     );
   }
-}
-
-class _CanvasClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    return Path()
-      ..lineTo(0, size.height - 44)
-      ..quadraticBezierTo(
-        size.width * 0.5,
-        size.height + 28,
-        size.width,
-        size.height - 44,
-      )
-      ..lineTo(size.width, 0)
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
-}
-
-class _CampusGridPainter extends CustomPainter {
-  const _CampusGridPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.055)
-      ..strokeWidth = 1;
-    const gap = 34.0;
-    for (var x = 0.0; x <= size.width; x += gap) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (var y = 0.0; y <= size.height; y += gap) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

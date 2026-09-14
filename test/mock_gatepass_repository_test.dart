@@ -53,6 +53,25 @@ void main() {
     );
   });
 
+  test('keeps leave pass separate from hostel outpass', () async {
+    final departure = DateTime.now().add(const Duration(hours: 1));
+    final request = await repository.submitRequest(
+      GatepassRequestDraft(
+        type: GatepassRequestType.medical,
+        departureAt: departure,
+        returnAt: departure.add(const Duration(hours: 2)),
+        destination: 'Hostel',
+        reason: 'Rest in the hostel sick room',
+        guardianPhone: '',
+        passKind: GatepassPassKind.leavePass,
+        residency: StudentResidency.hosteller,
+      ),
+    );
+
+    expect(request.passKind, GatepassPassKind.leavePass);
+    expect(request.destination, 'Hostel');
+  });
+
   test('creates a visitor invitation awaiting review', () async {
     final invitation = await repository.inviteVisitor(
       VisitorInvitationDraft(

@@ -49,12 +49,12 @@ void main() {
 
     await tester.drag(find.byType(ListView).first, const Offset(0, -420));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'valid-qr-token');
+    await tester.enterText(find.byType(TextField), '123456');
     await tester.tap(find.byTooltip('Verify code'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(repository.lastPayload, 'valid-qr-token');
+    expect(repository.lastPayload, '123456');
     expect(find.text('Gate-in recorded'), findsOneWidget);
     expect(find.textContaining('Valid pass'), findsOneWidget);
   });
