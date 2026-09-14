@@ -94,7 +94,6 @@ class AttendanceRosterRow extends StatelessWidget {
   static const double _nameSize = 34 / 159;
   static const double _metaSize = 27 / 159;
   static const double _badge = 54 / 159;
-  static const double _badgeRadius = 8 / 159;
   static const double _padRight = 53 / 159;
   static const double gapBetweenCards = 25 / 159;
 
@@ -200,11 +199,7 @@ class AttendanceRosterRow extends StatelessWidget {
                             ),
                           ),
                           SizedBox(width: _avatarGap * height),
-                          _MarkBadge(
-                            mark: mark,
-                            size: _badge * height,
-                            radius: _badgeRadius * height,
-                          ),
+                          _MarkBadge(mark: mark, size: _badge * height),
                         ],
                       ),
                     ),
@@ -285,37 +280,39 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-/// The rounded square on the right: green check, amber shield, red cross.
+/// The compact status label on the right. The student's image carries their
+/// identity, while colour and text communicate the mark without check/cross
+/// symbols competing with the photo.
 class _MarkBadge extends StatelessWidget {
-  const _MarkBadge({
-    required this.mark,
-    required this.size,
-    required this.radius,
-  });
+  const _MarkBadge({required this.mark, required this.size});
 
   final AttendanceMark mark;
   final double size;
-  final double radius;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       label: mark.label,
       child: Container(
-        width: size,
+        constraints: BoxConstraints(minWidth: size * 2.8),
         height: size,
+        padding: EdgeInsets.symmetric(horizontal: size * .28),
         decoration: BoxDecoration(
-          color: mark.color,
-          borderRadius: BorderRadius.circular(radius),
+          color: mark.color.withValues(alpha: .13),
+          borderRadius: BorderRadius.circular(size),
         ),
         alignment: Alignment.center,
-        child: Icon(
-          mark.icon,
-          size: size * 0.64,
-          // White on all three, as the reference draws them — the amber is
-          // light, but the glyph is a solid shape rather than text, so it
-          // holds up.
-          color: Colors.white,
+        child: Text(
+          mark == AttendanceMark.onDuty ? 'OD' : mark.label.toUpperCase(),
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: size * .36 < 8 ? 8 : size * .36,
+            fontWeight: FontWeight.w700,
+            color: mark == AttendanceMark.onDuty
+                ? const Color(0xFF7A5A00)
+                : mark.color,
+            letterSpacing: .35,
+          ),
         ),
       ),
     );

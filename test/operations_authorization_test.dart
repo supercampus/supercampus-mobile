@@ -86,6 +86,38 @@ void main() {
     expect(store.analytics.ordersToday, 8);
   });
 
+  test('canteen menu retains vendor photos from compatible API shapes', () async {
+    final repository = BackendCanteenRepository(
+      baseUrl: 'https://api.supercampus.ai',
+      accessToken: 'student-token',
+      client: MockClient(
+        (request) async => http.Response(
+          '{"data":{"user":{},"walletBalance":0,"menu":['
+          '{"id":"1","name":"Kal Dosa","store":"classic",'
+          '"category":"meals","price":59,"image_url":'
+          '"https://res.cloudinary.com/supercampus/image/upload/v1/mec/dosa.jpg"},'
+          '{"id":"2","name":"Veg Puffs","store":"classic",'
+          '"category":"snacks","price":12,"media":'
+          '{"secureUrl":"/media/puffs.jpg"}}],'
+          '"orders":[],"walletTransactions":[]}}',
+          200,
+          headers: {'content-type': 'application/json'},
+        ),
+      ),
+    );
+
+    final store = await repository.loadStore();
+
+    expect(
+      store.menu.first.imageUrl,
+      'https://res.cloudinary.com/supercampus/image/upload/v1/mec/dosa.jpg',
+    );
+    expect(
+      store.menu.last.imageUrl,
+      'https://api.supercampus.ai/media/puffs.jpg',
+    );
+  });
+
   test('attendance request carries the signed-in bearer token', () async {
     final repository = AttendanceRepository(
       baseUrl: 'http://127.0.0.1:4000',

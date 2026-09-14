@@ -37,6 +37,7 @@ class GatepassShell extends StatefulWidget {
 /// the fence it is on. Small enough to catch walking through the gate, large
 /// enough that GPS jitter while sitting still does not rotate the pass.
 const _zoneCheckDistanceMetres = 25;
+const _outsideRecheckInterval = Duration(seconds: 3);
 
 class _GatepassShellState extends State<GatepassShell> {
   late final GatepassRepository _repository;
@@ -44,9 +45,11 @@ class _GatepassShellState extends State<GatepassShell> {
   String? _error;
   var _selectedIndex = 0;
   StreamSubscription<Position>? _positionSubscription;
+  final ValueNotifier<DailyAccessPass?> _liveDailyPass = ValueNotifier(null);
   var _receivedPositionBaseline = false;
   var _loadInFlight = false;
   var _loadQueued = false;
+  DateTime? _lastOutsideCheck;
 
   @override
   void initState() {
@@ -66,9 +69,8 @@ class _GatepassShellState extends State<GatepassShell> {
     if (widget.repository != null) _startWatching();
   }
 
-  /// Crossing the campus boundary is the only automatic refresh trigger. Each
-  /// activation rotates the token server-side, so a time-based refresh would
-  /// repeatedly invalidate a QR while its owner is standing still.
+  /// Crossing the campus boundary is the only automatic refresh trigger. The
+  /// API keeps the token stable while inside and invalidates it after exit.
   void _startWatching() {
     _positionSubscription =
         Geolocator.getPositionStream(
@@ -77,13 +79,44 @@ class _GatepassShellState extends State<GatepassShell> {
             distanceFilter: _zoneCheckDistanceMetres,
           ),
         ).listen(
-          (_) {
+          (position) {
             // Android commonly emits the current fix as soon as a listener is
             // attached. The initial load already used that fix, so consuming it
             // again would rotate the newly rendered QR immediately.
             if (!_receivedPositionBaseline) {
               _receivedPositionBaseline = true;
               return;
+            }
+            final store = _store;
+            if (store == null) return;
+            if (store.zone == CampusZone.inside) {
+              final fence = store.mapLocation;
+              // No configured fence means the API deliberately treats the
+              // campus as open; repeated fixes cannot change that state.
+              if (fence == null) return;
+              final distance = Geolocator.distanceBetween(
+                position.latitude,
+                position.longitude,
+                fence.campusLatitude,
+                fence.campusLongitude,
+              );
+              final accuracyMargin = position.accuracy.isFinite
+                  ? position.accuracy.clamp(0, 100)
+                  : 0;
+              // While still inside, consume frequent browser GPS fixes
+              // locally. Ask the API only after a real boundary crossing; it
+              // remains the authority that invalidates the credential.
+              if (distance <= fence.radiusMetres + accuracyMargin) return;
+            } else {
+              // Outside fixes may be delivered every second on the web. A
+              // short throttle detects re-entry promptly without hammering
+              // the API while the person remains away from campus.
+              final now = DateTime.now();
+              if (_lastOutsideCheck case final checked?
+                  when now.difference(checked) < _outsideRecheckInterval) {
+                return;
+              }
+              _lastOutsideCheck = now;
             }
             unawaited(_load(silent: true));
           },
@@ -96,14 +129,13 @@ class _GatepassShellState extends State<GatepassShell> {
   @override
   void dispose() {
     unawaited(_positionSubscription?.cancel());
+    _liveDailyPass.dispose();
     super.dispose();
   }
 
   Future<void> _load({bool silent = false}) async {
-    // Location and timer events can arrive together. Serializing activation is
-    // important because every successful request rotates the server-side QR;
-    // overlapping requests could otherwise leave the UI showing the token
-    // invalidated by the request that finished just before it.
+    // Location events can arrive together. Serializing them avoids redundant
+    // requests and prevents older responses from overwriting a newer zone.
     if (_loadInFlight) {
       _loadQueued = true;
       return;
@@ -113,6 +145,7 @@ class _GatepassShellState extends State<GatepassShell> {
     try {
       final store = await _repository.loadStore();
       if (mounted) {
+        _liveDailyPass.value = store.dailyPass;
         setState(() => _store = store);
         if (widget.initialAction == 'outpass') {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -278,10 +311,10 @@ class _GatepassShellState extends State<GatepassShell> {
         onInviteVisitor: _openInvite,
         onRetryLocation: _load,
         onExitModule: widget.onExitModule,
+        liveDailyPass: _liveDailyPass,
       ),
       GatepassRequestsScreen(
         requests: store.requests,
-        workflow: store.workflow,
         residency: store.student.residency,
         onApplyLeavePass: () => _openApply(GatepassPassKind.leavePass),
         onApplyOutpass: () => _openApply(GatepassPassKind.outpass),

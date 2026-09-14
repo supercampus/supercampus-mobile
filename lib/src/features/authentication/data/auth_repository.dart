@@ -234,6 +234,8 @@ abstract interface class AuthRepository {
   Future<UserSession> signIn({
     required String email,
     required String password,
+    // Kept temporarily for source compatibility with test harnesses. Real
+    // clients pass an empty value; tenant membership is resolved by email.
     required String tenantDomain,
     UserRole? roleHint,
   });
@@ -245,6 +247,17 @@ abstract interface class AuthRepository {
 
 abstract interface class SessionLogoutRepository {
   Future<void> signOut(UserSession session);
+}
+
+/// Completes the second half of the email password-reset flow.
+///
+/// Kept separate from [AuthRepository] so lightweight test and demo
+/// repositories do not need to implement a production-only token exchange.
+abstract interface class PasswordResetCompletionRepository {
+  Future<void> resetPassword({
+    required String token,
+    required String password,
+  });
 }
 
 class AuthenticationException implements Exception {

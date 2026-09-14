@@ -24,11 +24,6 @@ class DailyPeriodStrip extends StatelessWidget {
         entry.periodIndex: entry,
     };
     final assigned = byPeriod.length.clamp(0, periodsPerDay);
-    final cardWidth = (MediaQuery.sizeOf(context).width * 0.72).clamp(
-      238.0,
-      292.0,
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -46,27 +41,19 @@ class DailyPeriodStrip extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 208,
-          child: ListView.separated(
-            key: const ValueKey('daily-period-strip'),
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.only(right: 4),
-            itemCount: periodsPerDay,
-            separatorBuilder: (_, _) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final period = index + 1;
-              return SizedBox(
-                width: cardWidth,
-                child: _PeriodCard(
-                  period: period,
-                  entry: byPeriod[period],
-                  audience: audience,
-                ),
-              );
-            },
-          ),
+        const SizedBox(height: 10),
+        Column(
+          key: const ValueKey('daily-period-strip'),
+          children: [
+            for (var period = 1; period <= periodsPerDay; period++) ...[
+              _PeriodCard(
+                period: period,
+                entry: byPeriod[period],
+                audience: audience,
+              ),
+              if (period != periodsPerDay) const SizedBox(height: 8),
+            ],
+          ],
         ),
       ],
     );
@@ -88,78 +75,91 @@ class _PeriodCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final entry = this.entry;
     final accent = entry?.categoryColor ?? AppColors.muted;
+    final subject = entry == null
+        ? 'Free period'
+        : _subjectLabel(entry.subjectName);
     final detail = entry == null
         ? 'Available for allocation'
         : audience == TimetableAudience.student
         ? entry.facultyName
         : '${_departmentLabel(entry.className)}  |  Class ${entry.className}';
 
+    final theme = Theme.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accent.withValues(alpha: 0.28)),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.45)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '$period',
-                    style: TextStyle(
-                      color: accent,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$period',
+                style: TextStyle(
+                  color: accent,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    entry?.timeSlot ?? 'Period $period',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(),
-            Text(
-              entry?.subjectName ?? 'Free period',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 18,
-                height: 1.15,
-                fontWeight: FontWeight.w800,
-                color: AppColors.ink,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              entry == null ? detail : '${entry.subjectCode}  |  $detail',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    subject,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    detail,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 14),
-            Container(height: 3, color: accent),
+            const SizedBox(width: 10),
+            Container(
+              constraints: const BoxConstraints(minWidth: 82),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                entry?.timeSlot ?? 'Period $period',
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10,
+                  height: 1.15,
+                  color: accent,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -174,5 +174,20 @@ class _PeriodCard extends StatelessWidget {
       'CS' => 'Computer Science',
       _ => prefix,
     };
+  }
+
+  String _subjectLabel(String raw) {
+    var value = raw.trim();
+    for (final separator in const ['â€“', 'â€”', 'â€', '–', '—']) {
+      final index = value.indexOf(separator);
+      if (index > 0) value = value.substring(0, index).trim();
+    }
+    value = value
+        .replaceFirst(RegExp(r'\s*-\s*\([^)]*\)\s*$'), '')
+        .replaceFirst(RegExp(r'\s*\([A-Z0-9]{1,8}\)\s*$'), '')
+        .replaceAll('â€¦', '')
+        .replaceAll('…', '')
+        .trim();
+    return value.isEmpty ? raw.trim() : value;
   }
 }

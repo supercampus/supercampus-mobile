@@ -41,16 +41,16 @@ class HostelStudentHomeScreen extends StatelessWidget {
           const SizedBox(height: 14),
           _ActiveOutpassCard(outpass: outpass, onPressed: onOpenOutpass),
         ],
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
         const _SectionHeader(
           title: 'Services',
           subtitle: 'Everything you need for your hostel stay',
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         _ServicesGrid(items: _serviceItems),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         _MealOverview(tokens: store.messTokens, onPressed: onOpenMess),
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
         _MovementHistory(movements: store.movements),
       ],
     );
@@ -524,22 +524,22 @@ class _ServiceTile extends StatelessWidget {
       child: InkWell(
         onTap: item.onTap,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 124),
+          constraints: const BoxConstraints(minHeight: 96),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 38,
-                  height: 38,
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
                     color: item.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(11),
                   ),
-                  child: Icon(item.icon, color: item.color, size: 21),
+                  child: Icon(item.icon, color: item.color, size: 19),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Text(
                   item.title,
                   maxLines: 1,

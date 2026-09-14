@@ -662,10 +662,7 @@ class _ModuleCardState extends State<_ModuleCard> {
     final ready = module.status != ModuleStatus.planned;
     final actions = ready
         ? [
-            for (final action in _quickActionsFor(
-              module.id,
-              widget.permissions,
-            ))
+            for (final action in _quickActionsFor(module, widget.permissions))
               if (widget.permissions.can(
                 module.id,
                 action.featureId,
@@ -743,7 +740,7 @@ class _ModuleCardState extends State<_ModuleCard> {
       return _attendanceBoard(
         module,
         palette,
-        actions.take(1).toList(),
+        actions.take(3).toList(),
         'Attendance & results',
       );
     }
@@ -759,12 +756,13 @@ class _ModuleCardState extends State<_ModuleCard> {
       ModuleCatalog.attendance => _staffAttendanceBoard(
         module,
         palette,
-        actions.take(3).toList(),
+        actions.take(4).toList(),
         subtitle,
       ),
       ModuleCatalog.gatepass => _gatepassBoard(
         module,
         palette,
+        actions,
         'Gate-in access',
       ),
       ModuleCatalog.canteen => _shopsBoard(module, palette, actions, subtitle),
@@ -1009,13 +1007,41 @@ class _ModuleCardState extends State<_ModuleCard> {
   Widget _gatepassBoard(
     ModuleDescriptor module,
     _CardPalette palette,
+    List<_QuickAction> actions,
     String subtitle,
   ) {
     return Row(
       key: const ValueKey('gatepass-split-board'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(child: _heroCell(module, palette, subtitle)),
+        Expanded(
+          flex: 5,
+          child: Column(
+            children: [
+              Expanded(child: _heroCell(module, palette, subtitle)),
+              if (actions.isNotEmpty) ...[
+                SizedBox(height: 12 * _k),
+                SizedBox(
+                  height: 72 * _k,
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < actions.take(3).length; i++) ...[
+                        if (i > 0) SizedBox(width: 10 * _k),
+                        Expanded(
+                          child: _ActionTile(
+                            action: actions[i],
+                            fill: palette.tile(i),
+                            onTap: _run(actions[i]),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
         SizedBox(width: _cellGap),
         // The pass is the reason this card exists. It owns the full height of
         // the right half instead of sharing space with decorative actions.
@@ -1364,25 +1390,34 @@ class _ModuleCardState extends State<_ModuleCard> {
     return Row(
       key: const ValueKey('library-shelf-board'),
       children: [
-        Expanded(flex: 5, child: _heroCell(module, palette, subtitle)),
+        Expanded(flex: 4, child: _heroCell(module, palette, subtitle)),
         if (actions.isNotEmpty) ...[
           SizedBox(width: _cellGap),
           Expanded(
-            flex: 4,
-            child: Column(
-              children: [
-                for (var i = 0; i < actions.take(3).length; i++) ...[
-                  if (i > 0) SizedBox(height: 12 * _k),
-                  Expanded(
-                    child: _labelAction(
-                      actions[i],
-                      palette.tile(i),
-                      wide: true,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+            flex: 6,
+            child: actions.length <= 3
+                ? Column(
+                    children: [
+                      for (var i = 0; i < actions.length; i++) ...[
+                        if (i > 0) SizedBox(height: 12 * _k),
+                        Expanded(
+                          child: _labelAction(
+                            actions[i],
+                            palette.tile(i),
+                            wide: true,
+                          ),
+                        ),
+                      ],
+                    ],
+                  )
+                : _grid([
+                    for (var i = 0; i < actions.take(6).length; i++)
+                      _ActionTile(
+                        action: actions[i],
+                        fill: palette.tile(i),
+                        onTap: _run(actions[i]),
+                      ),
+                  ]),
           ),
         ],
       ],
@@ -1539,8 +1574,8 @@ class _ModuleCardState extends State<_ModuleCard> {
         Expanded(
           child: Row(
             children: [
-              for (var i = 0; i < actions.length; i++) ...[
-                if (i > 0) SizedBox(width: 34 * _k),
+              for (var i = 0; i < actions.take(6).length; i++) ...[
+                if (i > 0) SizedBox(width: 20 * _k),
                 Expanded(
                   child: _ActionTile(
                     action: actions[i],
@@ -1655,9 +1690,32 @@ class _QuickAction {
 }
 
 List<_QuickAction> _quickActionsFor(
-  String moduleId,
+  ModuleDescriptor module,
   EffectivePermissions permissions,
-) => switch (moduleId) {
+) => switch (module.id) {
+  ModuleCatalog.administration => const [
+    _QuickAction(
+      'access_control',
+      'Users & roles',
+      Icons.manage_accounts_outlined,
+      'access_control',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'approvals',
+      'Approvals',
+      Icons.approval_outlined,
+      'approvals',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'emergency',
+      'Emergency',
+      Icons.emergency_outlined,
+      'emergency',
+      ModuleActions.read,
+    ),
+  ],
   ModuleCatalog.examination => const [
     _QuickAction(
       'schedule',
@@ -1725,9 +1783,23 @@ List<_QuickAction> _quickActionsFor(
   ModuleCatalog.academics => const [
     _QuickAction(
       'attendance',
-      'Records',
+      'Attendance',
       Icons.fact_check_outlined,
       'attendance',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'marks',
+      'Marks',
+      Icons.edit_note_outlined,
+      'marks',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'analysis',
+      'Results',
+      Icons.insights_outlined,
+      'analysis',
       ModuleActions.read,
     ),
   ],
@@ -1743,8 +1815,15 @@ List<_QuickAction> _quickActionsFor(
       'mark',
       'Mark attendance',
       Icons.format_list_bulleted_add,
+      'session',
+      ModuleActions.create,
+    ),
+    _QuickAction(
+      'history',
+      'History',
+      Icons.history_rounded,
       'records',
-      ModuleActions.update,
+      ModuleActions.read,
     ),
     _QuickAction(
       'reports',
@@ -1752,6 +1831,52 @@ List<_QuickAction> _quickActionsFor(
       Icons.auto_graph_rounded,
       'reports',
       ModuleActions.create,
+    ),
+  ],
+  ModuleCatalog.canteen when module.displayName == 'Accounts' => const [
+    _QuickAction(
+      'wallet',
+      'Student wallets',
+      Icons.account_balance_wallet_outlined,
+      'wallet',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'transactions',
+      'Transactions',
+      Icons.receipt_long_outlined,
+      'wallet',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'top_up',
+      'Top up',
+      Icons.add_card_outlined,
+      'wallet',
+      ModuleActions.update,
+    ),
+  ],
+  ModuleCatalog.canteen when module.displayName == 'Stationery' => const [
+    _QuickAction(
+      'menu',
+      'Inventory',
+      Icons.inventory_2_outlined,
+      'menu',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'orders',
+      'Orders',
+      Icons.receipt_long_outlined,
+      'order',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'order_history',
+      'History',
+      Icons.history_rounded,
+      'order',
+      ModuleActions.read,
     ),
   ],
   ModuleCatalog.canteen => const [
@@ -1770,12 +1895,72 @@ List<_QuickAction> _quickActionsFor(
       ModuleActions.read,
     ),
     _QuickAction(
-      'wallet',
-      'Wallet',
-      Icons.account_balance_wallet_outlined,
-      'wallet',
+      'order_history',
+      'History',
+      Icons.history_rounded,
+      'order',
       ModuleActions.read,
     ),
+  ],
+  ModuleCatalog.gatepass when module.displayName == 'Gate Security' => const [
+    _QuickAction(
+      'scan',
+      'Scan pass',
+      Icons.qr_code_scanner_rounded,
+      'scan',
+      ModuleActions.create,
+    ),
+    _QuickAction(
+      'manual_code',
+      'Enter code',
+      Icons.pin_outlined,
+      'scan',
+      ModuleActions.create,
+    ),
+    _QuickAction(
+      'movement_logs',
+      'Movement logs',
+      Icons.history_rounded,
+      'scan',
+      ModuleActions.read,
+    ),
+  ],
+  ModuleCatalog.gatepass when module.displayName == 'Approvals' => [
+    if (permissions.can(
+      ModuleCatalog.gatepass,
+      'leave',
+      ModuleActions.read,
+    )) ...const [
+      _QuickAction(
+        'leave_pending',
+        'Leave requests',
+        Icons.fact_check_outlined,
+        'leave',
+        ModuleActions.read,
+      ),
+      _QuickAction(
+        'leave_history',
+        'Leave history',
+        Icons.history_rounded,
+        'leave',
+        ModuleActions.read,
+      ),
+    ] else ...const [
+      _QuickAction(
+        'outpass_pending',
+        'Outpass requests',
+        Icons.fact_check_outlined,
+        'outpass',
+        ModuleActions.read,
+      ),
+      _QuickAction(
+        'outpass_history',
+        'Outpass history',
+        Icons.history_rounded,
+        'outpass',
+        ModuleActions.read,
+      ),
+    ],
   ],
   ModuleCatalog.gatepass => const [
     _QuickAction(
@@ -1800,6 +1985,49 @@ List<_QuickAction> _quickActionsFor(
       ModuleActions.read,
     ),
   ],
+  ModuleCatalog.library
+      when permissions.can(
+        ModuleCatalog.library,
+        'visit_pass',
+        ModuleActions.approve,
+      ) =>
+    const [
+      _QuickAction(
+        'slots',
+        'Set slots',
+        Icons.event_seat_outlined,
+        'capacity',
+        'manage',
+      ),
+      _QuickAction(
+        'scan',
+        'Scan QR',
+        Icons.qr_code_scanner_rounded,
+        'visit_pass',
+        ModuleActions.approve,
+      ),
+      _QuickAction(
+        'logs',
+        'Logs',
+        Icons.history_rounded,
+        'logs',
+        ModuleActions.read,
+      ),
+      _QuickAction(
+        'download',
+        'Report',
+        Icons.download_outlined,
+        'logs',
+        ModuleActions.read,
+      ),
+      _QuickAction(
+        'announcement',
+        'Announce',
+        Icons.campaign_outlined,
+        'announcement',
+        ModuleActions.create,
+      ),
+    ],
   ModuleCatalog.library => const [
     _QuickAction(
       'book',
@@ -1850,6 +2078,66 @@ List<_QuickAction> _quickActionsFor(
       'My room',
       Icons.bed_outlined,
       'residency',
+      ModuleActions.read,
+    ),
+  ],
+  ModuleCatalog.vendorManagement => const [
+    _QuickAction(
+      'vendors',
+      'Vendors',
+      Icons.store_outlined,
+      'vendors',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'contracts',
+      'Contracts',
+      Icons.description_outlined,
+      'contracts',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'purchase_orders',
+      'Purchase orders',
+      Icons.shopping_cart_checkout_outlined,
+      'purchase_orders',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'payments',
+      'Payments',
+      Icons.payments_outlined,
+      'payments',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'work_orders',
+      'Work orders',
+      Icons.build_outlined,
+      'work_orders',
+      ModuleActions.read,
+    ),
+  ],
+  ModuleCatalog.tuitionFee => const [
+    _QuickAction(
+      'dues',
+      'Dues',
+      Icons.request_quote_outlined,
+      'invoice',
+      ModuleActions.read,
+    ),
+    _QuickAction(
+      'pay',
+      'Pay fees',
+      Icons.payment_outlined,
+      'payment',
+      ModuleActions.create,
+    ),
+    _QuickAction(
+      'receipts',
+      'Receipts',
+      Icons.receipt_long_outlined,
+      'payment',
       ModuleActions.read,
     ),
   ],

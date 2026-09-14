@@ -12,6 +12,7 @@ import '../../../core/widgets/skeleton_loading.dart';
 
 import '../../authentication/data/auth_repository.dart';
 import '../data/attendance_repository.dart';
+import '../services/attendance_report_exporter.dart';
 import 'attendance_class_picker.dart';
 import 'attendance_roster_row.dart';
 
@@ -56,10 +57,12 @@ class AttendanceShell extends StatefulWidget {
 }
 
 class _AttendanceShellState extends State<AttendanceShell> {
+  static const _exporter = AttendanceReportExporter();
   Map<String, dynamic>? _summary;
   List<Map<String, dynamic>> _wards = const [];
   List<Map<String, dynamic>> _roster = const [];
   List<Map<String, dynamic>> _sessions = const [];
+  List<Map<String, dynamic>> _departments = const [];
   List<Map<String, dynamic>> _reports = const [];
   List<Map<String, dynamic>> _classes = const [];
   final Map<String, String> _marks = {};
@@ -82,28 +85,34 @@ class _AttendanceShellState extends State<AttendanceShell> {
   bool get _isLearner =>
       academicPresentationFor(widget.permissions) ==
       AcademicPresentation.learner;
-  bool get _isFaculty => !_isLearner && _scope == PermissionScope.section;
+  bool get _canTakeAttendance =>
+      !_isLearner &&
+      widget.permissions.can(
+        ModuleCatalog.attendance,
+        'session',
+        ModuleActions.create,
+      );
+
+  Set<String> get _roles => {
+    widget.session.roleKey.toLowerCase(),
+    ...widget.session.roleIds.map((role) => role.toLowerCase()),
+  };
 
   /// Reporting is its own grant now, so reach no longer stands in for it.
   /// `reports` and `create` are the keys authz actually defines — there is no
   /// `attendance.reports.read`, so being able to raise one is what opens the
   /// list.
-  bool get _canReport => widget.permissions.can(
-    ModuleCatalog.attendance,
-    'reports',
-    ModuleActions.create,
-  );
-
-  /// Whether the report is a department's or the institution's is genuinely a
-  /// question of reach, so this one stays scope-driven.
-  bool get _isDepartment => _scope == PermissionScope.department;
-
-  /// Publishing a report onward, as opposed to raising one.
-  bool get _canRaiseReport => widget.permissions.can(
-    ModuleCatalog.attendance,
-    'reports',
-    ModuleActions.publish,
-  );
+  bool get _canReport =>
+      widget.permissions.can(
+        ModuleCatalog.attendance,
+        'reports',
+        ModuleActions.create,
+      ) ||
+      widget.permissions.can(
+        ModuleCatalog.attendance,
+        'reports',
+        ModuleActions.publish,
+      );
 
   /// Guardians are not a role — they are accounts that have wards. Asking the
   /// data is both truthful and self-correcting: an account with no wards never
@@ -147,7 +156,7 @@ class _AttendanceShellState extends State<AttendanceShell> {
           _selectedWard ??= _wards.first['studentUserId']?.toString();
         }
         _summary = await widget.repository.summary(_selectedWard ?? 'me');
-      } else if (_isFaculty) {
+      } else if (_canTakeAttendance) {
         // A section belongs to a student, not to a teacher: `session.sectionId`
         // is empty for staff, and asking for a roster without one is rejected.
         // The classes have to be looked up, and which class is being marked is
@@ -165,23 +174,26 @@ class _AttendanceShellState extends State<AttendanceShell> {
             const <String>[];
         if (sectionId == null || sectionId.isEmpty) {
           _roster = const [];
-          _sessions = await widget.repository.sessions();
+          _acceptReviewWorkspace(await widget.repository.reviewWorkspace());
         } else {
           final values = await Future.wait([
             widget.repository.roster(
               sectionId: sectionId,
               sectionIds: sectionIds,
             ),
-            widget.repository.sessions(),
+            widget.repository.reviewWorkspace(),
           ]);
-          _roster = values[0];
-          _sessions = values[1];
+          _roster = values[0] as List<Map<String, dynamic>>;
+          _acceptReviewWorkspace(values[1] as Map<String, dynamic>);
           for (final student in _roster) {
             _marks.putIfAbsent(
               student['studentUserId'].toString(),
               () => 'present',
             );
           }
+        }
+        if (_canReport) {
+          _reports = await widget.repository.reports();
         }
 
         if (widget.openSelectedClassImmediately && !_openedInitialClass) {
@@ -211,7 +223,12 @@ class _AttendanceShellState extends State<AttendanceShell> {
           }
         }
       } else {
-        _reports = await widget.repository.reports();
+        final values = await Future.wait([
+          widget.repository.reviewWorkspace(),
+          widget.repository.reports(),
+        ]);
+        _acceptReviewWorkspace(values[0] as Map<String, dynamic>);
+        _reports = values[1] as List<Map<String, dynamic>>;
       }
       if (mounted) {
         setState(() {
@@ -233,6 +250,15 @@ class _AttendanceShellState extends State<AttendanceShell> {
         });
       }
     }
+  }
+
+  void _acceptReviewWorkspace(Map<String, dynamic> workspace) {
+    _sessions = (workspace['sessions'] as List? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .toList(growable: false);
+    _departments = (workspace['departments'] as List? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .toList(growable: false);
   }
 
   void _applyInitialAction() {
@@ -373,17 +399,23 @@ class _AttendanceShellState extends State<AttendanceShell> {
                 children: [
                   if (_error != null) _ErrorBanner(_error!),
                   if (_isLearner) ..._summaryView(),
-                  if (_isFaculty) ..._facultyView(),
-                  if (_canReport)
+                  // A timetable card is an explicit request to work on one
+                  // class. Do not prepend the advisor/HOD review inbox here;
+                  // that queue remains available from the Attendance module.
+                  if (_canReport && !_isFocusedClassLaunch)
                     KeyedSubtree(
                       key: _reportsKey,
                       child: Column(children: _reportView()),
                     ),
+                  if (_canTakeAttendance) ..._facultyView(),
                 ],
               ),
             ),
     );
   }
+
+  bool get _isFocusedClassLaunch =>
+      widget.openSelectedClassImmediately && _selectedClass != null;
 
   List<Widget> _summaryView() {
     final summary = _summary ?? const <String, dynamic>{};
@@ -487,6 +519,8 @@ class _AttendanceShellState extends State<AttendanceShell> {
             : const SizedBox(width: double.infinity),
       ),
       const SizedBox(height: 18),
+      _attendanceApprovalCard(),
+      const SizedBox(height: 18),
       if (marking) ..._markingView() else ..._idleView(),
     ];
   }
@@ -550,31 +584,123 @@ class _AttendanceShellState extends State<AttendanceShell> {
         // Five is a glance. The full history belongs behind the module, not on
         // the screen someone opened to take a roll.
         ...history.take(5).map(_historyRow),
+      if (history.isNotEmpty)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            key: const ValueKey('attendance-full-history'),
+            onPressed: _showAttendanceHistory,
+            icon: const Icon(Icons.history_rounded),
+            label: Text(
+              'View all attendance history (${_publishedSessionsAll().length})',
+            ),
+          ),
+        ),
     ];
   }
 
+  Future<void> _showAttendanceHistory() => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (context) {
+      final history = _publishedSessionsAll();
+      return SafeArea(
+        child: FractionallySizedBox(
+          heightFactor: .82,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Attendance history',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${history.length} submitted records across assigned classes',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: history.isEmpty
+                    ? const Center(child: Text('No attendance history yet'))
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                        itemCount: history.length,
+                        separatorBuilder: (_, _) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final session = history[index];
+                          return ListTile(
+                            leading: const Icon(Icons.fact_check_outlined),
+                            title: Text(
+                              session['subjectName']?.toString() ?? 'Class',
+                            ),
+                            subtitle: Text(
+                              '${session['heldOn'] ?? ''} · ${session['periodLabel'] ?? ''}',
+                            ),
+                            trailing: _AttendanceStatusChip(
+                              status: session['status']?.toString() ?? '',
+                            ),
+                            onTap: () {
+                              Navigator.pop(context);
+                              Future<void>.delayed(
+                                Duration.zero,
+                                () => _showPresentStudents(session),
+                              );
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+
   Widget _historyRow(Map<String, dynamic> session) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Row(
-        children: [
-          Icon(Icons.check_circle, size: 16, color: theme.colorScheme.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              session['subjectName']?.toString() ?? 'Class',
-              style: theme.textTheme.bodyMedium,
-              overflow: TextOverflow.ellipsis,
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _showPresentStudents(session),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+        child: Row(
+          children: [
+            Icon(
+              Icons.check_circle,
+              size: 16,
+              color: theme.colorScheme.primary,
             ),
-          ),
-          Text(
-            '${session['heldOn'] ?? ''}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                session['subjectName']?.toString() ?? 'Class',
+                style: theme.textTheme.bodyMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-        ],
+            Text(
+              '${session['heldOn'] ?? ''}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.chevron_right_rounded, size: 18),
+          ],
+        ),
       ),
     );
   }
@@ -641,6 +767,7 @@ class _AttendanceShellState extends State<AttendanceShell> {
       SizedBox(
         width: double.infinity,
         child: FilledButton(
+          key: const ValueKey('submit-attendance-for-review'),
           onPressed: _publish,
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -658,12 +785,14 @@ class _AttendanceShellState extends State<AttendanceShell> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
-                      'Publish attendance',
+                      'Submit attendance',
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Publish $absent absent, $onDuty on duty',
+                      _roles.contains('class_advisor')
+                          ? 'Send $absent absent, $onDuty on duty to HOD'
+                          : 'Send $absent absent, $onDuty on duty to class advisor',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onPrimary.withValues(
                           alpha: 0.78,
@@ -700,6 +829,87 @@ class _AttendanceShellState extends State<AttendanceShell> {
         session,
   ];
 
+  List<Map<String, dynamic>> _publishedSessionsAll() => [
+    for (final session in _sessions)
+      if (!{'draft', 'returned'}.contains(session['status']?.toString()))
+        session,
+  ];
+
+  Widget _attendanceApprovalCard() {
+    final status = _publishedSessions().isEmpty
+        ? 'draft'
+        : _publishedSessions().first['status']?.toString() ?? 'draft';
+    const steps = ['Class advisor', 'HOD', 'Principal'];
+    final current = switch (status) {
+      'submitted_to_advisor' => 0,
+      'published_to_hod' || 'submitted_to_hod' => 1,
+      'submitted_to_principal' => 2,
+      'approved' => 3,
+      _ => -1,
+    };
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Submission matrix',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Faculty submits once. Each reviewer receives only their scoped queue.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+          ),
+          const SizedBox(height: 10),
+          for (var index = 0; index < steps.length; index++)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 13,
+                    backgroundColor: index <= current
+                        ? colors.primary
+                        : colors.surfaceContainerHighest,
+                    foregroundColor: index <= current
+                        ? colors.onPrimary
+                        : colors.onSurfaceVariant,
+                    child: index < current
+                        ? const Icon(Icons.check, size: 15)
+                        : Text(
+                            '${index + 1}',
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(steps[index])),
+                  Text(
+                    index < current
+                        ? 'Approved'
+                        : index == current
+                        ? 'Pending'
+                        : 'Next',
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   bool _sessionMatchesSelectedClass(Map<String, dynamic> session) {
     final chosen = _selectedClass;
     if (chosen == null ||
@@ -734,100 +944,979 @@ class _AttendanceShellState extends State<AttendanceShell> {
       session['periodLabel']?.toString() ?? 'earlier';
 
   List<Widget> _reportView() => [
-    const SizedBox(height: 14),
-    Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+    const SizedBox(height: 4),
+    _reviewHero(),
+    const SizedBox(height: 16),
+    if (_reviewSessions().isEmpty)
+      Card(
+        child: ListTile(
+          leading: const Icon(Icons.inbox_outlined),
+          title: Text(
+            _roles.contains('principal')
+                ? 'No attendance received yet'
+                : 'No attendance waiting for review',
+          ),
+          subtitle: Text(
+            _roles.contains('principal')
+                ? 'Attendance sent by HODs will remain available here.'
+                : 'New submissions will appear here automatically.',
+          ),
+        ),
       ),
+    ..._reviewSessionCards(),
+    if (_canTakeAttendance) ...[
+      const SizedBox(height: 18),
+      const Divider(),
+      const SizedBox(height: 10),
+      Text(
+        'Take attendance for your hour',
+        style: Theme.of(context).textTheme.titleLarge,
+      ),
+      const SizedBox(height: 4),
+      Text(
+        'Your assigned timetable classes are below.',
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+    ],
+  ];
+
+  Widget _reviewHero() {
+    final colors = Theme.of(context).colorScheme;
+    final sessions = _reviewSessions();
+    final pending = sessions.where(_canReviewSession).length;
+    final departments = sessions
+        .map((session) => session['departmentCode']?.toString() ?? '')
+        .where((code) => code.isNotEmpty)
+        .toSet()
+        .length;
+    final secondaryLabel = _roles.contains('principal')
+        ? 'Departments'
+        : 'Completed';
+    final secondaryValue = _roles.contains('principal')
+        ? departments
+        : sessions.length - pending;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colors.primary,
+            Color.lerp(colors.primary, Colors.black, .28)!,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primary.withValues(alpha: .22),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: colors.onPrimary.withValues(alpha: .14),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(
+                  _roles.contains('principal')
+                      ? Icons.account_balance_rounded
+                      : Icons.fact_check_rounded,
+                  color: colors.onPrimary,
+                ),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _reviewWorkspaceTitle(),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: colors.onPrimary,
+                        fontWeight: FontWeight.w700,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      _reviewWorkspaceSubtitle(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onPrimary.withValues(alpha: .8),
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _ReviewHeroMetric(
+                value: '${sessions.length}',
+                label: _roles.contains('principal') ? 'Received' : 'Reports',
+              ),
+              const SizedBox(width: 10),
+              _ReviewHeroMetric(
+                value: '$secondaryValue',
+                label: secondaryLabel,
+              ),
+              if (!_roles.contains('principal')) ...[
+                const SizedBox(width: 10),
+                _ReviewHeroMetric(value: '$pending', label: 'Action needed'),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _reviewWorkspaceTitle() {
+    if (_roles.contains('principal')) return 'Principal attendance records';
+    if (_roles.contains('hod')) return 'Department attendance review';
+    return 'Class advisor review queue';
+  }
+
+  String _reviewWorkspaceSubtitle() {
+    if (_roles.contains('principal')) {
+      return '${_reviewScopeLabel()} · Final attendance received from HODs.';
+    }
+    if (_roles.contains('hod')) {
+      return '${_reviewScopeLabel()} · Review pending attendance and view submission history.';
+    }
+    return '${_reviewScopeLabel()} · Review attendance by subject and department.';
+  }
+
+  List<Widget> _reviewSessionCards() {
+    final sessions = [..._reviewSessions()]
+      ..sort((a, b) {
+        final pendingA = _canReviewSession(a) ? 0 : 1;
+        final pendingB = _canReviewSession(b) ? 0 : 1;
+        if (pendingA != pendingB) return pendingA.compareTo(pendingB);
+        final department = (a['departmentCode'] ?? '').toString();
+        return department.compareTo((b['departmentCode'] ?? '').toString());
+      });
+    final grouped = _roles.contains('principal') || _roles.contains('hod');
+    if (grouped && _departments.isNotEmpty) {
+      final widgets = <Widget>[];
+      final orderedDepartments = [..._departments]
+        ..sort((a, b) {
+          bool hasReports(Map<String, dynamic> department) {
+            final code = department['code']?.toString() ?? '';
+            return sessions.any(
+              (session) => session['departmentCode']?.toString() == code,
+            );
+          }
+
+          final reportOrder = (hasReports(b) ? 1 : 0).compareTo(
+            hasReports(a) ? 1 : 0,
+          );
+          if (reportOrder != 0) return reportOrder;
+          return (a['code']?.toString() ?? '').compareTo(
+            b['code']?.toString() ?? '',
+          );
+        });
+      for (final department in orderedDepartments) {
+        final code = department['code']?.toString() ?? 'Department';
+        final name = department['name']?.toString() ?? code;
+        final departmentSessions = sessions
+            .where((session) => session['departmentCode']?.toString() == code)
+            .toList(growable: false);
+        widgets.add(
+          _departmentHeading(code, name, count: departmentSessions.length),
+        );
+        if (departmentSessions.isEmpty) {
+          widgets.add(
+            Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: const ListTile(
+                leading: Icon(Icons.inbox_outlined),
+                title: Text('No attendance submitted'),
+                subtitle: Text('No class attendance has reached this queue.'),
+              ),
+            ),
+          );
+        } else {
+          widgets.addAll(departmentSessions.map(_sessionReviewCard));
+        }
+      }
+      return widgets;
+    }
+    final widgets = <Widget>[];
+    String? previousDepartment;
+    for (final session in sessions) {
+      final department = (session['departmentCode'] ?? 'Department').toString();
+      if ((_roles.contains('principal') || _roles.contains('hod')) &&
+          department != previousDepartment) {
+        widgets.add(
+          _departmentHeading(
+            department,
+            session['departmentName']?.toString() ?? department,
+          ),
+        );
+        previousDepartment = department;
+      }
+      widgets.add(_sessionReviewCard(session));
+    }
+    return widgets;
+  }
+
+  Widget _departmentHeading(String code, String name, {int? count}) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 16, 2, 8),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(14),
+              color: colors.primaryContainer,
+              borderRadius: BorderRadius.circular(11),
             ),
             child: Icon(
-              Icons.summarize_outlined,
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
+              Icons.apartment_rounded,
+              size: 19,
+              color: colors.onPrimaryContainer,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isDepartment ? 'Department report' : 'Weekly report',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                  code,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colors.primary,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Review and submit this week\'s attendance summary',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                if (code != name)
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
                   ),
+              ],
+            ),
+          ),
+          if (count != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: colors.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '$count ${count == 1 ? 'report' : 'reports'}',
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sessionReviewCard(Map<String, dynamic> session) {
+    final colors = Theme.of(context).colorScheme;
+    final pending = _canReviewSession(session);
+    final accent = pending ? colors.tertiary : colors.primary;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withValues(alpha: .18)),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: .07),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: ValueKey('attendance-review-${session['id']}'),
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => _showPresentStudents(session),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 12, 13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                      child: Icon(
+                        pending
+                            ? Icons.pending_actions_rounded
+                            : Icons.fact_check_outlined,
+                        color: accent,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            session['subjectName']?.toString() ?? 'Class',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Text(
+                            '${session['heldOn'] ?? ''} · ${session['periodLabel'] ?? ''}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    _AttendanceStatusChip(
+                      status: session['status']?.toString() ?? '',
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: colors.onSurfaceVariant,
+                      size: 20,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 7,
+                  runSpacing: 7,
+                  children: [
+                    _AttendanceCountChip(
+                      label: 'Present',
+                      value: _count(session['presentCount']),
+                      color: const Color(0xFF16845B),
+                    ),
+                    _AttendanceCountChip(
+                      label: 'Absent',
+                      value: _count(session['absentCount']),
+                      color: const Color(0xFFC63C35),
+                    ),
+                    _AttendanceCountChip(
+                      label: 'OD',
+                      value: _count(session['onDutyCount']),
+                      color: const Color(0xFF8A6500),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          if (_canRaiseReport) ...[
-            const SizedBox(width: 10),
-            FilledButton.tonalIcon(
-              onPressed: () async {
-                final report = await widget.repository.createReport();
-                await widget.repository.submitReport(report['id'].toString());
-                await _load();
-              },
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-              ),
-              icon: const Icon(Icons.send_rounded, size: 18),
-              label: const Text('Submit'),
+        ),
+      ),
+    );
+  }
+
+  int _count(dynamic value) => switch (value) {
+    int number => number,
+    num number => number.toInt(),
+    _ => int.tryParse(value?.toString() ?? '') ?? 0,
+  };
+
+  List<Map<String, dynamic>> _reviewSessions() => [
+    for (final session in _sessions)
+      if (_isVisibleReviewSession(session)) session,
+  ];
+
+  bool _isVisibleReviewSession(Map<String, dynamic> session) {
+    final status = session['status']?.toString();
+    if (_roles.contains('principal')) {
+      return const {'submitted_to_principal', 'approved'}.contains(status);
+    }
+    if (_roles.contains('hod')) {
+      return const {
+        'submitted_to_hod',
+        'submitted_to_principal',
+        'approved',
+      }.contains(status);
+    }
+    return _roles.contains('class_advisor') && status == 'submitted_to_advisor';
+  }
+
+  bool _canReviewSession(Map<String, dynamic> session) {
+    final status = session['status']?.toString();
+    if (_roles.contains('principal')) return false;
+    if (_roles.contains('hod')) {
+      return status == 'submitted_to_hod';
+    }
+    if (_roles.contains('class_advisor')) {
+      return status == 'submitted_to_advisor';
+    }
+    return false;
+  }
+
+  Future<void> _review(Map<String, dynamic> session, String decision) async {
+    final id = session['id']?.toString() ?? '';
+    if (id.isEmpty) return;
+    String? note;
+    if (decision != 'approve') {
+      final controller = TextEditingController();
+      note = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(
+            decision == 'enquire'
+                ? 'Request clarification'
+                : 'Reject attendance',
+          ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: 'Reason',
+              hintText: 'Explain what must be corrected',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              child: const Text('Send'),
             ),
           ],
-        ],
+        ),
+      );
+      controller.dispose();
+      if (note == null || note.isEmpty) return;
+    }
+    try {
+      await widget.repository.reviewSession(id, decision: decision, note: note);
+      if (mounted) Navigator.of(context).pop();
+      await _load();
+    } on AttendanceException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    }
+  }
+
+  String _reviewScopeLabel() {
+    final roles = {
+      widget.session.roleKey.toLowerCase(),
+      widget.session.roleLabel.toLowerCase(),
+      ...widget.session.roleIds.map((role) => role.toLowerCase()),
+    }.join(' ');
+    if (roles.contains('principal')) return 'Institution view';
+    if (roles.contains('hod') || _scope == PermissionScope.department) {
+      return 'Department view';
+    }
+    return 'Assigned-class view';
+  }
+
+  Future<void> _showPresentStudents(Map<String, dynamic> session) async {
+    final sessionId = session['id']?.toString() ?? '';
+    if (sessionId.isEmpty) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => FractionallySizedBox(
+        heightFactor: .82,
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: widget.repository.sessionRoster(sessionId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text('Could not load this attendance roster.'),
+                ),
+              );
+            }
+
+            final entries = (snapshot.data?['entries'] as List? ?? const [])
+                .whereType<Map<String, dynamic>>()
+                .toList(growable: false);
+            final present = entries
+                .where((entry) => entry['status']?.toString() == 'present')
+                .toList(growable: false);
+            final absent = entries
+                .where((entry) => entry['status']?.toString() == 'absent')
+                .toList(growable: false);
+            final onDuty = entries
+                .where((entry) => entry['status']?.toString() == 'od')
+                .toList(growable: false);
+
+            return SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer.withValues(alpha: .55),
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                borderRadius: BorderRadius.circular(13),
+                              ),
+                              child: Icon(
+                                Icons.groups_2_rounded,
+                                color: Theme.of(context).colorScheme.onPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                session['subjectName']?.toString() ?? 'Class',
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_today_outlined, size: 15),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${session['heldOn'] ?? ''} · ${session['periodLabel'] ?? ''}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          '${present.length} present · ${absent.length} absent · ${onDuty.length} OD',
+                          key: const ValueKey('present-student-count'),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 10),
+                        _AttendanceExportControl(
+                          onPdf: () => _exporter.savePdf(session, entries),
+                          onCsv: () => _exporter.saveCsv(session, entries),
+                          onXlsx: () => _exporter.saveXlsx(session, entries),
+                        ),
+                        if (_canReviewSession(session)) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _review(session, 'enquire'),
+                                  icon: const Icon(Icons.help_outline_rounded),
+                                  label: const Text('Enquire'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: FilledButton.icon(
+                                  onPressed: () => _review(session, 'approve'),
+                                  icon: const Icon(Icons.check_rounded),
+                                  label: const Text('Approve & send'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: entries.isEmpty
+                        ? const Center(
+                            child: Text('No attendance entries were submitted'),
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(12, 2, 12, 24),
+                            itemCount: entries.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 7),
+                            itemBuilder: (context, index) {
+                              final student = entries[index];
+                              final number = student['studentNumber']
+                                  ?.toString();
+                              final status =
+                                  student['status']?.toString() ?? 'absent';
+                              final color = _attendanceStatusColor(status);
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: color.withValues(alpha: .2),
+                                  ),
+                                ),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 3,
+                                  ),
+                                  leading: _StudentAttendanceAvatar(
+                                    name:
+                                        student['studentName']?.toString() ??
+                                        'Student',
+                                    photoUrl: student['photoUrl']?.toString(),
+                                    status: status,
+                                  ),
+                                  title: Text(
+                                    student['studentName']?.toString() ??
+                                        'Student',
+                                  ),
+                                  subtitle: number == null || number.isEmpty
+                                      ? null
+                                      : Text(number),
+                                  trailing: _EntryAttendanceStatus(status),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
-    ),
-    if (_reports.isNotEmpty) ...[
-      const SizedBox(height: 18),
-      Text(
-        _isDepartment ? 'Department reports' : 'Recent reports',
-        style: Theme.of(context).textTheme.titleMedium,
+    );
+  }
+}
+
+class _AttendanceStatusChip extends StatelessWidget {
+  const _AttendanceStatusChip({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = switch (status) {
+      'submitted_to_advisor' => 'With advisor',
+      'published_to_hod' || 'submitted_to_hod' => 'With HOD',
+      'submitted_to_principal' => 'Received by principal',
+      'approved' => 'Approved',
+      'returned' => 'Returned',
+      _ => status.replaceAll('_', ' '),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(20),
       ),
-      const SizedBox(height: 8),
-    ],
-    if (_reports.isEmpty)
-      Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: Text(
-          'No reports submitted yet',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+      child: Text(label, style: Theme.of(context).textTheme.labelSmall),
+    );
+  }
+}
+
+class _ReviewHeroMetric extends StatelessWidget {
+  const _ReviewHeroMetric({required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+        decoration: BoxDecoration(
+          color: colors.onPrimary.withValues(alpha: .13),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: colors.onPrimary.withValues(alpha: .12)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: colors.onPrimary,
+                fontWeight: FontWeight.w700,
+                height: 1,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: colors.onPrimary.withValues(alpha: .75),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+enum _AttendanceExportFormat { pdf, csv, xlsx }
+
+class _AttendanceExportControl extends StatefulWidget {
+  const _AttendanceExportControl({
+    required this.onPdf,
+    required this.onCsv,
+    required this.onXlsx,
+  });
+
+  final Future<void> Function() onPdf;
+  final Future<void> Function() onCsv;
+  final Future<void> Function() onXlsx;
+
+  @override
+  State<_AttendanceExportControl> createState() =>
+      _AttendanceExportControlState();
+}
+
+class _AttendanceExportControlState extends State<_AttendanceExportControl> {
+  _AttendanceExportFormat _format = _AttendanceExportFormat.pdf;
+  bool _downloading = false;
+
+  Future<void> _download() async {
+    if (_downloading) return;
+    setState(() => _downloading = true);
+    try {
+      await switch (_format) {
+        _AttendanceExportFormat.pdf => widget.onPdf(),
+        _AttendanceExportFormat.csv => widget.onCsv(),
+        _AttendanceExportFormat.xlsx => widget.onXlsx(),
+      };
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<_AttendanceExportFormat>(
+            key: const ValueKey('attendance-export-format'),
+            initialValue: _format,
+            isExpanded: true,
+            icon: const Icon(Icons.keyboard_arrow_down_rounded),
+            decoration: InputDecoration(
+              labelText: 'File format',
+              filled: true,
+              fillColor: colors.surface.withValues(alpha: .72),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: colors.outlineVariant),
+              ),
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: _AttendanceExportFormat.pdf,
+                child: Text('PDF'),
+              ),
+              DropdownMenuItem(
+                value: _AttendanceExportFormat.csv,
+                child: Text('CSV'),
+              ),
+              DropdownMenuItem(
+                value: _AttendanceExportFormat.xlsx,
+                child: Text('Excel / XLSX'),
+              ),
+            ],
+            onChanged: (value) {
+              if (value != null) setState(() => _format = value);
+            },
           ),
         ),
-      ),
-    for (final report in _reports)
-      ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.assessment_outlined),
-        title: Text(report['title']?.toString() ?? 'Attendance report'),
-        subtitle: Text(
-          '${report['periodStart'] ?? ''} to ${report['periodEnd'] ?? ''}',
+        const SizedBox(width: 10),
+        FilledButton.icon(
+          key: const ValueKey('download-attendance-report'),
+          onPressed: _downloading ? null : _download,
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(128, 54),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          icon: _downloading
+              ? const SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.download_rounded, size: 20),
+          label: const Text('Download'),
         ),
-        trailing: Text(report['status']?.toString() ?? ''),
+      ],
+    );
+  }
+}
+
+class _AttendanceCountChip extends StatelessWidget {
+  const _AttendanceCountChip({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final int value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .1),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(
+      '$label $value',
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: color,
+        fontWeight: FontWeight.w600,
       ),
-  ];
+    ),
+  );
+}
+
+Color _attendanceStatusColor(String status) => switch (status) {
+  'present' => const Color(0xFF16845B),
+  'od' => const Color(0xFF8A6500),
+  'leave' => const Color(0xFF5F5A70),
+  _ => const Color(0xFFC63C35),
+};
+
+class _StudentAttendanceAvatar extends StatelessWidget {
+  const _StudentAttendanceAvatar({
+    required this.name,
+    required this.photoUrl,
+    required this.status,
+  });
+
+  final String name;
+  final String? photoUrl;
+  final String status;
+
+  String get _initials {
+    final parts = name.split(RegExp(r'\s+')).where((part) => part.isNotEmpty);
+    if (parts.isEmpty) return '?';
+    return parts.take(2).map((part) => part[0]).join().toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final url = photoUrl?.trim() ?? '';
+    final colors = Theme.of(context).colorScheme;
+    final statusColor = _attendanceStatusColor(status);
+    final fallback = Container(
+      color: colors.surfaceContainerHighest,
+      alignment: Alignment.center,
+      child: Text(
+        _initials,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: colors.onSurfaceVariant,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+
+    return Semantics(
+      image: true,
+      label: '$name student photo',
+      child: Container(
+        width: 48,
+        height: 48,
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: statusColor, width: 2),
+        ),
+        child: ClipOval(
+          child: url.isEmpty
+              ? fallback
+              : Image.network(
+                  url,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => fallback,
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EntryAttendanceStatus extends StatelessWidget {
+  const _EntryAttendanceStatus(this.status);
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (status) {
+      'present' => ('PRESENT', const Color(0xFF16845B)),
+      'od' => ('OD', const Color(0xFF8A6500)),
+      'leave' => ('LEAVE', const Color(0xFF5F5A70)),
+      _ => ('ABSENT', const Color(0xFFC63C35)),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
 }
 
 class _Metric extends StatelessWidget {

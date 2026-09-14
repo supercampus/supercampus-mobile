@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../authentication/data/auth_http_client.dart';
 import '../../authentication/data/auth_repository.dart';
+import '../../../core/students/student_year.dart';
 import 'canteen_models.dart';
 import 'canteen_repository.dart';
 
@@ -15,6 +16,7 @@ class StudentWalletAccount {
     required this.email,
     required this.department,
     required this.balance,
+    this.yearOfStudy,
     this.photoUrl,
     this.updatedAt,
   });
@@ -25,6 +27,7 @@ class StudentWalletAccount {
   final String email;
   final String department;
   final double balance;
+  final int? yearOfStudy;
   final String? photoUrl;
   final DateTime? updatedAt;
 
@@ -36,6 +39,7 @@ class StudentWalletAccount {
         email: email,
         department: department,
         balance: balance ?? this.balance,
+        yearOfStudy: yearOfStudy,
         photoUrl: photoUrl,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -129,6 +133,9 @@ class BackendAccountantWalletRepository implements AccountantWalletRepository {
             email: _text(wallet['email']),
             department: _text(wallet['department']),
             balance: _number(wallet['balance']),
+            yearOfStudy: parseStudentYear(
+              wallet['yearOfStudy'] ?? wallet['year'],
+            ),
             photoUrl: _text(wallet['photoUrl']).trim().isEmpty
                 ? null
                 : _text(wallet['photoUrl']).trim(),

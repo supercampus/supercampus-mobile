@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../data/hostel_models.dart';
 import '../data/hostel_repository.dart';
@@ -10,6 +12,10 @@ class HostelMessScreen extends StatelessWidget {
     required this.activeResidency,
     required this.repository,
     required this.onRefresh,
+    this.menuEnabled = true,
+    this.messEnabled = true,
+    this.feeValidFrom,
+    this.feeValidUntil,
     this.onBack,
   });
 
@@ -17,126 +23,142 @@ class HostelMessScreen extends StatelessWidget {
   final HostelResidency? activeResidency;
   final HostelRepository repository;
   final VoidCallback onRefresh;
+  final bool menuEnabled;
+  final bool messEnabled;
+  final DateTime? feeValidFrom;
+  final DateTime? feeValidUntil;
   final VoidCallback? onBack;
+
+  bool get _hasPaidAccess => feeValidFrom != null && feeValidUntil != null;
 
   @override
   Widget build(BuildContext context) {
-    final isHosteller = activeResidency != null &&
-        activeResidency!.residencyStatus == ResidencyStatus.active;
-
+    final isHosteller =
+        activeResidency?.residencyStatus == ResidencyStatus.active;
     return Scaffold(
       appBar: AppBar(
         leading: onBack != null ? BackButton(onPressed: onBack) : null,
-        title: const Text('Hostel Mess & Meal Access'),
+        title: const Text('Food & meal access'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: RefreshIndicator(
+        onRefresh: () async => onRefresh(),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 34),
           children: [
-            // Eligibility Banner
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isHosteller ? Colors.green.shade50 : Colors.red.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isHosteller ? Colors.green.shade300 : Colors.red.shade300,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    isHosteller ? Icons.verified_user : Icons.gpp_bad,
-                    color: isHosteller ? Colors.green.shade800 : Colors.red.shade800,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isHosteller
-                              ? 'MESS ACCESS ENABLED'
-                              : 'NOT ELIGIBLE FOR HOSTEL MESS',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isHosteller
-                                ? Colors.green.shade900
-                                : Colors.red.shade900,
-                          ),
-                        ),
-                        Text(
-                          isHosteller
-                              ? 'Active Hostel Residency Verified (${activeResidency!.hostelName} · Room ${activeResidency!.roomNumber})'
-                              : 'Hostel mess meal QR tokens are reserved strictly for active hostel residents.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isHosteller
-                                ? Colors.green.shade900
-                                : Colors.red.shade900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            _AccessSummary(
+              enabled: isHosteller && _hasPaidAccess && messEnabled,
+              isHosteller: isHosteller,
+              messEnabled: messEnabled,
+              validUntil: feeValidUntil,
+              room: activeResidency?.roomNumber,
             ),
-
-            if (isHosteller) ...[
-              const SizedBox(height: 20),
-              Text(
-                'Today\'s Meal QR Tokens',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'One meal QR = One meal access. Each QR token is valid only during its meal period.',
-                style: TextStyle(color: AppColors.muted, fontSize: 12),
-              ),
-              const SizedBox(height: 16),
-
-              // 3 Meal QR Token Cards
-              ...messTokens.map((token) => _buildMealTokenCard(context, token)),
+            const SizedBox(height: 20),
+            if (!menuEnabled && !messEnabled)
+              const _InfoCard(
+                icon: Icons.pause_circle_outline_rounded,
+                title: 'Food services are paused',
+                subtitle:
+                    'Your hostel office will notify you when service resumes.',
+              )
+            else ...[
+              if (menuEnabled) ...[
+                const _SectionTitle(
+                  title: 'Campus menu',
+                  subtitle: 'Browse food and pay only for what you order',
+                ),
+                const SizedBox(height: 10),
+                const _InfoCard(
+                  icon: Icons.restaurant_menu_rounded,
+                  title: 'Menu-based dining',
+                  subtitle:
+                      'Open the Canteen module to browse live menus, place an order and track pickup.',
+                  actionLabel: 'Available in Canteen',
+                ),
+                const SizedBox(height: 22),
+              ],
+              if (messEnabled) ...[
+                _SectionTitle(
+                  title: 'Today’s mess passes',
+                  subtitle: _hasPaidAccess
+                      ? 'One secure QR for each meal period'
+                      : 'Available after hostel fee payment is verified',
+                ),
+                const SizedBox(height: 10),
+                if (!isHosteller)
+                  const _InfoCard(
+                    icon: Icons.hotel_outlined,
+                    title: 'Hosteller access only',
+                    subtitle:
+                        'Ask the administration to update your residency if this is incorrect.',
+                  )
+                else if (!_hasPaidAccess)
+                  const _InfoCard(
+                    icon: Icons.payments_outlined,
+                    title: 'Hostel fee verification required',
+                    subtitle:
+                        'Meal passes appear automatically after the admin or accountant marks your hostel fee as paid.',
+                  )
+                else if (messTokens.isEmpty)
+                  const _InfoCard(
+                    icon: Icons.sync_rounded,
+                    title: 'Preparing today’s passes',
+                    subtitle:
+                        'Pull down to refresh. Three passes are issued for every covered day.',
+                  )
+                else
+                  ...messTokens.map((token) => _MealCard(token: token)),
+              ],
             ],
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildMealTokenCard(BuildContext context, MessMealToken token) {
-    final isUsed = token.status == MealTokenStatus.used;
+class _AccessSummary extends StatelessWidget {
+  const _AccessSummary({
+    required this.enabled,
+    required this.isHosteller,
+    required this.messEnabled,
+    required this.validUntil,
+    required this.room,
+  });
+  final bool enabled;
+  final bool isHosteller;
+  final bool messEnabled;
+  final DateTime? validUntil;
+  final String? room;
 
+  @override
+  Widget build(BuildContext context) {
+    final color = enabled ? const Color(0xFF1D7A46) : AppColors.muted;
+    final title = enabled
+        ? 'Mess access active'
+        : !messEnabled
+        ? 'Mess service is off'
+        : !isHosteller
+        ? 'No active hostel residency'
+        : 'Payment verification pending';
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isUsed ? AppColors.border : AppColors.primary,
-          width: isUsed ? 1 : 1.5,
-        ),
+        color: color.withValues(alpha: .09),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: color.withValues(alpha: .28)),
       ),
-      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
-              color: isUsed
-                  ? Colors.grey.shade100
-                  : AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              color: color,
+              borderRadius: BorderRadius.circular(15),
             ),
             child: Icon(
-              isUsed ? Icons.check_circle_outline : Icons.restaurant_rounded,
-              color: isUsed ? Colors.grey : AppColors.primary,
-              size: 28,
+              enabled ? Icons.verified_rounded : Icons.lock_outline_rounded,
+              color: Colors.white,
             ),
           ),
           const SizedBox(width: 14),
@@ -145,49 +167,106 @@ class HostelMessScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  enabled
+                      ? 'Room ${room ?? '—'} · covered until ${_date(validUntil!)}'
+                      : 'Access follows residency, paid coverage and campus settings.',
+                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MealCard extends StatelessWidget {
+  const _MealCard({required this.token});
+  final MessMealToken token;
+
+  @override
+  Widget build(BuildContext context) {
+    final used = token.status == MealTokenStatus.used;
+    final expired = token.status == MealTokenStatus.expired;
+    final enabled = !used && !expired;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: enabled
+              ? AppColors.primary.withValues(alpha: .45)
+              : AppColors.border,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: enabled
+                  ? AppColors.primary.withValues(alpha: .1)
+                  : AppColors.moduleSoft,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              used ? Icons.check_rounded : Icons.restaurant_rounded,
+              color: enabled ? AppColors.primary : AppColors.muted,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   token.mealType.label,
-                  style: TextStyle(
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: isUsed ? AppColors.muted : AppColors.ink,
                   ),
                 ),
                 Text(
-                  'Valid: ${token.mealType.timeWindow}',
-                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  token.mealType.timeWindow,
+                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
                 ),
-                if (isUsed && token.redeemedAt != null)
+                if (used && token.redeemedAt != null)
                   Text(
-                    'Redeemed at ${token.redeemedAt!.hour}:${token.redeemedAt!.minute.toString().padLeft(2, '0')} PM',
-                    style: const TextStyle(
+                    'Used at ${_time(token.redeemedAt!)}',
+                    style: TextStyle(
+                      color: Colors.green.shade700,
                       fontSize: 11,
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
               ],
             ),
           ),
-          if (!isUsed)
-            FilledButton.icon(
-              onPressed: () => _openRedeemDialog(context, token),
-              icon: const Icon(Icons.qr_code_2, size: 16),
-              label: const Text('Show QR', style: TextStyle(fontSize: 12)),
+          if (enabled)
+            FilledButton.tonalIcon(
+              onPressed: () => _showQr(context),
+              icon: const Icon(Icons.qr_code_2_rounded, size: 18),
+              label: const Text('Show'),
             )
           else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'USED',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
+            Text(
+              used ? 'USED' : 'EXPIRED',
+              style: const TextStyle(
+                color: AppColors.muted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
               ),
             ),
         ],
@@ -195,63 +274,127 @@ class HostelMessScreen extends StatelessWidget {
     );
   }
 
-  void _openRedeemDialog(BuildContext context, MessMealToken token) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            '${token.mealType.label.toUpperCase()} MEAL QR TOKEN',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+  void _showQr(BuildContext context) => showModalBottomSheet<void>(
+    context: context,
+    useSafeArea: true,
+    showDragHandle: true,
+    builder: (context) => Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${token.mealType.label} pass',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+          const SizedBox(height: 6),
+          Text(
+            'Valid ${token.mealType.timeWindow}',
+            style: const TextStyle(color: AppColors.muted),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: QrImageView(data: token.qrCode, size: 220),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Present this pass to the authorised mess scanner. It can be redeemed once.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.muted),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title, required this.subtitle});
+  final String title;
+  final String subtitle;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        title,
+        style: Theme.of(
+          context,
+        ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+      ),
+      const SizedBox(height: 2),
+      Text(
+        subtitle,
+        style: const TextStyle(color: AppColors.muted, fontSize: 13),
+      ),
+    ],
+  );
+}
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.actionLabel,
+  });
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String? actionLabel;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Theme.of(context).cardColor,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: AppColors.border),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: AppColors.primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 170,
-                height: 170,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary, width: 2),
-                ),
-                child: const Icon(Icons.qr_code_2, size: 130, color: AppColors.primary),
-              ),
-              const SizedBox(height: 12),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 3),
               Text(
-                token.studentName,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                subtitle,
+                style: const TextStyle(color: AppColors.muted, fontSize: 12),
               ),
-              const Text(
-                'Show this QR token to mess staff scanner',
-                style: TextStyle(color: AppColors.muted, fontSize: 11),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () async {
-                    await repository.redeemMessMeal(token.id);
-                    if (ctx.mounted) {
-                      Navigator.pop(ctx);
-                      onRefresh();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${token.mealType.label} QR Marked as REDEEMED!'),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('Simulate Mess Scanner Scan'),
+              if (actionLabel != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  actionLabel!,
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
+String _date(DateTime value) =>
+    '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
+String _time(DateTime value) {
+  final local = value.toLocal();
+  final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+  return '$hour:${local.minute.toString().padLeft(2, '0')} ${local.hour >= 12 ? 'PM' : 'AM'}';
 }

@@ -109,34 +109,60 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
       body: Column(
         children: [
           if (_busy) const LinearProgressIndicator(minHeight: 2),
+          _CaptainSectionSwitcher(
+            selectedIndex: _index,
+            onSelected: (value) => setState(() => _index = value),
+          ),
           Expanded(
             child: IndexedStack(index: _index, children: pages),
           ),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Orders',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
-            label: 'History',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
     );
   }
+}
+
+class _CaptainSectionSwitcher extends StatelessWidget {
+  const _CaptainSectionSwitcher({
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) => ColoredBox(
+    color: Theme.of(context).scaffoldBackgroundColor,
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+      child: SizedBox(
+        width: double.infinity,
+        child: SegmentedButton<int>(
+          showSelectedIcon: false,
+          segments: const [
+            ButtonSegment(
+              value: 0,
+              icon: Icon(Icons.receipt_long_outlined),
+              label: Text('Orders'),
+            ),
+            ButtonSegment(
+              value: 1,
+              icon: Icon(Icons.history_outlined),
+              label: Text('History'),
+            ),
+            ButtonSegment(
+              value: 2,
+              icon: Icon(Icons.person_outline),
+              label: Text('Profile'),
+            ),
+          ],
+          selected: {selectedIndex},
+          onSelectionChanged: (selection) => onSelected(selection.first),
+        ),
+      ),
+    ),
+  );
 }
 
 class _CaptainQueue extends StatelessWidget {

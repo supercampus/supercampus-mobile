@@ -5,6 +5,7 @@ import '../../core/widgets/transaction_result_overlay.dart';
 import '../../core/widgets/module_navigation_buttons.dart';
 import '../../features/authentication/data/auth_repository.dart';
 import 'razorpay_checkout.dart';
+import 'fee_receipt_exporter.dart';
 import 'tuition_fee_repository.dart';
 
 class TuitionFeeScreen extends StatefulWidget {
@@ -213,6 +214,35 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
                   ),
                   icon: const Icon(Icons.add_card_rounded),
                   label: const Text('Assign fee to student'),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('mark-hostel-fee-paid'),
+                  onPressed: _saving || widget.data.students.isEmpty
+                      ? null
+                      : _openHostelAccess,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white70),
+                  ),
+                  icon: const Icon(Icons.hotel_rounded),
+                  label: const Text('Mark hostel fee paid'),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _saving ? null : _openDiningSettings,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white70),
+                  ),
+                  icon: const Icon(Icons.tune_rounded),
+                  label: const Text('Hostel dining options'),
                 ),
               ),
             ],
@@ -463,6 +493,264 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
       if (mounted) setState(() => _saving = false);
     }
   }
+
+  Future<void> _openHostelAccess() async {
+    FeeStudent? selectedStudent;
+    var validFrom = DateTime.now();
+    var validUntil = DateTime(DateTime.now().year + 1, 5, 31);
+    final referenceController = TextEditingController();
+    final submit = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            14,
+            20,
+            MediaQuery.viewInsetsOf(context).bottom + 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Activate hostel meal access',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Creates three one-use meal QRs per day only inside this paid coverage period.',
+                  style: TextStyle(color: AppColors.muted),
+                ),
+                const SizedBox(height: 18),
+                DropdownButtonFormField<FeeStudent>(
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Hosteller',
+                    prefixIcon: Icon(Icons.person_search_rounded),
+                  ),
+                  items: widget.data.students
+                      .map(
+                        (student) => DropdownMenuItem(
+                          value: student,
+                          child: Text(
+                            '${student.name} · ${student.rollNumber}',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(growable: false),
+                  onChanged: (value) =>
+                      setSheetState(() => selectedStudent = value),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: referenceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Payment reference (optional)',
+                    prefixIcon: Icon(Icons.receipt_long_outlined),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DateChoice(
+                        label: 'Access starts',
+                        value: validFrom,
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2035),
+                            initialDate: validFrom,
+                          );
+                          if (picked != null) {
+                            setSheetState(() => validFrom = picked);
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _DateChoice(
+                        label: 'Access ends',
+                        value: validUntil,
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            firstDate: validFrom,
+                            lastDate: DateTime(2035),
+                            initialDate: validUntil.isBefore(validFrom)
+                                ? validFrom
+                                : validUntil,
+                          );
+                          if (picked != null) {
+                            setSheetState(() => validUntil = picked);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => Navigator.pop(sheetContext, true),
+                    icon: const Icon(Icons.verified_user_outlined),
+                    label: const Text('Confirm fee paid & activate'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (submit != true) {
+      referenceController.dispose();
+      return;
+    }
+    if (selectedStudent == null || validUntil.isBefore(validFrom)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Select a student and valid dates.')),
+        );
+      }
+      referenceController.dispose();
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      await widget.repository.markHostelFeePaid(
+        student: selectedStudent!,
+        validFrom: validFrom,
+        validUntil: validUntil,
+        paymentReference: referenceController.text,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Hostel meal access activated for ${selectedStudent!.name}.',
+          ),
+        ),
+      );
+      widget.onChanged();
+    } on TuitionFeeException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } finally {
+      referenceController.dispose();
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _openDiningSettings() async {
+    var menuEnabled = true;
+    var messEnabled = true;
+    final submit = await showModalBottomSheet<bool>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hostel dining options',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Choose which food experiences hostellers can access.',
+                style: TextStyle(color: AppColors.muted),
+              ),
+              const SizedBox(height: 14),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                value: menuEnabled,
+                onChanged: (value) => setSheetState(() => menuEnabled = value),
+                title: const Text('Menu-based ordering'),
+                subtitle: const Text('Browse and order from the campus menu'),
+              ),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                value: messEnabled,
+                onChanged: (value) => setSheetState(() => messEnabled = value),
+                title: const Text('Mess meal passes'),
+                subtitle: const Text(
+                  'Three fee-linked meal QRs per covered day',
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(sheetContext, true),
+                  child: const Text('Save dining options'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (submit != true) return;
+    setState(() => _saving = true);
+    try {
+      await widget.repository.updateHostelDiningSettings(
+        menuEnabled: menuEnabled,
+        messEnabled: messEnabled,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Hostel dining options updated.')),
+        );
+      }
+    } on TuitionFeeException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+}
+
+class _DateChoice extends StatelessWidget {
+  const _DateChoice({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+  final String label;
+  final DateTime value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(14),
+    child: InputDecorator(
+      decoration: InputDecoration(labelText: label),
+      child: Text(
+        '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}',
+      ),
+    ),
+  );
 }
 
 class _FeeAccount extends StatefulWidget {
@@ -651,14 +939,7 @@ class _FeeAccountState extends State<_FeeAccount> {
         if (payments.isEmpty)
           _emptyCard('No payments recorded yet.')
         else
-          ...payments.map(
-            (row) => _recordCard(
-              title: _text(row.data['paymentReference'], fallback: 'Payment'),
-              subtitle:
-                  '${_text(row.data['paymentDate'])} · ${_text(row.data['method'])} · ${_text(row.data['status'])}',
-              amount: _number(row.data['amount']),
-            ),
-          ),
+          ...payments.map((row) => _paymentCard(row)),
       ],
     );
   }
@@ -790,6 +1071,107 @@ class _FeeAccountState extends State<_FeeAccount> {
       ),
     ),
   );
+
+  Widget _paymentCard(StudentFeeRecord row) {
+    final verified = {
+      'verified',
+      'success',
+      'paid',
+    }.contains(_text(row.data['status']).toLowerCase());
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: verified
+                      ? Colors.green.withValues(alpha: .12)
+                      : AppColors.moduleSoft,
+                  child: Icon(
+                    verified ? Icons.verified_rounded : Icons.receipt_long,
+                    color: verified ? Colors.green.shade700 : AppColors.muted,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _money(_number(row.data['amount'])),
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        _text(
+                          row.data['paymentReference'],
+                          fallback: 'Payment',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.muted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (verified)
+                  IconButton.filledTonal(
+                    tooltip: 'Download receipt',
+                    onPressed: () => _downloadReceipt(row),
+                    icon: const Icon(Icons.download_rounded),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${_text(row.data['method'])} · ${_friendlyDate(row.data['paymentDate'])}',
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                Text(
+                  verified ? 'Verified' : _text(row.data['status']),
+                  style: TextStyle(
+                    color: verified ? Colors.green.shade700 : AppColors.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _downloadReceipt(StudentFeeRecord row) async {
+    try {
+      await const FeeReceiptExporter().save(widget.session, row);
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Fee receipt downloaded.')));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Receipt could not be saved. Try again.')),
+      );
+    }
+  }
 }
 
 class _FeeLoading extends StatelessWidget {
@@ -843,4 +1225,10 @@ double _number(Object? value) =>
 String _text(Object? value, {String fallback = '—'}) {
   final result = value?.toString().trim() ?? '';
   return result.isEmpty ? fallback : result;
+}
+
+String _friendlyDate(Object? value) {
+  final date = DateTime.tryParse(value?.toString() ?? '')?.toLocal();
+  if (date == null) return _text(value);
+  return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
 }

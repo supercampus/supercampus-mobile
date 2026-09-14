@@ -24,24 +24,70 @@ class HostelVisitorsScreen extends StatelessWidget {
         leading: onBack != null ? BackButton(onPressed: onBack) : null,
         title: const Text('Hostel Visitor Passes'),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openAddVisitorSheet(context),
-        backgroundColor: Colors.teal.shade700,
-        icon: const Icon(Icons.person_add_alt_1_outlined),
-        label: const Text('Add Visitor'),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 34),
+        children: [
+          Text(
+            'Plan a visit',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Submit visitor details once, then follow the approval here.',
+            style: TextStyle(color: AppColors.muted),
+          ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: () => _openAddVisitorSheet(context),
+            icon: const Icon(Icons.person_add_alt_1_outlined),
+            label: const Text('Request visitor pass'),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Your visitor passes',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              Text(
+                '${visitors.length}',
+                style: const TextStyle(color: AppColors.muted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (visitors.isEmpty)
+            _emptyState('No visitor pass requests yet.')
+          else
+            ...visitors.map((visitor) => _buildVisitorCard(context, visitor)),
+        ],
       ),
-      body: visitors.isEmpty
-          ? const Center(child: Text('No visitor passes issued.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: visitors.length,
-              itemBuilder: (context, index) {
-                final v = visitors[index];
-                return _buildVisitorCard(context, v);
-              },
-            ),
     );
   }
+
+  Widget _emptyState(String message) => Container(
+    padding: const EdgeInsets.all(22),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: AppColors.border),
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.event_available_outlined, color: AppColors.muted),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(message, style: const TextStyle(color: AppColors.muted)),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildVisitorCard(BuildContext context, VisitorPass v) {
     return Card(
@@ -60,10 +106,16 @@ class HostelVisitorsScreen extends StatelessWidget {
               children: [
                 Text(
                   v.visitorName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
                     borderRadius: BorderRadius.circular(12),
@@ -91,7 +143,11 @@ class HostelVisitorsScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.access_time, size: 14, color: AppColors.primary),
+                const Icon(
+                  Icons.access_time,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'Valid Today: ${v.validFromTime} – ${v.validUntilTime}',
@@ -132,9 +188,9 @@ class HostelVisitorsScreen extends StatelessWidget {
             children: [
               Text(
                 'Generate Hostel Visitor Pass',
-                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  ctx,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               TextField(
@@ -167,7 +223,9 @@ class HostelVisitorsScreen extends StatelessWidget {
                     await repository.inviteVisitor(
                       visitorName: nameCtrl.text.trim(),
                       visitorContact: contactCtrl.text.trim(),
-                      purpose: purposeCtrl.text.trim().isEmpty ? 'Personal Visit' : purposeCtrl.text.trim(),
+                      purpose: purposeCtrl.text.trim().isEmpty
+                          ? 'Personal Visit'
+                          : purposeCtrl.text.trim(),
                       visitDate: DateTime.now(),
                       validFromTime: '04:00 PM',
                       validUntilTime: '07:00 PM',
@@ -176,7 +234,9 @@ class HostelVisitorsScreen extends StatelessWidget {
                       Navigator.pop(ctx);
                       onRefresh();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Visitor pass issued successfully!')),
+                        const SnackBar(
+                          content: Text('Visitor pass issued successfully!'),
+                        ),
                       );
                     }
                   },

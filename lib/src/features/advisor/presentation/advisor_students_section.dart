@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/widgets/skeleton_loading.dart';
+import '../../../core/students/student_year.dart';
 import '../data/advisor_students_repository.dart';
 
 class AdvisorStudentsSection extends StatefulWidget {
@@ -34,6 +35,9 @@ class _AdvisorStudentsSectionState extends State<AdvisorStudentsSection> {
   @override
   Widget build(BuildContext context) {
     final students = _students;
+    final groups = students == null
+        ? const <StudentYearGroup<AdvisorStudent>>[]
+        : groupStudentsByYear(students, (student) => student.yearOfStudy);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -84,20 +88,46 @@ class _AdvisorStudentsSectionState extends State<AdvisorStudentsSection> {
             child: Text('No students are assigned to you yet.'),
           )
         else
-          SizedBox(
-            height: 142,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: students.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (context, index) => _StudentMiniCard(
-                student: students[index],
-                onTap: () =>
-                    _showStudent(context, widget.source, students[index]),
+          for (final group in groups) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
+              child: Row(
+                children: [
+                  Text(
+                    group.label,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${group.students.length}',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
+            SizedBox(
+              height: 142,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: group.students.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (context, index) => _StudentMiniCard(
+                  student: group.students[index],
+                  onTap: () => _showStudent(
+                    context,
+                    widget.source,
+                    group.students[index],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
       ],
     );
   }

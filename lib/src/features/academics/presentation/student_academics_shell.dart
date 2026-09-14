@@ -936,7 +936,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       ),
       const SizedBox(height: 6),
       const Text(
-        'Semester, internal and other tests updated by your class advisor',
+        'Results are grouped by examination and listed subject-wise.',
         style: TextStyle(color: AppColors.muted),
       ),
       const SizedBox(height: 18),
@@ -969,104 +969,166 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
         )
       else ...[
         if (_loadingAssessments) const LinearProgressIndicator(minHeight: 2),
-        for (final assessment in _assessments) _assessmentCard(assessment),
+        for (final kind in StudentAssessmentKind.values)
+          if (_assessments.any((assessment) => assessment.kind == kind))
+            _assessmentGroup(
+              kind,
+              _assessments
+                  .where((assessment) => assessment.kind == kind)
+                  .toList(growable: false),
+            ),
       ],
     ],
   );
 
-  Widget _assessmentCard(StudentAssessment assessment) {
-    final color = switch (assessment.kind) {
-      StudentAssessmentKind.semester => const Color(0xFF4A4E9C),
-      StudentAssessmentKind.internal => Colors.green,
-      StudentAssessmentKind.test => Colors.deepPurple,
-    };
-    final icon = switch (assessment.kind) {
-      StudentAssessmentKind.semester => Icons.school_outlined,
-      StudentAssessmentKind.internal => Icons.fact_check_outlined,
-      StudentAssessmentKind.test => Icons.assignment_outlined,
-    };
-    final kind = switch (assessment.kind) {
+  Color _assessmentColor(StudentAssessmentKind kind) => switch (kind) {
+    StudentAssessmentKind.semester => const Color(0xFF4A4E9C),
+    StudentAssessmentKind.internal => Colors.green,
+    StudentAssessmentKind.test => Colors.deepPurple,
+  };
+
+  IconData _assessmentIcon(StudentAssessmentKind kind) => switch (kind) {
+    StudentAssessmentKind.semester => Icons.school_outlined,
+    StudentAssessmentKind.internal => Icons.fact_check_outlined,
+    StudentAssessmentKind.test => Icons.assignment_outlined,
+  };
+
+  String _assessmentKindLabel(StudentAssessmentKind kind) => switch (kind) {
+    StudentAssessmentKind.semester => 'Semester examinations',
+    StudentAssessmentKind.internal => 'Internal assessments',
+    StudentAssessmentKind.test => 'Other tests',
+  };
+
+  Widget _assessmentGroup(
+    StudentAssessmentKind kind,
+    List<StudentAssessment> assessments,
+  ) {
+    final color = _assessmentColor(kind);
+    final icon = _assessmentIcon(kind);
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            color: color.withValues(alpha: .08),
+            child: Row(
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    _assessmentKindLabel(kind),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${assessments.length} ${assessments.length == 1 ? 'subject' : 'subjects'}',
+                  style: const TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (var index = 0; index < assessments.length; index++) ...[
+            _assessmentSubjectRow(assessments[index], color),
+            if (index != assessments.length - 1)
+              const Divider(height: 1, indent: 14, endIndent: 14),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _assessmentSubjectRow(StudentAssessment assessment, Color color) {
+    final kindLabel = switch (assessment.kind) {
       StudentAssessmentKind.semester => 'Semester examination',
       StudentAssessmentKind.internal => 'Internal assessment',
       StudentAssessmentKind.test => 'Other test',
     };
     final semester = assessment.semester == null
-        ? kind
-        : '$kind  •  Semester ${assessment.semester}';
+        ? kindLabel
+        : '$kindLabel  •  Semester ${assessment.semester}';
     final detail = assessment.subjectCode == null
         ? semester
         : '${assessment.subjectCode}  •  $semester';
     final score =
         '${_mark(assessment.marksObtained)} / ${_mark(assessment.maximumMarks)}';
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: color.withValues(alpha: .12),
-                  foregroundColor: color,
-                  child: Icon(icon),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        assessment.title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 11),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      assessment.title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
                       ),
-                      Text(
-                        detail,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
-                        ),
+                    ),
+                    Text(
+                      detail,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.muted,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Text(
-                  score,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    score,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            LinearProgressIndicator(
-              value: assessment.percentage / 100,
-              color: color,
-              backgroundColor: color.withValues(alpha: .10),
-              minHeight: 7,
-              borderRadius: BorderRadius.circular(7),
-            ),
-            const SizedBox(height: 7),
-            Text(
-              '${_mark(assessment.percentage)}%',
-              style: TextStyle(color: color, fontWeight: FontWeight.w600),
-            ),
-            if (assessment.notes != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                assessment.notes!,
-                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  Text(
+                    '${_mark(assessment.percentage)}%',
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ],
+          ),
+          const SizedBox(height: 9),
+          LinearProgressIndicator(
+            value: assessment.percentage / 100,
+            color: color,
+            backgroundColor: color.withValues(alpha: .10),
+            minHeight: 4,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          if (assessment.notes != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              assessment.notes!,
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -1099,103 +1161,131 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
     ),
   );
 
-  Widget _analysis() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      const Text(
-        'Academic analysis',
-        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500),
-      ),
-      const SizedBox(height: 6),
-      const Text(
-        'A quick view of your academic progress',
-        style: TextStyle(color: AppColors.muted),
-      ),
-      const SizedBox(height: 18),
-      Row(
-        children: [
-          Expanded(
-            child: _summaryCard(
-              'Current CGPA',
-              '7.42',
-              'Target: 8.00',
-              const Color(0xFF4A4E9C),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _summaryCard(
-              'Credits',
-              '118',
-              'of 160 completed',
-              Colors.orange,
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 14),
-      Card(
-        elevation: 0,
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'What needs attention',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 12),
-              const ListTile(
-                leading: Icon(
-                  Icons.warning_amber_outlined,
-                  color: Colors.orange,
+  double? get _resultAverage {
+    final published = _assessments.where(
+      (assessment) => assessment.maximumMarks > 0,
+    );
+    if (published.isEmpty) return null;
+    final obtained = published.fold<double>(
+      0,
+      (total, assessment) => total + assessment.marksObtained,
+    );
+    final maximum = published.fold<double>(
+      0,
+      (total, assessment) => total + assessment.maximumMarks,
+    );
+    return maximum == 0 ? null : obtained / maximum * 100;
+  }
+
+  double? get _attendancePercentage => _count('totalClasses') == 0
+      ? null
+      : _number(_attendanceSummary?['percentage']);
+
+  Widget _analysis() {
+    final attendance = _attendancePercentage;
+    final result = _resultAverage;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Academic analysis',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 10),
+        Card(
+          elevation: 0,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _analysisMetric(
+                        Icons.fact_check_outlined,
+                        'Attendance',
+                        attendance == null ? '—' : '${_mark(attendance)}%',
+                        attendance != null && attendance < 75
+                            ? Colors.orange
+                            : Colors.green,
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 38,
+                      child: VerticalDivider(width: 24),
+                    ),
+                    Expanded(
+                      child: _analysisMetric(
+                        Icons.assessment_outlined,
+                        'Result average',
+                        result == null ? '—' : '${_mark(result)}%',
+                        const Color(0xFF4A4E9C),
+                      ),
+                    ),
+                  ],
                 ),
-                title: Text('Microwave Engineering attendance is below 75%'),
-                contentPadding: EdgeInsets.zero,
-              ),
-              const ListTile(
-                leading: Icon(Icons.trending_up_outlined, color: Colors.green),
-                title: Text('Your CIA 2 average improved by 6%'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ],
+                if (attendance != null && attendance < 75) ...[
+                  const Divider(height: 20),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange,
+                        size: 19,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Attendance is below the required 75%.',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _analysisMetric(
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) => Row(
+    children: [
+      Icon(icon, color: color, size: 21),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11, color: AppColors.muted),
+            ),
+          ],
         ),
       ),
     ],
-  );
-
-  Widget _summaryCard(
-    String title,
-    String value,
-    String subtitle,
-    Color color,
-  ) => Card(
-    elevation: 0,
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.school_outlined, color: color),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 25,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-          Text(
-            subtitle,
-            style: const TextStyle(fontSize: 11, color: AppColors.muted),
-          ),
-        ],
-      ),
-    ),
   );
 }
 

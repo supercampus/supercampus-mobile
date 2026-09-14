@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/announcement_composer.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/faculty_models.dart';
@@ -48,90 +50,49 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
     });
   }
 
-  void _createNoticeDialog() {
-    final titleCtrl = TextEditingController();
-    final contentCtrl = TextEditingController();
-    final pdfUrlCtrl = TextEditingController();
-    String target = 'All CS Students & Parents';
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.campaign, color: Color(0xFF6A1B9A)),
-            SizedBox(width: 8),
-            Text('Post Faculty Announcement'),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleCtrl,
-                decoration: const InputDecoration(labelText: 'Notice Title'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: contentCtrl,
-                maxLines: 3,
-                decoration: const InputDecoration(labelText: 'Notice Content'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: pdfUrlCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'PDF URL (optional)',
-                  hintText: 'Paste the uploaded PDF link',
-                  prefixIcon: Icon(Icons.picture_as_pdf_outlined),
-                ),
-                keyboardType: TextInputType.url,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF6A1B9A),
-            ),
-            onPressed: () {
-              if (titleCtrl.text.isNotEmpty) {
-                final newNotice = DepartmentNotice(
-                  id: 'NOT-${DateTime.now().millisecondsSinceEpoch % 1000}',
-                  title: titleCtrl.text,
-                  content: contentCtrl.text,
-                  postedAt: DateTime.now(),
-                  author: widget.session.displayName,
-                  targetAudience: target,
-                  pdfUrl: pdfUrlCtrl.text.trim().isEmpty
-                      ? null
-                      : pdfUrlCtrl.text.trim(),
-                  pdfName: pdfUrlCtrl.text.trim().isEmpty
-                      ? null
-                      : 'Attached notice PDF',
-                );
-                _repository.addNotice(newNotice);
-                _refreshData();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Notice published to portal!'),
-                    backgroundColor: Color(0xFF6A1B9A),
-                  ),
-                );
-              }
-            },
-            child: const Text('Publish Notice'),
-          ),
-        ],
+  Future<void> _createNoticeDialog() async {
+    final draft = await showAnnouncementComposer(
+      context,
+      heading: 'Post faculty announcement',
+      submitLabel: 'Publish announcement',
+      supportingText: 'Broadcast to student and parent portals.',
+    );
+    if (draft == null || !mounted) return;
+    _repository.addNotice(
+      DepartmentNotice(
+        id: 'NOT-${DateTime.now().millisecondsSinceEpoch % 1000}',
+        type: draft.type,
+        title: draft.title,
+        content: draft.description,
+        announcementDate: draft.date,
+        postedAt: DateTime.now(),
+        author: widget.session.displayName,
+        targetAudience: 'All CS Students & Parents',
+        pdfUrl: draft.attachmentUrl,
+        pdfName: draft.attachmentName,
       ),
     );
+    _refreshData();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Announcement published to the portal.'),
+        backgroundColor: Color(0xFF6A1B9A),
+      ),
+    );
+  }
+
+  Future<void> _openNoticeAttachment(DepartmentNotice notice) async {
+    final value = notice.pdfUrl;
+    if (value == null || value.isEmpty) return;
+    final uri = Uri.tryParse(value);
+    if (uri == null ||
+        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('The attachment could not be opened.')),
+        );
+      }
+    }
   }
 
   @override
@@ -586,7 +547,27 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
+                  Text(
+                    '${notice.type.toUpperCase()} • '
+                    '${notice.announcementDate.day.toString().padLeft(2, '0')}/'
+                    '${notice.announcementDate.month.toString().padLeft(2, '0')}/'
+                    '${notice.announcementDate.year}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF6A1B9A),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Text(notice.content),
+                  if (notice.pdfUrl != null) ...[
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () => _openNoticeAttachment(notice),
+                      icon: const Icon(Icons.attach_file, size: 18),
+                      label: const Text('View details'),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Text(
                     'Posted by ${notice.author} • Target: ${notice.targetAudience}',

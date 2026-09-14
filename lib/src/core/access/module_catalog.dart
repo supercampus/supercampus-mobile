@@ -104,6 +104,7 @@ class ModuleDescriptor {
 /// tenant / role / user — arrive from the admin web console and are matched
 /// against this list by id.
 abstract final class ModuleCatalog {
+  static const administration = 'administration';
   static const examination = 'examination';
   static const timetable = 'timetable';
   static const attendance = 'attendance';
@@ -116,6 +117,37 @@ abstract final class ModuleCatalog {
   static const hostel = 'hostel';
 
   static const List<ModuleDescriptor> all = [
+    ModuleDescriptor(
+      id: administration,
+      title: 'Administration',
+      shortTitle: 'Admin Desk',
+      tagline: 'Access control, approvals and emergency response',
+      icon: Icons.admin_panel_settings_outlined,
+      color: AppColors.primary,
+      features: [
+        FeatureDescriptor(
+          id: 'access_control',
+          label: 'Access control',
+          actions: {
+            ModuleActions.read,
+            ModuleActions.create,
+            ModuleActions.update,
+            ModuleActions.delete,
+            ModuleActions.approve,
+          },
+        ),
+        FeatureDescriptor(
+          id: 'approvals',
+          label: 'Approvals',
+          actions: {ModuleActions.read, ModuleActions.approve},
+        ),
+        FeatureDescriptor(
+          id: 'emergency',
+          label: 'Emergency response',
+          actions: {ModuleActions.read, ModuleActions.create},
+        ),
+      ],
+    ),
     ModuleDescriptor(
       id: examination,
       title: 'Examination System',
@@ -286,6 +318,16 @@ abstract final class ModuleCatalog {
           actions: {ModuleActions.read, ModuleActions.update},
         ),
         FeatureDescriptor(
+          id: 'session',
+          label: 'Attendance session',
+          actions: {ModuleActions.create, ModuleActions.publish},
+        ),
+        FeatureDescriptor(
+          id: 'records',
+          label: 'Attendance records',
+          actions: {ModuleActions.read},
+        ),
+        FeatureDescriptor(
           id: 'swipe',
           label: 'Swipe log',
           actions: {ModuleActions.create, ModuleActions.read},
@@ -366,6 +408,20 @@ abstract final class ModuleCatalog {
           label: 'Gate access',
           actions: {ModuleActions.read, ModuleActions.update},
         ),
+        FeatureDescriptor(
+          id: 'leave',
+          label: 'Leave pass',
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.approve,
+          },
+        ),
+        FeatureDescriptor(
+          id: 'scan',
+          label: 'Gate scan and movement log',
+          actions: {ModuleActions.create, ModuleActions.read},
+        ),
       ],
     ),
     ModuleDescriptor(
@@ -379,7 +435,11 @@ abstract final class ModuleCatalog {
         FeatureDescriptor(
           id: 'visit_pass',
           label: 'Visit pass booking',
-          actions: {ModuleActions.create, ModuleActions.read},
+          actions: {
+            ModuleActions.create,
+            ModuleActions.read,
+            ModuleActions.approve,
+          },
         ),
         FeatureDescriptor(
           id: 'qr_pass',
@@ -394,7 +454,17 @@ abstract final class ModuleCatalog {
         FeatureDescriptor(
           id: 'occupancy',
           label: 'Occupancy and capacity',
+          actions: {ModuleActions.read, ModuleActions.update},
+        ),
+        FeatureDescriptor(
+          id: 'logs',
+          label: 'Library logs and reports',
           actions: {ModuleActions.read},
+        ),
+        FeatureDescriptor(
+          id: 'announcement',
+          label: 'Library announcements',
+          actions: {ModuleActions.create, ModuleActions.approve},
         ),
       ],
     ),

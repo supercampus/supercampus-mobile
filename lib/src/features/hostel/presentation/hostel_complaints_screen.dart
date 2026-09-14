@@ -24,22 +24,60 @@ class HostelComplaintsScreen extends StatelessWidget {
         leading: onBack != null ? BackButton(onPressed: onBack) : null,
         title: const Text('Maintenance & Complaints'),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openNewComplaintSheet(context),
-        backgroundColor: Colors.red.shade700,
-        icon: const Icon(Icons.add),
-        label: const Text('Report Issue'),
-      ),
-      body: complaints.isEmpty
-          ? const Center(child: Text('No complaints logged.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: complaints.length,
-              itemBuilder: (context, index) {
-                final c = complaints[index];
-                return _buildComplaintCard(context, c);
-              },
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 34),
+        children: [
+          Text(
+            'Room maintenance',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Report an issue with the right category so it reaches the correct team.',
+            style: TextStyle(color: AppColors.muted),
+          ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: () => _openNewComplaintSheet(context),
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Report an issue'),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Your tickets',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              Text(
+                '${complaints.length}',
+                style: const TextStyle(color: AppColors.muted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (complaints.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(22),
+                child: Text(
+                  'No maintenance tickets. Your room is all clear.',
+                  style: TextStyle(color: AppColors.muted),
+                ),
+              ),
+            )
+          else
+            ...complaints.map(
+              (complaint) => _buildComplaintCard(context, complaint),
             ),
+        ],
+      ),
     );
   }
 
@@ -60,10 +98,16 @@ class HostelComplaintsScreen extends StatelessWidget {
               children: [
                 Text(
                   '${complaint.id} · Room ${complaint.roomNumber}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange.shade50,
                     borderRadius: BorderRadius.circular(12),
@@ -93,11 +137,18 @@ class HostelComplaintsScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.person_outline, size: 14, color: AppColors.muted),
+                  const Icon(
+                    Icons.person_outline,
+                    size: 14,
+                    color: AppColors.muted,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     'Assigned to: ${complaint.assignedTo}',
-                    style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.muted,
+                    ),
                   ),
                 ],
               ),
@@ -146,8 +197,8 @@ class HostelComplaintsScreen extends StatelessWidget {
                   Text(
                     'Report Maintenance Issue',
                     style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
@@ -157,7 +208,8 @@ class HostelComplaintsScreen extends StatelessWidget {
                       return DropdownMenuItem(value: c, child: Text(c));
                     }).toList(),
                     onChanged: (val) {
-                      if (val != null) setSheetState(() => selectedCategory = val);
+                      if (val != null)
+                        setSheetState(() => selectedCategory = val);
                     },
                   ),
                   const SizedBox(height: 12),
@@ -182,7 +234,11 @@ class HostelComplaintsScreen extends StatelessWidget {
                           Navigator.pop(ctx);
                           onRefresh();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Complaint submitted to Maintenance team.')),
+                            const SnackBar(
+                              content: Text(
+                                'Complaint submitted to Maintenance team.',
+                              ),
+                            ),
                           );
                         }
                       },

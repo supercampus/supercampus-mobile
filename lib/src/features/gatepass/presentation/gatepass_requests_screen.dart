@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
@@ -9,14 +10,16 @@ class GatepassRequestsScreen extends StatelessWidget {
   const GatepassRequestsScreen({
     super.key,
     required this.requests,
-    required this.workflow,
-    required this.onApply,
+    required this.residency,
+    required this.onApplyLeavePass,
+    required this.onApplyOutpass,
     required this.onCancel,
   });
 
   final List<GatepassRequest> requests;
-  final GatepassWorkflowDefinition workflow;
-  final VoidCallback onApply;
+  final StudentResidency residency;
+  final VoidCallback onApplyLeavePass;
+  final VoidCallback onApplyOutpass;
   final Future<void> Function(GatepassRequest request) onCancel;
 
   @override
@@ -26,21 +29,34 @@ class GatepassRequestsScreen extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
             children: [
-              GatepassPageHeader(
-                title: 'My requests',
-                subtitle: 'Track approvals and past outpasses',
-                trailing: IconButton.filled(
-                  tooltip: 'Apply for outpass',
-                  onPressed: onApply,
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.gateBlue,
+              Align(
+                alignment: Alignment.centerRight,
+                child: PopupMenuButton<GatepassPassKind>(
+                  tooltip: 'Apply for a pass',
+                  onSelected: (kind) => kind == GatepassPassKind.leavePass
+                      ? onApplyLeavePass()
+                      : onApplyOutpass(),
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                      value: GatepassPassKind.leavePass,
+                      child: Text('Apply leave pass'),
+                    ),
+                    if (residency == StudentResidency.hosteller)
+                      const PopupMenuItem(
+                        value: GatepassPassKind.outpass,
+                        child: Text('Apply hostel outpass'),
+                      ),
+                  ],
+                  icon: const Icon(
+                    Icons.add_circle,
+                    color: AppColors.gateBlue,
+                    size: 30,
                   ),
-                  icon: const Icon(Icons.add),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 6),
               if (requests.isEmpty)
                 const GatepassSurface(
                   padding: EdgeInsets.symmetric(vertical: 42, horizontal: 20),
@@ -48,7 +64,7 @@ class GatepassRequestsScreen extends StatelessWidget {
                     children: [
                       Icon(Icons.assignment_outlined, size: 36),
                       SizedBox(height: 10),
-                      Text('No outpass requests yet'),
+                      Text('No leave pass or outpass requests yet'),
                     ],
                   ),
                 )
@@ -56,11 +72,7 @@ class GatepassRequestsScreen extends StatelessWidget {
                 for (final request in requests)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: _RequestCard(
-                      request: request,
-                      workflow: workflow,
-                      onCancel: onCancel,
-                    ),
+                    child: _RequestCard(request: request, onCancel: onCancel),
                   ),
             ],
           ),
@@ -71,24 +83,17 @@ class GatepassRequestsScreen extends StatelessWidget {
 }
 
 class _RequestCard extends StatelessWidget {
-  const _RequestCard({
-    required this.request,
-    required this.workflow,
-    required this.onCancel,
-  });
+  const _RequestCard({required this.request, required this.onCancel});
 
   final GatepassRequest request;
-  final GatepassWorkflowDefinition workflow;
   final Future<void> Function(GatepassRequest request) onCancel;
 
   @override
   Widget build(BuildContext context) {
-    final completed =
-        workflow.states
-            .takeWhile((state) => state.id != request.workflowState)
-            .map((state) => state.id)
-            .toSet()
-          ..add(request.workflowState);
+    final qrPayload = request.qrPayload;
+    final code = qrPayload == null
+        ? null
+        : _sixDigitCode(request.manualCode, qrPayload);
     return GatepassSurface(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -98,7 +103,7 @@ class _RequestCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  request.type.label,
+                  '${request.passKind.label} • ${request.type.label}',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
@@ -106,7 +111,7 @@ class _RequestCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 7),
-          Text('${request.id} • ${request.destination}'),
+          Text(request.destination),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -142,20 +147,18 @@ class _RequestCard extends StatelessWidget {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ],
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final state in workflow.states)
-                if (state.status != WorkflowStateStatus.draft)
-                  _WorkflowChip(
-                    label: state.label,
-                    active: state.id == request.workflowState,
-                    completed: completed.contains(state.id),
-                  ),
-            ],
-          ),
+          if (request.status == ApprovalStatus.rejected) ...[
+            const SizedBox(height: 8),
+            Text(
+              request.workflowState == 'rejected'
+                  ? 'This request was rejected by an approver.'
+                  : 'This request was rejected.',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
           if (request.status == ApprovalStatus.pending) ...[
             const SizedBox(height: 12),
             Align(
@@ -166,44 +169,164 @@ class _RequestCard extends StatelessWidget {
               ),
             ),
           ],
+          if (request.status == ApprovalStatus.approved &&
+              qrPayload != null) ...[
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.verified_user_outlined,
+                        color: Color(0xFF087A4B),
+                        size: 28,
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        'Gate access ready',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      Text(
+                        'Show this QR at security. Tap it to open full screen.',
+                        style: TextStyle(
+                          color: AppColors.muted,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Column(
+                  children: [
+                    Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        key: const ValueKey('request-qr-open'),
+                        onTap: () =>
+                            _openFullScreenQr(context, qrPayload, code!),
+                        child: Padding(
+                          padding: const EdgeInsets.all(7),
+                          child: QrImageView(
+                            data: qrPayload,
+                            size: 112,
+                            padding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      code!,
+                      key: const ValueKey('request-qr-code'),
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 3,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  String _sixDigitCode(String? manualCode, String payload) {
+    final supplied = (manualCode ?? '').replaceAll(RegExp(r'\D'), '');
+    if (supplied.isNotEmpty) {
+      return supplied.length >= 6
+          ? supplied.substring(supplied.length - 6)
+          : supplied.padLeft(6, '0');
+    }
+    final digits = payload.replaceAll(RegExp(r'\D'), '');
+    if (digits.length >= 6) return digits.substring(digits.length - 6);
+    var hash = 0;
+    for (final unit in payload.codeUnits) {
+      hash = ((hash * 31) + unit) & 0x7fffffff;
+    }
+    return (hash % 1000000).toString().padLeft(6, '0');
+  }
+
+  void _openFullScreenQr(BuildContext context, String payload, String code) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => _RequestQrScreen(payload: payload, code: code),
       ),
     );
   }
 }
 
-class _WorkflowChip extends StatelessWidget {
-  const _WorkflowChip({
-    required this.label,
-    required this.active,
-    required this.completed,
-  });
+class _RequestQrScreen extends StatelessWidget {
+  const _RequestQrScreen({required this.payload, required this.code});
 
-  final String label;
-  final bool active;
-  final bool completed;
+  final String payload;
+  final String code;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final foreground = active
-        ? scheme.onPrimary
-        : completed
-        ? AppColors.gateBlue
-        : scheme.onSurfaceVariant;
-    final background = active
-        ? AppColors.gateBlue
-        : completed
-        ? AppColors.gateBlue.withValues(alpha: 0.1)
-        : scheme.surfaceContainerHighest;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(18),
+    final size = (MediaQuery.sizeOf(context).width - 72).clamp(230.0, 340.0);
+    return Scaffold(
+      backgroundColor: const Color(0xFF111014),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF111014),
+        foregroundColor: Colors.white,
+        title: const Text('Gatepass QR'),
+        leading: IconButton(
+          tooltip: 'Close',
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.close_rounded),
+        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(label, style: TextStyle(color: foreground, fontSize: 12)),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: QrImageView(data: payload, size: size),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  code,
+                  key: const ValueKey('fullscreen-request-qr-code'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 8,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Present this gatepass at security',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

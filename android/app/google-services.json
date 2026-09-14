@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "805794433517",
+    "project_id": "supercampus-production-5b1d9",
+    "storage_bucket": "supercampus-production-5b1d9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:805794433517:android:ee199ba661df32e27dbfe4",
+        "android_client_info": {
+          "package_name": "ai.supercampus.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeqK8V5k9t5CakO1Nq2v6tjqwJEzhMik0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

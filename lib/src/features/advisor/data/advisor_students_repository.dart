@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../authentication/data/auth_http_client.dart';
 import '../../authentication/data/auth_repository.dart';
+import '../../../core/students/student_year.dart';
 
 class AdvisorStudent {
   const AdvisorStudent({
@@ -59,6 +60,10 @@ class AdvisorStudent {
   final String? campusName;
   final String? photoUrl;
   final Map<String, dynamic> profile;
+
+  int? get yearOfStudy => parseStudentYear(
+    profile['yearOfStudy'] ?? profile['year'] ?? academicYear,
+  );
 }
 
 enum AdvisorAssessmentKind { semester, internal, test }

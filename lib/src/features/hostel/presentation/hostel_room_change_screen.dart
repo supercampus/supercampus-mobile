@@ -24,22 +24,58 @@ class HostelRoomChangeScreen extends StatelessWidget {
         leading: onBack != null ? BackButton(onPressed: onBack) : null,
         title: const Text('Request Room Change'),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openRoomChangeSheet(context),
-        backgroundColor: Colors.purple.shade700,
-        icon: const Icon(Icons.swap_horiz_rounded),
-        label: const Text('New Transfer Request'),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 34),
+        children: [
+          Text(
+            'Change your room',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Tell the warden your preference and track every decision.',
+            style: TextStyle(color: AppColors.muted),
+          ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: () => _openRoomChangeSheet(context),
+            icon: const Icon(Icons.swap_horiz_rounded),
+            label: const Text('Start room-change request'),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Requests',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              Text(
+                '${requests.length}',
+                style: const TextStyle(color: AppColors.muted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (requests.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(22),
+                child: Text(
+                  'No room-change requests yet.',
+                  style: TextStyle(color: AppColors.muted),
+                ),
+              ),
+            )
+          else
+            ...requests.map((request) => _buildRequestCard(context, request)),
+        ],
       ),
-      body: requests.isEmpty
-          ? const Center(child: Text('No room change requests submitted.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: requests.length,
-              itemBuilder: (context, index) {
-                final r = requests[index];
-                return _buildRequestCard(context, r);
-              },
-            ),
     );
   }
 
@@ -60,10 +96,16 @@ class HostelRoomChangeScreen extends StatelessWidget {
               children: [
                 Text(
                   request.id,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.purple.shade50,
                     borderRadius: BorderRadius.circular(12),
@@ -86,7 +128,11 @@ class HostelRoomChangeScreen extends StatelessWidget {
             ),
             Text(
               'Preferred Target: ${request.preferredHostel}',
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.primary),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                color: AppColors.primary,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -121,9 +167,9 @@ class HostelRoomChangeScreen extends StatelessWidget {
             children: [
               Text(
                 'Request Room Change',
-                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  ctx,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               TextField(
@@ -154,7 +200,11 @@ class HostelRoomChangeScreen extends StatelessWidget {
                       Navigator.pop(ctx);
                       onRefresh();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Room Change Request submitted to Warden.')),
+                        const SnackBar(
+                          content: Text(
+                            'Room Change Request submitted to Warden.',
+                          ),
+                        ),
                       );
                     }
                   },

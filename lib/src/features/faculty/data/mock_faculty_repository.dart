@@ -91,9 +91,11 @@ class MockFacultyRepository {
   final List<DepartmentNotice> _notices = [
     DepartmentNotice(
       id: 'NOT-301',
+      type: 'Exam results',
       title: 'Mid-Semester Exam Schedule Revision',
       content:
           'The CS301 exam will now take place on Friday at 09:00 AM in LH-302.',
+      announcementDate: DateTime.now(),
       postedAt: DateTime.now().subtract(const Duration(hours: 4)),
       author: 'Prof. Sarah Jenkins',
       targetAudience: 'CS Dept Students',

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
+
 /// A deliberately quiet home header. Search and AI shortcuts live inside the
 /// relevant modules instead of competing with the user's daily information.
 class HomeTopBar extends StatelessWidget {
@@ -38,15 +40,19 @@ class HomeTopBar extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 1),
-                Text(
-                  _firstName(displayName),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w500,
-                    height: 1.02,
-                    letterSpacing: -0.5,
+                ShaderMask(
+                  blendMode: BlendMode.srcIn,
+                  shaderCallback: AppColors.violetGradient.createShader,
+                  child: Text(
+                    _firstName(displayName),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      height: 1.02,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ),
               ],
@@ -96,7 +102,7 @@ class _Bell extends StatelessWidget {
           tooltip: 'Alerts',
           onPressed: onTap,
           icon: const Icon(Icons.notifications_outlined, size: 26),
-          color: Theme.of(context).colorScheme.primary,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints.tightFor(width: 40, height: 40),
         ),

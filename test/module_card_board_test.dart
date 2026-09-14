@@ -88,7 +88,8 @@ final learner = grants(
 final staff = grants(
   {
     'attendance.roster.read',
-    'attendance.records.update',
+    'attendance.session.create',
+    'attendance.records.read',
     'attendance.reports.create',
   },
   scopes: {ModuleCatalog.attendance: PermissionScope.section},
@@ -104,7 +105,8 @@ void main() {
       expect(find.text('Attendance & results'), findsOneWidget);
       expect(find.text('last 7 attendance'), findsOneWidget);
       expect(find.byIcon(Icons.fact_check_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.edit_note_outlined), findsNothing);
+      expect(find.byIcon(Icons.edit_note_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.insights_outlined), findsOneWidget);
 
       // A learner is never shown a module called Attendance; attendance is one
       // thing they look up inside Academics, not a place they go.
@@ -116,8 +118,8 @@ void main() {
       await tester.pumpAndSettle();
 
       final gradient = cardGradient(tester);
-      expect(gradient.colors.first, const Color(0xFF1400FF));
-      expect(gradient.colors.last, const Color(0xFFA600FF));
+      expect(gradient.colors.first, const Color(0xFF4200FF));
+      expect(gradient.colors.last, const Color(0xFF9600FF));
     });
 
     testWidgets('draws every mark grey until the standing lands', (
@@ -184,7 +186,9 @@ void main() {
   });
 
   group('staff Attendance card', () {
-    testWidgets('is the three-tile board, with no streak', (tester) async {
+    testWidgets('exposes all granted staff workflows, with no streak', (
+      tester,
+    ) async {
       await tester.pumpWidget(host(staff));
       await tester.pumpAndSettle();
 
@@ -194,6 +198,7 @@ void main() {
 
       expect(find.byIcon(Icons.fact_check_outlined), findsOneWidget);
       expect(find.byIcon(Icons.format_list_bulleted_add), findsOneWidget);
+      expect(find.byIcon(Icons.history_rounded), findsOneWidget);
       expect(find.byIcon(Icons.auto_graph_rounded), findsOneWidget);
     });
 
@@ -202,8 +207,8 @@ void main() {
       await tester.pumpAndSettle();
 
       final gradient = cardGradient(tester);
-      expect(gradient.colors.first, const Color(0xFF1400FF));
-      expect(gradient.colors.last, const Color(0xFFA600FF));
+      expect(gradient.colors.first, const Color(0xFF4200FF));
+      expect(gradient.colors.last, const Color(0xFF9600FF));
     });
   });
 
@@ -232,8 +237,9 @@ void main() {
       expect(find.byKey(const ValueKey('gatepass-qr-panel')), findsOneWidget);
       expect(find.byType(QrImageView), findsOneWidget);
       expect(find.text('Gate-in access'), findsOneWidget);
-      expect(find.byIcon(Icons.directions_walk_outlined), findsNothing);
-      expect(find.byIcon(Icons.people_outline), findsNothing);
+      expect(find.byIcon(Icons.directions_walk_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.people_outline), findsOneWidget);
+      expect(find.byIcon(Icons.door_front_door_outlined), findsOneWidget);
 
       final boardSize = tester.getSize(
         find.byKey(const ValueKey('gatepass-split-board')),
@@ -283,7 +289,7 @@ void main() {
       expect(find.text('My room'), findsOneWidget);
     });
 
-    testWidgets('tuition fee has a branded coming-soon preview', (
+    testWidgets('tuition fee exposes the enabled invoice workflow', (
       tester,
     ) async {
       final permissions = grants({'tuition_fee.invoice.read'});
@@ -294,13 +300,57 @@ void main() {
 
       expect(
         find.byKey(const ValueKey('tuition-fee-preview-board')),
+        findsNothing,
+      );
+      expect(find.text('Coming soon'), findsNothing);
+      expect(find.text('Tuition Fee'), findsOneWidget);
+      expect(find.byKey(const ValueKey('quick-action-dues')), findsOneWidget);
+      final gradient = cardGradient(tester);
+      expect(gradient.colors.first, const Color(0xFF4200FF));
+      expect(gradient.colors.last, const Color(0xFF9600FF));
+    });
+
+    testWidgets('administration has an access-controlled action set', (
+      tester,
+    ) async {
+      final permissions = grants({'administration.*'});
+      await tester.pumpWidget(
+        hostModule(ModuleCatalog.administration, permissions),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('quick-action-access_control')),
         findsOneWidget,
       );
-      expect(find.text('Coming soon'), findsOneWidget);
-      expect(find.text('Dues & receipts'), findsOneWidget);
-      final gradient = cardGradient(tester);
-      expect(gradient.colors.first, const Color(0xFF1400FF));
-      expect(gradient.colors.last, const Color(0xFFA600FF));
+      expect(
+        find.byKey(const ValueKey('quick-action-approvals')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('quick-action-emergency')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('vendor management exposes its five granted work queues', (
+      tester,
+    ) async {
+      final permissions = grants({'vendor_management.*'});
+      await tester.pumpWidget(
+        hostModule(ModuleCatalog.vendorManagement, permissions),
+      );
+      await tester.pumpAndSettle();
+
+      for (final id in const [
+        'vendors',
+        'contracts',
+        'purchase_orders',
+        'payments',
+        'work_orders',
+      ]) {
+        expect(find.byKey(ValueKey('quick-action-$id')), findsOneWidget);
+      }
     });
   });
 }

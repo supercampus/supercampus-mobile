@@ -184,12 +184,14 @@ void main() {
     String? subjectName,
     String? periodLabel,
     bool openImmediately = false,
+    UserSession session = _session,
+    EffectivePermissions? permissions,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
         home: AttendanceShell(
-          session: _session,
-          permissions: facultyPermissions(),
+          session: session,
+          permissions: permissions ?? facultyPermissions(),
           onExitModule: () {},
           repository: repo,
           initialTimetableEntryId: timetableEntryId,
@@ -319,6 +321,68 @@ void main() {
     expect(find.text('2 present'), findsOneWidget);
   });
 
+  testWidgets('a class advisor class card hides the review queue', (
+    tester,
+  ) async {
+    const advisor = UserSession(
+      email: 'advisor@mec.local',
+      displayName: 'Class Advisor',
+      role: UserRole.staff,
+      roleId: 'class_advisor',
+      roleName: 'Class Advisor',
+      roleIds: ['class_advisor'],
+    );
+    final permissions = EffectivePermissions.fromJson({
+      'grants': [
+        'attendance.roster.read',
+        'attendance.roster.update',
+        'attendance.records.create',
+        'attendance.session.create',
+        'academics.marks.read',
+        'academics.assignments.read',
+        'attendance.reports.create',
+        'attendance.session.publish',
+      ],
+      'scopes': {
+        'attendance.roster.read': 'assigned',
+        'attendance.roster.update': 'assigned',
+        'attendance.records.create': 'assigned',
+        'attendance.session.create': 'assigned',
+        'academics.marks.read': 'assigned',
+        'academics.assignments.read': 'assigned',
+        'attendance.reports.create': 'assigned',
+        'attendance.session.publish': 'assigned',
+      },
+    });
+
+    await pump(
+      tester,
+      repository(
+        sessions: [
+          {
+            'id': 'old-review',
+            'subjectName': 'Library',
+            'heldOn': '2026-09-02',
+            'periodLabel': 'Period 7',
+            'status': 'submitted_to_advisor',
+          },
+        ],
+      ),
+      timetableEntryId: '11111111-1111-4111-8111-111111111111',
+      sectionId: 'section-aids',
+      subjectName: 'Operating Systems',
+      periodLabel: 'Period 1',
+      openImmediately: true,
+      session: advisor,
+      permissions: permissions,
+    );
+
+    expect(find.text('Class advisor review queue'), findsNothing);
+    expect(find.text('Library'), findsNothing);
+    expect(find.text('Operating Systems'), findsWidgets);
+    expect(find.text('Priya Kumar'), findsOneWidget);
+  });
+
   testWidgets('a dashboard class card starts a new exact roll directly', (
     tester,
   ) async {
@@ -374,7 +438,9 @@ void main() {
     expect(find.text('1 present'), findsOneWidget);
     expect(find.text('1 absent'), findsOneWidget);
 
-    await tester.tap(find.textContaining('Publish 1 absent'));
+    final submit = find.byKey(const ValueKey('submit-attendance-for-review'));
+    await tester.scrollUntilVisible(submit, 240);
+    await tester.tap(submit);
     await tester.pumpAndSettle();
 
     final priya = entries.firstWhere((e) => e['studentUserId'] == 'u-1');

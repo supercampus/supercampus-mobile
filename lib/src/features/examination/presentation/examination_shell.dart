@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../authentication/data/auth_repository.dart';
+import '../data/marks_batch_repository.dart';
 
 import 'screens/admin_examination_dashboard.dart';
 import 'screens/exam_scheduling_screen.dart';
@@ -23,12 +24,14 @@ class ExaminationShell extends StatefulWidget {
     this.onExitModule,
     required this.onSignOut,
     this.initialAction,
+    this.marksRepository,
   });
 
   final UserSession session;
   final VoidCallback? onExitModule;
   final VoidCallback onSignOut;
   final String? initialAction;
+  final MarksBatchRepository? marksRepository;
 
   @override
   State<ExaminationShell> createState() => _ExaminationShellState();
@@ -39,6 +42,15 @@ class _ExaminationShellState extends State<ExaminationShell> {
 
   bool get _isStudent => widget.session.role == UserRole.student;
   bool get _isParent => widget.session.role == UserRole.parent;
+  bool get _isAcademicWorkflowRole {
+    final roles = {
+      widget.session.roleKey.toLowerCase(),
+      ...widget.session.roleIds.map((role) => role.toLowerCase()),
+    };
+    return roles.any(
+      const {'staff', 'class_advisor', 'hod', 'principal'}.contains,
+    );
+  }
 
   @override
   void initState() {
@@ -47,7 +59,7 @@ class _ExaminationShellState extends State<ExaminationShell> {
       'schedule' => 0,
       'results' => 1,
       'marks' => _isStudent || _isParent ? 1 : 2,
-      _ => null,
+      _ => _isAcademicWorkflowRole ? 2 : null,
     };
   }
 
@@ -241,7 +253,10 @@ class _ExaminationShellState extends State<ExaminationShell> {
         case 1:
           return const MergedStudentManagementScreen();
         case 2:
-          return const MergedMarksResultsScreen();
+          return MergedMarksResultsScreen(
+            session: widget.session,
+            repository: widget.marksRepository,
+          );
         case 3:
           return const MergedReportsAnalyticsScreen();
         default:

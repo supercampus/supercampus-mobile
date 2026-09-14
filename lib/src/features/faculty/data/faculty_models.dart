@@ -61,8 +61,10 @@ class FacultyAcademicLeaveRequest {
 class DepartmentNotice {
   const DepartmentNotice({
     required this.id,
+    required this.type,
     required this.title,
     required this.content,
+    required this.announcementDate,
     required this.postedAt,
     required this.author,
     required this.targetAudience,
@@ -71,8 +73,10 @@ class DepartmentNotice {
   });
 
   final String id;
+  final String type;
   final String title;
   final String content;
+  final DateTime announcementDate;
   final DateTime postedAt;
   final String author;
   final String targetAudience;

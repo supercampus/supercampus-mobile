@@ -120,16 +120,32 @@ class AttendanceRepository {
   }
 
   Future<List<Map<String, dynamic>>> sessions() async {
-    final data = _data(
-      await _authorizedRequest(
-        (headers) => _client.get(
-          _uri('/api/v1/operations/attendance/sessions'),
-          headers: headers,
-        ),
-      ),
-    );
+    final data = await reviewWorkspace();
     return _maps(data['sessions']);
   }
+
+  Future<Map<String, dynamic>> reviewWorkspace() async => _data(
+    await _authorizedRequest(
+      (headers) => _client.get(
+        _uri('/api/v1/operations/attendance/sessions'),
+        headers: headers,
+      ),
+    ),
+  );
+
+  /// The marked roster for one submitted subject session.
+  ///
+  /// The server applies the caller's attendance scope before returning the
+  /// roster, so an advisor sees assigned classes, an HOD their department,
+  /// and a principal the institution.
+  Future<Map<String, dynamic>> sessionRoster(String sessionId) async => _data(
+    await _authorizedRequest(
+      (headers) => _client.get(
+        _uri('/api/v1/operations/attendance/sessions/$sessionId/entries'),
+        headers: headers,
+      ),
+    ),
+  );
 
   Future<Map<String, dynamic>> createSession({
     required String timetableEntryId,
@@ -177,6 +193,24 @@ class AttendanceRepository {
       ),
     );
   }
+
+  Future<Map<String, dynamic>> reviewSession(
+    String sessionId, {
+    required String decision,
+    String? note,
+  }) async => _data(
+    await _authorizedRequest(
+      (headers) => _client.post(
+        _uri('/api/v1/operations/attendance/sessions/$sessionId/review'),
+        headers: headers,
+        body: jsonEncode({
+          'decision': decision,
+          if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+        }),
+      ),
+      json: true,
+    ),
+  );
 
   Future<List<Map<String, dynamic>>> reports() async {
     final data = _data(
@@ -280,6 +314,3 @@ String? _uuidOrNull(String? value) =>
     value != null && RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(value)
     ? value
     : null;
-
-int _number(Object? value) =>
-    value is num ? value.toInt() : int.tryParse(value?.toString() ?? '') ?? 0;

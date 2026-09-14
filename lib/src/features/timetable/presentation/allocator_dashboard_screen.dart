@@ -43,8 +43,12 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 Expanded(child: _buildMainBody(context)),
               ],
             )
-          : _buildMainBody(context),
-      bottomNavigationBar: isDesktop ? null : _buildBottomNavBar(context),
+          : Column(
+              children: [
+                _buildMobileSectionSwitcher(context),
+                Expanded(child: _buildMainBody(context)),
+              ],
+            ),
     );
   }
 
@@ -209,59 +213,47 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     );
   }
 
-  // Compact allocator navigation for mobile.
-  Widget _buildBottomNavBar(BuildContext context) {
+  // In-page allocator sections for mobile. The module host owns the only
+  // bottom navigation bar, so allocator sections must never dock beneath it.
+  Widget _buildMobileSectionSwitcher(BuildContext context) {
     final disruptions = widget.repository.getDisruptionAlerts();
     final activeDisruptions = disruptions.where((d) => !d.isResolved).length;
     final subs = widget.repository.getSubstitutions();
     final pendingSubs = subs.where((s) => s.status == 'Pending').length;
     final totalBadge = activeDisruptions + pendingSubs;
 
-    return BottomNavigationBar(
-      currentIndex: _currentNavIndex,
-      onTap: (idx) => setState(() => _currentNavIndex = idx),
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: AppColors.primary,
-      unselectedItemColor: Colors.grey.shade600,
-      selectedLabelStyle: const TextStyle(
-        fontWeight: FontWeight.w600,
-        fontSize: 12,
+    final sections = <(String, IconData, int)>[
+      ('Dashboard', Icons.dashboard_outlined, 0),
+      ('Builder', Icons.calendar_month_outlined, 1),
+      ('Setup', Icons.tune_outlined, 2),
+      (
+        totalBadge > 0 ? 'Substitutions ($totalBadge)' : 'Substitutions',
+        Icons.swap_horiz_outlined,
+        3,
       ),
-      items: [
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard_outlined),
-          activeIcon: Icon(Icons.dashboard),
-          label: 'Dashboard',
+      ('Activity', Icons.history_outlined, 4),
+    ];
+
+    return Material(
+      color: Colors.white,
+      child: SizedBox(
+        height: 58,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          scrollDirection: Axis.horizontal,
+          itemCount: sections.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (context, index) {
+            final section = sections[index];
+            return ChoiceChip(
+              avatar: Icon(section.$2, size: 17),
+              label: Text(section.$1),
+              selected: _currentNavIndex == section.$3,
+              onSelected: (_) => setState(() => _currentNavIndex = section.$3),
+            );
+          },
         ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month_outlined),
-          activeIcon: Icon(Icons.calendar_month),
-          label: 'Builder',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.tune_outlined),
-          activeIcon: Icon(Icons.tune),
-          label: 'Setup',
-        ),
-        BottomNavigationBarItem(
-          icon: Badge(
-            isLabelVisible: totalBadge > 0,
-            label: Text('$totalBadge'),
-            child: const Icon(Icons.swap_horiz_outlined),
-          ),
-          activeIcon: Badge(
-            isLabelVisible: totalBadge > 0,
-            label: Text('$totalBadge'),
-            child: const Icon(Icons.swap_horiz),
-          ),
-          label: 'Substitutions',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.history_outlined),
-          activeIcon: Icon(Icons.history),
-          label: 'Activity Logs',
-        ),
-      ],
+      ),
     );
   }
 

@@ -7,7 +7,11 @@ import 'auth_http_client.dart';
 import 'auth_repository.dart';
 import 'session_store.dart';
 
-class BackendAuthRepository implements AuthRepository, SessionLogoutRepository {
+class BackendAuthRepository
+    implements
+        AuthRepository,
+        SessionLogoutRepository,
+        PasswordResetCompletionRepository {
   BackendAuthRepository({
     required String baseUrl,
     http.Client? client,
@@ -34,14 +38,12 @@ class BackendAuthRepository implements AuthRepository, SessionLogoutRepository {
       response = await _postLogin(
         email: email,
         password: password,
-        tenantDomain: tenantDomain,
         tokenMode: true,
       );
       if (_isLegacySessionModeRejection(response)) {
         response = await _postLogin(
           email: email,
           password: password,
-          tenantDomain: tenantDomain,
           tokenMode: false,
         );
       }
@@ -180,11 +182,44 @@ class BackendAuthRepository implements AuthRepository, SessionLogoutRepository {
 
   @override
   Future<void> sendPasswordReset(String email) async {
-    await _client.post(
-      _uri('/api/auth/forgot-password'),
-      headers: const {'content-type': 'application/json'},
-      body: jsonEncode({'email': email}),
-    );
+    late final http.Response response;
+    try {
+      response = await _client.post(
+        _uri('/api/auth/forgot-password'),
+        headers: const {'content-type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+    } on http.ClientException catch (error) {
+      throw AuthenticationException(_connectionMessage(error, _baseUri));
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw AuthenticationException(_errorMessage(response));
+    }
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String token,
+    required String password,
+  }) async {
+    late final http.Response response;
+    try {
+      response = await _client.post(
+        _uri('/api/auth/reset-password'),
+        headers: const {'content-type': 'application/json'},
+        body: jsonEncode({'token': token, 'password': password}),
+      );
+    } on http.ClientException catch (error) {
+      throw AuthenticationException(_connectionMessage(error, _baseUri));
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw AuthenticationException(
+        _errorMessage(
+          response,
+          fallback: 'Unable to update your password right now.',
+        ),
+      );
+    }
   }
 
   @override
@@ -209,7 +244,6 @@ class BackendAuthRepository implements AuthRepository, SessionLogoutRepository {
   Future<http.Response> _postLogin({
     required String email,
     required String password,
-    required String tenantDomain,
     required bool tokenMode,
   }) async {
     final body = <String, String>{'email': email, 'password': password};
@@ -220,11 +254,7 @@ class BackendAuthRepository implements AuthRepository, SessionLogoutRepository {
     }
     return _client.post(
       _uri('/api/auth/login'),
-      headers: {
-        'content-type': 'application/json',
-        'x-tenant-id': tenantDomain,
-        'x-client-surface': 'app',
-      },
+      headers: {'content-type': 'application/json', 'x-client-surface': 'app'},
       body: jsonEncode(body),
     );
   }
@@ -259,7 +289,10 @@ Uri _normalizeBaseUri(String baseUrl) {
 
 bool _isLoopbackHost(String host) => host == '127.0.0.1' || host == 'localhost';
 
-String _errorMessage(http.Response response) {
+String _errorMessage(
+  http.Response response, {
+  String fallback = 'Unable to sign in right now.',
+}) {
   try {
     final body = jsonDecode(response.body);
     if (body is Map<String, dynamic>) {
@@ -271,7 +304,7 @@ String _errorMessage(http.Response response) {
   } catch (_) {
     // Fall through to the status-based message.
   }
-  return 'Unable to sign in right now. (${response.statusCode})';
+  return '$fallback (${response.statusCode})';
 }
 
 String? _errorCode(http.Response response) {
@@ -297,6 +330,9 @@ UserRole _roleFromBackend(String role, {required UserRole fallback}) {
   if (normalized.contains('admin')) return UserRole.admin;
   if (normalized.contains('security')) return UserRole.security;
   if (normalized.contains('parent')) return UserRole.parent;
+  // Warden is a staff portal persona, while its stable backend role key is
+  // preserved in UserSession.roleIds for approval-portal routing.
+  if (normalized.contains('warden')) return UserRole.staff;
   if (normalized.contains('allocator')) return UserRole.timetableAllocator;
   if (normalized.contains('faculty') || normalized.contains('staff')) {
     return UserRole.staff;

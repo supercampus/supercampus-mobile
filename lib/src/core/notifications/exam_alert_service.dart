@@ -62,7 +62,7 @@ class ExamAlertService extends ChangeNotifier {
 
       await _plugin.initialize(
         settings: const InitializationSettings(
-          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          android: AndroidInitializationSettings('@drawable/ic_notification'),
           iOS: DarwinInitializationSettings(
             // Asked for at the moment the student sets their first alert
             // instead, where the prompt has an obvious reason behind it.

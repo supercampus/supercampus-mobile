@@ -5,14 +5,17 @@
 // deprecated service worker prevents a previous release from masking the
 // current student/staff UI after deployment.
 //
-// The bootstrap file itself is requested with a release query string, but the
-// generated loader otherwise asks for an unversioned `main.dart.js`. Mobile
-// Safari can keep that response in its HTTP cache even after every service
-// worker and CacheStorage entry has been removed. Version the real application
-// entry point as well so a deployment always paints the UI it contains.
+// The bootstrap file itself is requested with a cache-busting query string, but
+// the generated loader otherwise asks for an unversioned `main.dart.js`. Some
+// browsers keep that response in their HTTP cache even after every service
+// worker and CacheStorage entry has been removed. Give the real application
+// entry point a fresh URL on each full load so a deployment always paints the
+// UI it contains.
 for (const finalBuild of _flutter.buildConfig.builds) {
   if (finalBuild.mainJsPath != null) {
-    finalBuild.mainJsPath = 'main.dart.js?v=20260828-22';
+    finalBuild.mainJsPath = `main.dart.js?v=${Date.now()}`;
   }
 }
-_flutter.loader.load();
+// A single full CanvasKit bundle keeps the deploy artifact below the host's
+// upload limit while remaining compatible with Android, iOS, and desktop web.
+_flutter.loader.load({config: {canvasKitVariant: 'full'}});

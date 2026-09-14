@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -19,6 +20,7 @@ class GatepassDashboardScreen extends StatelessWidget {
     required this.onInviteVisitor,
     required this.onRetryLocation,
     required this.onExitModule,
+    this.liveDailyPass,
   });
 
   final GatepassStore store;
@@ -29,6 +31,7 @@ class GatepassDashboardScreen extends StatelessWidget {
   final VoidCallback onInviteVisitor;
   final VoidCallback onRetryLocation;
   final VoidCallback onExitModule;
+  final ValueListenable<DailyAccessPass?>? liveDailyPass;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +62,7 @@ class GatepassDashboardScreen extends StatelessWidget {
                 store: store,
                 onApplyLeavePass: onApplyLeavePass,
                 onApplyOutpass: onApplyOutpass,
+                liveDailyPass: liveDailyPass,
               ),
               const SizedBox(height: 26),
               Text(
@@ -286,11 +290,13 @@ class _PassActions extends StatelessWidget {
     required this.store,
     required this.onApplyLeavePass,
     required this.onApplyOutpass,
+    this.liveDailyPass,
   });
 
   final GatepassStore store;
   final VoidCallback onApplyLeavePass;
   final VoidCallback onApplyOutpass;
+  final ValueListenable<DailyAccessPass?>? liveDailyPass;
 
   @override
   Widget build(BuildContext context) {
@@ -381,6 +387,9 @@ class _PassActions extends StatelessWidget {
                         payload,
                         manualCode: manualCode,
                         label: qrLabel,
+                        liveDailyPass: approvedPass == null
+                            ? liveDailyPass
+                            : null,
                       ),
                 child: Padding(
                   padding: const EdgeInsets.all(10),
@@ -419,6 +428,7 @@ class _PassActions extends StatelessWidget {
     String payload, {
     required String? manualCode,
     required String label,
+    ValueListenable<DailyAccessPass?>? liveDailyPass,
   }) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -427,6 +437,7 @@ class _PassActions extends StatelessWidget {
           payload: payload,
           manualCode: manualCode,
           label: label,
+          liveDailyPass: liveDailyPass,
         ),
       ),
     );
@@ -438,11 +449,13 @@ class _FullScreenGateQr extends StatelessWidget {
     required this.payload,
     required this.manualCode,
     required this.label,
+    this.liveDailyPass,
   });
 
   final String payload;
   final String? manualCode;
   final String label;
+  final ValueListenable<DailyAccessPass?>? liveDailyPass;
 
   @override
   Widget build(BuildContext context) {
@@ -459,53 +472,100 @@ class _FullScreenGateQr extends StatelessWidget {
         ),
       ),
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: QrImageView(data: payload, size: qrSize),
-                ),
-                const SizedBox(height: 28),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    letterSpacing: 1.4,
-                  ),
-                ),
-                if (manualCode case final code?) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    code,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 34,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 8,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                const Text(
-                  'Present this code at the campus gate',
-                  style: TextStyle(color: Colors.white70),
-                ),
-              ],
-            ),
-          ),
-        ),
+        child: liveDailyPass == null
+            ? _qrContent(context, payload, manualCode, qrSize)
+            : ValueListenableBuilder<DailyAccessPass?>(
+                valueListenable: liveDailyPass!,
+                builder: (context, pass, _) => pass == null
+                    ? _expiredContent()
+                    : _qrContent(
+                        context,
+                        pass.qrPayload,
+                        pass.manualCode,
+                        qrSize,
+                      ),
+              ),
       ),
     );
   }
+
+  Widget _qrContent(
+    BuildContext context,
+    String currentPayload,
+    String? currentManualCode,
+    double qrSize,
+  ) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: QrImageView(data: currentPayload, size: qrSize),
+          ),
+          const SizedBox(height: 28),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+              letterSpacing: 1.4,
+            ),
+          ),
+          if (currentManualCode case final code?) ...[
+            const SizedBox(height: 8),
+            Text(
+              code,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 34,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 8,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          const Text(
+            'Valid while this device remains inside the campus',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white70),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _expiredContent() => const Center(
+    child: Padding(
+      padding: EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.qr_code_2_rounded, color: Colors.white38, size: 92),
+          SizedBox(height: 20),
+          Text(
+            'QR expired',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'You are outside the campus geofence. A new QR will appear after you enter again.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white70, height: 1.4),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _ActiveRequestCard extends StatelessWidget {

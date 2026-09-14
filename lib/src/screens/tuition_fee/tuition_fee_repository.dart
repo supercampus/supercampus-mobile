@@ -152,6 +152,31 @@ class TuitionFeeRepository {
     });
   }
 
+  Future<void> markHostelFeePaid({
+    required FeeStudent student,
+    required DateTime validFrom,
+    required DateTime validUntil,
+    String? paymentReference,
+  }) async {
+    await _post('/api/v1/operations/hostel/fee-entitlements', {
+      'studentUserId': student.userId,
+      'validFrom': _day(validFrom),
+      'validUntil': _day(validUntil),
+      if (paymentReference?.trim().isNotEmpty == true)
+        'paymentReference': paymentReference!.trim(),
+    });
+  }
+
+  Future<void> updateHostelDiningSettings({
+    required bool menuEnabled,
+    required bool messEnabled,
+  }) async {
+    await _put('/api/v1/operations/hostel/dining-settings', {
+      'menuEnabled': menuEnabled,
+      'messEnabled': messEnabled,
+    });
+  }
+
   Future<RazorpayOrder> createOrder({
     required int amount,
     required String receipt,
@@ -235,6 +260,33 @@ class TuitionFeeRepository {
     return Map<String, dynamic>.from(decoded);
   }
 
+  Future<Map<String, dynamic>> _put(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    var token = await _accessTokenProvider();
+    var response = await _client.put(
+      _baseUri.resolve(path),
+      headers: {..._headers(token), 'content-type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    if (response.statusCode == 401) {
+      token = await _accessTokenProvider(forceRefresh: true);
+      response = await _client.put(
+        _baseUri.resolve(path),
+        headers: {..._headers(token), 'content-type': 'application/json'},
+        body: jsonEncode(body),
+      );
+    }
+    final decoded = jsonDecode(response.body);
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        decoded is! Map) {
+      throw TuitionFeeException(_errorMessage(response.body, decoded: decoded));
+    }
+    return Map<String, dynamic>.from(decoded);
+  }
+
   String _errorMessage(String body, {Object? decoded}) {
     Object? value = decoded;
     if (value == null) {
@@ -288,6 +340,9 @@ class TuitionFeeRepository {
     'accept': 'application/json',
   };
 }
+
+String _day(DateTime value) =>
+    '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
 
 class TuitionFeeException implements Exception {
   const TuitionFeeException(this.message);
