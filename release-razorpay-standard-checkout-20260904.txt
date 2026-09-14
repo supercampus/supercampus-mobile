@@ -1,2 +1,0 @@
-SuperCampus Razorpay Standard Web Checkout
-Built and deployed: 2026-09-04

@@ -1,3 +1,0 @@
-SuperCampus web release: student uploaded marks visibility
-Flutter source: eaab447
-Backend API: 879f988

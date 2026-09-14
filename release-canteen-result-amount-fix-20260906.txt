@@ -1,2 +1,0 @@
-SuperCampus web release: preserve the confirmed canteen amount in transaction results
-Flutter source: 35b7fb9

@@ -1,2 +1,0 @@
-SuperCampus web release: laundry QR charges and wallet payment
-Flutter source: 20fad694166cea3c30edcde39db8376498f3ef21

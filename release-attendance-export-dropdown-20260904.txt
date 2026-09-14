@@ -1,2 +1,0 @@
-SuperCampus attendance export dropdown and download button
-Built and deployed: 2026-09-04

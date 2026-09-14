@@ -1,3 +1,0 @@
-SuperCampus accountant wallet refresh
-Source: supercampus-mobile fifth-app 1d83a0d
-Includes student profile photos and the redesigned static accountant dashboard.

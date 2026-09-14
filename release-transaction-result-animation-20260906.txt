@@ -1,2 +1,0 @@
-SuperCampus web release: full-screen transaction success and failure animations
-Flutter source: 83606f5

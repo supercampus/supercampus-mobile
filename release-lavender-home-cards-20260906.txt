@@ -1,2 +1,0 @@
-SuperCampus web release: lavender home action cards
-Source commit: a074867

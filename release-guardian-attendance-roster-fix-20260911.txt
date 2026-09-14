@@ -1,3 +1,0 @@
-SuperCampus guardian edit and attendance roster repair
-Build date: 2026-09-11
-Includes: canonical department/section IDs preserved during guardian edits; affected MEC student links restored by backend migration.

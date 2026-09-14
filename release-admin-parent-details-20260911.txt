@@ -1,4 +1,0 @@
-SuperCampus admin parent details release.
-
-Student management now loads and edits the primary parent or guardian name,
-relationship and WhatsApp number used by family notification workflows.
