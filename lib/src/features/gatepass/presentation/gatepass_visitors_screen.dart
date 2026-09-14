@@ -336,9 +336,9 @@ class _InviteVisitorSheetState extends State<InviteVisitorSheet> {
                       prefixIcon: Icon(Icons.phone_outlined),
                     ),
                     validator: (value) =>
-                        RegExp(r'^\d{10}$').hasMatch(value?.trim() ?? '')
+                        RegExp(r'^\+?\d{8,15}$').hasMatch(value?.trim() ?? '')
                         ? null
-                        : 'Enter a 10-digit phone number.',
+                        : 'Enter a valid phone number.',
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
