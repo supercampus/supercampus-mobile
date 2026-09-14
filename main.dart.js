@@ -149786,7 +149786,7 @@ return s.e.bN("DELETE",s.a.M("/api/v1/operations/gatepass/requests/"+this.b),a,n
 $S:3}
 A.awE.prototype={
 $1(a){var s=this.a,r=this.b,q=r.e,p=t.N
-return s.e.bN("POST",s.a.M("/api/v1/operations/gatepass/visitors"),a,B.ai.ct(A.a7(["visitorKind","parent","visitorName",r.a,"visitorPhone",r.b,"purpose",r.d,"relationship",r.c,"visitFrom",q.jT().i_(),"visitUntil",q.bS(144e8).jT().i_()],p,p),null),null)},
+return s.e.bN("POST",s.a.M("/api/v1/operations/gatepass/visitors"),a,B.ai.ct(A.a7(["visitorKind","parent","visitorName",r.a,"visitorPhone",r.b,"purpose",r.c+" - "+r.d,"visitFrom",q.jT().i_(),"visitUntil",q.bS(144e8).jT().i_()],p,p),null),null)},
 $S:3}
 A.acH.prototype={
 H(){return"StudentResidency."+this.b}}
