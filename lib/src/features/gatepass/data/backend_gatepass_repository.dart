@@ -51,13 +51,28 @@ class BackendGatepassRepository implements GatepassRepository {
     Map<String, dynamic> data;
     String? overviewIssue;
     try {
-      final overview = await _authorizedRequest(
+      final overviewFuture = _authorizedRequest(
         (headers) => _client.get(
           _uri('/api/v1/operations/gatepass/overview'),
           headers: headers,
         ),
       );
+      final visitorsFuture = _authorizedRequest(
+        (headers) => _client.get(
+          _uri('/api/v1/operations/gatepass/visitors'),
+          headers: headers,
+        ),
+      ).catchError((_) => http.Response('{"data":{"visitors":[]}}', 200));
+
+      final overview = await overviewFuture;
+      final visitorsRes = await visitorsFuture;
+      
       data = _data(overview);
+      try {
+        data['visitors'] = _data(visitorsRes)['visitors'];
+      } catch (_) {
+        data['visitors'] = [];
+      }
     } on GatepassUnavailableException {
       // The overview is the module's backbone, but a server that cannot answer
       // it at all should still let the reader in to see what else works.
@@ -176,7 +191,9 @@ class BackendGatepassRepository implements GatepassRepository {
       requests: _list(
         data['requests'],
       ).map((value) => _request(_map(value))).toList(growable: false),
-      visitors: const [],
+      visitors: _list(
+        data['visitors'],
+      ).map((value) => _visitor(_map(value))).toList(growable: false),
       movements: _list(
         data['movements'],
       ).map((value) => _movement(_map(value))).toList(growable: false),
@@ -315,9 +332,44 @@ class BackendGatepassRepository implements GatepassRepository {
   }
 
   @override
-  Future<VisitorInvitation> inviteVisitor(VisitorInvitationDraft draft) {
-    throw const GatepassException(
-      'Visitor invitations are not part of the Gatepass flow yet.',
+  Future<VisitorInvitation> inviteVisitor(VisitorInvitationDraft draft) async {
+    final response = await _authorizedRequest(
+      (headers) => _client.post(
+        _uri('/api/v1/operations/gatepass/visitors'),
+        headers: headers,
+        body: jsonEncode({
+          'visitorKind': 'parent',
+          'visitorName': draft.visitorName,
+          'visitorPhone': draft.phone,
+          'purpose': draft.purpose,
+          'relationship': draft.relationship,
+          'visitFrom': draft.visitAt.toUtc().toIso8601String(),
+          'visitUntil': draft.visitAt.add(const Duration(hours: 4)).toUtc().toIso8601String(),
+        }),
+      ),
+      json: true,
+    );
+    return _visitor(_data(response));
+  }
+
+  VisitorInvitation _visitor(Map<String, dynamic> value) {
+    final state = _text(value['state']);
+    final status = switch (state) {
+      'approved' => ApprovalStatus.approved,
+      'rejected' => ApprovalStatus.rejected,
+      'cancelled' => ApprovalStatus.cancelled,
+      _ => ApprovalStatus.pending,
+    };
+    return VisitorInvitation(
+      id: _text(value['id']),
+      visitorName: _text(value['visitorName']),
+      phone: _text(value['visitorPhone']),
+      relationship: _text(value['relationship']),
+      purpose: _text(value['purpose']),
+      visitAt: _date(value['visitFrom']),
+      status: status,
+      submittedAt: _date(value['createdAt']),
+      qrPayload: _text(value['rawToken']).isEmpty ? null : _text(value['rawToken']),
     );
   }
 

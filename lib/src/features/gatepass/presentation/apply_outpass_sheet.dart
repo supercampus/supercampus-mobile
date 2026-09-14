@@ -5,9 +5,16 @@ import '../../../core/utils/formatters.dart';
 import '../data/gatepass_models.dart';
 
 class ApplyOutpassSheet extends StatefulWidget {
-  const ApplyOutpassSheet({super.key, required this.onSubmit});
+  const ApplyOutpassSheet({
+    super.key,
+    required this.onSubmit,
+    required this.passKind,
+    required this.student,
+  });
 
   final Future<GatepassRequest> Function(GatepassRequestDraft draft) onSubmit;
+  final GatepassPassKind passKind;
+  final GatepassStudent student;
 
   @override
   State<ApplyOutpassSheet> createState() => _ApplyOutpassSheetState();
@@ -28,8 +35,21 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _departure = DateTime(now.year, now.month, now.day + 1, 16);
-    _returnAt = _departure.add(const Duration(hours: 4));
+    final leave = widget.passKind == GatepassPassKind.leavePass;
+    _type = leave
+        ? GatepassRequestType.medical
+        : GatepassRequestType.localOuting;
+    _departure = leave
+        ? now.add(const Duration(minutes: 15))
+        : DateTime(now.year, now.month, now.day + 1, 16);
+    _returnAt = leave
+        ? _departure.add(const Duration(hours: 2))
+        : _departure.add(const Duration(hours: 4));
+    if (leave) {
+      _destination.text = widget.student.residency == StudentResidency.hosteller
+          ? 'Hostel'
+          : 'Home';
+    }
   }
 
   @override
@@ -77,6 +97,16 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
     FocusScope.of(context).unfocus();
     setState(() => _error = null);
     if (!_formKey.currentState!.validate()) return;
+    if (widget.passKind == GatepassPassKind.leavePass &&
+        (_departure.year != _returnAt.year ||
+            _departure.month != _returnAt.month ||
+            _departure.day != _returnAt.day)) {
+      setState(
+        () => _error =
+            'Leave pass must start and finish on the same college day.',
+      );
+      return;
+    }
     setState(() => _submitting = true);
     try {
       final request = await widget.onSubmit(
@@ -87,6 +117,8 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
           destination: _destination.text,
           reason: _reason.text,
           guardianPhone: _guardianPhone.text,
+          passKind: widget.passKind,
+          residency: widget.student.residency,
         ),
       );
       if (mounted) Navigator.of(context).pop(request);
@@ -102,7 +134,7 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Apply for outpass'),
+        title: Text('Apply for ${widget.passKind.label.toLowerCase()}'),
         actions: [
           IconButton(
             tooltip: 'Close',
@@ -121,28 +153,34 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 children: [
-                  Text(
-                    'Pass type',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 9),
-                  DropdownButtonFormField<GatepassRequestType>(
-                    initialValue: _type,
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.route),
+                  if (widget.passKind == GatepassPassKind.outpass) ...[
+                    Text(
+                      'Outpass type',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    items: GatepassRequestType.values
-                        .map(
-                          (type) => DropdownMenuItem(
-                            value: type,
-                            child: Text(type.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) =>
-                        setState(() => _type = value ?? _type),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 9),
+                    DropdownButtonFormField<GatepassRequestType>(
+                      initialValue: _type,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.route),
+                      ),
+                      items:
+                          const [
+                                GatepassRequestType.localOuting,
+                                GatepassRequestType.homeVisit,
+                              ]
+                              .map(
+                                (type) => DropdownMenuItem(
+                                  value: type,
+                                  child: Text(type.label),
+                                ),
+                              )
+                              .toList(),
+                      onChanged: (value) =>
+                          setState(() => _type = value ?? _type),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   Row(
                     children: [
                       Expanded(
@@ -165,6 +203,7 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _destination,
+                    readOnly: widget.passKind == GatepassPassKind.leavePass,
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'Destination',
@@ -188,18 +227,19 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
                         : null,
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _guardianPhone,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Guardian phone',
-                      prefixIcon: Icon(Icons.phone_outlined),
+                  if (widget.passKind == GatepassPassKind.outpass)
+                    TextFormField(
+                      controller: _guardianPhone,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: 'Guardian phone',
+                        prefixIcon: Icon(Icons.phone_outlined),
+                      ),
+                      validator: (value) =>
+                          RegExp(r'^\+?\d{8,15}$').hasMatch(value?.trim() ?? '')
+                          ? null
+                          : 'Enter a valid phone number.',
                     ),
-                    validator: (value) =>
-                        RegExp(r'^\d{10}$').hasMatch(value?.trim() ?? '')
-                        ? null
-                        : 'Enter a 10-digit phone number.',
-                  ),
                   const SizedBox(height: 14),
                   Container(
                     padding: const EdgeInsets.all(14),
@@ -207,14 +247,19 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
                       color: const Color(0xFFF1F0FF),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Row(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.info_outline, color: AppColors.gateBlue),
-                        SizedBox(width: 10),
+                        const Icon(
+                          Icons.info_outline,
+                          color: AppColors.gateBlue,
+                        ),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Your request is sent to the assigned approver. A gate QR is generated only after approval.',
+                            widget.passKind == GatepassPassKind.leavePass
+                                ? 'Advisor / HOD approval is followed by principal approval. Security scans the QR before you exit. Hostellers go to the hostel; day scholars go home.'
+                                : 'Outpass is only for hostellers. Parent consent is followed by warden approval before the gate QR is generated.',
                           ),
                         ),
                       ],
