@@ -73,77 +73,19 @@ class _TimetableShellState extends State<TimetableShell> {
     // whether the person is faculty.
     final isFaculty =
         !isAllocator && widget.session.activePortalFamily == PortalFamily.staff;
-    final primaryColor = AppColors.primary;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         leading: widget.onExitModule != null
             ? ModuleBackButton(
                 onPressed: widget.onExitModule!,
-                color: Colors.white,
+                color: Colors.black,
               )
             : null,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.table_chart,
-                size: 20,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isAllocator
-                        ? 'Published Timetable'
-                        : isFaculty
-                        ? 'Faculty Daily Operations'
-                        : 'Campus Timetable Management',
-                    maxLines: 2,
-                    softWrap: true,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    '${widget.session.displayName} • ${widget.session.role.label}',
-                    maxLines: 2,
-                    softWrap: true,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          if (widget.onExitModule != null)
-            ModuleHomeButton(
-              onPressed: widget.onExitModule!,
-              color: Colors.white,
-            ),
-          IconButton(
-            tooltip: 'Sign Out',
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: widget.onSignOut,
-          ),
-          const SizedBox(width: 6),
-        ],
+        title: const Text('Timetable', style: TextStyle(fontWeight: FontWeight.w600)),
       ),
       body: FutureBuilder<TimetableRepository>(
         future: _repository,
