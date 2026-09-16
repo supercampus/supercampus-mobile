@@ -15,6 +15,7 @@ import '../data/attendance_repository.dart';
 import '../services/attendance_report_exporter.dart';
 import 'attendance_class_picker.dart';
 import 'attendance_roster_row.dart';
+import 'student_attendance_history.dart';
 
 class AttendanceShell extends StatefulWidget {
   const AttendanceShell({
@@ -419,55 +420,17 @@ class _AttendanceShellState extends State<AttendanceShell> {
 
   List<Widget> _summaryView() {
     final summary = _summary ?? const <String, dynamic>{};
-    final records = (summary['records'] as List? ?? const [])
-        .whereType<Map<String, dynamic>>();
     return [
-      if (_hasWards)
-        DropdownButtonFormField<String>(
-          initialValue: _selectedWard,
-          decoration: const InputDecoration(labelText: 'Student'),
-          items: [
-            for (final ward in _wards)
-              DropdownMenuItem(
-                value: ward['studentUserId'].toString(),
-                child: Text(ward['studentName']?.toString() ?? 'Student'),
-              ),
-          ],
-          onChanged: (value) {
-            setState(() => _selectedWard = value);
-            _load();
-          },
-        ),
-      const SizedBox(height: 16),
-      Row(
-        children: [
-          _Metric(label: 'Attendance', value: '${summary['percentage'] ?? 0}%'),
-          _Metric(
-            label: 'Attended',
-            value: '${summary['attendedClasses'] ?? 0}',
-          ),
-          _Metric(label: 'Absent', value: '${summary['absences'] ?? 0}'),
-        ],
-      ),
-      const SizedBox(height: 24),
-      Text('Attendance records', style: Theme.of(context).textTheme.titleLarge),
-      const SizedBox(height: 8),
-      if (records.isEmpty)
-        const ListTile(title: Text('No published attendance yet')),
-      for (final record in records)
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(
-            record['status'] == 'present'
-                ? Icons.check_circle
-                : Icons.cancel_outlined,
-          ),
-          title: Text(record['subjectName']?.toString() ?? 'Class'),
-          subtitle: Text(
-            '${record['heldOn'] ?? ''}  ${record['periodLabel'] ?? ''}',
-          ),
-          trailing: Text(record['status']?.toString().toUpperCase() ?? ''),
-        ),
+      StudentAttendanceHistory(
+        summary: summary,
+        hasWards: _hasWards,
+        wards: _wards,
+        selectedWard: _selectedWard,
+        onWardChanged: (value) {
+          setState(() => _selectedWard = value);
+          _load();
+        },
+      )
     ];
   }
 
@@ -1919,23 +1882,6 @@ class _EntryAttendanceStatus extends StatelessWidget {
   }
 }
 
-class _Metric extends StatelessWidget {
-  const _Metric({required this.label, required this.value});
-  final String label;
-  final String value;
-  @override
-  Widget build(BuildContext context) => Expanded(
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Column(
-        children: [
-          Text(value, style: Theme.of(context).textTheme.headlineMedium),
-          Text(label),
-        ],
-      ),
-    ),
-  );
-}
 
 class _ErrorBanner extends StatelessWidget {
   const _ErrorBanner(this.message);
