@@ -170,7 +170,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                 HomeTopBar(
                   displayName: widget.session.displayName,
                   onAlertsTap: _openAlerts,
-                  onSettingsTap: _openProfile,
+                  onSettingsTap: _openSettings,
                   hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
                 ),
                 Expanded(
@@ -261,6 +261,20 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
     }
     _loadNotifications();
   }
+
+  void _openSettings() => showHomeSheet(
+    context: context,
+    title: 'Settings',
+    expand: true,
+    child: SettingsSheet(
+      onOpenModule: widget.onOpenModule,
+      onSignOut: widget.onSignOut,
+      onThemeModeChanged: widget.onThemeModeChanged,
+      modules: portalModules(widget.session, widget.permissions),
+      moduleOrder: widget.moduleOrder,
+      onModuleOrderChanged: widget.onModuleOrderChanged,
+    ),
+  );
 
   void _openProfile() => showHomeSheet(
     context: context,
