@@ -52,7 +52,9 @@ class BackendCanteenRepository implements CanteenRepository {
         rollNumber: _text(user['rollNumber'], fallback: 'Not assigned'),
         department: _text(user['department'], fallback: 'Not assigned'),
       ),
-      walletBalance: _number(data['walletBalance']),
+      walletBalances: _map(data['walletBalances']).map(
+        (key, value) => MapEntry(key, _number(value)),
+      ),
       shops: shops,
       assignedShopKeys: _list(data['assignedShopKeys'])
           .map((value) => _text(value))
@@ -147,7 +149,7 @@ class BackendCanteenRepository implements CanteenRepository {
     );
   }
 
-  Future<WalletTopUpOrder> createWalletTopUpOrder(double amount) async {
+  Future<WalletTopUpOrder> createWalletTopUpOrder(double amount, String shopKey) async {
     final receipt = 'wallet_${DateTime.now().millisecondsSinceEpoch}';
     final response = await _authorizedRequest(
       (headers) => _client.post(
@@ -158,6 +160,7 @@ class BackendCanteenRepository implements CanteenRepository {
           'currency': 'INR',
           'receipt': receipt,
           'purpose': 'wallet_top_up',
+          'shopKey': shopKey,
         }),
       ),
       json: true,
@@ -576,6 +579,7 @@ class BackendCanteenRepository implements CanteenRepository {
         : WalletTransactionType.credit;
     return WalletTransaction(
       id: _text(value['id']),
+      shopKey: _text(value['shopKey'], fallback: 'mec-canteen'),
       type: type,
       amount: amount.abs(),
       description: _text(value['description'], fallback: 'Wallet activity'),

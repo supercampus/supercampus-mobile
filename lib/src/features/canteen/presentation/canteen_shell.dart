@@ -192,7 +192,10 @@ class _CanteenShellState extends State<CanteenShell> {
     if (!mounted || _store == null) return;
     setState(() {
       _store = _store!.copyWith(
-        walletBalance: result.balance,
+        walletBalances: {
+          ..._store!.walletBalances,
+          'mec-laundry': result.balance,
+        },
         laundryCharges: [
           for (final value in _store!.laundryCharges)
             if (value.id == result.charge.id) result.charge else value,
@@ -232,10 +235,12 @@ class _CanteenShellState extends State<CanteenShell> {
     if (!mounted) return result;
     final store = _store!;
     setState(() {
-      // A cart spanning shops comes back as several orders, each with its own
-      // QR, paid from the one wallet.
+      final newBalances = Map.of(store.walletBalances);
+      for (final t in result.transactions) {
+        newBalances[t.shopKey] = (newBalances[t.shopKey] ?? 0.0) - t.amount;
+      }
       _store = store.copyWith(
-        walletBalance: result.balance,
+        walletBalances: newBalances,
         orders: [...result.orders, ...store.orders],
         walletTransactions: [
           ...result.transactions,
@@ -248,11 +253,12 @@ class _CanteenShellState extends State<CanteenShell> {
     return result;
   }
 
-  Future<WalletTopUpResult> _topUpWallet(double amount) async {
+  Future<WalletTopUpResult> _topUpWallet(double amount, String shopKey) async {
     final result = switch (_repository) {
       BackendCanteenRepository backend => await _payWalletTopUp(
         backend,
         amount,
+        shopKey,
       ),
       _ => await _repository.topUpWallet(amount),
     };
@@ -260,7 +266,10 @@ class _CanteenShellState extends State<CanteenShell> {
     final store = _store!;
     setState(() {
       _store = store.copyWith(
-        walletBalance: result.balance,
+        walletBalances: {
+          ...store.walletBalances,
+          shopKey: result.balance,
+        },
         walletTransactions: [result.transaction, ...store.walletTransactions],
       );
     });
@@ -270,9 +279,10 @@ class _CanteenShellState extends State<CanteenShell> {
   Future<WalletTopUpResult> _payWalletTopUp(
     BackendCanteenRepository repository,
     double amount,
+    String shopKey,
   ) async {
     try {
-      final order = await repository.createWalletTopUpOrder(amount);
+      final order = await repository.createWalletTopUpOrder(amount, shopKey);
       final checkout = await const RazorpayCheckoutClient().open(
         keyId: order.keyId,
         orderId: order.id,
@@ -308,7 +318,7 @@ class _CanteenShellState extends State<CanteenShell> {
         child: CanteenCartScreen(
           menu: store.menu,
           cart: _cart,
-          walletBalance: store.walletBalance,
+          walletBalances: store.walletBalances,
           onAdd: _addItem,
           onRemove: _removeItem,
           onPlaceOrder: _placeOrder,
@@ -317,7 +327,7 @@ class _CanteenShellState extends State<CanteenShell> {
     );
   }
 
-  Future<void> _openWallet(BuildContext context) async {
+  Future<void> _openWallet(BuildContext context, [String? shopKey]) async {
     var settings = WalletTopUpSettings.defaults;
     if (_repository is BackendCanteenRepository) {
       try {
@@ -344,7 +354,8 @@ class _CanteenShellState extends State<CanteenShell> {
         heightFactor: 0.84,
         child: StudentWalletSheet(
           store: _store!,
-          onTopUp: _topUpWallet,
+          onTopUp: (amount) => _topUpWallet(amount, shopKey ?? 'mec-canteen'),
+          shopKey: shopKey ?? 'mec-canteen',
           topUpSettings: settings,
         ),
       ),
@@ -356,7 +367,6 @@ class _CanteenShellState extends State<CanteenShell> {
       MaterialPageRoute<void>(
         builder: (_) => StudentCanteenProfileScreen(
           store: _store!,
-          onOpenWallet: () => _openWallet(context),
           onSignOut: () {
             Navigator.of(context).pop();
             widget.onSignOut();
@@ -468,7 +478,7 @@ class _CanteenShellState extends State<CanteenShell> {
         onAdd: _addItem,
         onRemove: _removeItem,
         onOpenCart: () => _openCart(context),
-        onOpenWallet: () => _openWallet(context),
+        onOpenWallet: (shopKey) => _openWallet(context, shopKey),
         onOpenProfile: () => _openProfile(context),
         onOpenOrders: () => setState(() => _selectedIndex = 1),
         onExitModule: widget.onExitModule,

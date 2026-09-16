@@ -32,7 +32,7 @@ class StudentCanteenHome extends StatefulWidget {
   final ValueChanged<CanteenMenuItem> onAdd;
   final ValueChanged<CanteenMenuItem> onRemove;
   final VoidCallback onOpenCart;
-  final VoidCallback onOpenWallet;
+  final ValueChanged<String> onOpenWallet;
   final VoidCallback onOpenProfile;
   final VoidCallback onOpenOrders;
   final VoidCallback onExitModule;
@@ -215,7 +215,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                   else if (_selectedShopIsLaundry)
                     _LaundryStudentPanel(
                       charges: widget.store.laundryCharges,
-                      walletBalance: widget.store.walletBalance,
+                      walletBalance: widget.store.walletBalances['mec-laundry'] ?? 0.0,
                       onPay: widget.onPayLaundryCharge,
                     )
                   else if (_visibleItems.isEmpty)
@@ -275,7 +275,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
         // wallet, where the histories live.
         InkWell(
           customBorder: const StadiumBorder(),
-          onTap: widget.onOpenWallet,
+          onTap: () => widget.onOpenWallet(_selectedShopKey ?? 'mec-canteen'),
           child: Container(
             height: 38,
             padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -293,7 +293,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                 ),
                 const SizedBox(width: 7),
                 Text(
-                  formatCurrency(widget.store.walletBalance),
+                  formatCurrency(widget.store.walletBalances[_selectedShopKey] ?? 0.0),
                   style: const TextStyle(
                     color: Color(0xFF2563EB),
                     fontWeight: FontWeight.w700,

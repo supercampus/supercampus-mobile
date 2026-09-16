@@ -27,7 +27,11 @@ class MockCanteenRepository implements CanteenRepository {
         rollNumber: 'MEC26CS041',
         department: 'Computer Science',
       ),
-      walletBalance: _balance,
+      walletBalances: {
+        'mec-canteen': _balance,
+        'mec-stationery': _balance,
+        'mec-laundry': _balance,
+      },
       shops: const [
         CanteenShop(
           id: 'shop-classic',
@@ -179,7 +183,7 @@ class MockCanteenRepository implements CanteenRepository {
       paidAt: DateTime.now(),
     );
     _laundryCharges[index] = paid;
-    final transaction = WalletTransaction(
+    final transaction = WalletTransaction(shopKey: 'mec-canteen', 
       id: 'laundry-txn-${DateTime.now().microsecondsSinceEpoch}',
       type: WalletTransactionType.debit,
       amount: charge.total,
@@ -201,7 +205,7 @@ class MockCanteenRepository implements CanteenRepository {
     }
     await Future<void>.delayed(const Duration(milliseconds: 800));
     _balance += amount;
-    final transaction = WalletTransaction(
+    final transaction = WalletTransaction(shopKey: 'mec-canteen', 
       id: 'txn-${DateTime.now().millisecondsSinceEpoch}',
       type: WalletTransactionType.credit,
       amount: amount,
@@ -254,7 +258,7 @@ class MockCanteenRepository implements CanteenRepository {
         tokenNumber: 42 + _orders.length + sequence,
         qrPayload: 'QR-${timestamp.microsecondsSinceEpoch}-$sequence',
       );
-      final transaction = WalletTransaction(
+      final transaction = WalletTransaction(shopKey: 'mec-canteen', 
         id: 'txn-${timestamp.millisecondsSinceEpoch}-$sequence',
         type: WalletTransactionType.debit,
         amount: shopTotal,
@@ -430,21 +434,21 @@ class MockCanteenRepository implements CanteenRepository {
   List<WalletTransaction> _seedTransactions() {
     final now = DateTime.now();
     return [
-      WalletTransaction(
+      WalletTransaction(shopKey: 'mec-canteen', 
         id: 'txn-1',
         type: WalletTransactionType.debit,
         amount: 79,
         description: 'Order payment · ORD-20260802-0221',
         createdAt: DateTime(now.year, now.month, now.day - 1, 20, 29),
       ),
-      WalletTransaction(
+      WalletTransaction(shopKey: 'mec-canteen', 
         id: 'txn-2',
         type: WalletTransactionType.credit,
         amount: 500,
         description: 'Wallet top-up',
         createdAt: DateTime(now.year, now.month, now.day - 4, 10, 18),
       ),
-      WalletTransaction(
+      WalletTransaction(shopKey: 'mec-canteen', 
         id: 'txn-3',
         type: WalletTransactionType.debit,
         amount: 100,

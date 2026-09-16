@@ -9,12 +9,10 @@ class StudentCanteenProfileScreen extends StatelessWidget {
   const StudentCanteenProfileScreen({
     super.key,
     required this.store,
-    required this.onOpenWallet,
     required this.onSignOut,
   });
 
   final CanteenStore store;
-  final VoidCallback onOpenWallet;
   final VoidCallback onSignOut;
 
   @override
@@ -114,40 +112,6 @@ class StudentCanteenProfileScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          CanteenSurface(
-            color: const Color(0xFFE7F3EC),
-            onTap: onOpenWallet,
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.account_balance_wallet_outlined,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Wallet balance',
-                        style: TextStyle(color: AppColors.muted),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        formatCurrency(store.walletBalance),
-                        style: const TextStyle(
-                          fontSize: 23,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
           for (final setting in const [
             (Icons.history, 'Order history', 'View past completed orders'),
             (

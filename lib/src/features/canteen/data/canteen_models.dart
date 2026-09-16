@@ -241,6 +241,7 @@ enum WalletTransactionType { credit, debit }
 class WalletTransaction {
   const WalletTransaction({
     required this.id,
+    required this.shopKey,
     required this.type,
     required this.amount,
     required this.description,
@@ -248,6 +249,7 @@ class WalletTransaction {
   });
 
   final String id;
+  final String shopKey;
   final WalletTransactionType type;
   final double amount;
   final String description;
@@ -280,7 +282,7 @@ class CanteenUser {
 class CanteenStore {
   const CanteenStore({
     required this.user,
-    required this.walletBalance,
+    this.walletBalances = const {},
     required this.menu,
     required this.orders,
     required this.walletTransactions,
@@ -298,7 +300,7 @@ class CanteenStore {
   });
 
   final CanteenUser user;
-  final double walletBalance;
+  final Map<String, double> walletBalances;
   final List<CanteenMenuItem> menu;
   final List<CanteenOrder> orders;
   final List<WalletTransaction> walletTransactions;
@@ -314,7 +316,7 @@ class CanteenStore {
   final List<LaundryCharge> laundryCharges;
 
   CanteenStore copyWith({
-    double? walletBalance,
+    Map<String, double>? walletBalances,
     List<CanteenOrder>? orders,
     List<WalletTransaction>? walletTransactions,
     List<CanteenMenuItem>? menu,
@@ -327,7 +329,7 @@ class CanteenStore {
   }) {
     return CanteenStore(
       user: user,
-      walletBalance: walletBalance ?? this.walletBalance,
+      walletBalances: walletBalances ?? this.walletBalances,
       menu: menu ?? this.menu,
       orders: orders ?? this.orders,
       walletTransactions: walletTransactions ?? this.walletTransactions,

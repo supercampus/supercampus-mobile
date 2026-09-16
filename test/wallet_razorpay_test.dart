@@ -50,7 +50,7 @@ void main() {
       }),
     );
 
-    final order = await repository.createWalletTopUpOrder(500);
+    final order = await repository.createWalletTopUpOrder(500, 'mec-canteen');
 
     expect(order.id, 'order_wallet');
     expect(order.amount, 50000);

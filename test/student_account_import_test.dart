@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/src/features/admin_portal/presentation/student_account_import_page.dart';
+import 'package:supercampus_mobile/src/features/admin_portal/presentation/student_account_import_page.dart';
 
 void main() {
   test('accepts eight characters and rejects seven', () {

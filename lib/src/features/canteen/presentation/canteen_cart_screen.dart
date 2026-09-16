@@ -15,7 +15,7 @@ class CanteenCartScreen extends StatefulWidget {
     super.key,
     required this.menu,
     required this.cart,
-    required this.walletBalance,
+    required this.walletBalances,
     required this.onAdd,
     required this.onRemove,
     required this.onPlaceOrder,
@@ -23,7 +23,7 @@ class CanteenCartScreen extends StatefulWidget {
 
   final List<CanteenMenuItem> menu;
   final Map<String, int> cart;
-  final double walletBalance;
+  final Map<String, double> walletBalances;
   final ValueChanged<CanteenMenuItem> onAdd;
   final ValueChanged<CanteenMenuItem> onRemove;
   final Future<OrderPlacementResult> Function() onPlaceOrder;
@@ -226,20 +226,24 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.account_balance_wallet_outlined,
-                            size: 19,
-                            color: AppColors.primary,
+                      for (final shopKey in _lines.map((l) => l.item.effectiveShopKey).toSet())
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.account_balance_wallet_outlined,
+                                size: 19,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${shopKey == 'mec-stationery' ? 'Stationery' : 'Canteen'} wallet: ${formatCurrency(widget.walletBalances[shopKey] ?? 0.0)}',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Wallet balance ${formatCurrency(widget.walletBalance)}',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
-                      ),
+                        ),
                       if (_error != null) ...[
                         const SizedBox(height: 12),
                         Text(

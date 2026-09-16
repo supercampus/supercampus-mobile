@@ -19,10 +19,12 @@ class StudentWalletSheet extends StatefulWidget {
     super.key,
     required this.store,
     required this.onTopUp,
+    this.shopKey = 'mec-canteen',
     this.topUpSettings = WalletTopUpSettings.defaults,
   });
 
   final CanteenStore store;
+  final String shopKey;
   final Future<WalletTopUpResult> Function(double amount) onTopUp;
   final WalletTopUpSettings topUpSettings;
 
@@ -34,6 +36,11 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
   WalletHistory _history = WalletHistory.orders;
 
   CanteenStore get store => widget.store;
+  
+  List<WalletTransaction> get _transactions => store.walletTransactions
+      .where((t) => t.shopKey == widget.shopKey)
+      .toList();
+
   Future<WalletTopUpResult> Function(double amount) get onTopUp =>
       widget.onTopUp;
 
@@ -140,9 +147,9 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
                           style: TextStyle(color: AppColors.muted),
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          formatCurrency(store.walletBalance),
-                          style: const TextStyle(
+                          Text(
+                            formatCurrency(store.walletBalances[widget.shopKey] ?? 0.0),
+                            style: const TextStyle(
                             color: AppColors.primary,
                             fontSize: 25,
                             fontWeight: FontWeight.w500,
@@ -181,21 +188,21 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
             const SizedBox(height: 12),
             if (_history == WalletHistory.orders)
               Flexible(child: _OrderHistory(orders: store.orders))
-            else
-              Flexible(
-                child: store.walletTransactions.isEmpty
-                    ? const _EmptyHistory(
-                        icon: Icons.swap_vert,
-                        message: 'No transactions yet.',
-                      )
-                    : ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: store.walletTransactions.length,
-                        separatorBuilder: (_, _) =>
-                            const Divider(height: 1, indent: 56),
-                        itemBuilder: (context, index) {
-                          final transaction = store.walletTransactions[index];
-                          final isCredit =
+              else
+                Flexible(
+                  child: _transactions.isEmpty
+                      ? const _EmptyHistory(
+                          icon: Icons.swap_vert,
+                          message: 'No transactions yet.',
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: _transactions.length,
+                          separatorBuilder: (_, _) =>
+                              const Divider(height: 1, indent: 56),
+                          itemBuilder: (context, index) {
+                            final transaction = _transactions[index];
+                            final isCredit =
                               transaction.type == WalletTransactionType.credit;
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 12),

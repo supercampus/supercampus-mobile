@@ -24,7 +24,7 @@ void main() {
       store.menu.map((item) => item.store).toSet(),
       MenuStore.values.toSet(),
     );
-    expect(store.walletBalance, greaterThan(0));
+    expect(store.walletBalances['mec-canteen']!, greaterThan(0));
     expect(store.orders, isNotEmpty);
     expect(store.walletTransactions, isNotEmpty);
   });
@@ -33,7 +33,7 @@ void main() {
     final before = await repository.loadStore();
     final result = await repository.topUpWallet(500);
 
-    expect(result.balance, before.walletBalance + 500);
+    expect(result.balance, before.walletBalances['mec-canteen']! + 500);
     expect(result.transaction.type, WalletTransactionType.credit);
   });
 
@@ -48,7 +48,7 @@ void main() {
     expect(result.orders, hasLength(1));
     expect(result.order.total, item.price * 2);
     expect(result.order.status, CanteenOrderStatus.ready);
-    expect(result.balance, before.walletBalance - item.price * 2);
+    expect(result.balance, before.walletBalances['mec-canteen']! - item.price * 2);
     expect(result.transactions.single.type, WalletTransactionType.debit);
   });
 
@@ -78,7 +78,7 @@ void main() {
 
     // One wallet: the balance falls by the whole cart, debited per shop.
     expect(result.transactions, hasLength(2));
-    expect(result.balance, before.walletBalance - classic.price - bites.price);
+    expect(result.balance, before.walletBalances['mec-canteen']! - classic.price - bites.price);
     expect(
       result.transactions.fold<double>(0, (sum, t) => sum + t.amount),
       classic.price + bites.price,
