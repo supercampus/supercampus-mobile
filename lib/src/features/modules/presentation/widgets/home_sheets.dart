@@ -651,7 +651,6 @@ class SettingsSheet extends StatelessWidget {
         subtitle: 'Share feedback or raise a concern',
         onTap: () {
           Navigator.of(context).pop();
-          Navigator.of(context).pop();
           onOpenModule('feedback');
         },
       ),
@@ -667,7 +666,6 @@ class SettingsSheet extends StatelessWidget {
         subtitle: 'Sign out of this device and end your session',
         destructive: true,
         onTap: () {
-          Navigator.of(context).pop();
           Navigator.of(context).pop();
           onSignOut();
         },

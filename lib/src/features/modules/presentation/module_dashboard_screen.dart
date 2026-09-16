@@ -262,19 +262,26 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
     _loadNotifications();
   }
 
-  void _openSettings() => showHomeSheet(
-    context: context,
-    title: 'Settings',
-    expand: true,
-    child: SettingsSheet(
-      onOpenModule: widget.onOpenModule,
-      onSignOut: widget.onSignOut,
-      onThemeModeChanged: widget.onThemeModeChanged,
-      modules: portalModules(widget.session, widget.permissions),
-      moduleOrder: widget.moduleOrder,
-      onModuleOrderChanged: widget.onModuleOrderChanged,
-    ),
-  );
+  void _openSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.w600)),
+            leading: const BackButton(),
+          ),
+          body: SettingsSheet(
+            onOpenModule: widget.onOpenModule,
+            onSignOut: widget.onSignOut,
+            onThemeModeChanged: widget.onThemeModeChanged,
+            modules: portalModules(widget.session, widget.permissions),
+            moduleOrder: widget.moduleOrder,
+            onModuleOrderChanged: widget.onModuleOrderChanged,
+          ),
+        ),
+      ),
+    );
+  }
 
   void _openProfile() => showHomeSheet(
     context: context,
