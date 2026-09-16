@@ -377,16 +377,10 @@ class _AttendanceShellState extends State<AttendanceShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: ModuleBackButton(onPressed: widget.onExitModule),
-        title: const Text('Attendance'),
-        actions: [
-          IconButton(
-            onPressed: _load,
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh),
-          ),
-          ModuleHomeButton(onPressed: widget.onExitModule),
-        ],
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        leading: ModuleBackButton(onPressed: widget.onExitModule, color: Colors.black),
+        title: const Text('Attendance', style: TextStyle(fontWeight: FontWeight.w600)),
       ),
       body: _busy && _summary == null && _roster.isEmpty && _reports.isEmpty
           ? const AttendanceLoadingSkeleton()
