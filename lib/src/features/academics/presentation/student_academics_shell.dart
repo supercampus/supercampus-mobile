@@ -138,8 +138,8 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
     appBar: AppBar(
-      backgroundColor: AppColors.gateBlue,
-      foregroundColor: Colors.white,
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
       leading: ModuleBackButton(
         onPressed: _showAttendanceHistory || _showMarksResults
             ? () => setState(() {
@@ -147,28 +147,18 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                 _showMarksResults = false;
               })
             : widget.onExitModule,
-        color: Colors.white,
+        color: Colors.black,
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Academics'),
+          const Text('Academics', style: TextStyle(fontWeight: FontWeight.w600)),
           Text(
             widget.session.displayName,
-            style: const TextStyle(fontSize: 11, color: Colors.white70),
+            style: const TextStyle(fontSize: 11, color: Colors.black54),
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          tooltip: 'Refresh academics',
-          onPressed: _loadingAssessments || _loadingAttendance
-              ? null
-              : _refresh,
-          icon: const Icon(Icons.refresh),
-        ),
-        ModuleHomeButton(onPressed: widget.onExitModule, color: Colors.white),
-      ],
     ),
     body: _showAttendanceHistory
         ? SingleChildScrollView(
@@ -534,8 +524,8 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
             child: TableCalendar<Map<String, dynamic>>(
-              firstDay: DateTime(earliest.year, earliest.month),
-              lastDay: DateTime(latest.year, latest.month + 1, 0),
+              firstDay: DateTime(DateTime.now().year - 10, 1, 1),
+              lastDay: DateTime(DateTime.now().year + 10, 12, 31),
               focusedDay: _focusedAttendanceDay,
               calendarFormat: CalendarFormat.month,
               availableCalendarFormats: const {CalendarFormat.month: 'Month'},
