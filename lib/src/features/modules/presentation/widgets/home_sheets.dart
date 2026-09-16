@@ -468,49 +468,13 @@ class ProfileSheet extends StatelessWidget {
       children: [
         _ProfileIdentityCard(session: session, modules: modules.length),
         const SizedBox(height: 16),
-        _ProfileAction(
-          icon: Icons.badge_outlined,
-          title: 'Details',
-          subtitle: 'Identity, academics, documents and health information',
-          onTap: () => showHomeSheet(
-            context: context,
-            title: 'Details',
-            expand: true,
-            child: _ProfileDetailsSheet(session: session),
-          ),
-        ),
-        _ProfileAction(
-          icon: Icons.settings_outlined,
-          title: 'Settings',
-          subtitle: 'Notifications, security and account preferences',
-          onTap: () => showHomeSheet(
-            context: context,
-            title: 'Settings',
-            expand: true,
-            child: _ProfileSettingsSheet(
-              onOpenModule: onOpenModule,
-              onSignOut: onSignOut,
-              onThemeModeChanged: onThemeModeChanged,
-              modules: modules,
-              moduleOrder: moduleOrder,
-              onModuleOrderChanged: onModuleOrderChanged,
-            ),
-          ),
-        ),
+        ..._buildDetailActions(context, session),
       ],
     );
   }
 }
 
-class _ProfileDetailsSheet extends StatelessWidget {
-  const _ProfileDetailsSheet({required this.session});
-
-  final UserSession session;
-
-  @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-    children: [
+List<Widget> _buildDetailActions(BuildContext context, UserSession session) => [
       _ProfileAction(
         icon: Icons.badge_outlined,
         title: 'Digital ID card',
@@ -628,12 +592,10 @@ class _ProfileDetailsSheet extends StatelessWidget {
           ],
         ),
       ),
-    ],
-  );
-}
+];
 
-class _ProfileSettingsSheet extends StatelessWidget {
-  const _ProfileSettingsSheet({
+class SettingsSheet extends StatelessWidget {
+  const SettingsSheet({
     required this.onOpenModule,
     required this.onSignOut,
     required this.onThemeModeChanged,

@@ -553,7 +553,11 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                   _focusedAttendanceDay = focusedDay;
                 });
               },
-              onPageChanged: (focusedDay) => _focusedAttendanceDay = focusedDay,
+              onPageChanged: (focusedDay) {
+                setState(() {
+                  _focusedAttendanceDay = focusedDay;
+                });
+              },
               headerStyle: const HeaderStyle(
                 titleCentered: true,
                 formatButtonVisible: false,
