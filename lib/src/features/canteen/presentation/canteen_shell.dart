@@ -266,10 +266,7 @@ class _CanteenShellState extends State<CanteenShell> {
     final store = _store!;
     setState(() {
       _store = store.copyWith(
-        walletBalances: {
-          ...store.walletBalances,
-          shopKey: result.balance,
-        },
+        walletBalances: {...store.walletBalances, shopKey: result.balance},
         walletTransactions: [result.transaction, ...store.walletTransactions],
       );
     });
@@ -380,35 +377,32 @@ class _CanteenShellState extends State<CanteenShell> {
   Widget build(BuildContext context) {
     final store = _store;
     if (_error != null) {
-      return Scaffold(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.cloud_off_outlined,
-                  size: 44,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-                const SizedBox(height: 16),
-                Text(_error!, textAlign: TextAlign.center),
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  onPressed: _loadStore,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                ),
-              ],
-            ),
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.cloud_off_outlined,
+                size: 44,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(_error!, textAlign: TextAlign.center),
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                onPressed: _loadStore,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
           ),
         ),
       );
     }
-
     if (store == null) {
-      return const Scaffold(body: SkeletonList(rows: 6, rowHeight: 84));
+      return const SkeletonList(rows: 6, rowHeight: 84);
     }
 
     if (_isStationeryOperator) {
@@ -502,8 +496,6 @@ class _CanteenShellState extends State<CanteenShell> {
       ),
     ];
 
-    return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: pages),
-    );
+    return IndexedStack(index: _selectedIndex, children: pages);
   }
 }

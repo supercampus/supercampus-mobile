@@ -268,8 +268,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        ModuleBackButton(onPressed: widget.onExitModule),
-        const SizedBox(width: 10),
+        
         // The balance is a glance, not a destination, so the pill hugs its
         // number instead of stretching across the bar. Tapping it opens the
         // wallet, where the histories live.
@@ -325,7 +324,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
           }),
           icon: Icon(_isSearching ? Icons.close : Icons.search),
         ),
-        ModuleHomeButton(onPressed: widget.onExitModule),
+        
       ],
     );
   }
@@ -905,3 +904,4 @@ class _CartBar extends StatelessWidget {
     );
   }
 }
+

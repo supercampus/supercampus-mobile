@@ -22,6 +22,8 @@ import 'module_stack.dart';
 import 'today_glance.dart';
 import 'widgets/home_sheets.dart';
 import 'widgets/home_top_bar.dart';
+import '../../canteen/presentation/canteen_shell.dart';
+import 'widgets/dashboard_nav_bar.dart';
 
 /// One portal for every user. The module list is a projection of
 /// [EffectivePermissions] over [ModuleCatalog] — there are no role checks in
@@ -153,67 +155,30 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final modules = orderModules(
-      portalModules(widget.session, widget.permissions),
-      widget.moduleOrder,
-    );
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Column(
-              children: [
-                HomeTopBar(
-                  displayName: widget.session.displayName,
-                  onAlertsTap: _openAlerts,
-                  onSettingsTap: _openSettings,
-                  hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
-                ),
-                Expanded(
-                  child: Stack(
-                    children: [
-                      _Feed(
-                        session: widget.session,
-                        permissions: widget.permissions,
-                        modules: modules,
-                        dashboard: widget.dashboard,
-                        onOpenModule: widget.onOpenModule,
-                        onQuickAction: widget.onQuickAction,
-                        onInsightsChanged: (insights) {
-                          if (mounted) setState(() => _insights = insights);
-                        },
-                        glance: _glance,
-                        advisorStudentsSource: widget.advisorStudentsSource,
-                        onOpenAttendanceClass: widget.onOpenAttendanceClass,
-                        announcementRepository: widget.announcementRepository,
-                      ),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: MediaQuery.paddingOf(context).bottom + 10,
-                        child: CampusNavBar(
-                          selectedId: _selectedNavId,
-                          initials: initialsOf(widget.session.displayName),
-                          avatarUrl: widget.session.photoUrl,
-                          onHome: () {},
-                          onModules: _openModules,
-                          onProfile: _openProfile,
-                          onScan: widget.onScan == null
-                              ? null
-                              : () => widget.onScan!(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+        child: Column(
+          children: [
+            HomeTopBar(
+              displayName: widget.session.displayName,
+              onAlertsTap: _openAlerts,
+              onSettingsTap: _openSettings,
+              hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
             ),
-          ),
+            Expanded(
+              child: CanteenShell(
+                session: widget.session as dynamic,
+                onExitModule: () {},
+                onSignOut: widget.onSignOut,
+              ),
+            ),
+          ],
         ),
+      ),
+      bottomNavigationBar: const DashboardNavBar(
+        selectedId: 'acads',
       ),
     );
   }

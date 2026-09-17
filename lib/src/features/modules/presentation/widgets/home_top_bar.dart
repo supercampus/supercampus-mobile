@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
 
-/// A deliberately quiet home header. Search and AI shortcuts live inside the
-/// relevant modules instead of competing with the user's daily information.
 class HomeTopBar extends StatelessWidget {
   const HomeTopBar({
     super.key,
@@ -11,78 +9,38 @@ class HomeTopBar extends StatelessWidget {
     required this.onAlertsTap,
     required this.onSettingsTap,
     this.hasAlerts = false,
+    this.photoUrl,
   });
 
   final String displayName;
   final VoidCallback onAlertsTap;
   final VoidCallback onSettingsTap;
-
-  /// Shows the dot on the bell.
   final bool hasAlerts;
+  final String? photoUrl;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 14, 8),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Good ${_dayPart()},',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 14,
-                    height: 1.05,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                ShaderMask(
-                  blendMode: BlendMode.srcIn,
-                  shaderCallback: AppColors.violetGradient.createShader,
-                  child: Text(
-                    _firstName(displayName),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      height: 1.02,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
           _Bell(onTap: onAlertsTap, showDot: hasAlerts),
-          IconButton(
-            key: const ValueKey('home-settings'),
-            tooltip: 'Settings',
-            onPressed: onSettingsTap,
-            icon: const Icon(Icons.settings_outlined, size: 24),
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+          GestureDetector(
+            onTap: onSettingsTap,
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
+              child: photoUrl == null
+                  ? const Icon(Icons.person, size: 20, color: Colors.grey)
+                  : null,
+            ),
           ),
         ],
       ),
     );
-  }
-
-  static String _firstName(String value) {
-    final parts = value.trim().split(RegExp(r'\s+'));
-    return parts.isEmpty || parts.first.isEmpty ? 'Campus user' : parts.first;
-  }
-
-  static String _dayPart() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Morning';
-    if (hour < 17) return 'Afternoon';
-    return 'Evening';
   }
 }
 
@@ -101,8 +59,8 @@ class _Bell extends StatelessWidget {
           key: const ValueKey('home-alerts'),
           tooltip: 'Alerts',
           onPressed: onTap,
-          icon: const Icon(Icons.notifications_outlined, size: 26),
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          icon: const Icon(Icons.notifications, size: 26),
+          color: Theme.of(context).colorScheme.onSurface,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints.tightFor(width: 40, height: 40),
         ),
