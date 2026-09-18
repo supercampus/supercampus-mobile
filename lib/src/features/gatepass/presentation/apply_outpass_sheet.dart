@@ -22,6 +22,7 @@ class ApplyOutpassSheet extends StatefulWidget {
 
 class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
   final _formKey = GlobalKey<FormState>();
+  final _tooltipKey = GlobalKey<TooltipState>();
   final _destination = TextEditingController();
   final _reason = TextEditingController();
   final _guardianPhone = TextEditingController(text: '9876543210');
@@ -97,6 +98,14 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
     FocusScope.of(context).unfocus();
     setState(() => _error = null);
     if (!_formKey.currentState!.validate()) return;
+    if (!_returnAt.isAfter(_departure)) {
+      setState(
+        () => _error = widget.passKind == GatepassPassKind.leavePass
+            ? 'The "To" time must be after the "From" time.'
+            : 'Return time must be after departure time.',
+      );
+      return;
+    }
     if (widget.passKind == GatepassPassKind.leavePass &&
         (_departure.year != _returnAt.year ||
             _departure.month != _returnAt.month ||
@@ -131,10 +140,56 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isLeavePass = widget.passKind == GatepassPassKind.leavePass;
+    final infoMessage = isLeavePass
+        ? 'Advisor / HOD approval is followed by principal approval. Security scans the QR before you exit. Hostellers go to the hostel; day scholars go home.'
+        : 'Outpass is only for hostellers. Parent consent is followed by warden approval before the gate QR is generated.';
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text('Apply for ${widget.passKind.label.toLowerCase()}'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                'Apply for ${widget.passKind.label.toLowerCase()}',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Tooltip(
+              key: _tooltipKey,
+              message: infoMessage,
+              triggerMode: TooltipTriggerMode.tap,
+              preferBelow: true,
+              showDuration: const Duration(seconds: 6),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1B2E),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              textStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                height: 1.4,
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  _tooltipKey.currentState?.ensureTooltipVisible();
+                },
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.info_outline_rounded,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'Close',
@@ -185,7 +240,7 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
                     children: [
                       Expanded(
                         child: _DateTimeField(
-                          label: 'Departure',
+                          label: isLeavePass ? 'From' : 'Departure',
                           value: _departure,
                           onTap: () => _pickDateTime(departure: true),
                         ),
@@ -193,7 +248,7 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: _DateTimeField(
-                          label: 'Return',
+                          label: isLeavePass ? 'To' : 'Return',
                           value: _returnAt,
                           onTap: () => _pickDateTime(departure: false),
                         ),
@@ -203,7 +258,6 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _destination,
-                    readOnly: widget.passKind == GatepassPassKind.leavePass,
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'Destination',
@@ -226,8 +280,8 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
                         ? 'Enter at least 8 characters.'
                         : null,
                   ),
-                  const SizedBox(height: 16),
-                  if (widget.passKind == GatepassPassKind.outpass)
+                  if (widget.passKind == GatepassPassKind.outpass) ...[
+                    const SizedBox(height: 16),
                     TextFormField(
                       controller: _guardianPhone,
                       keyboardType: TextInputType.phone,
@@ -240,31 +294,7 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
                           ? null
                           : 'Enter a valid phone number.',
                     ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F0FF),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(
-                          Icons.info_outline,
-                          color: AppColors.gateBlue,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            widget.passKind == GatepassPassKind.leavePass
-                                ? 'Advisor / HOD approval is followed by principal approval. Security scans the QR before you exit. Hostellers go to the hostel; day scholars go home.'
-                                : 'Outpass is only for hostellers. Parent consent is followed by warden approval before the gate QR is generated.',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                   if (_error != null) ...[
                     const SizedBox(height: 14),
                     Text(
