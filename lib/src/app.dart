@@ -1362,7 +1362,11 @@ class _SupercampusAppState extends State<SupercampusApp>
               _permissions!.canSeeModule(ModuleCatalog.gatepass)
           ? _openScanner
           : null,
-      selectedId: 'modules',
+      selectedId: switch (_openModuleId) {
+        ModuleCatalog.academics => 'acads',
+        ModuleCatalog.gatepass => 'gatepass',
+        _ => '',
+      },
       child: module,
     );
   }
