@@ -30,11 +30,11 @@ class HomeTopBar extends StatelessWidget {
           GestureDetector(
             onTap: onSettingsTap,
             child: CircleAvatar(
-              radius: 18,
+              radius: 22,
               backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
               child: photoUrl == null
-                  ? const Icon(Icons.person, size: 20, color: Colors.grey)
+                  ? const Icon(Icons.person, size: 24, color: Colors.grey)
                   : null,
             ),
           ),

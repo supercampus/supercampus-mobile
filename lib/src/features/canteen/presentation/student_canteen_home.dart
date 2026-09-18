@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/transaction_result_overlay.dart';
-import '../../../core/widgets/module_navigation_buttons.dart';
-import '../../../core/widgets/campus_nav_bar.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
@@ -244,14 +242,9 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                 Positioned(
                   left: 20,
                   right: 20,
-                  // The nav bar floats over the module content, so a bar
-                  // pinned to the bottom lands behind it and its raised
-                  // centre button swallows the tap. Clear it the same way
-                  // the module dashboard does.
-                  bottom:
-                      CampusNavBar.heightFor(context) +
-                      MediaQuery.paddingOf(context).bottom +
-                      20,
+                  // The DashboardNavBar is in bottomNavigationBar,
+                  // outside the body, so just a small offset is enough.
+                  bottom: 12,
                   child: _CartBar(
                     itemCount: _cartCount,
                     total: _cartTotal,

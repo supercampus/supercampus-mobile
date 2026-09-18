@@ -164,8 +164,9 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
             HomeTopBar(
               displayName: widget.session.displayName,
               onAlertsTap: _openAlerts,
-              onSettingsTap: _openSettings,
+              onSettingsTap: _openProfileSheet,
               hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
+              photoUrl: widget.session.photoUrl,
             ),
             Expanded(
               child: CanteenShell(
@@ -225,6 +226,102 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       widget.onOpenModule(moduleId);
     }
     _loadNotifications();
+  }
+
+  void _openProfileSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Profile photo
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                backgroundImage: widget.session.photoUrl != null
+                    ? NetworkImage(widget.session.photoUrl!)
+                    : null,
+                child: widget.session.photoUrl == null
+                    ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                    : null,
+              ),
+              const SizedBox(height: 14),
+              // Name
+              Text(
+                widget.session.displayName,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              // Email
+              Text(
+                widget.session.email,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              if (widget.session.idNumber != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  widget.session.idNumber!,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              const Divider(height: 1),
+              // Settings row
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.settings_outlined),
+                title: const Text('Settings'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _openSettings();
+                },
+              ),
+              // Sign out row
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.logout, color: Theme.of(ctx).colorScheme.error),
+                title: Text(
+                  'Sign out',
+                  style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+                ),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  widget.onSignOut();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _openSettings() {
