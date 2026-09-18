@@ -132,6 +132,7 @@ class _SupercampusAppState extends State<SupercampusApp>
   Future<UserSession>? _sessionRenewal;
   MediaRepository? _mediaRepository;
   LibrarianRepository? _announcementRepository;
+  CanteenRepository? _canteenRepository;
   RealtimeClient? _realtimeClient;
   StreamSubscription<RealtimeEvent>? _realtimeEventSubscription;
   StreamSubscription<String>? _pushDeepLinkSubscription;
@@ -191,6 +192,11 @@ class _SupercampusAppState extends State<SupercampusApp>
         baseUrl: backendBaseUrl,
         accessTokenProvider: _provideAccessToken,
       );
+      _canteenRepository = widget.canteenRepository ??
+          BackendCanteenRepository(
+            baseUrl: backendBaseUrl,
+            accessTokenProvider: _provideAccessToken,
+          );
       _realtimeClient = RealtimeClient(
         baseUrl: backendBaseUrl,
         accessTokenProvider: _provideAccessToken,
@@ -888,13 +894,7 @@ class _SupercampusAppState extends State<SupercampusApp>
   }
 
   CanteenRepository? get _resolvedCanteenRepository =>
-      widget.canteenRepository ??
-      (_useMockData
-          ? null
-          : BackendCanteenRepository(
-              baseUrl: _resolvedBackendBaseUrl,
-              accessTokenProvider: _provideAccessToken,
-            ));
+      _canteenRepository ?? widget.canteenRepository;
 
   Future<void> _openScanner(BuildContext context) async {
     // The screen owns its own way in and out — it rides up from the bottom and

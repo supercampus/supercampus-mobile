@@ -104,7 +104,7 @@ class _CanteenShellState extends State<CanteenShell> {
             studentName: widget.session.displayName,
             email: widget.session.email,
           );
-      _loadStore();
+      _loadStore(silent: _store != null);
       if (widget.repository != null) {
         _refreshTimer = Timer.periodic(
           const Duration(seconds: 3),

@@ -38,7 +38,18 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+  <style>
+    html, body {
+      inset: 0;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      touch-action: manipulation;
+    }
+  </style>
 </head>
 <body>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -47,31 +58,39 @@
     // Dokploy serves immutable Flutter releases, so an older Flutter service
     // worker must never keep a student or staff member on a superseded UI.
     // Retire legacy registrations/caches before loading the current bootstrap.
-    (async () => {
-      const controlledByOldWorker = Boolean(navigator.serviceWorker?.controller);
-      if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map((registration) => registration.unregister()));
-      }
-      if ('caches' in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map((key) => caches.delete(key)));
-      }
+    if (window._flutterAppBootstrapped) {
+      console.warn('Flutter bootstrap already initialized; skipping duplicate execution.');
+    } else {
+      window._flutterAppBootstrapped = true;
+      (async () => {
+        // Clean up any stale or lingering flutter views from previous page state
+        document.querySelectorAll('flutter-view, flt-glass-pane').forEach((el) => el.remove());
 
-      // Safari can keep serving the current document through the worker that
-      // was already controlling it. Reload once after retiring that worker;
-      // sessionStorage prevents a loop and naturally resets in a new session.
-      if (controlledByOldWorker && !sessionStorage.getItem('sc-clean-v18')) {
-        sessionStorage.setItem('sc-clean-v18', '1');
-        location.reload();
-        return;
-      }
+        const controlledByOldWorker = Boolean(navigator.serviceWorker?.controller);
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((registration) => registration.unregister()));
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((key) => caches.delete(key)));
+        }
 
-      const bootstrap = document.createElement('script');
-      bootstrap.src = `flutter_bootstrap.js?v=20260904-20-${Date.now()}`;
-      bootstrap.async = true;
-      document.body.appendChild(bootstrap);
-    })();
+        // Safari can keep serving the current document through the worker that
+        // was already controlling it. Reload once after retiring that worker;
+        // sessionStorage prevents a loop and naturally resets in a new session.
+        if (controlledByOldWorker && !sessionStorage.getItem('sc-clean-v19')) {
+          sessionStorage.setItem('sc-clean-v19', '1');
+          location.reload();
+          return;
+        }
+
+        const bootstrap = document.createElement('script');
+        bootstrap.src = `flutter_bootstrap.js?v=20260904-22-${Date.now()}`;
+        bootstrap.async = true;
+        document.body.appendChild(bootstrap);
+      })();
+    }
   </script>
 </body>
 </html>

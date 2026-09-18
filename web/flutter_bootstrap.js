@@ -18,4 +18,7 @@ for (const finalBuild of _flutter.buildConfig.builds) {
 }
 // A single full CanvasKit bundle keeps the deploy artifact below the host's
 // upload limit while remaining compatible with Android, iOS, and desktop web.
-_flutter.loader.load({config: {canvasKitVariant: 'full'}});
+if (!window._flutterEngineLoaded) {
+  window._flutterEngineLoaded = true;
+  _flutter.loader.load({config: {canvasKitVariant: 'full'}});
+}
