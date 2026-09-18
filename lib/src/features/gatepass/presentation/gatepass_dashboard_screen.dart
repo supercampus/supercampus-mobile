@@ -91,10 +91,19 @@ class GatepassDashboardScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 26),
+              const SizedBox(height: 20),
+              if (active != null) ...[
+                _ActiveRequestCard(
+                  request: active,
+                  workflow: store.workflow,
+                  onTap: onOpenRequests,
+                ),
+                const SizedBox(height: 20),
+              ],
               GatepassSurface(
                 padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
@@ -109,25 +118,17 @@ class GatepassDashboardScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (active != null) ...[
-                      const SizedBox(height: 2),
-                      _ActiveRequestCard(
-                        request: active,
-                        workflow: store.workflow,
-                        onTap: onOpenRequests,
-                      ),
-                    ],
                     if (store.movements.isNotEmpty) ...[
-                      if (active != null) const SizedBox(height: 10),
+                      const SizedBox(height: 6),
                       ...store.movements
                           .take(2)
                           .map((movement) => _MovementRow(movement: movement)),
-                    ] else if (active == null)
+                    ] else
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 18),
                         child: Center(
                           child: Text(
-                            'No recent movement or pass activity.',
+                            'No recent movement recorded.',
                             style: TextStyle(color: AppColors.muted),
                           ),
                         ),
@@ -588,7 +589,10 @@ class _ActiveRequestCard extends StatelessWidget {
         workflow.transition(request.workflowState, 'complete');
     return Material(
       color: const Color(0xFFF7F3FF),
-      borderRadius: BorderRadius.circular(10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: Color(0xFFE2D9F3)),
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
