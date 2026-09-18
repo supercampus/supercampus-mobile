@@ -793,6 +793,7 @@ class _SupercampusAppState extends State<SupercampusApp>
       return ModuleDashboardScreen(
         session: session,
         permissions: permissions,
+        canteenRepository: _resolvedCanteenRepository,
         announcementRepository: _announcementRepository,
         onOpenModule: (id) {
           if (!permissions.canSeeModule(id)) return;
@@ -886,6 +887,15 @@ class _SupercampusAppState extends State<SupercampusApp>
     );
   }
 
+  CanteenRepository? get _resolvedCanteenRepository =>
+      widget.canteenRepository ??
+      (_useMockData
+          ? null
+          : BackendCanteenRepository(
+              baseUrl: _resolvedBackendBaseUrl,
+              accessTokenProvider: _provideAccessToken,
+            ));
+
   Future<void> _openScanner(BuildContext context) async {
     // The screen owns its own way in and out — it rides up from the bottom and
     // leaves the same way — so it is pushed rather than wrapped in a page route
@@ -896,13 +906,10 @@ class _SupercampusAppState extends State<SupercampusApp>
 
     if (code.startsWith('supercampus://laundry/')) {
       try {
-        final repository =
-            widget.canteenRepository ??
-            BackendCanteenRepository(
-              baseUrl: _resolvedBackendBaseUrl,
-              accessTokenProvider: _provideAccessToken,
-            );
-        await repository.claimLaundryCharge(code);
+        final repository = _resolvedCanteenRepository;
+        if (repository != null) {
+          await repository.claimLaundryCharge(code);
+        }
         if (!mounted) return;
         messenger?.showSnackBar(
           const SnackBar(
@@ -1154,14 +1161,7 @@ class _SupercampusAppState extends State<SupercampusApp>
                 onExitModule: exit,
                 onSignOut: _signOut,
                 initialAction: _openModuleAction,
-                repository:
-                    widget.canteenRepository ??
-                    (_useMockData
-                        ? null
-                        : BackendCanteenRepository(
-                            baseUrl: _resolvedBackendBaseUrl,
-                            accessTokenProvider: _provideAccessToken,
-                          )),
+                repository: _resolvedCanteenRepository,
               ),
       ModuleCatalog.gatepass =>
         isSecurity

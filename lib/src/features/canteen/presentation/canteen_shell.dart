@@ -93,6 +93,28 @@ class _CanteenShellState extends State<CanteenShell> {
   }
 
   @override
+  void didUpdateWidget(CanteenShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.repository != widget.repository) {
+      _refreshTimer?.cancel();
+      _refreshTimer = null;
+      _repository =
+          widget.repository ??
+          MockCanteenRepository(
+            studentName: widget.session.displayName,
+            email: widget.session.email,
+          );
+      _loadStore();
+      if (widget.repository != null) {
+        _refreshTimer = Timer.periodic(
+          const Duration(seconds: 3),
+          (_) => _loadStore(silent: true),
+        );
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _refreshTimer?.cancel();
     super.dispose();

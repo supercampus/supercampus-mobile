@@ -22,6 +22,7 @@ import 'module_stack.dart';
 import 'today_glance.dart';
 import 'widgets/home_sheets.dart';
 import 'widgets/home_top_bar.dart';
+import '../../canteen/data/canteen_repository.dart';
 import '../../canteen/presentation/canteen_shell.dart';
 import 'widgets/dashboard_nav_bar.dart';
 import 'widgets/settings_page.dart';
@@ -55,6 +56,7 @@ class ModuleDashboardScreen extends StatefulWidget {
     this.notificationRepository,
     this.notificationRevision = 0,
     this.announcementRepository,
+    this.canteenRepository,
   });
 
   final UserSession session;
@@ -89,6 +91,7 @@ class ModuleDashboardScreen extends StatefulWidget {
   final NotificationRepository? notificationRepository;
   final int notificationRevision;
   final LibrarianRepository? announcementRepository;
+  final CanteenRepository? canteenRepository;
 
   @override
   State<ModuleDashboardScreen> createState() => _ModuleDashboardScreenState();
@@ -177,6 +180,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                   session: widget.session as dynamic,
                   onExitModule: () {},
                   onSignOut: widget.onSignOut,
+                  repository: widget.canteenRepository,
                 ),
               ),
             ],
