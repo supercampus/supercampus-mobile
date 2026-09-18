@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/transaction_result_overlay.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
@@ -261,7 +262,8 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        
+        ModuleBackButton(onPressed: widget.onExitModule),
+        const SizedBox(width: 8),
         // The balance is a glance, not a destination, so the pill hugs its
         // number instead of stretching across the bar. Tapping it opens the
         // wallet, where the histories live.

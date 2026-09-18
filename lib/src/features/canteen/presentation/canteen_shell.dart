@@ -46,6 +46,7 @@ class _CanteenShellState extends State<CanteenShell> {
   CanteenStore? _store;
   String? _error;
   var _selectedIndex = 0;
+  var _openedOrdersFromHome = false;
   Timer? _refreshTimer;
   var _loadInProgress = false;
   var _ownerWorkMode = true;
@@ -83,6 +84,7 @@ class _CanteenShellState extends State<CanteenShell> {
         const {'orders', 'order_history'}.contains(widget.initialAction)
         ? 1
         : 0;
+    _openedOrdersFromHome = false;
     _loadStore();
     if (widget.repository != null) {
       _refreshTimer = Timer.periodic(
@@ -98,7 +100,10 @@ class _CanteenShellState extends State<CanteenShell> {
     if (widget.initialAction != null &&
         oldWidget.initialAction != widget.initialAction) {
       if (const {'orders', 'order_history'}.contains(widget.initialAction)) {
-        setState(() => _selectedIndex = 1);
+        setState(() {
+          _selectedIndex = 1;
+          _openedOrdersFromHome = false;
+        });
       } else if (widget.initialAction == 'menu') {
         setState(() => _selectedIndex = 0);
       }
@@ -279,6 +284,7 @@ class _CanteenShellState extends State<CanteenShell> {
       );
       _cart.clear();
       _selectedIndex = 1;
+      _openedOrdersFromHome = true;
     });
     return result;
   }
@@ -495,6 +501,27 @@ class _CanteenShellState extends State<CanteenShell> {
       );
     }
 
+    void handleOrdersBack() {
+      if (_openedOrdersFromHome) {
+        setState(() {
+          _openedOrdersFromHome = false;
+          _selectedIndex = 0;
+        });
+      } else {
+        widget.onExitModule();
+      }
+    }
+
+    void handlePop() {
+      if (_selectedIndex == 1) {
+        handleOrdersBack();
+      } else if (_selectedIndex == 2) {
+        setState(() => _selectedIndex = 0);
+      } else {
+        widget.onExitModule();
+      }
+    }
+
     final pages = [
       StudentCanteenHome(
         store: store,
@@ -504,7 +531,10 @@ class _CanteenShellState extends State<CanteenShell> {
         onOpenCart: () => _openCart(context),
         onOpenWallet: (shopKey) => _openWallet(context, shopKey),
         onOpenProfile: () => _openProfile(context),
-        onOpenOrders: () => setState(() => _selectedIndex = 1),
+        onOpenOrders: () => setState(() {
+          _openedOrdersFromHome = true;
+          _selectedIndex = 1;
+        }),
         onExitModule: widget.onExitModule,
         initialShopKey: widget.initialAction == 'laundry'
             ? 'mec-laundry'
@@ -516,7 +546,7 @@ class _CanteenShellState extends State<CanteenShell> {
       ),
       CanteenOrdersScreen(
         orders: store.orders,
-        onBack: () => setState(() => _selectedIndex = 0),
+        onBack: handleOrdersBack,
       ),
       CanteenScannerScreen(
         onScan: (payload) async {
@@ -526,6 +556,12 @@ class _CanteenShellState extends State<CanteenShell> {
       ),
     ];
 
-    return IndexedStack(index: _selectedIndex, children: pages);
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) handlePop();
+      },
+      child: IndexedStack(index: _selectedIndex, children: pages),
+    );
   }
 }
