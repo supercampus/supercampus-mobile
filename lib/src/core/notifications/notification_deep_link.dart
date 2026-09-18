@@ -15,7 +15,9 @@ String? notificationModuleId({
         : ModuleCatalog.academics;
   }
   if (path.startsWith('/academics')) return ModuleCatalog.academics;
-  if (path.startsWith('/shops')) return ModuleCatalog.canteen;
+  if (path.startsWith('/shops') || path.startsWith('/canteen')) {
+    return ModuleCatalog.canteen;
+  }
   if (path.startsWith('/gatepass')) return ModuleCatalog.gatepass;
   if (path.startsWith('/tuition-fee')) return ModuleCatalog.tuitionFee;
   if (path.startsWith('/timetable')) return ModuleCatalog.timetable;
@@ -38,4 +40,29 @@ String? notificationModuleId({
     'hostel' => ModuleCatalog.hostel,
     _ => null,
   };
+}
+
+/// Extracts any initial module action that a notification implies (such as
+/// opening "My orders" in the canteen module when an order update arrives).
+String? notificationModuleAction({
+  String? deepLink,
+  String? category,
+  String? eventType,
+  String? title,
+}) {
+  final path = deepLink?.trim() ?? '';
+  if (path.contains('/orders') || path.contains('/canteen/orders')) {
+    return 'orders';
+  }
+  final cat = category?.trim().toLowerCase();
+  final evt = eventType?.trim().toLowerCase() ?? '';
+  final t = title?.trim().toLowerCase() ?? '';
+
+  if (cat == 'canteen' ||
+      evt.startsWith('order.') ||
+      evt.startsWith('canteen.order') ||
+      t.contains('order')) {
+    return 'orders';
+  }
+  return null;
 }

@@ -400,9 +400,10 @@ class _SupercampusAppState extends State<SupercampusApp>
       ),
     );
     if (moduleId == null || !permissions.canSeeModule(moduleId)) return;
+    final action = notificationModuleAction(deepLink: deepLink);
     setState(() {
       _openModuleId = moduleId;
-      _openModuleAction = null;
+      _openModuleAction = action;
       _attendanceClass = null;
     });
   }
@@ -801,10 +802,11 @@ class _SupercampusAppState extends State<SupercampusApp>
         permissions: permissions,
         canteenRepository: _resolvedCanteenRepository,
         announcementRepository: _announcementRepository,
-        onOpenModule: (id) {
+        onOpenModule: (id, [action]) {
           if (!permissions.canSeeModule(id)) return;
           setState(() {
             _openModuleId = id;
+            _openModuleAction = action;
             _attendanceClass = null;
           });
         },

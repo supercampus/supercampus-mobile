@@ -61,7 +61,7 @@ class ModuleDashboardScreen extends StatefulWidget {
 
   final UserSession session;
   final EffectivePermissions permissions;
-  final ValueChanged<String> onOpenModule;
+  final void Function(String moduleId, [String? action]) onOpenModule;
   final VoidCallback onSignOut;
   final ValueChanged<ThemeMode> onThemeModeChanged;
   final List<String> moduleOrder;
@@ -383,8 +383,14 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
         ModuleCatalog.attendance,
       ),
     );
+    final action = notificationModuleAction(
+      deepLink: notification.deepLink,
+      category: notification.category,
+      eventType: notification.eventType,
+      title: notification.title,
+    );
     if (moduleId != null && widget.permissions.canSeeModule(moduleId)) {
-      widget.onOpenModule(moduleId);
+      widget.onOpenModule(moduleId, action);
     }
     _loadNotifications();
   }

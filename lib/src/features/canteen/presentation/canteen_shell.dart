@@ -95,6 +95,14 @@ class _CanteenShellState extends State<CanteenShell> {
   @override
   void didUpdateWidget(CanteenShell oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.initialAction != null &&
+        oldWidget.initialAction != widget.initialAction) {
+      if (const {'orders', 'order_history'}.contains(widget.initialAction)) {
+        setState(() => _selectedIndex = 1);
+      } else if (widget.initialAction == 'menu') {
+        setState(() => _selectedIndex = 0);
+      }
+    }
     if (oldWidget.repository != widget.repository) {
       _refreshTimer?.cancel();
       _refreshTimer = null;
