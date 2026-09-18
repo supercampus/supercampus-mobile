@@ -106,16 +106,6 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
       );
       return;
     }
-    if (widget.passKind == GatepassPassKind.leavePass &&
-        (_departure.year != _returnAt.year ||
-            _departure.month != _returnAt.month ||
-            _departure.day != _returnAt.day)) {
-      setState(
-        () => _error =
-            'Leave pass must start and finish on the same college day.',
-      );
-      return;
-    }
     setState(() => _submitting = true);
     try {
       final request = await widget.onSubmit(
