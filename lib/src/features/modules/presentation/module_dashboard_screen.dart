@@ -25,6 +25,8 @@ import 'widgets/home_top_bar.dart';
 import '../../canteen/presentation/canteen_shell.dart';
 import 'widgets/dashboard_nav_bar.dart';
 import 'widgets/settings_page.dart';
+import 'widgets/campus_wall_screen.dart';
+import '../../examination/presentation/screens/student_reports_analytics_screen.dart';
 
 /// One portal for every user. The module list is a projection of
 /// [EffectivePermissions] over [ModuleCatalog] — there are no role checks in
@@ -179,8 +181,94 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: const DashboardNavBar(
-        selectedId: 'acads',
+      bottomNavigationBar: DashboardNavBar(
+        selectedId: '',
+        onSelect: _onNavSelect,
+      ),
+    );
+  }
+
+  void _onNavSelect(String id) {
+    switch (id) {
+      case 'acads':
+        widget.onOpenModule(ModuleCatalog.academics);
+        break;
+      case 'gatepass':
+        widget.onOpenModule(ModuleCatalog.gatepass);
+        break;
+      case 'wall':
+        _openCampusWall();
+        break;
+      case 'analysis':
+        _openReportsAndAnalytics();
+        break;
+    }
+  }
+
+  void _openCampusWall() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CampusWallScreen(
+          announcementRepository: widget.announcementRepository,
+        ),
+      ),
+    );
+  }
+
+  void _openReportsAndAnalytics() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final backgroundColor =
+        isDark ? const Color(0xFF141416) : const Color(0xFFF7F7F9);
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: backgroundColor,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            centerTitle: true,
+            leading: Padding(
+              padding: const EdgeInsets.only(left: 16),
+              child: Center(
+                child: Material(
+                  color: isDark ? const Color(0xFF2A2A2E) : Colors.white,
+                  shape: const CircleBorder(),
+                  elevation: isDark ? 0 : 1,
+                  shadowColor: Colors.black.withValues(alpha: 0.04),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.chevron_left_rounded,
+                        color: textColor,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            title: Text(
+              'Reports & Analysis',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          body: StudentReportsAnalyticsScreen(
+            session: widget.session,
+          ),
+        ),
       ),
     );
   }
