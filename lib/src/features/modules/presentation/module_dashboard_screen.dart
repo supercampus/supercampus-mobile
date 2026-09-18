@@ -24,6 +24,7 @@ import 'widgets/home_sheets.dart';
 import 'widgets/home_top_bar.dart';
 import '../../canteen/presentation/canteen_shell.dart';
 import 'widgets/dashboard_nav_bar.dart';
+import 'widgets/settings_page.dart';
 
 /// One portal for every user. The module list is a projection of
 /// [EffectivePermissions] over [ModuleCatalog] — there are no role checks in
@@ -327,19 +328,15 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
   void _openSettings() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.w600)),
-            leading: const BackButton(),
-          ),
-          body: SettingsSheet(
-            onOpenModule: widget.onOpenModule,
-            onSignOut: widget.onSignOut,
-            onThemeModeChanged: widget.onThemeModeChanged,
-            modules: portalModules(widget.session, widget.permissions),
-            moduleOrder: widget.moduleOrder,
-            onModuleOrderChanged: widget.onModuleOrderChanged,
-          ),
+        builder: (_) => SettingsPage(
+          session: widget.session,
+          permissions: widget.permissions,
+          onOpenModule: widget.onOpenModule,
+          onSignOut: widget.onSignOut,
+          onThemeModeChanged: widget.onThemeModeChanged,
+          modules: portalModules(widget.session, widget.permissions),
+          moduleOrder: widget.moduleOrder,
+          onModuleOrderChanged: widget.onModuleOrderChanged,
         ),
       ),
     );

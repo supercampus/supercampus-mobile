@@ -911,6 +911,8 @@ void _openNotifications(BuildContext context) => showHomeSheet(
   child: const _NotificationsSheet(),
 );
 
+void openNotifications(BuildContext context) => _openNotifications(context);
+
 class _NotificationsSheet extends StatefulWidget {
   const _NotificationsSheet();
 
@@ -987,6 +989,8 @@ void _openPrivacySecurity(BuildContext context) => showHomeSheet(
   title: 'Privacy and security',
   child: const _PrivacySecuritySheet(),
 );
+
+void openPrivacySecurity(BuildContext context) => _openPrivacySecurity(context);
 
 class _PrivacySecuritySheet extends StatelessWidget {
   const _PrivacySecuritySheet();
@@ -1262,6 +1266,8 @@ void _openHelpdesk(BuildContext context) => showHomeSheet(
   expand: true,
   child: const _HelpdeskSheet(),
 );
+
+void openHelpdesk(BuildContext context) => _openHelpdesk(context);
 
 class _SupportTicket {
   const _SupportTicket(
