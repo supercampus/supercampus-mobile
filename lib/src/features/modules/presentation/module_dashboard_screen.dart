@@ -158,35 +158,103 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.session.isStudent) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              HomeTopBar(
+                displayName: widget.session.displayName,
+                onAlertsTap: _openAlerts,
+                onSettingsTap: _openProfileSheet,
+                hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
+                photoUrl: widget.session.photoUrl,
+              ),
+              Expanded(
+                child: CanteenShell(
+                  session: widget.session as dynamic,
+                  onExitModule: () {},
+                  onSignOut: widget.onSignOut,
+                ),
+              ),
+            ],
+          ),
+        ),
+        bottomNavigationBar: DashboardNavBar(
+          selectedId: '',
+          onSelect: _onNavSelect,
+        ),
+      );
+    }
+
+    final modules = orderModules(
+      portalModules(widget.session, widget.permissions),
+      widget.moduleOrder,
+    );
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            HomeTopBar(
-              displayName: widget.session.displayName,
-              onAlertsTap: _openAlerts,
-              onSettingsTap: _openProfileSheet,
-              hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
-              photoUrl: widget.session.photoUrl,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Column(
+              children: [
+                HomeTopBar(
+                  displayName: widget.session.displayName,
+                  onAlertsTap: _openAlerts,
+                  onSettingsTap: _openProfileSheet,
+                  hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
+                  photoUrl: widget.session.photoUrl,
+                ),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      _Feed(
+                        session: widget.session,
+                        permissions: widget.permissions,
+                        modules: modules,
+                        dashboard: widget.dashboard,
+                        onOpenModule: widget.onOpenModule,
+                        onQuickAction: widget.onQuickAction,
+                        onInsightsChanged: (insights) {
+                          if (mounted) setState(() => _insights = insights);
+                        },
+                        glance: _glance,
+                        advisorStudentsSource: widget.advisorStudentsSource,
+                        onOpenAttendanceClass: widget.onOpenAttendanceClass,
+                        announcementRepository: widget.announcementRepository,
+                      ),
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: MediaQuery.paddingOf(context).bottom + 10,
+                        child: CampusNavBar(
+                          selectedId: _selectedNavId,
+                          initials: initialsOf(widget.session.displayName),
+                          avatarUrl: widget.session.photoUrl,
+                          onHome: () {},
+                          onModules: _openModules,
+                          onProfile: _openProfileSheet,
+                          onScan: widget.onScan == null
+                              ? null
+                              : () => widget.onScan!(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              child: CanteenShell(
-                session: widget.session as dynamic,
-                onExitModule: () {},
-                onSignOut: widget.onSignOut,
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
-      bottomNavigationBar: DashboardNavBar(
-        selectedId: '',
-        onSelect: _onNavSelect,
       ),
     );
   }
+
 
   void _onNavSelect(String id) {
     switch (id) {
@@ -429,21 +497,6 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       ),
     );
   }
-
-  void _openProfile() => showHomeSheet(
-    context: context,
-    title: 'Profile',
-    expand: true,
-    child: ProfileSheet(
-      session: widget.session,
-      permissions: widget.permissions,
-      onOpenModule: widget.onOpenModule,
-      onSignOut: widget.onSignOut,
-      onThemeModeChanged: widget.onThemeModeChanged,
-      moduleOrder: widget.moduleOrder,
-      onModuleOrderChanged: widget.onModuleOrderChanged,
-    ),
-  );
 
   Future<void> _openModules() async {
     setState(() => _selectedNavId = 'modules');

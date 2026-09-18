@@ -87,6 +87,52 @@ class UserSession {
   /// Scope identifier (STUDENT, FACULTY, ALLOCATOR)
   String get scope => role.scope;
 
+  /// Whether the user is genuinely a student (not staff, admin, security, parent, etc.)
+  bool get isStudent {
+    final lowerEmail = email.trim().toLowerCase();
+    final roles = <String>{
+      roleKey,
+      ...roleIds,
+    }.map((r) => r.trim().toLowerCase()).toSet();
+
+    if (role == UserRole.admin ||
+        role == UserRole.staff ||
+        role == UserRole.security ||
+        role == UserRole.parent ||
+        role == UserRole.timetableAllocator ||
+        activePortalFamily == PortalFamily.admin ||
+        activePortalFamily == PortalFamily.staff ||
+        activePortalFamily == PortalFamily.parent ||
+        lowerEmail.startsWith('admin@') ||
+        lowerEmail.contains('warden') ||
+        lowerEmail == 'akhil@gmail.com' ||
+        lowerEmail == 'shobana@mec.local' ||
+        lowerEmail == 'abhinaya@mec.local' ||
+        roles.contains('admin') ||
+        roles.contains('administrator') ||
+        roles.contains('faculty') ||
+        roles.contains('staff') ||
+        roles.contains('warden') ||
+        roles.contains('security') ||
+        roles.contains('parent') ||
+        roles.contains('accountant') ||
+        roles.contains('librarian') ||
+        roles.contains('hod') ||
+        roles.contains('principal') ||
+        roles.contains('class_advisor') ||
+        roles.contains('owner') ||
+        roles.contains('captain') ||
+        roles.contains('canteen_captain') ||
+        roles.contains('stationery_operator') ||
+        roles.contains('manager')) {
+      return false;
+    }
+
+    return role == UserRole.student ||
+        activePortalFamily == PortalFamily.student ||
+        roles.contains('student');
+  }
+
   /// Generate mock JWT token with signed contextual claims payload
   static String generateMockJwt({
     required String email,
