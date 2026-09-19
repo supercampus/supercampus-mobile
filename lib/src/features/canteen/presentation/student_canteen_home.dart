@@ -28,6 +28,7 @@ class StudentCanteenHome extends StatefulWidget {
     this.onProfileTap,
     this.hasAlerts = false,
     this.photoUrl,
+    this.onScanLaundryQr,
   });
 
   final CanteenStore store;
@@ -46,6 +47,7 @@ class StudentCanteenHome extends StatefulWidget {
   final VoidCallback? onProfileTap;
   final bool hasAlerts;
   final String? photoUrl;
+  final VoidCallback? onScanLaundryQr;
 
   @override
   State<StudentCanteenHome> createState() => _StudentCanteenHomeState();
@@ -224,6 +226,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                       charges: widget.store.laundryCharges,
                       walletBalance: widget.store.walletBalances['mec-laundry'] ?? 0.0,
                       onPay: widget.onPayLaundryCharge,
+                      onScan: widget.onScanLaundryQr,
                     )
                   else if (_visibleItems.isEmpty)
                     const CanteenSurface(
@@ -324,14 +327,22 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
           onPressed: widget.onOpenOrders,
           icon: const Icon(Icons.receipt_long_outlined),
         ),
-        IconButton(
-          tooltip: _isSearching ? 'Close search' : 'Search menu',
-          onPressed: () => setState(() {
-            _isSearching = !_isSearching;
-            if (!_isSearching) _query = '';
-          }),
-          icon: Icon(_isSearching ? Icons.close : Icons.search),
-        ),
+        if (_selectedShopIsLaundry)
+          IconButton(
+            tooltip: 'Scan laundry QR',
+            onPressed: widget.onScanLaundryQr,
+            icon: const Icon(Icons.qr_code_scanner_rounded),
+            color: const Color(0xFF2563EB),
+          )
+        else
+          IconButton(
+            tooltip: _isSearching ? 'Close search' : 'Search menu',
+            onPressed: () => setState(() {
+              _isSearching = !_isSearching;
+              if (!_isSearching) _query = '';
+            }),
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+          ),
         const SizedBox(width: 4),
         GestureDetector(
           onTap: widget.onProfileTap ?? widget.onOpenProfile,
@@ -488,11 +499,13 @@ class _LaundryStudentPanel extends StatelessWidget {
     required this.charges,
     required this.walletBalance,
     required this.onPay,
+    this.onScan,
   });
 
   final List<LaundryCharge> charges;
   final double walletBalance;
   final Future<void> Function(LaundryCharge charge) onPay;
+  final VoidCallback? onScan;
 
   Future<void> _confirmPayment(
     BuildContext context,
@@ -566,27 +579,43 @@ class _LaundryStudentPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (charges.isEmpty) {
-      return const CanteenSurface(
+      return CanteenSurface(
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 30, horizontal: 18),
+          padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 18),
           child: Column(
             children: [
-              Icon(
+              const Icon(
                 Icons.qr_code_scanner_rounded,
-                size: 44,
-                color: AppColors.primary,
+                size: 48,
+                color: Color(0xFF2563EB),
               ),
-              SizedBox(height: 12),
-              Text(
+              const SizedBox(height: 12),
+              const Text(
                 'Scan your laundry QR',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
-              SizedBox(height: 6),
-              Text(
-                'The laundry counter will create a QR for your clothes. Scan it using “Scan here” and your payment card will appear here.',
+              const SizedBox(height: 6),
+              const Text(
+                'The laundry counter will create a QR for your clothes. Scan it to review and pay your bill.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.muted),
               ),
+              if (onScan != null) ...[
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  onPressed: onScan,
+                  icon: const Icon(Icons.qr_code_scanner_rounded),
+                  label: const Text('Scan laundry QR'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: const StadiumBorder(),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -594,6 +623,24 @@ class _LaundryStudentPanel extends StatelessWidget {
     }
     return Column(
       children: [
+        if (onScan != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonalIcon(
+                onPressed: onScan,
+                icon: const Icon(Icons.qr_code_scanner_rounded),
+                label: const Text('Scan new laundry QR'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ),
         for (final charge in charges)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),

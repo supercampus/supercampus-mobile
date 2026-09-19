@@ -9,6 +9,7 @@ import '../data/backend_canteen_repository.dart';
 import '../data/canteen_models.dart';
 import '../data/canteen_repository.dart';
 import '../data/mock_canteen_repository.dart';
+import '../../scanner/presentation/scan_qr_screen.dart';
 import 'canteen_cart_screen.dart';
 import 'canteen_captain_home.dart';
 import 'laundry_operator_home.dart';
@@ -246,6 +247,31 @@ class _CanteenShellState extends State<CanteenShell> {
         walletTransactions: [result.transaction, ..._store!.walletTransactions],
       );
     });
+  }
+
+  Future<void> _scanLaundryQr(BuildContext context) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final payload = await openScanQr(context, title: 'Scan laundry QR');
+    if (payload == null || !mounted) return;
+    try {
+      final charge = await _repository.claimLaundryCharge(payload);
+      await _loadStore(silent: true);
+      if (!mounted) return;
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text('Laundry charge "${charge.name}" added successfully.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text('$error'.replaceFirst('Exception: ', '')),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _addItem(CanteenMenuItem item) {
@@ -555,6 +581,7 @@ class _CanteenShellState extends State<CanteenShell> {
         onProfileTap: widget.onProfileTap,
         hasAlerts: widget.hasAlerts,
         photoUrl: widget.photoUrl ?? widget.session.photoUrl,
+        onScanLaundryQr: () => _scanLaundryQr(context),
       ),
       CanteenOrdersScreen(
         orders: store.orders,
