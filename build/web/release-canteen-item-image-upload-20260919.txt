@@ -1,0 +1,1 @@
+Fix canteen item image upload on mobile web iOS Safari with direct DOM file input and HEIC transcoding
