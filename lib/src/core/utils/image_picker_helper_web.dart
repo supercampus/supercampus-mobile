@@ -61,28 +61,30 @@ Future<PickedImage?> pickImageFile({String? dialogTitle}) async {
 
   input.addEventListener(
     'change',
-    ((web.Event _) async {
-      final files = input.files;
-      if (files == null || files.length == 0) {
-        if (!completer.isCompleted) completer.complete(null);
-        cleanup();
-        return;
-      }
-      final file = files.item(0);
-      if (file == null) {
-        if (!completer.isCompleted) completer.complete(null);
-        cleanup();
-        return;
-      }
+    ((web.Event _) {
+      unawaited(() async {
+        final files = input.files;
+        if (files == null || files.length == 0) {
+          if (!completer.isCompleted) completer.complete(null);
+          cleanup();
+          return;
+        }
+        final file = files.item(0);
+        if (file == null) {
+          if (!completer.isCompleted) completer.complete(null);
+          cleanup();
+          return;
+        }
 
-      try {
-        final picked = await _processImageFile(file);
-        if (!completer.isCompleted) completer.complete(picked);
-      } catch (_) {
-        if (!completer.isCompleted) completer.complete(null);
-      } finally {
-        cleanup();
-      }
+        try {
+          final picked = await _processImageFile(file);
+          if (!completer.isCompleted) completer.complete(picked);
+        } catch (_) {
+          if (!completer.isCompleted) completer.complete(null);
+        } finally {
+          cleanup();
+        }
+      }());
     }).toJS,
   );
 
