@@ -164,7 +164,7 @@ void main() {
     var opened = false;
     await _pumpMenu(tester, onOpenOrders: () => opened = true);
 
-    await tester.tap(find.byTooltip('My orders'));
+    await tester.tap(find.byTooltip('History'));
     expect(opened, isTrue);
   });
 }
