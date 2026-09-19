@@ -598,10 +598,13 @@ class BackendCanteenRepository implements CanteenRepository {
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final error = body['error'];
+      final message = switch (error) {
+        final Map<String, dynamic> map => _text(map['message']),
+        final String text => text.trim(),
+        _ => '',
+      };
       throw CanteenException(
-        error is Map<String, dynamic>
-            ? _text(error['message'], fallback: 'The canteen request failed.')
-            : 'The canteen request failed.',
+        message.isEmpty ? 'The canteen request failed.' : message,
       );
     }
     final data = body['data'];
