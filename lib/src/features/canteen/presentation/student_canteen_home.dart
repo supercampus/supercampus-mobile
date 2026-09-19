@@ -250,19 +250,36 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                       ),
                 ],
               ),
-              if (_cartCount > 0)
-                Positioned(
-                  left: 20,
-                  right: 20,
-                  // The DashboardNavBar is in bottomNavigationBar,
-                  // outside the body, so just a small offset is enough.
-                  bottom: 12,
-                  child: _CartBar(
-                    itemCount: _cartCount,
-                    total: _cartTotal,
-                    onTap: widget.onOpenCart,
+              Positioned(
+                left: 20,
+                right: 20,
+                // The DashboardNavBar is in bottomNavigationBar,
+                // outside the body, so just a small offset is enough.
+                bottom: 12,
+                child: AnimatedSlide(
+                  offset: _cartCount > 0 ? Offset.zero : const Offset(0, 1.4),
+                  duration: const Duration(milliseconds: 360),
+                  curve: _cartCount > 0 ? Curves.easeOutBack : Curves.easeInCubic,
+                  child: AnimatedOpacity(
+                    opacity: _cartCount > 0 ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 240),
+                    curve: _cartCount > 0 ? Curves.easeOut : Curves.easeIn,
+                    child: AnimatedScale(
+                      scale: _cartCount > 0 ? 1.0 : 0.88,
+                      duration: const Duration(milliseconds: 360),
+                      curve: _cartCount > 0 ? Curves.easeOutBack : Curves.easeInCubic,
+                      child: IgnorePointer(
+                        ignoring: _cartCount == 0,
+                        child: _CartBar(
+                          itemCount: _cartCount,
+                          total: _cartTotal,
+                          onTap: widget.onOpenCart,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
+              ),
             ],
           ),
         ),
@@ -863,43 +880,17 @@ class _MenuItemRow extends StatelessWidget {
             const SizedBox(width: 10),
             if (unavailable)
               const Text('Sold out', style: TextStyle(color: AppColors.muted))
-            else if (quantity == 0)
-              _AddButton(onTap: onAdd)
             else
-              QuantityControl(
-                quantity: quantity,
-                compact: true,
-                onAdd: onAdd,
-                onRemove: onRemove,
+              Align(
+                alignment: Alignment.centerRight,
+                child: QuantityControl(
+                  quantity: quantity,
+                  compact: true,
+                  onAdd: onAdd,
+                  onRemove: onRemove,
+                ),
               ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The round blue affordance that puts a first unit in the cart.
-class _AddButton extends StatelessWidget {
-  const _AddButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: 'Add item',
-      child: Material(
-        color: const Color(0xFF2563EB),
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: const SizedBox(
-            width: 46,
-            height: 46,
-            child: Icon(Icons.add, color: Colors.white, size: 24),
-          ),
         ),
       ),
     );
@@ -921,50 +912,78 @@ class _CartBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.primary,
-      borderRadius: BorderRadius.circular(8),
-      elevation: 4,
+      borderRadius: BorderRadius.circular(10),
+      elevation: 6,
+      shadowColor: AppColors.primary.withValues(alpha: 0.35),
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           child: Row(
             children: [
-              Container(
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 width: 34,
                 height: 34,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.16),
+                  color: Colors.white.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(
-                  '$itemCount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) {
+                    return ScaleTransition(
+                      scale: animation,
+                      child: FadeTransition(opacity: animation, child: child),
+                    );
+                  },
+                  child: Text(
+                    '$itemCount',
+                    key: ValueKey('cart_badge_$itemCount'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 11),
+              const SizedBox(width: 12),
               const Expanded(
                 child: Text(
                   'View cart',
                   style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
                   ),
                 ),
               ),
-              Text(
-                formatCurrency(total),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (child, animation) {
+                  return SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.3),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: FadeTransition(opacity: animation, child: child),
+                  );
+                },
+                child: Text(
+                  formatCurrency(total),
+                  key: ValueKey('cart_total_$total'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
                 ),
               ),
-              const SizedBox(width: 5),
-              const Icon(Icons.arrow_forward, color: Colors.white, size: 19),
+              const SizedBox(width: 6),
+              const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
             ],
           ),
         ),
