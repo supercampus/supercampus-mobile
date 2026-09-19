@@ -28,6 +28,10 @@ class CanteenShell extends StatefulWidget {
     required this.onSignOut,
     this.repository,
     this.initialAction,
+    this.onAlertsTap,
+    this.onProfileTap,
+    this.hasAlerts = false,
+    this.photoUrl,
   });
 
   final StudentSession session;
@@ -35,6 +39,10 @@ class CanteenShell extends StatefulWidget {
   final VoidCallback onSignOut;
   final CanteenRepository? repository;
   final String? initialAction;
+  final VoidCallback? onAlertsTap;
+  final VoidCallback? onProfileTap;
+  final bool hasAlerts;
+  final String? photoUrl;
 
   @override
   State<CanteenShell> createState() => _CanteenShellState();
@@ -543,6 +551,10 @@ class _CanteenShellState extends State<CanteenShell> {
         onWorkMode: _canUseWorkMode
             ? () => _updateOwnerMode(CanteenStaffMode.work)
             : null,
+        onAlertsTap: widget.onAlertsTap,
+        onProfileTap: widget.onProfileTap,
+        hasAlerts: widget.hasAlerts,
+        photoUrl: widget.photoUrl ?? widget.session.photoUrl,
       ),
       CanteenOrdersScreen(
         orders: store.orders,

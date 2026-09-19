@@ -1164,6 +1164,7 @@ class _SupercampusAppState extends State<SupercampusApp>
                 onSignOut: _signOut,
                 initialAction: _openModuleAction,
                 repository: _resolvedCanteenRepository,
+                photoUrl: session.photoUrl,
               ),
       ModuleCatalog.gatepass =>
         isSecurity

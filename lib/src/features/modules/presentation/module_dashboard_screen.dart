@@ -166,24 +166,15 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
           bottom: false,
-          child: Column(
-            children: [
-              HomeTopBar(
-                displayName: widget.session.displayName,
-                onAlertsTap: _openAlerts,
-                onSettingsTap: _openProfileSheet,
-                hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
-                photoUrl: widget.session.photoUrl,
-              ),
-              Expanded(
-                child: CanteenShell(
-                  session: widget.session as dynamic,
-                  onExitModule: () {},
-                  onSignOut: widget.onSignOut,
-                  repository: widget.canteenRepository,
-                ),
-              ),
-            ],
+          child: CanteenShell(
+            session: widget.session as dynamic,
+            onExitModule: () {},
+            onSignOut: widget.onSignOut,
+            repository: widget.canteenRepository,
+            onAlertsTap: _openAlerts,
+            onProfileTap: _openProfileSheet,
+            hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
+            photoUrl: widget.session.photoUrl,
           ),
         ),
         bottomNavigationBar: DashboardNavBar(

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-
 class HomeTopBar extends StatelessWidget {
   const HomeTopBar({
     super.key,
@@ -26,7 +24,7 @@ class HomeTopBar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _Bell(onTap: onAlertsTap, showDot: hasAlerts),
+          HomeAlertsBell(onTap: onAlertsTap, showDot: hasAlerts),
           GestureDetector(
             onTap: onSettingsTap,
             child: CircleAvatar(
@@ -44,8 +42,8 @@ class HomeTopBar extends StatelessWidget {
   }
 }
 
-class _Bell extends StatelessWidget {
-  const _Bell({required this.onTap, required this.showDot});
+class HomeAlertsBell extends StatelessWidget {
+  const HomeAlertsBell({super.key, required this.onTap, required this.showDot});
 
   final VoidCallback onTap;
   final bool showDot;

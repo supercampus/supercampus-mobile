@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/transaction_result_overlay.dart';
+import '../../modules/presentation/widgets/home_top_bar.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
@@ -24,6 +24,10 @@ class StudentCanteenHome extends StatefulWidget {
     this.initialShopKey,
     required this.onPayLaundryCharge,
     this.onWorkMode,
+    this.onAlertsTap,
+    this.onProfileTap,
+    this.hasAlerts = false,
+    this.photoUrl,
   });
 
   final CanteenStore store;
@@ -38,6 +42,10 @@ class StudentCanteenHome extends StatefulWidget {
   final String? initialShopKey;
   final Future<void> Function(LaundryCharge charge) onPayLaundryCharge;
   final VoidCallback? onWorkMode;
+  final VoidCallback? onAlertsTap;
+  final VoidCallback? onProfileTap;
+  final bool hasAlerts;
+  final String? photoUrl;
 
   @override
   State<StudentCanteenHome> createState() => _StudentCanteenHomeState();
@@ -261,9 +269,15 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
 
   Widget _buildHeader(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        ModuleBackButton(onPressed: widget.onExitModule),
-        const SizedBox(width: 8),
+        if (widget.onAlertsTap != null) ...[
+          HomeAlertsBell(
+            onTap: widget.onAlertsTap!,
+            showDot: widget.hasAlerts,
+          ),
+          const SizedBox(width: 8),
+        ],
         // The balance is a glance, not a destination, so the pill hugs its
         // number instead of stretching across the bar. Tapping it opens the
         // wallet, where the histories live.
@@ -299,7 +313,6 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
           ),
         ),
         const Spacer(),
-        const SizedBox(width: 6),
         if (widget.onWorkMode != null)
           IconButton(
             tooltip: 'Switch to owner workspace',
@@ -307,7 +320,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
             icon: const Icon(Icons.storefront_outlined),
           ),
         IconButton(
-          tooltip: 'My orders',
+          tooltip: 'History',
           onPressed: widget.onOpenOrders,
           icon: const Icon(Icons.receipt_long_outlined),
         ),
@@ -319,7 +332,20 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
           }),
           icon: Icon(_isSearching ? Icons.close : Icons.search),
         ),
-        
+        const SizedBox(width: 4),
+        GestureDetector(
+          onTap: widget.onProfileTap ?? widget.onOpenProfile,
+          child: CircleAvatar(
+            radius: 20,
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            backgroundImage: widget.photoUrl != null && widget.photoUrl!.isNotEmpty
+                ? NetworkImage(widget.photoUrl!)
+                : null,
+            child: widget.photoUrl == null || widget.photoUrl!.isEmpty
+                ? const Icon(Icons.person, size: 22, color: Colors.grey)
+                : null,
+          ),
+        ),
       ],
     );
   }
