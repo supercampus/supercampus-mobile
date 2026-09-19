@@ -1,7 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+
+import '../../../core/utils/image_picker_helper.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
@@ -713,17 +714,24 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
   }
 
   Future<void> _pickAndUploadImage() async {
-    final files = await FilePicker.pickFiles(type: FileType.image);
-    if (files.isEmpty) return;
-    final file = files.single;
-    final bytes = await file.readAsBytes();
-    if (bytes.isEmpty || !mounted) return;
-    setState(() {
-      _uploading = true;
-      _imageBytes = bytes;
-    });
     try {
-      final url = await widget.onUploadMedia(bytes, file.name);
+      final picked = await pickImageFile();
+      if (picked == null || picked.bytes.isEmpty || !mounted) return;
+
+      if (picked.bytes.length > 10 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Images must not exceed 10 MB.')),
+          );
+        }
+        return;
+      }
+
+      setState(() {
+        _uploading = true;
+        _imageBytes = picked.bytes;
+      });
+      final url = await widget.onUploadMedia(picked.bytes, picked.name);
       if (mounted) setState(() => _imageUrl = url);
     } catch (error) {
       if (mounted) {

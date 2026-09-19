@@ -1,6 +1,6 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../utils/image_picker_helper.dart';
 import 'media_repository.dart';
 
 /// Picks one image and uploads it, returning the stored asset.
@@ -13,24 +13,24 @@ Future<MediaAsset?> pickAndUploadPhoto(
   BuildContext context, {
   required MediaRepository repository,
 }) async {
-  final PlatformFile? file;
+  final PickedImage? picked;
   try {
-    file = await FilePicker.pickFile(type: FileType.image);
+    picked = await pickImageFile();
   } on Exception {
     if (context.mounted) {
       _report(context, 'The photo library is not available on this device.');
     }
     return null;
   }
-  if (file == null) return null;
+  if (picked == null) return null;
 
   try {
-    final bytes = await file.readAsBytes();
+    final bytes = picked.bytes;
     if (bytes.isEmpty) {
       if (context.mounted) _report(context, 'That file could not be read.');
       return null;
     }
-    return await repository.upload(bytes: bytes, fileName: file.name);
+    return await repository.upload(bytes: bytes, fileName: picked.name);
   } on MediaException catch (error) {
     if (context.mounted) _report(context, error.message);
     return null;
