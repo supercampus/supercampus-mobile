@@ -469,9 +469,11 @@ class BackendGatepassRepository implements GatepassRepository {
       // Being outside the campus fence is the ordinary reason this refuses,
       // and "forbidden" would read to a learner as though they were barred.
       if (body['code'] == 'forbidden') {
-        throw const OutsideCampusException(
-          'You are outside the campus boundary, so today\'s entry QR cannot '
-          'be activated yet. It will work once you are on campus.',
+        throw OutsideCampusException(
+          message.contains('outside the campus boundary')
+              ? message
+              : 'You are outside the campus boundary, so today\'s entry QR cannot '
+                  'be activated yet. It will work once you are on campus.',
         );
       }
       throw GatepassException(
