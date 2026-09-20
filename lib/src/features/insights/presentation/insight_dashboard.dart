@@ -315,12 +315,9 @@ class _InsightSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(20, 8, 20, 8),
-      child: SkeletonBox(
-        height: double.infinity,
-        borderRadius: BorderRadius.all(Radius.circular(12)),
-      ),
+    return const ThinkingOrbLoading(
+      size: 64,
+      padding: EdgeInsets.all(32),
     );
   }
 }

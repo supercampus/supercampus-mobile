@@ -310,17 +310,9 @@ class ClassesEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     if (busy) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
-        child: Column(
-          children: [
-            SkeletonListRow(height: 72),
-            SizedBox(height: 8),
-            SkeletonListRow(height: 72),
-            SizedBox(height: 8),
-            SkeletonListRow(height: 72),
-          ],
-        ),
+      return const ThinkingOrbLoading(
+        size: 64,
+        padding: EdgeInsets.symmetric(vertical: 32),
       );
     }
     return Padding(

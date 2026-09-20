@@ -67,20 +67,9 @@ class _AdvisorStudentsSectionState extends State<AdvisorStudentsSection> {
             child: Text(_error!),
           )
         else if (students == null)
-          SizedBox(
-            height: 142,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: 3,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (_, _) => const SkeletonBox(
-                width: 126,
-                height: 142,
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-            ),
+          const ThinkingOrbLoading(
+            size: 64,
+            padding: EdgeInsets.symmetric(vertical: 36),
           )
         else if (students.isEmpty)
           const Padding(
@@ -399,14 +388,9 @@ class _StudentDetailsSheetState extends State<_StudentDetailsSheet> {
             ],
           )
         else if (_assessments == null)
-          const Column(
-            children: [
-              SkeletonListRow(height: 72),
-              SizedBox(height: 8),
-              SkeletonListRow(height: 72),
-              SizedBox(height: 8),
-              SkeletonListRow(height: 72),
-            ],
+          const ThinkingOrbLoading(
+            size: 64,
+            padding: EdgeInsets.symmetric(vertical: 36),
           )
         else if (_assessments!.isEmpty)
           const Padding(

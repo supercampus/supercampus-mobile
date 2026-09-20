@@ -964,14 +964,9 @@ class _GlanceLoading extends StatelessWidget {
   const _GlanceLoading();
 
   @override
-  Widget build(BuildContext context) => const Column(
-    children: [
-      SkeletonListRow(),
-      SizedBox(height: 8),
-      SkeletonListRow(),
-      SizedBox(height: 8),
-      SkeletonListRow(),
-    ],
+  Widget build(BuildContext context) => const ThinkingOrbLoading(
+    size: 64,
+    padding: EdgeInsets.symmetric(vertical: 24),
   );
 }
 

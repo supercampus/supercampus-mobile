@@ -222,14 +222,9 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       ),
       const SizedBox(height: 18),
       if (_loadingAttendance && _attendanceSummary == null)
-        const Column(
-          children: [
-            SkeletonListRow(height: 118),
-            SizedBox(height: 10),
-            SkeletonListRow(height: 128),
-            SizedBox(height: 10),
-            SkeletonListRow(height: 128),
-          ],
+        const ThinkingOrbLoading(
+          size: 64,
+          padding: EdgeInsets.symmetric(vertical: 48),
         )
       else if (_attendanceError != null && _attendanceSummary == null)
         _attendanceMessage(
@@ -935,14 +930,9 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       ),
       const SizedBox(height: 18),
       if (_loadingAssessments && _assessments.isEmpty)
-        const Column(
-          children: [
-            SkeletonListRow(height: 112),
-            SizedBox(height: 10),
-            SkeletonListRow(height: 112),
-            SizedBox(height: 10),
-            SkeletonListRow(height: 112),
-          ],
+        const ThinkingOrbLoading(
+          size: 64,
+          padding: EdgeInsets.symmetric(vertical: 48),
         )
       else if (_assessmentError != null && _assessments.isEmpty)
         _assessmentMessage(
