@@ -223,7 +223,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       const SizedBox(height: 18),
       if (_loadingAttendance && _attendanceSummary == null)
         const ThinkingOrbLoading(
-          size: 64,
+          size: 96,
           padding: EdgeInsets.symmetric(vertical: 48),
         )
       else if (_attendanceError != null && _attendanceSummary == null)
@@ -931,7 +931,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       const SizedBox(height: 18),
       if (_loadingAssessments && _assessments.isEmpty)
         const ThinkingOrbLoading(
-          size: 64,
+          size: 96,
           padding: EdgeInsets.symmetric(vertical: 48),
         )
       else if (_assessmentError != null && _assessments.isEmpty)

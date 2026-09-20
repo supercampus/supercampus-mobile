@@ -311,7 +311,7 @@ class ClassesEmptyState extends StatelessWidget {
     final theme = Theme.of(context);
     if (busy) {
       return const ThinkingOrbLoading(
-        size: 64,
+        size: 96,
         padding: EdgeInsets.symmetric(vertical: 32),
       );
     }

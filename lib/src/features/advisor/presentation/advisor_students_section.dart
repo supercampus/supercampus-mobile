@@ -68,7 +68,7 @@ class _AdvisorStudentsSectionState extends State<AdvisorStudentsSection> {
           )
         else if (students == null)
           const ThinkingOrbLoading(
-            size: 64,
+            size: 96,
             padding: EdgeInsets.symmetric(vertical: 36),
           )
         else if (students.isEmpty)
@@ -389,7 +389,7 @@ class _StudentDetailsSheetState extends State<_StudentDetailsSheet> {
           )
         else if (_assessments == null)
           const ThinkingOrbLoading(
-            size: 64,
+            size: 96,
             padding: EdgeInsets.symmetric(vertical: 36),
           )
         else if (_assessments!.isEmpty)

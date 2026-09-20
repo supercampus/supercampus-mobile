@@ -3,11 +3,11 @@ import 'package:agent_orbs/agent_orbs.dart';
 
 export 'package:agent_orbs/agent_orbs.dart';
 
-/// A centered ThinkingOrb loading indicator (state: working, size: 64 by default).
+/// A centered ThinkingOrb loading indicator (state: working, size: 96 by default).
 class ThinkingOrbLoading extends StatelessWidget {
   const ThinkingOrbLoading({
     super.key,
-    this.size = 64,
+    this.size = 96,
     this.state = OrbState.working,
     this.padding = const EdgeInsets.all(24),
   });
@@ -48,7 +48,7 @@ class SkeletonBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final orbSize = height >= 64 ? 64.0 : (height >= 40 ? 40.0 : 20.0);
+    final orbSize = height >= 96 ? 96.0 : (height >= 64 ? 64.0 : (height >= 40 ? 40.0 : 20.0));
     return SizedBox(
       width: width,
       height: height,
@@ -97,7 +97,7 @@ class SkeletonListRow extends StatelessWidget {
       child: Center(
         child: ThinkingOrb(
           state: OrbState.working,
-          size: height >= 64 ? 64.0 : 40.0,
+          size: height >= 96 ? 96.0 : (height >= 64 ? 64.0 : 40.0),
           theme: dark ? OrbTheme.dark : OrbTheme.light,
         ),
       ),
@@ -105,7 +105,7 @@ class SkeletonListRow extends StatelessWidget {
   }
 }
 
-/// Full screen or section loading view featuring the ThinkingOrb in 'working' state (size 64).
+/// Full screen or section loading view featuring the ThinkingOrb in 'working' state (size 96).
 class SkeletonList extends StatelessWidget {
   const SkeletonList({
     super.key,
@@ -126,7 +126,7 @@ class SkeletonList extends StatelessWidget {
         padding: padding,
         child: ThinkingOrb(
           state: OrbState.working,
-          size: 64,
+          size: 96,
           theme: dark ? OrbTheme.dark : OrbTheme.light,
         ),
       ),
@@ -146,7 +146,7 @@ class TimetableLoadingSkeleton extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: ThinkingOrb(
           state: OrbState.working,
-          size: 64,
+          size: 96,
           theme: dark ? OrbTheme.dark : OrbTheme.light,
         ),
       ),
@@ -166,7 +166,7 @@ class AttendanceLoadingSkeleton extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: ThinkingOrb(
           state: OrbState.working,
-          size: 64,
+          size: 96,
           theme: dark ? OrbTheme.dark : OrbTheme.light,
         ),
       ),

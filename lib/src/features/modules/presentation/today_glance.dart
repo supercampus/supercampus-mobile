@@ -965,7 +965,7 @@ class _GlanceLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const ThinkingOrbLoading(
-    size: 64,
+    size: 96,
     padding: EdgeInsets.symmetric(vertical: 24),
   );
 }

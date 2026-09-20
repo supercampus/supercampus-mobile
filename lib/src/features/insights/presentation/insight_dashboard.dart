@@ -316,7 +316,7 @@ class _InsightSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const ThinkingOrbLoading(
-      size: 64,
+      size: 96,
       padding: EdgeInsets.all(32),
     );
   }
