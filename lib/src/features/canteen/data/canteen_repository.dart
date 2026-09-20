@@ -15,7 +15,7 @@ abstract interface class CanteenRepository {
     String? reason,
   });
 
-  Future<void> scanOrder(String qrPayload);
+  Future<CanteenOrder> scanOrder(String qrPayload);
 
   Future<CanteenStaffState> updateStaffState({
     required CanteenStaffMode mode,

@@ -252,7 +252,7 @@ class BackendCanteenRepository implements CanteenRepository {
   }
 
   @override
-  Future<void> scanOrder(String qrPayload) async {
+  Future<CanteenOrder> scanOrder(String qrPayload) async {
     final response = await _authorizedRequest(
       (headers) => _client.post(
         _uri('/api/v1/operations/canteen/orders/scan'),
@@ -261,7 +261,8 @@ class BackendCanteenRepository implements CanteenRepository {
       ),
       json: true,
     );
-    _data(response);
+    final data = _data(response);
+    return _order(_map(data), const {});
   }
 
   @override
@@ -508,6 +509,7 @@ class BackendCanteenRepository implements CanteenRepository {
                 category: _text(line['category'], fallback: 'meals'),
                 price: _number(line['price']),
                 isVegetarian: line['isVegetarian'] != false,
+                isInstant: line['isInstant'] == true,
               );
           return CartLine(item: item, quantity: _integer(line['quantity'], 1));
         })

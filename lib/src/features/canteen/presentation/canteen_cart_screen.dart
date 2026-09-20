@@ -19,6 +19,8 @@ class CanteenCartScreen extends StatefulWidget {
     required this.onAdd,
     required this.onRemove,
     required this.onPlaceOrder,
+    this.onRefresh,
+    this.latestOrderFinder,
   });
 
   final List<CanteenMenuItem> menu;
@@ -27,6 +29,8 @@ class CanteenCartScreen extends StatefulWidget {
   final ValueChanged<CanteenMenuItem> onAdd;
   final ValueChanged<CanteenMenuItem> onRemove;
   final Future<OrderPlacementResult> Function() onPlaceOrder;
+  final Future<void> Function()? onRefresh;
+  final CanteenOrder? Function(String orderId)? latestOrderFinder;
 
   @override
   State<CanteenCartScreen> createState() => _CanteenCartScreenState();
@@ -101,7 +105,11 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
         ),
-        builder: (_) => OrderPickupSheet(order: result.order),
+        builder: (_) => OrderPickupSheet(
+          order: result.order,
+          onRefresh: widget.onRefresh,
+          latestOrderFinder: () => widget.latestOrderFinder?.call(result.order.id),
+        ),
       );
       if (mounted) Navigator.of(context).pop();
     } catch (error) {

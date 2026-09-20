@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/swipe_action_card.dart';
+import '../../scanner/presentation/scan_qr_screen.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 
@@ -19,6 +20,7 @@ class CanteenCaptainHome extends StatefulWidget {
     required this.onRefresh,
     required this.onModeChanged,
     required this.onOrderStatusChanged,
+    this.onScanOrder,
   });
 
   final CanteenStore store;
@@ -28,6 +30,7 @@ class CanteenCaptainHome extends StatefulWidget {
   final Future<void> Function(CanteenStaffMode mode) onModeChanged;
   final Future<void> Function(String orderId, CanteenOrderStatus status)
   onOrderStatusChanged;
+  final Future<void> Function(String qrPayload)? onScanOrder;
 
   @override
   State<CanteenCaptainHome> createState() => _CanteenCaptainHomeState();
@@ -53,6 +56,23 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _scanOrder() async {
+    final payload = await openScanQr(context, title: 'Scan order QR');
+    if (payload == null || !mounted) return;
+    await _run(() async {
+      await widget.onScanOrder!(payload);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order delivered successfully!'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    });
   }
 
   @override
@@ -99,6 +119,13 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Scan order QR',
+            onPressed: _busy || widget.onScanOrder == null
+                ? null
+                : _scanOrder,
+            icon: const Icon(Icons.qr_code_scanner_rounded),
+          ),
+          IconButton(
             tooltip: 'Refresh orders',
             onPressed: _busy ? null : () => _run(widget.onRefresh),
             icon: const Icon(Icons.refresh),
@@ -106,6 +133,15 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
           ModuleHomeButton(onPressed: widget.onExitModule),
         ],
       ),
+      floatingActionButton: widget.onScanOrder == null || !working
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _busy ? null : _scanOrder,
+              icon: const Icon(Icons.qr_code_scanner_rounded),
+              label: const Text('Scan order'),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
       body: Column(
         children: [
           if (_busy) const LinearProgressIndicator(minHeight: 2),

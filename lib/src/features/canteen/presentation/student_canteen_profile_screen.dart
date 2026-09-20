@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/formatters.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 

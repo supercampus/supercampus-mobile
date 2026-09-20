@@ -389,6 +389,15 @@ class _CanteenShellState extends State<CanteenShell> {
           onAdd: _addItem,
           onRemove: _removeItem,
           onPlaceOrder: _placeOrder,
+          onRefresh: () => _loadStore(silent: true),
+          latestOrderFinder: (orderId) {
+            final orders = _store?.orders;
+            if (orders == null) return null;
+            for (final o in orders) {
+              if (o.id == orderId) return o;
+            }
+            return null;
+          },
         ),
       ),
     );
@@ -508,6 +517,10 @@ class _CanteenShellState extends State<CanteenShell> {
         onRefresh: () => _loadStore(silent: true),
         onModeChanged: _updateOwnerMode,
         onOrderStatusChanged: _updateOrderStatus,
+        onScanOrder: (payload) async {
+          await _repository.scanOrder(payload);
+          await _loadStore(silent: true);
+        },
       );
     }
 
@@ -586,6 +599,7 @@ class _CanteenShellState extends State<CanteenShell> {
       CanteenOrdersScreen(
         orders: store.orders,
         onBack: handleOrdersBack,
+        onRefresh: () => _loadStore(silent: true),
       ),
       CanteenScannerScreen(
         onScan: (payload) async {

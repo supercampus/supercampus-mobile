@@ -78,14 +78,22 @@ class MockCanteenRepository implements CanteenRepository {
   }
 
   @override
-  Future<void> scanOrder(String qrPayload) async {
+  Future<CanteenOrder> scanOrder(String qrPayload) async {
     final index = _orders.indexWhere(
       (order) => order.qrPayload == qrPayload || order.id == qrPayload,
     );
     if (index < 0) throw const CanteenException('Order QR is invalid.');
-    _orders[index] = _orders[index].copyWith(
+    final target = _orders[index];
+    if (!target.isInstantOnly) {
+      throw const CanteenException(
+        'This order contains food that requires kitchen preparation. Please use the kitchen preparation flow.',
+      );
+    }
+    final updated = target.copyWith(
       status: CanteenOrderStatus.completed,
     );
+    _orders[index] = updated;
+    return updated;
   }
 
   @override

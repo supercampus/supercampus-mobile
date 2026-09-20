@@ -234,6 +234,9 @@ class CanteenOrder {
       );
 
   int get itemCount => lines.fold(0, (total, line) => total + line.quantity);
+
+  bool get isInstantOnly =>
+      lines.isNotEmpty && lines.every((line) => line.item.isInstant);
 }
 
 enum WalletTransactionType { credit, debit }

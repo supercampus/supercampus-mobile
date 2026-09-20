@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -5,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
+import 'widgets/order_delivered_view.dart';
 
 enum OrderFilter { active, history }
 
@@ -13,12 +15,15 @@ class CanteenOrdersScreen extends StatefulWidget {
     super.key,
     required this.orders,
     required this.onBack,
+    this.onRefresh,
   });
 
   final List<CanteenOrder> orders;
 
   /// Returns to the shops menu, which is this module's home.
   final VoidCallback onBack;
+
+  final Future<void> Function()? onRefresh;
 
   @override
   State<CanteenOrdersScreen> createState() => _CanteenOrdersScreenState();
@@ -38,7 +43,16 @@ class _CanteenOrdersScreenState extends State<CanteenOrdersScreen> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         fullscreenDialog: true,
-        builder: (_) => FullScreenOrderQrScreen(order: order),
+        builder: (_) => FullScreenOrderQrScreen(
+          order: order,
+          onRefresh: widget.onRefresh,
+          latestOrderFinder: () {
+            for (final o in widget.orders) {
+              if (o.id == order.id) return o;
+            }
+            return null;
+          },
+        ),
       ),
     );
   }
@@ -256,16 +270,91 @@ class _OrderCard extends StatelessWidget {
   }
 }
 
-class FullScreenOrderQrScreen extends StatelessWidget {
-  const FullScreenOrderQrScreen({super.key, required this.order});
+class FullScreenOrderQrScreen extends StatefulWidget {
+  const FullScreenOrderQrScreen({
+    super.key,
+    required this.order,
+    this.onRefresh,
+    this.latestOrderFinder,
+  });
 
   final CanteenOrder order;
+  final Future<void> Function()? onRefresh;
+  final CanteenOrder? Function()? latestOrderFinder;
+
+  @override
+  State<FullScreenOrderQrScreen> createState() => _FullScreenOrderQrScreenState();
+}
+
+class _FullScreenOrderQrScreenState extends State<FullScreenOrderQrScreen> {
+  late CanteenOrder _order;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _order = widget.order;
+    _startPolling();
+  }
+
+  void _startPolling() {
+    if (_order.status == CanteenOrderStatus.completed) return;
+    _timer = Timer.periodic(const Duration(milliseconds: 1500), (_) async {
+      if (!mounted) return;
+      if (widget.onRefresh != null) {
+        try {
+          await widget.onRefresh!();
+        } catch (_) {}
+      }
+      if (!mounted) return;
+      final latest = widget.latestOrderFinder?.call();
+      if (latest != null && latest.status != _order.status) {
+        setState(() {
+          _order = latest;
+        });
+        if (_order.status == CanteenOrderStatus.completed) {
+          _timer?.cancel();
+          _timer = null;
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_order.status == CanteenOrderStatus.completed) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF111014),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF111014),
+          foregroundColor: Colors.white,
+          title: Text('Order #${_order.displayId}'),
+          leading: IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close_rounded),
+            tooltip: 'Close',
+          ),
+        ),
+        body: SafeArea(
+          child: Center(
+            child: OrderDeliveredView(
+              order: _order,
+              onDone: () => Navigator.of(context).pop(),
+            ),
+          ),
+        ),
+      );
+    }
+
     final qrSize = (MediaQuery.sizeOf(context).width - 100).clamp(200.0, 320.0);
-    final isReady = order.status == CanteenOrderStatus.ready;
-    final statusColor = switch (order.status) {
+    final isReady = _order.status == CanteenOrderStatus.ready;
+    final statusColor = switch (_order.status) {
       CanteenOrderStatus.ready => AppColors.amber,
       CanteenOrderStatus.completed => const Color(0xFF4ADE80),
       CanteenOrderStatus.rejected || CanteenOrderStatus.cancelled => Colors.redAccent,
@@ -277,7 +366,7 @@ class FullScreenOrderQrScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF111014),
         foregroundColor: Colors.white,
-        title: Text('Order #${order.displayId}'),
+        title: Text('Order #${_order.displayId}'),
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.close_rounded),
@@ -304,7 +393,7 @@ class FullScreenOrderQrScreen extends StatelessWidget {
                   child: Text(
                     isReady
                         ? 'READY FOR PICKUP'
-                        : order.status.label.toUpperCase(),
+                        : _order.status.label.toUpperCase(),
                     style: TextStyle(
                       color: statusColor,
                       fontSize: 12,
@@ -328,13 +417,13 @@ class FullScreenOrderQrScreen extends StatelessWidget {
                     ],
                   ),
                   child: QrImageView(
-                    data: order.qrPayload ?? order.id,
+                    data: _order.qrPayload ?? _order.id,
                     size: qrSize,
                     padding: EdgeInsets.zero,
                   ),
                 ),
                 const SizedBox(height: 24),
-                if (order.tokenNumber != null) ...[
+                if (_order.tokenNumber != null) ...[
                   const Text(
                     'PICKUP TOKEN',
                     style: TextStyle(
@@ -346,7 +435,7 @@ class FullScreenOrderQrScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '${order.tokenNumber}',
+                    '${_order.tokenNumber}',
                     style: const TextStyle(
                       color: AppColors.amber,
                       fontSize: 48,
@@ -377,7 +466,7 @@ class FullScreenOrderQrScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      for (final line in order.lines)
+                      for (final line in _order.lines)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Row(
@@ -408,11 +497,11 @@ class FullScreenOrderQrScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '${order.itemCount} item${order.itemCount == 1 ? '' : 's'}',
+                            '${_order.itemCount} item${_order.itemCount == 1 ? '' : 's'}',
                             style: const TextStyle(color: Colors.white54),
                           ),
                           Text(
-                            formatCurrency(order.total),
+                            formatCurrency(_order.total),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,

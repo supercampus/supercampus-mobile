@@ -903,6 +903,7 @@ class _SupercampusAppState extends State<SupercampusApp>
     // leaves the same way — so it is pushed rather than wrapped in a page route
     // that would slide the whole thing in from the side.
     final messenger = ScaffoldMessenger.maybeOf(context);
+    final errorColor = Theme.of(context).colorScheme.error;
     final code = await openScanQr(context);
     if (code == null || !mounted) return;
 
@@ -934,6 +935,36 @@ class _SupercampusAppState extends State<SupercampusApp>
         );
       }
       return;
+    }
+
+    if (_openModuleId == ModuleCatalog.canteen ||
+        code.startsWith('QR-') ||
+        code.startsWith('supercampus://canteen/')) {
+      final repository = _resolvedCanteenRepository;
+      if (repository != null) {
+        try {
+          final order = await repository.scanOrder(code);
+          if (!mounted) return;
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text('Order #${order.displayId} delivered successfully!'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: AppColors.success,
+            ),
+          );
+          return;
+        } catch (error) {
+          if (!mounted) return;
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text(error.toString().replaceFirst('Exception: ', '')),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: errorColor,
+            ),
+          );
+          return;
+        }
+      }
     }
 
     messenger?.showSnackBar(

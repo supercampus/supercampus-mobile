@@ -1,17 +1,82 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../data/canteen_models.dart';
+import 'widgets/order_delivered_view.dart';
 
-class OrderPickupSheet extends StatelessWidget {
-  const OrderPickupSheet({super.key, required this.order});
+class OrderPickupSheet extends StatefulWidget {
+  const OrderPickupSheet({
+    super.key,
+    required this.order,
+    this.onRefresh,
+    this.latestOrderFinder,
+  });
 
   final CanteenOrder order;
+  final Future<void> Function()? onRefresh;
+  final CanteenOrder? Function()? latestOrderFinder;
+
+  @override
+  State<OrderPickupSheet> createState() => _OrderPickupSheetState();
+}
+
+class _OrderPickupSheetState extends State<OrderPickupSheet> {
+  late CanteenOrder _order;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _order = widget.order;
+    _startPolling();
+  }
+
+  void _startPolling() {
+    if (_order.status == CanteenOrderStatus.completed) return;
+    _timer = Timer.periodic(const Duration(milliseconds: 1500), (_) async {
+      if (!mounted) return;
+      if (widget.onRefresh != null) {
+        try {
+          await widget.onRefresh!();
+        } catch (_) {}
+      }
+      if (!mounted) return;
+      final latest = widget.latestOrderFinder?.call();
+      if (latest != null && latest.status != _order.status) {
+        setState(() {
+          _order = latest;
+        });
+        if (_order.status == CanteenOrderStatus.completed) {
+          _timer?.cancel();
+          _timer = null;
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_order.status == CanteenOrderStatus.completed) {
+      return SafeArea(
+        child: Container(
+          color: AppColors.ink,
+          child: OrderDeliveredView(
+            order: _order,
+            onDone: () => Navigator.of(context).pop(),
+            compact: true,
+          ),
+        ),
+      );
+    }
     return SafeArea(
       child: Container(
         color: AppColors.ink,
@@ -75,7 +140,7 @@ class OrderPickupSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: QrImageView(
-                    data: order.qrPayload ?? order.id,
+                    data: _order.qrPayload ?? _order.id,
                     padding: EdgeInsets.zero,
                   ),
                 ),
@@ -94,7 +159,7 @@ class OrderPickupSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${order.tokenNumber ?? '--'}',
+                        '${_order.tokenNumber ?? '--'}',
                         style: const TextStyle(
                           color: AppColors.amber,
                           fontSize: 46,
@@ -115,12 +180,12 @@ class OrderPickupSheet extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  '${order.itemCount} item${order.itemCount == 1 ? '' : 's'}',
+                  '${_order.itemCount} item${_order.itemCount == 1 ? '' : 's'}',
                   style: const TextStyle(color: Colors.white70),
                 ),
                 const Spacer(),
                 Text(
-                  formatCurrency(order.total),
+                  formatCurrency(_order.total),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
