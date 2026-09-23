@@ -78,12 +78,14 @@ class BackendCanteenRepository implements CanteenRepository {
       laundryCharges: _list(
         data['laundryCharges'],
       ).map((value) => _laundryCharge(_map(value))).toList(growable: false),
+      hasPin: data['hasPin'] == true,
     );
   }
 
   @override
   Future<OrderPlacementResult> placeOrder({
     required List<CartLine> lines,
+    String? pinHash,
   }) async {
     final body = jsonEncode({
       'lines': [
@@ -93,6 +95,7 @@ class BackendCanteenRepository implements CanteenRepository {
       // One key for the cart; the server derives a per-shop key from it, so
       // a retry cannot double-charge any single shop.
       'idempotencyKey': 'mobile-${DateTime.now().microsecondsSinceEpoch}',
+      if (pinHash != null) 'pinHash': pinHash,
     });
     final response = await _authorizedRequest(
       (headers) => _client.post(
@@ -113,6 +116,45 @@ class BackendCanteenRepository implements CanteenRepository {
       transactions: _list(
         data['transactions'],
       ).map((raw) => _transaction(_map(raw))).toList(growable: false),
+    );
+  }
+
+  /// Set the 4-digit wallet PIN for the first time.
+  Future<void> setWalletPin(String pinHash, {String? hint}) async {
+    await _authorizedRequest(
+      (headers) => _client.post(
+        _uri('/api/v1/operations/canteen/wallet-pin'),
+        headers: headers,
+        body: jsonEncode({
+          'pinHash': pinHash,
+          if (hint != null && hint.isNotEmpty) 'hint': hint,
+        }),
+      ),
+      json: true,
+    );
+  }
+
+  /// Change the wallet PIN using one of three methods.
+  Future<void> changeWalletPin({
+    required String newPinHash,
+    required String method, // 'current_pin' | 'hint' | 'password'
+    String? currentPinHash,
+    String? hint,
+    String? password,
+  }) async {
+    await _authorizedRequest(
+      (headers) => _client.put(
+        _uri('/api/v1/operations/canteen/wallet-pin'),
+        headers: headers,
+        body: jsonEncode({
+          'newPinHash': newPinHash,
+          'method': method,
+          if (currentPinHash != null) 'currentPinHash': currentPinHash,
+          if (hint != null) 'hint': hint,
+          if (password != null) 'password': password,
+        }),
+      ),
+      json: true,
     );
   }
 

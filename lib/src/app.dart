@@ -802,6 +802,7 @@ class _SupercampusAppState extends State<SupercampusApp>
         permissions: permissions,
         canteenRepository: _resolvedCanteenRepository,
         announcementRepository: _announcementRepository,
+        accessTokenProvider: _provideAccessToken,
         onOpenModule: (id, [action]) {
           if (!permissions.canSeeModule(id)) return;
           setState(() {
@@ -1282,6 +1283,12 @@ class _SupercampusAppState extends State<SupercampusApp>
                 session: session,
                 onExitModule: exit,
                 initialAction: _openModuleAction,
+                onOpenModule: (id) {
+                  setState(() {
+                    _openModuleId = id;
+                    _openModuleAction = null;
+                  });
+                },
                 attendanceRepository: _useMockData
                     ? null
                     : AttendanceRepository(

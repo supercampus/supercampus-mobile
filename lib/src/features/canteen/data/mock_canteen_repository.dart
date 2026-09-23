@@ -227,6 +227,7 @@ class MockCanteenRepository implements CanteenRepository {
   @override
   Future<OrderPlacementResult> placeOrder({
     required List<CartLine> lines,
+    String? pinHash,
   }) async {
     if (lines.isEmpty) throw const CanteenException('Your cart is empty.');
     final total = lines.fold<double>(0, (sum, line) => sum + line.total);

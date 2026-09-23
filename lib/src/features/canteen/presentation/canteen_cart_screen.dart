@@ -21,6 +21,8 @@ class CanteenCartScreen extends StatefulWidget {
     required this.onPlaceOrder,
     this.onRefresh,
     this.latestOrderFinder,
+    this.hasPin = false,
+    this.onSetupPin,
   });
 
   final List<CanteenMenuItem> menu;
@@ -28,9 +30,14 @@ class CanteenCartScreen extends StatefulWidget {
   final Map<String, double> walletBalances;
   final ValueChanged<CanteenMenuItem> onAdd;
   final ValueChanged<CanteenMenuItem> onRemove;
-  final Future<OrderPlacementResult> Function() onPlaceOrder;
+  /// Called after PIN verification; receives the SHA-256 hash of the entered PIN.
+  final Future<OrderPlacementResult> Function(String pinHash) onPlaceOrder;
   final Future<void> Function()? onRefresh;
   final CanteenOrder? Function(String orderId)? latestOrderFinder;
+  /// Whether the user already has a PIN set.
+  final bool hasPin;
+  /// Called when first-time PIN setup completes (receives hash + optional hint).
+  final Future<void> Function(String pinHash, {String? hint})? onSetupPin;
 
   @override
   State<CanteenCartScreen> createState() => _CanteenCartScreenState();
@@ -66,27 +73,44 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
     // amount the student approved so the result screen never recomputes an
     // already-cleared cart as zero.
     final transactionTotal = _total;
-    final approved = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
-      ),
-      builder: (_) => TransactionPinSheet(
+
+    String? pinHash;
+
+    if (!widget.hasPin) {
+      // First-time setup: ask the user to create a PIN.
+      final setup = await showSetupPinSheet(context);
+      if (setup == null || !mounted) return;
+      // Persist the new PIN via parent callback.
+      if (widget.onSetupPin != null) {
+        try {
+          await widget.onSetupPin!(setup.pinHash, hint: setup.hint);
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not save PIN: $e')),
+            );
+          }
+          return;
+        }
+      }
+      pinHash = setup.pinHash;
+    } else {
+      // Existing PIN: verify before placing order.
+      final result = await showVerifyPinSheet(
+        context,
         amount: transactionTotal,
         summary: '${_lines.length} item${_lines.length == 1 ? '' : 's'}',
-      ),
-    );
-    if (approved != true || !mounted) return;
+      );
+      if (result == null || !mounted) return;
+      pinHash = result;
+    }
 
     setState(() {
       _isSubmitting = true;
       _error = null;
     });
     try {
-      final result = await widget.onPlaceOrder();
+      final result = await widget.onPlaceOrder(pinHash);
       if (!mounted) return;
       await showTransactionResult(
         context,

@@ -300,6 +300,7 @@ class CanteenStore {
     this.analytics = const CanteenAnalytics(),
     this.laundryPricePerKg = 0,
     this.laundryCharges = const [],
+    this.hasPin = false,
   });
 
   final CanteenUser user;
@@ -318,6 +319,9 @@ class CanteenStore {
   final double laundryPricePerKg;
   final List<LaundryCharge> laundryCharges;
 
+  /// Whether the user has set a 4-digit transaction PIN.
+  final bool hasPin;
+
   CanteenStore copyWith({
     Map<String, double>? walletBalances,
     List<CanteenOrder>? orders,
@@ -329,6 +333,7 @@ class CanteenStore {
     CanteenAnalytics? analytics,
     double? laundryPricePerKg,
     List<LaundryCharge>? laundryCharges,
+    bool? hasPin,
   }) {
     return CanteenStore(
       user: user,
@@ -344,6 +349,7 @@ class CanteenStore {
       analytics: analytics ?? this.analytics,
       laundryPricePerKg: laundryPricePerKg ?? this.laundryPricePerKg,
       laundryCharges: laundryCharges ?? this.laundryCharges,
+      hasPin: hasPin ?? this.hasPin,
     );
   }
 }

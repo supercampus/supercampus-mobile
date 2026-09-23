@@ -5,9 +5,11 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/skeleton_loading.dart';
 
+import '../../../core/access/module_catalog.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../attendance/data/attendance_repository.dart';
+import '../../timetable/presentation/timetable_shell.dart';
 import '../data/student_assessments_repository.dart';
 
 String _mark(double value) => value == value.roundToDouble()
@@ -23,6 +25,7 @@ class StudentAcademicsShell extends StatefulWidget {
     this.initialAction,
     this.assessmentsSource,
     this.attendanceRepository,
+    this.onOpenModule,
   });
 
   final UserSession session;
@@ -30,6 +33,7 @@ class StudentAcademicsShell extends StatefulWidget {
   final String? initialAction;
   final StudentAssessmentsSource? assessmentsSource;
   final AttendanceRepository? attendanceRepository;
+  final ValueChanged<String>? onOpenModule;
 
   @override
   State<StudentAcademicsShell> createState() => _StudentAcademicsShellState();
@@ -208,9 +212,133 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
     }).toList();
   }
 
+  void _openTimetable() {
+    if (widget.onOpenModule != null) {
+      widget.onOpenModule!(ModuleCatalog.timetable);
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TimetableShell(
+            session: widget.session,
+            scope: PermissionScope.own,
+            canConfigure: false,
+            onSignOut: () {},
+            onExitModule: () => Navigator.of(context).pop(),
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _timetableCard() => Padding(
+    padding: const EdgeInsets.only(bottom: 20),
+    child: Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFE5E7EB), width: 1),
+      ),
+      elevation: 0,
+      shadowColor: Colors.black.withValues(alpha: 0.04),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: _openTimetable,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4F46E5).withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.calendar_month_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'Class Timetable',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF111827),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEEF2FF),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            'Schedule',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF4F46E5),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'View weekly schedule & period timings',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF3F4F6),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Color(0xFF6B7280),
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
   Widget _attendance() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
+      _timetableCard(),
       const Text(
         'Attendance overview',
         style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500),

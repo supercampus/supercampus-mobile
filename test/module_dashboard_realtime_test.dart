@@ -39,7 +39,7 @@ Widget _dashboard(GlanceSource source, {required int revision}) => MaterialApp(
     permissions: _permissions,
     glanceSource: source,
     glanceRevision: revision,
-    onOpenModule: (_) {},
+    onOpenModule: (_, [_]) {},
     onSignOut: () {},
     onThemeModeChanged: (_) {},
   ),

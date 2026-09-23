@@ -73,7 +73,7 @@ void main() {
           ),
           permissions: const EffectivePermissions.empty(),
           glanceSource: _EmptyGlanceSource(),
-          onOpenModule: (_) {},
+          onOpenModule: (_, [_]) {},
           onSignOut: () {},
           onThemeModeChanged: (_) {},
         ),

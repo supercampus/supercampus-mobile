@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/access/effective_permissions.dart';
 import '../../../../core/access/module_catalog.dart';
 import '../../../authentication/data/auth_repository.dart';
+import '../../../canteen/data/backend_canteen_repository.dart';
+import '../../../canteen/presentation/transaction_pin_sheet.dart';
 import 'home_sheets.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -17,6 +19,7 @@ class SettingsPage extends StatefulWidget {
     required this.modules,
     required this.moduleOrder,
     this.onModuleOrderChanged,
+    this.accessTokenProvider,
   });
 
   final UserSession session;
@@ -27,6 +30,7 @@ class SettingsPage extends StatefulWidget {
   final List<ModuleDescriptor> modules;
   final List<String> moduleOrder;
   final ValueChanged<List<String>>? onModuleOrderChanged;
+  final AccessTokenProvider? accessTokenProvider;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -189,6 +193,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 _buildDivider(dividerColor),
                 _SettingsTile(
+                  icon: Icons.dialpad_rounded,
+                  title: 'Transaction PIN',
+                  textColor: textColor,
+                  isDark: isDark,
+                  onTap: () => _openChangePinPage(context),
+                ),
+                _buildDivider(dividerColor),
+                _SettingsTile(
                   icon: Icons.notifications_none_rounded,
                   title: 'Notifications',
                   textColor: textColor,
@@ -307,6 +319,51 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
+
+  Future<void> _openChangePinPage(BuildContext context) async {
+    final provider = widget.accessTokenProvider;
+    if (provider == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PIN change is not available')),
+      );
+      return;
+    }
+    const baseUrl = String.fromEnvironment(
+      'SUPERCAMPUS_API_BASE_URL',
+      defaultValue: 'https://api.supercampus.ai',
+    );
+    final repo = BackendCanteenRepository(
+      baseUrl: baseUrl,
+      accessTokenProvider: provider,
+    );
+
+    // Show change PIN sheet; hasHint = false for now (we don't track it here).
+    if (!context.mounted) return;
+    final result = await showChangePinSheet(context, hasHint: true);
+    if (result == null || !context.mounted) return;
+
+    try {
+      await repo.changeWalletPin(
+        newPinHash: result.newPinHash,
+        method: result.method,
+        currentPinHash: result.currentPinHash,
+        hint: result.hint,
+        password: result.password,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Transaction PIN updated')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
+
 
   void _openAbout(
     BuildContext context,

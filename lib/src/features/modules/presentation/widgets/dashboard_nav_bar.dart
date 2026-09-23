@@ -21,8 +21,24 @@ class DashboardNavBar extends StatelessWidget {
             child: Container(
               height: 56,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                color: const Color(0xFFFFFFFF),
                 borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: const Color(0xFFE5E7EB),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -85,12 +101,21 @@ class _NavItem extends StatelessWidget {
     return IconButton(
       tooltip: tooltip,
       onPressed: onTap,
-      icon: Icon(
-        icon,
-        size: 24,
-        color: isSelected
-            ? Theme.of(context).colorScheme.onSurface
-            : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+      icon: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: isSelected
+            ? BoxDecoration(
+                color: const Color(0xFF1400FF).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              )
+            : null,
+        child: Icon(
+          icon,
+          size: 22,
+          color: isSelected
+              ? const Color(0xFF1400FF)
+              : const Color(0xFF8E8E93),
+        ),
       ),
     );
   }

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../core/access/module_catalog.dart';
+import '../../../../core/widgets/skeleton_loading.dart';
+import '../../../authentication/data/auth_repository.dart';
 import '../../../faculty/data/mock_faculty_repository.dart';
 import '../../../library/data/librarian_repository.dart';
+import 'dashboard_nav_bar.dart';
+import 'student_reports_page.dart';
 
 class CampusWallNotice {
   const CampusWallNotice({
@@ -30,9 +35,15 @@ class CampusWallScreen extends StatefulWidget {
   const CampusWallScreen({
     super.key,
     this.announcementRepository,
+    this.session,
+    this.onOpenModule,
+    this.onNavSelect,
   });
 
   final LibrarianRepository? announcementRepository;
+  final UserSession? session;
+  final ValueChanged<String>? onOpenModule;
+  final ValueChanged<String>? onNavSelect;
 
   @override
   State<CampusWallScreen> createState() => _CampusWallScreenState();
@@ -307,7 +318,9 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
             // Wall feed items
             if (_isLoading)
               const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(
+                  child: ThinkingOrbLoading(size: 80),
+                ),
               )
             else if (_filteredNotices.isEmpty)
               SliverFillRemaining(
@@ -360,7 +373,44 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: DashboardNavBar(
+        selectedId: 'wall',
+        onSelect: _handleNavSelect,
+      ),
     );
+  }
+
+  void _handleNavSelect(String id) {
+    if (widget.onNavSelect != null) {
+      widget.onNavSelect!(id);
+      return;
+    }
+    switch (id) {
+      case 'wall':
+        // Already on wall
+        break;
+      case 'analysis':
+        if (widget.session != null) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => StudentReportsPage(
+                session: widget.session!,
+                onOpenModule: widget.onOpenModule,
+                announcementRepository: widget.announcementRepository,
+              ),
+            ),
+          );
+        }
+        break;
+      case 'acads':
+        Navigator.of(context).pop();
+        widget.onOpenModule?.call(ModuleCatalog.academics);
+        break;
+      case 'gatepass':
+        Navigator.of(context).pop();
+        widget.onOpenModule?.call(ModuleCatalog.gatepass);
+        break;
+    }
   }
 
   void _showNoticeDetail(BuildContext context, CampusWallNotice notice) {

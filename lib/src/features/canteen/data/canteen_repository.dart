@@ -7,7 +7,10 @@ abstract interface class CanteenRepository {
 
   Future<WalletTopUpResult> topUpWallet(double amount);
 
-  Future<OrderPlacementResult> placeOrder({required List<CartLine> lines});
+  Future<OrderPlacementResult> placeOrder({
+    required List<CartLine> lines,
+    String? pinHash,
+  });
 
   Future<void> updateOrderStatus(
     String orderId,

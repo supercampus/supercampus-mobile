@@ -299,8 +299,11 @@ class _CanteenShellState extends State<CanteenShell> {
         .toList();
   }
 
-  Future<OrderPlacementResult> _placeOrder() async {
-    final result = await _repository.placeOrder(lines: _cartLines());
+  Future<OrderPlacementResult> _placeOrder(String pinHash) async {
+    final result = await _repository.placeOrder(
+      lines: _cartLines(),
+      pinHash: pinHash,
+    );
     if (!mounted) return result;
     final store = _store!;
     setState(() {
@@ -322,6 +325,18 @@ class _CanteenShellState extends State<CanteenShell> {
     });
     return result;
   }
+
+  Future<void> _setupPin(String pinHash, {String? hint}) async {
+    if (_repository case final BackendCanteenRepository backend) {
+      await backend.setWalletPin(pinHash, hint: hint);
+    }
+    if (mounted) {
+      setState(() {
+        _store = _store?.copyWith(hasPin: true);
+      });
+    }
+  }
+
 
   Future<WalletTopUpResult> _topUpWallet(double amount, String shopKey) async {
     final result = switch (_repository) {
@@ -398,6 +413,8 @@ class _CanteenShellState extends State<CanteenShell> {
             }
             return null;
           },
+          hasPin: store.hasPin,
+          onSetupPin: (pinHash, {hint}) => _setupPin(pinHash, hint: hint),
         ),
       ),
     );
