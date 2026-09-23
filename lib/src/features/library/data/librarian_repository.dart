@@ -58,6 +58,7 @@ class LibraryAnnouncement {
     this.attachmentName,
     this.attachmentUrl,
     this.decisionNote,
+    this.createdByEmail,
   });
   final String id;
   final String type;
@@ -72,19 +73,27 @@ class LibraryAnnouncement {
   final String? attachmentName;
   final String? attachmentUrl;
   final String? decisionNote;
+  final String? createdByEmail;
 }
 
 class LibrarianRepository {
   LibrarianRepository({
     required String baseUrl,
-    required AccessTokenProvider accessTokenProvider,
+    String? accessToken,
+    AccessTokenProvider? accessTokenProvider,
     http.Client? client,
-  }) : _baseUri = Uri.parse(baseUrl.endsWith('/') ? baseUrl : '$baseUrl/'),
+  }) : assert(
+         accessToken != null || accessTokenProvider != null,
+         'Provide an access token or token provider.',
+       ),
+       _baseUri = Uri.parse(baseUrl.endsWith('/') ? baseUrl : '$baseUrl/'),
+       _accessToken = accessToken,
        _accessTokenProvider = accessTokenProvider,
        _client = client ?? createAuthHttpClient();
 
   final Uri _baseUri;
-  final AccessTokenProvider _accessTokenProvider;
+  final String? _accessToken;
+  final AccessTokenProvider? _accessTokenProvider;
   final http.Client _client;
 
   Uri _uri(String path) => _baseUri.resolve(path);
@@ -232,10 +241,12 @@ class LibrarianRepository {
     Future<http.Response> Function(Map<String, String>) send, {
     bool json = false,
   }) async {
-    var token = await _accessTokenProvider(forceRefresh: false);
+    final provider = _accessTokenProvider;
+    String token = _accessToken ??
+        (provider != null ? await provider(forceRefresh: false) : '');
     var response = await send(_headers(token, json: json));
-    if (response.statusCode == 401) {
-      token = await _accessTokenProvider(forceRefresh: true);
+    if (response.statusCode == 401 && provider != null) {
+      token = await provider(forceRefresh: true);
       response = await send(_headers(token, json: json));
     }
     return response;
@@ -295,6 +306,7 @@ class LibrarianRepository {
         attachmentName: value['attachmentName'] as String?,
         attachmentUrl: value['attachmentUrl'] as String?,
         decisionNote: value['decisionNote'] as String?,
+        createdByEmail: value['createdByEmail'] as String?,
       );
 
   int _integer(dynamic value, int fallback) =>

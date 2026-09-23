@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/access/module_catalog.dart';
 import '../../../../core/widgets/skeleton_loading.dart';
 import '../../../authentication/data/auth_repository.dart';
-import '../../../faculty/data/mock_faculty_repository.dart';
 import '../../../library/data/librarian_repository.dart';
 import 'dashboard_nav_bar.dart';
 import 'student_reports_page.dart';
@@ -58,10 +57,11 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
   final List<String> _filters = const [
     'All',
     'Circulars',
-    'Academics',
+    'Announcements',
     'Examinations',
-    'Administrative',
     'Events',
+    'Academics',
+    'Administrative',
   ];
 
   @override
@@ -74,51 +74,47 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
     setState(() => _isLoading = true);
     final items = <CampusWallNotice>[];
 
-    // 1. Try loading from repository if available
-    if (widget.announcementRepository != null) {
+    // 1. Resolve repository (either passed in or constructed from session)
+    var repo = widget.announcementRepository;
+    if (repo == null && widget.session?.jwtToken != null) {
+      repo = LibrarianRepository(
+        baseUrl: const String.fromEnvironment(
+          'SUPERCAMPUS_API_BASE_URL',
+          defaultValue: 'https://api.supercampus.ai',
+        ),
+        accessToken: widget.session!.jwtToken,
+      );
+    }
+
+    if (repo != null) {
       try {
-        final repoAnnouncements =
-            await widget.announcementRepository!.announcements();
+        final repoAnnouncements = await repo.announcements();
         for (final item in repoAnnouncements) {
+          final authorDisplay = _resolveAuthor(item);
           items.add(
             CampusWallNotice(
               id: item.id,
               category: _mapCategory(item.type),
               title: item.title,
               content: item.message,
-              author: item.createdByName.isNotEmpty
-                  ? item.createdByName
-                  : 'Campus Administration',
+              author: authorDisplay,
               date: item.announcementDate,
               attachmentName: item.attachmentName,
               attachmentUrl: item.attachmentUrl,
-              isUrgent: item.type.toLowerCase().contains('urgent'),
+              isUrgent: item.type.toLowerCase().contains('urgent') ||
+                  item.type.toLowerCase().contains('exam'),
             ),
           );
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Failed to load campus announcements: $e');
+      }
     }
 
-    // 2. Add department and administrative circulars from faculty repo
-    final facultyNotices = MockFacultyRepository().getNotices();
-    for (final notice in facultyNotices) {
-      items.add(
-        CampusWallNotice(
-          id: notice.id,
-          category: _mapCategory(notice.type),
-          title: notice.title,
-          content: notice.content,
-          author: notice.author,
-          date: notice.postedAt,
-          attachmentName: notice.pdfName,
-          attachmentUrl: notice.pdfUrl,
-          isUrgent: notice.type.toLowerCase().contains('exam'),
-        ),
-      );
+    // 2. If no backend announcements yet, load defaults
+    if (items.isEmpty) {
+      items.addAll(_defaultCampusCirculars);
     }
-
-    // 3. Add default standard campus circulars to ensure rich Wall feed
-    items.addAll(_defaultCampusCirculars);
 
     // Sort newest first
     items.sort((a, b) => b.date.compareTo(a.date));
@@ -131,15 +127,45 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
     }
   }
 
-  String _mapCategory(String type) {
-    final lower = type.toLowerCase();
-    if (lower.contains('circular') || lower.contains('order')) return 'Circulars';
-    if (lower.contains('exam') || lower.contains('result')) return 'Examinations';
-    if (lower.contains('acad') || lower.contains('course') || lower.contains('class')) {
-      return 'Academics';
+  String _resolveAuthor(LibraryAnnouncement item) {
+    if (item.createdByEmail != null && item.createdByEmail!.isNotEmpty) {
+      final email = item.createdByEmail!.trim().toLowerCase();
+      if (email == 'admin@mec.local') return 'admin@mec.local';
+      return item.createdByEmail!;
     }
-    if (lower.contains('event') || lower.contains('fest') || lower.contains('sports')) {
+    final name = item.createdByName.trim();
+    if (name.toLowerCase() == 'admin@mec.local' ||
+        name.toLowerCase() == 'arun iyer' ||
+        name.toLowerCase().contains('admin')) {
+      return 'admin@mec.local';
+    }
+    return name.isNotEmpty ? name : 'admin@mec.local';
+  }
+
+  String _mapCategory(String type) {
+    final lower = type.toLowerCase().trim();
+    if (lower.contains('circular') || lower.contains('order')) return 'Circulars';
+    if (lower.contains('announcement') || lower == 'general' || lower == 'news') {
+      return 'Announcements';
+    }
+    if (lower.contains('exam') ||
+        lower.contains('result') ||
+        lower.contains('test') ||
+        lower.contains('assessment')) {
+      return 'Examinations';
+    }
+    if (lower.contains('event') ||
+        lower.contains('fest') ||
+        lower.contains('sports') ||
+        lower.contains('cultural') ||
+        lower.contains('celebration')) {
       return 'Events';
+    }
+    if (lower.contains('acad') ||
+        lower.contains('course') ||
+        lower.contains('class') ||
+        lower.contains('syllabus')) {
+      return 'Academics';
     }
     return 'Administrative';
   }
@@ -591,14 +617,16 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
     switch (category.toLowerCase()) {
       case 'circulars':
         return const Color(0xFF2563EB); // Blue
+      case 'announcements':
+        return const Color(0xFF7C3AED); // Purple
       case 'examinations':
         return const Color(0xFFDC2626); // Red
-      case 'academics':
-        return const Color(0xFF059669); // Emerald
       case 'events':
         return const Color(0xFFD97706); // Amber
+      case 'academics':
+        return const Color(0xFF059669); // Emerald
       default:
-        return const Color(0xFF6366F1); // Indigo
+        return const Color(0xFF4F46E5); // Indigo
     }
   }
 
@@ -618,7 +646,7 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
       title: 'Annual Campus Sports Meet 2026 - Registration Open',
       content:
           'All students are hereby informed that the Annual Inter-Department Sports Meet will commence from 28th September 2026. Interested participants should register via the Physical Education department before 24th September.',
-      author: 'Department of Physical Education',
+      author: 'admin@mec.local',
       date: DateTime.now().subtract(const Duration(hours: 3)),
       attachmentName: 'sports_meet_schedule_2026.pdf',
     ),
@@ -628,7 +656,7 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
       title: 'End-Semester Theory Exam Time Table Notification',
       content:
           'The finalized timetable for the upcoming End-Semester Theory Examinations (Autumn 2026) has been officially released. Students can download the subject-wise session timings and seating layout guideline.',
-      author: 'Office of Controller of Examinations',
+      author: 'admin@mec.local',
       date: DateTime.now().subtract(const Duration(hours: 14)),
       attachmentName: 'exam_timetable_autumn2026.pdf',
       isUrgent: true,
@@ -639,7 +667,7 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
       title: 'Library Extended Hours During Examination Week',
       content:
           'To assist students with exam preparation, Central Campus Library reading halls and digital resource labs will remain open 24/7 beginning next Monday. Digital booking slots are available on the portal.',
-      author: 'Chief Librarian',
+      author: 'admin@mec.local',
       date: DateTime.now().subtract(const Duration(days: 1)),
       attachmentName: 'library_reading_hall_rules.pdf',
     ),
@@ -649,7 +677,7 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
       title: 'Holiday Notification - Gandhi Jayanti Campus Closure',
       content:
           'The institution will remain closed on 2nd October 2026 in observance of Gandhi Jayanti. Essential emergency services, campus security, and residential mess facilities will function as usual.',
-      author: 'Registrar Office',
+      author: 'admin@mec.local',
       date: DateTime.now().subtract(const Duration(days: 2)),
     ),
   ];
@@ -833,13 +861,15 @@ class _NoticeCard extends StatelessWidget {
   IconData _iconForCategory(String category) {
     switch (category.toLowerCase()) {
       case 'circulars':
+        return Icons.description_rounded;
+      case 'announcements':
         return Icons.campaign_rounded;
       case 'examinations':
         return Icons.assignment_turned_in_rounded;
-      case 'academics':
-        return Icons.school_rounded;
       case 'events':
         return Icons.celebration_rounded;
+      case 'academics':
+        return Icons.school_rounded;
       default:
         return Icons.apartment_rounded;
     }

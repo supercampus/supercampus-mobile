@@ -1408,6 +1408,7 @@ class _SupercampusAppState extends State<SupercampusApp>
         ModuleCatalog.gatepass => 'gatepass',
         _ => '',
       },
+      announcementRepository: _announcementRepository,
       child: module,
     );
   }

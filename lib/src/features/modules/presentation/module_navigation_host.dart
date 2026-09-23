@@ -4,6 +4,7 @@ import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
 import '../../../core/widgets/campus_nav_bar.dart';
 import '../../authentication/data/auth_repository.dart';
+import '../../library/data/librarian_repository.dart';
 import 'widgets/campus_wall_screen.dart';
 import 'widgets/dashboard_nav_bar.dart';
 import 'widgets/student_reports_page.dart';
@@ -24,6 +25,7 @@ class ModuleNavigationHost extends StatelessWidget {
     this.onModuleOrderChanged,
     this.onScan,
     this.selectedId,
+    this.announcementRepository,
   });
 
   final Widget child;
@@ -37,6 +39,7 @@ class ModuleNavigationHost extends StatelessWidget {
   final ValueChanged<List<String>>? onModuleOrderChanged;
   final void Function(BuildContext context)? onScan;
   final String? selectedId;
+  final LibrarianRepository? announcementRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -108,6 +111,7 @@ class ModuleNavigationHost extends StatelessWidget {
             builder: (_) => CampusWallScreen(
               session: session,
               onOpenModule: onOpenModule,
+              announcementRepository: announcementRepository,
             ),
           ),
         );
@@ -118,6 +122,7 @@ class ModuleNavigationHost extends StatelessWidget {
             builder: (_) => StudentReportsPage(
               session: session,
               onOpenModule: onOpenModule,
+              announcementRepository: announcementRepository,
             ),
           ),
         );

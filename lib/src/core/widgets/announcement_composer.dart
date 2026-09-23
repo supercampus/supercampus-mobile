@@ -207,8 +207,46 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
                   labelText: 'Announcement type',
-                  hintText: 'Campus event, exam results, fee reminder…',
+                  hintText: 'Circular, Announcement, Examination, Event…',
                 ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  'Circular',
+                  'Announcement',
+                  'Examination',
+                  'Event',
+                  'Academics',
+                  'Administrative',
+                ].map((tag) {
+                  final isSelected =
+                      _type.text.toLowerCase() == tag.toLowerCase();
+                  return ActionChip(
+                    label: Text(
+                      tag,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    backgroundColor: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.08),
+                    onPressed: () {
+                      setState(() => _type.text = tag);
+                    },
+                  );
+                }).toList(),
               ),
               const SizedBox(height: 12),
               InkWell(
