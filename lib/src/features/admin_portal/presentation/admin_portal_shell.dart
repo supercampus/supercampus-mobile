@@ -37,7 +37,7 @@ class _AdminPortalShellState extends State<AdminPortalShell> {
     final pages = [
       AdminUsersPage(repository: widget.studentRepository),
       _AdminStudentsPage(repository: widget.studentRepository),
-      _AdminApprovalsPage(repository: widget.libraryRepository),
+      _AdminAnnouncementsPage(repository: widget.libraryRepository),
       _AdminMaintenancePage(repository: widget.maintenanceRepository),
     ];
     return Scaffold(
@@ -53,8 +53,8 @@ class _AdminPortalShellState extends State<AdminPortalShell> {
                 ),
                 ModuleSection(label: 'Students', icon: Icons.school_outlined),
                 ModuleSection(
-                  label: 'Approvals',
-                  icon: Icons.approval_outlined,
+                  label: 'Announcements',
+                  icon: Icons.campaign_outlined,
                 ),
                 ModuleSection(
                   label: 'Maintenance',
@@ -156,19 +156,74 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
     ).showSnackBar(SnackBar(content: Text('${saved.name} was updated.')));
   }
 
+  ManagedStudentResidency? _residencyFilter;
+
+  void _showStudentProfile(ManagedStudent student) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => _StudentProfileSheet(
+        student: student,
+        onEdit: () {
+          Navigator.pop(sheetContext);
+          _edit(student);
+        },
+        onChangeResidency: (residency) {
+          Navigator.pop(sheetContext);
+          _change(student, residency);
+        },
+        onSetPhoto: () async {
+          Navigator.pop(sheetContext);
+          final asset = await pickAndUploadPhoto(
+            context,
+            repository: MediaScope.of(context),
+          );
+          if (asset == null || !mounted) return;
+          try {
+            await widget.repository.setStudentPhoto(
+              student.id,
+              asset.secureUrl,
+            );
+            await _load();
+          } catch (error) {
+            if (mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(error.toString())));
+            }
+          }
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final query = _query.trim().toLowerCase();
-    final rows = (_students ?? const <ManagedStudent>[])
+    final allStudents = _students ?? const <ManagedStudent>[];
+    final rows = allStudents
         .where(
           (student) =>
-              query.isEmpty ||
-              '${student.name} ${student.rollNumber} ${student.department} ${student.email} ${student.mobileNumber} ${student.section ?? ''}'
-                  .toLowerCase()
-                  .contains(query),
+              (_residencyFilter == null || student.residency == _residencyFilter) &&
+              (query.isEmpty ||
+                  '${student.name} ${student.rollNumber} ${student.department} ${student.email} ${student.mobileNumber} ${student.section ?? ''}'
+                      .toLowerCase()
+                      .contains(query)),
         )
         .toList();
     final groups = groupStudentsByYear(rows, (student) => student.yearOfStudy);
+
+    final totalDayScholars = allStudents
+        .where((s) => s.residency == ManagedStudentResidency.dayScholar)
+        .length;
+    final totalHostellers = allStudents
+        .where((s) => s.residency == ManagedStudentResidency.hosteller)
+        .length;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Student management'),
@@ -181,9 +236,10 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
             child: TextField(
               onChanged: (value) => setState(() => _query = value),
               decoration: const InputDecoration(
@@ -192,10 +248,46 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
               ),
             ),
           ),
+          if (_students != null)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                children: [
+                  FilterChip(
+                    label: Text('All (${allStudents.length})'),
+                    selected: _residencyFilter == null,
+                    onSelected: (_) => setState(() => _residencyFilter = null),
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    avatar: const Icon(Icons.directions_bus_outlined, size: 16),
+                    label: Text('Day Scholars ($totalDayScholars)'),
+                    selected: _residencyFilter == ManagedStudentResidency.dayScholar,
+                    onSelected: (selected) => setState(
+                      () => _residencyFilter = selected
+                          ? ManagedStudentResidency.dayScholar
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    avatar: const Icon(Icons.apartment_outlined, size: 16),
+                    label: Text('Hostellers ($totalHostellers)'),
+                    selected: _residencyFilter == ManagedStudentResidency.hosteller,
+                    onSelected: (selected) => setState(
+                      () => _residencyFilter = selected
+                          ? ManagedStudentResidency.hosteller
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
-              'Edit student identity, academic, contact and residency details.',
+              'Tap any student card for profile details. Edit identity, residency, and contacts.',
               style: TextStyle(color: AppColors.muted, fontSize: 12),
             ),
           ),
@@ -210,28 +302,45 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                   )
                 : _students == null
                 ? const Center(child: CircularProgressIndicator())
+                : rows.isEmpty
+                ? const Center(child: Text('No students match your filter'))
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
                     children: [
                       for (final group in groups) ...[
                         Padding(
                           padding: const EdgeInsets.fromLTRB(2, 10, 2, 8),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                group.label,
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              Row(
+                                children: [
+                                  Text(
+                                    group.label,
+                                    style: Theme.of(context).textTheme.titleSmall
+                                        ?.copyWith(fontWeight: FontWeight.w800),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    '${group.students.length} students',
+                                    style: Theme.of(context).textTheme.labelMedium
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ],
                               ),
-                              const Spacer(),
+                              const SizedBox(height: 2),
                               Text(
-                                '${group.students.length}',
-                                style: Theme.of(context).textTheme.labelMedium
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
+                                '${group.students.where((s) => s.residency == ManagedStudentResidency.dayScholar).length} Day Scholars · '
+                                '${group.students.where((s) => s.residency == ManagedStudentResidency.hosteller).length} Hostellers',
+                                style: const TextStyle(
+                                  color: AppColors.muted,
+                                  fontSize: 11,
+                                ),
                               ),
                             ],
                           ),
@@ -240,150 +349,154 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                           Card(
                             elevation: 0,
                             margin: const EdgeInsets.only(bottom: 10),
-                            child: Padding(
-                              padding: const EdgeInsets.all(14),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          student.name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        tooltip: 'Edit student',
-                                        onPressed: _savingId == null
-                                            ? () => _edit(student)
-                                            : null,
-                                        icon: const Icon(Icons.edit_outlined),
-                                      ),
-                                    ],
-                                  ),
-                                  Text(
-                                    '${student.rollNumber} • ${student.department}',
-                                    style: const TextStyle(
-                                      color: AppColors.muted,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  if ((student.section ?? '').isNotEmpty ||
-                                      student.email.isNotEmpty)
-                                    Text(
-                                      [
-                                        if ((student.section ?? '').isNotEmpty)
-                                          'Section ${student.section}',
-                                        if (student.email.isNotEmpty)
-                                          student.email,
-                                      ].join(' • '),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: AppColors.muted,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  if (student.guardianName.isNotEmpty ||
-                                      student.guardianPhone.isNotEmpty) ...[
-                                    const SizedBox(height: 6),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.outlineVariant,
+                              ),
+                            ),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => _showStudentProfile(student),
+                              child: Padding(
+                                padding: const EdgeInsets.all(14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Row(
                                       children: [
-                                        const Icon(
-                                          Icons.family_restroom_outlined,
-                                          size: 15,
-                                          color: AppColors.muted,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Expanded(
+                                        CircleAvatar(
+                                          radius: 20,
+                                          backgroundColor: Theme.of(context)
+                                              .colorScheme
+                                              .primaryContainer,
                                           child: Text(
-                                            [
-                                                  student.guardianName,
-                                                  if (student
-                                                      .guardianRelationship
-                                                      .isNotEmpty)
-                                                    student
-                                                        .guardianRelationship,
-                                                  student.guardianPhone,
-                                                ]
-                                                .where(
-                                                  (value) => value.isNotEmpty,
-                                                )
-                                                .join(' • '),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color: AppColors.muted,
-                                              fontSize: 12,
+                                            student.name.isNotEmpty
+                                                ? student.name.substring(0, 1).toUpperCase()
+                                                : 'S',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onPrimaryContainer,
                                             ),
                                           ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                student.name,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 15,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                '${student.rollNumber} • ${student.department}',
+                                                style: const TextStyle(
+                                                  color: AppColors.muted,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        IconButton(
+                                          tooltip: 'Edit student',
+                                          onPressed: _savingId == null
+                                              ? () => _edit(student)
+                                              : null,
+                                          icon: const Icon(Icons.edit_outlined),
                                         ),
                                       ],
                                     ),
-                                  ],
-                                  const SizedBox(height: 12),
-                                  OutlinedButton.icon(
-                                    icon: const Icon(
-                                      Icons.add_a_photo_outlined,
-                                    ),
-                                    label: const Text('Set profile photo'),
-                                    onPressed: () async {
-                                      final asset = await pickAndUploadPhoto(
-                                        context,
-                                        repository: MediaScope.of(context),
-                                      );
-                                      if (asset == null || !mounted) return;
-                                      try {
-                                        await widget.repository.setStudentPhoto(
-                                          student.id,
-                                          asset.secureUrl,
-                                        );
-                                        await _load();
-                                      } catch (error) {
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(error.toString()),
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    },
-                                  ),
-                                  SegmentedButton<ManagedStudentResidency>(
-                                    showSelectedIcon: true,
-                                    segments: const [
-                                      ButtonSegment(
-                                        value:
-                                            ManagedStudentResidency.dayScholar,
-                                        label: Text('Day scholar'),
-                                        icon: Icon(
-                                          Icons.directions_bus_outlined,
+                                    if ((student.section ?? '').isNotEmpty ||
+                                        student.email.isNotEmpty) ...[
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        [
+                                          if ((student.section ?? '').isNotEmpty)
+                                            'Section ${student.section}',
+                                          if (student.email.isNotEmpty)
+                                            student.email,
+                                        ].join(' • '),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: AppColors.muted,
+                                          fontSize: 12,
                                         ),
                                       ),
-                                      ButtonSegment(
-                                        value:
-                                            ManagedStudentResidency.hosteller,
-                                        label: Text('Hosteller'),
-                                        icon: Icon(Icons.apartment_outlined),
-                                      ),
                                     ],
-                                    selected: {student.residency},
-                                    onSelectionChanged: _savingId == null
-                                        ? (value) =>
-                                              _change(student, value.first)
-                                        : null,
-                                  ),
-                                  if (_savingId == student.id) ...[
-                                    const SizedBox(height: 8),
-                                    const LinearProgressIndicator(minHeight: 2),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: student.residency ==
+                                                    ManagedStudentResidency.dayScholar
+                                                ? Colors.teal.withValues(alpha: 0.12)
+                                                : Colors.indigo.withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                student.residency ==
+                                                        ManagedStudentResidency.dayScholar
+                                                    ? Icons.directions_bus_outlined
+                                                    : Icons.apartment_outlined,
+                                                size: 13,
+                                                color: student.residency ==
+                                                        ManagedStudentResidency.dayScholar
+                                                    ? Colors.teal
+                                                    : Colors.indigo,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                student.residency.label,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: student.residency ==
+                                                          ManagedStudentResidency.dayScholar
+                                                      ? Colors.teal
+                                                      : Colors.indigo,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        TextButton.icon(
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            visualDensity: VisualDensity.compact,
+                                          ),
+                                          onPressed: () => _showStudentProfile(student),
+                                          icon: const Icon(Icons.badge_outlined, size: 16),
+                                          label: const Text('View profile'),
+                                        ),
+                                      ],
+                                    ),
+                                    if (_savingId == student.id) ...[
+                                      const SizedBox(height: 8),
+                                      const LinearProgressIndicator(minHeight: 2),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
                             ),
                           ),
@@ -395,6 +508,173 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
       ),
     );
   }
+}
+
+class _StudentProfileSheet extends StatelessWidget {
+  const _StudentProfileSheet({
+    required this.student,
+    required this.onEdit,
+    required this.onChangeResidency,
+    required this.onSetPhoto,
+  });
+
+  final ManagedStudent student;
+  final VoidCallback onEdit;
+  final ValueChanged<ManagedStudentResidency> onChangeResidency;
+  final VoidCallback onSetPhoto;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: colors.primaryContainer,
+                child: Text(
+                  student.name.isNotEmpty
+                      ? student.name.substring(0, 1).toUpperCase()
+                      : 'S',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: colors.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      student.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${student.rollNumber} • ${student.department}',
+                      style: TextStyle(color: colors.onSurfaceVariant, fontSize: 13),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Year ${student.yearOfStudy}${student.section != null && student.section!.isNotEmpty ? ' • Section ${student.section}' : ''}',
+                      style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Divider(),
+          const SizedBox(height: 12),
+          Text(
+            'Academic & Identity Details',
+            style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          _detailRow(Icons.pin_outlined, 'Roll number', student.rollNumber),
+          _detailRow(Icons.domain_outlined, 'Department', student.department),
+          _detailRow(Icons.calendar_today_outlined, 'Year of study', 'Year ${student.yearOfStudy}'),
+          if (student.section != null && student.section!.isNotEmpty)
+            _detailRow(Icons.class_outlined, 'Section', student.section!),
+          _detailRow(Icons.email_outlined, 'Email', student.email.isEmpty ? 'Not registered' : student.email),
+          _detailRow(Icons.phone_outlined, 'Phone', student.mobileNumber.isEmpty ? 'Not provided' : student.mobileNumber),
+          const SizedBox(height: 14),
+          Text(
+            'Residency Status',
+            style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<ManagedStudentResidency>(
+            showSelectedIcon: true,
+            segments: const [
+              ButtonSegment(
+                value: ManagedStudentResidency.dayScholar,
+                label: Text('Day scholar'),
+                icon: Icon(Icons.directions_bus_outlined),
+              ),
+              ButtonSegment(
+                value: ManagedStudentResidency.hosteller,
+                label: Text('Hosteller'),
+                icon: Icon(Icons.apartment_outlined),
+              ),
+            ],
+            selected: {student.residency},
+            onSelectionChanged: (value) => onChangeResidency(value.first),
+          ),
+          if (student.guardianName.isNotEmpty || student.guardianPhone.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Guardian / Parent Contacts',
+              style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            _detailRow(Icons.family_restroom_outlined, 'Guardian', '${student.guardianName} (${student.guardianRelationship.isEmpty ? 'Guardian' : student.guardianRelationship})'),
+            _detailRow(Icons.chat_outlined, 'WhatsApp Phone', student.guardianPhone.isEmpty ? 'Not provided' : student.guardianPhone),
+          ],
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onSetPhoto,
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  label: const Text('Update photo'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Edit student'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(IconData icon, String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      children: [
+        Icon(icon, size: 16, color: AppColors.muted),
+        const SizedBox(width: 8),
+        Text('$label: ', style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _EditStudentSheet extends StatefulWidget {
@@ -726,14 +1006,14 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
   }
 }
 
-class _AdminApprovalsPage extends StatefulWidget {
-  const _AdminApprovalsPage({required this.repository});
+class _AdminAnnouncementsPage extends StatefulWidget {
+  const _AdminAnnouncementsPage({required this.repository});
   final LibrarianRepository repository;
   @override
-  State<_AdminApprovalsPage> createState() => _AdminApprovalsPageState();
+  State<_AdminAnnouncementsPage> createState() => _AdminAnnouncementsPageState();
 }
 
-class _AdminApprovalsPageState extends State<_AdminApprovalsPage> {
+class _AdminAnnouncementsPageState extends State<_AdminAnnouncementsPage> {
   List<LibraryAnnouncement> _items = const [];
   bool _loading = true;
 

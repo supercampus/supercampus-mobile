@@ -29,13 +29,17 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
   String? _error;
   final Set<String> _busy = {};
 
+  bool get _isAdmin => widget.viewerKind == 'admin';
   bool get _isParent => widget.viewerKind == 'parent';
   bool get _isWarden => widget.viewerKind == 'warden';
   bool get _isPrincipal => widget.viewerKind == 'principal';
   bool get _isLeaveApprover =>
       widget.viewerKind == 'advisor_or_hod' || _isPrincipal;
 
+  String _statusFilter = 'all';
+
   String get _portalTitle => switch (widget.viewerKind) {
+    'admin' => 'Gatepass Approvals',
     'parent' => 'Parent / Guardian',
     'warden' => 'Warden approvals',
     'principal' => 'Principal approvals',
@@ -80,7 +84,7 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
               controller: note,
               maxLines: 3,
               decoration: InputDecoration(
-                labelText: approved ? 'Consent note (optional)' : 'Reason',
+                labelText: approved ? 'Approval note (optional)' : 'Reason',
                 hintText: approved
                     ? (_isParent
                           ? 'Approved with parent consent'
@@ -119,13 +123,17 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
       await _load();
       if (!mounted) return;
       final message = approved
-          ? _isParent
+          ? _isAdmin
+                ? 'Pass approved by Admin. The student pass is ready.'
+                : _isParent
                 ? 'Parent consent recorded. The warden has been notified.'
                 : _isWarden
                 ? 'Warden approval recorded. The student QR is ready.'
                 : _isPrincipal
                 ? 'Principal approval recorded. The student QR is ready for security.'
                 : 'Advisor / HOD approval recorded. The principal has been notified.'
+          : _isAdmin
+          ? 'Gatepass rejected by Admin. The student has been notified.'
           : _isLeaveApprover
           ? 'Leave pass rejected. The student has been notified.'
           : _isParent
@@ -149,6 +157,148 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
       if (mounted) setState(() => _busy.remove(request.id));
     }
   }
+
+  void _showGatepassDetail(ApprovalRequest request) {
+    final status = _ApprovalCard._status(request.state);
+    final isActionable = request.canDecide(widget.viewerKind);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _PassTypePill(passType: request.passType),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    request.studentName,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                _StatusPill(label: status.$1, color: status.$2),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 12),
+            _detailRow(Icons.place_outlined, 'Destination', request.destination),
+            _detailRow(Icons.description_outlined, 'Reason', request.reason),
+            _detailRow(
+              Icons.logout_outlined,
+              'Departure',
+              _ApprovalCard._stamp(request.departureAt),
+            ),
+            _detailRow(
+              Icons.login_outlined,
+              'Return',
+              _ApprovalCard._stamp(request.returnAt),
+            ),
+            _detailRow(
+              Icons.calendar_today_outlined,
+              'Applied at',
+              _ApprovalCard._stamp(request.createdAt),
+            ),
+            if (request.decisionNote != null && request.decisionNote!.isNotEmpty)
+              _detailRow(
+                Icons.comment_outlined,
+                'Decision note',
+                request.decisionNote!,
+              ),
+            if (request.qrPayload != null) ...[
+              const SizedBox(height: 16),
+              Center(
+                child: Column(
+                  children: [
+                    QrImageView(data: request.qrPayload!, size: 160),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Gatepass QR Verification Code',
+                      style: TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (isActionable) ...[
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFC62828),
+                        side: const BorderSide(color: Color(0xFFC62828)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        _review(request, false);
+                      },
+                      icon: const Icon(Icons.close),
+                      label: const Text('Reject'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF167447),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        _review(request, true);
+                      },
+                      icon: const Icon(Icons.check),
+                      label: const Text('Approve'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(IconData icon, String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 5),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: AppColors.muted),
+        const SizedBox(width: 8),
+        Text('$label: ', style: const TextStyle(fontSize: 13, color: AppColors.muted)),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -196,10 +346,29 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
     if (store == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    final pending = store.requests
+
+    final all = store.requests;
+    final pendingTotal = all
+        .where((r) => r.canDecide(widget.viewerKind) || r.state.startsWith('pending'))
+        .toList(growable: false);
+    final approvedTotal = all
+        .where((r) => r.state == 'approved')
+        .toList(growable: false);
+    final rejectedTotal = all
+        .where((r) => r.state == 'rejected')
+        .toList(growable: false);
+
+    final filteredRequests = switch (_statusFilter) {
+      'pending' => pendingTotal,
+      'approved' => approvedTotal,
+      'rejected' => rejectedTotal,
+      _ => all,
+    };
+
+    final actionable = filteredRequests
         .where((request) => request.canDecide(widget.viewerKind))
         .toList(growable: false);
-    final history = store.requests
+    final otherRequests = filteredRequests
         .where((request) => !request.canDecide(widget.viewerKind))
         .toList(growable: false);
 
@@ -214,6 +383,8 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
           ),
           const SizedBox(height: 5),
           Text(switch (widget.viewerKind) {
+            'admin' =>
+              'Review and manage all student gatepass and outpass requests.',
             'parent' =>
               'Verify your child and give consent for hostel outpass requests.',
             'warden' => 'Review parent-consented hostel outpass requests.',
@@ -222,6 +393,37 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
             _ =>
               'Review leave passes for students in your assigned department.',
           }, style: const TextStyle(color: AppColors.muted)),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                FilterChip(
+                  label: Text('All (${all.length})'),
+                  selected: _statusFilter == 'all',
+                  onSelected: (_) => setState(() => _statusFilter = 'all'),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: Text('Pending (${pendingTotal.length})'),
+                  selected: _statusFilter == 'pending',
+                  onSelected: (_) => setState(() => _statusFilter = 'pending'),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: Text('Approved (${approvedTotal.length})'),
+                  selected: _statusFilter == 'approved',
+                  onSelected: (_) => setState(() => _statusFilter = 'approved'),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: Text('Rejected (${rejectedTotal.length})'),
+                  selected: _statusFilter == 'rejected',
+                  onSelected: (_) => setState(() => _statusFilter = 'rejected'),
+                ),
+              ],
+            ),
+          ),
           if (_isParent) ...[
             const SizedBox(height: 20),
             if (store.children.isEmpty)
@@ -232,43 +434,58 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
             else
               for (final child in store.children) _ChildCard(child: child),
           ],
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Needs your decision',
-                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
+          if (actionable.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Needs your decision',
+                    style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
+                  ),
                 ),
-              ),
-              _CountPill(count: pending.length),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (pending.isEmpty)
-            _EmptyCard(
-              icon: Icons.verified_outlined,
-              text: _isLeaveApprover
-                  ? 'No leave pass is waiting for your approval.'
-                  : 'No outpass is waiting for your approval.',
-            )
-          else
-            for (final request in pending)
+                _CountPill(count: actionable.length),
+              ],
+            ),
+            const SizedBox(height: 12),
+            for (final request in actionable)
               _ApprovalCard(
                 request: request,
                 busy: _busy.contains(request.id),
+                onTap: () => _showGatepassDetail(request),
                 onApprove: () => _review(request, true),
                 onReject: () => _review(request, false),
               ),
-          if (history.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            const Text(
-              'Request history',
-              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
+          ],
+          if (otherRequests.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    actionable.isEmpty ? 'Gatepass requests' : 'Other requests / History',
+                    style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                _CountPill(count: otherRequests.length),
+              ],
             ),
             const SizedBox(height: 12),
-            for (final request in history)
-              _ApprovalCard(request: request, compact: true),
+            for (final request in otherRequests)
+              _ApprovalCard(
+                request: request,
+                compact: true,
+                onTap: () => _showGatepassDetail(request),
+              ),
+          ],
+          if (filteredRequests.isEmpty) ...[
+            const SizedBox(height: 20),
+            _EmptyCard(
+              icon: Icons.verified_outlined,
+              text: _statusFilter == 'pending'
+                  ? 'No gatepass is waiting for decision.'
+                  : 'No gatepasses found matching filter.',
+            ),
           ],
         ],
       ),
@@ -365,6 +582,7 @@ class _ApprovalCard extends StatelessWidget {
     required this.request,
     this.busy = false,
     this.compact = false,
+    this.onTap,
     this.onApprove,
     this.onReject,
   });
@@ -372,6 +590,7 @@ class _ApprovalCard extends StatelessWidget {
   final ApprovalRequest request;
   final bool busy;
   final bool compact;
+  final VoidCallback? onTap;
   final VoidCallback? onApprove;
   final VoidCallback? onReject;
 
@@ -386,11 +605,14 @@ class _ApprovalCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: Color(0xFFD8E9DF)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Row(
               children: [
                 _PassTypePill(passType: request.passType),
@@ -467,8 +689,9 @@ class _ApprovalCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   static String _stamp(DateTime value) {
     final minute = value.minute.toString().padLeft(2, '0');

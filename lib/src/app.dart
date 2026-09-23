@@ -57,6 +57,7 @@ import 'features/academics/presentation/academic_management_shell.dart';
 import 'features/academics/presentation/student_academics_shell.dart';
 import 'features/academics/data/student_assessments_repository.dart';
 import 'features/vendor_management/presentation/vendor_management_shell.dart';
+import 'features/vendor_management/data/vendor_repository.dart';
 import 'features/admin_portal/presentation/admin_portal_shell.dart';
 import 'features/admin_portal/data/admin_student_repository.dart';
 import 'features/modules/data/glance_source.dart';
@@ -1124,8 +1125,15 @@ class _SupercampusAppState extends State<SupercampusApp>
     final isSecurity =
         session.role == UserRole.security || roleKeys.contains('security');
     final isLibrarian = roleKeys.contains('librarian');
-    final approvalViewerKind =
-        session.role == UserRole.parent || roleKeys.contains('parent')
+    final isPortalAdmin = session.role == UserRole.admin ||
+        roleKeys.contains('admin') ||
+        roleKeys.contains('superadmin') ||
+        (_permissions != null &&
+            (_permissions!.can('gatepass', 'outpass', ModuleActions.approve) ||
+                _permissions!.can('gatepass', 'leave', ModuleActions.approve)));
+    final approvalViewerKind = isPortalAdmin
+        ? 'admin'
+        : session.role == UserRole.parent || roleKeys.contains('parent')
         ? 'parent'
         : roleKeys.contains('warden')
         ? 'warden'
@@ -1305,6 +1313,12 @@ class _SupercampusAppState extends State<SupercampusApp>
       ModuleCatalog.vendorManagement => VendorManagementShell(
         session: session,
         onExitModule: exit,
+        repository: _useMockData
+            ? null
+            : BackendVendorRepository(
+                baseUrl: _resolvedBackendBaseUrl,
+                accessTokenProvider: _provideAccessToken,
+              ),
       ),
       ModuleCatalog.tuitionFee => TuitionFeeScreen(
         session: session,

@@ -60,6 +60,8 @@ class ApprovalRequest {
   final String? qrPayload;
 
   bool canDecide(String viewerKind) =>
+      (viewerKind == 'admin' &&
+          (state.startsWith('pending') || state == 'submitted')) ||
       (viewerKind == 'parent' && state == 'pending_parent') ||
       (viewerKind == 'warden' && state == 'pending_warden') ||
       (viewerKind == 'advisor_or_hod' && state == 'pending_advisor_or_hod') ||

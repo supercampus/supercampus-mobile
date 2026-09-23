@@ -470,10 +470,10 @@ abstract final class ModuleCatalog {
     ),
     ModuleDescriptor(
       id: vendorManagement,
-      title: 'Vendor Management',
-      shortTitle: 'Vendors',
-      tagline: 'Vendors, contracts, purchase orders, payments and work orders',
-      icon: Icons.handshake_outlined,
+      title: 'Campus Commerce',
+      shortTitle: 'Commerce',
+      tagline: 'Campus vendors, shops, services, and commerce operations',
+      icon: Icons.storefront_outlined,
       color: AppColors.gateBlue,
       status: ModuleStatus.available,
       features: [

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/students/student_year.dart';
@@ -19,6 +20,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
   List<ManagedUserRole> _roles = const [];
   String _query = '';
   String? _error;
+  ManagedUserRole? _selectedRoleFilter;
 
   @override
   void initState() {
@@ -81,6 +83,28 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     }
   }
 
+  void _showUserProfile(ManagedTenantUser user) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => _UserProfileSheet(
+        user: user,
+        onEditRoles: () {
+          Navigator.pop(sheetContext);
+          _editRoles(user);
+        },
+        onChangePassword: () {
+          Navigator.pop(sheetContext);
+          _changePassword(user);
+        },
+      ),
+    );
+  }
+
   Future<void> _createUser() async {
     final request = await showDialog<_CreateUserValue>(
       context: context,
@@ -114,7 +138,12 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final query = _query.trim().toLowerCase();
-    final users = (_users ?? const <ManagedTenantUser>[]).where((user) {
+    final allUsers = _users ?? const <ManagedTenantUser>[];
+    final users = allUsers.where((user) {
+      if (_selectedRoleFilter != null &&
+          !user.roles.any((r) => r.id == _selectedRoleFilter!.id)) {
+        return false;
+      }
       final roles = user.roles.map((role) => role.name).join(' ');
       return query.isEmpty ||
           '${user.name} ${user.email} $roles'.toLowerCase().contains(query);
@@ -183,7 +212,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            '${_users!.length} users · ${_roles.length} available roles',
+                            '${_users!.length} users · ${_roles.length} dynamic roles',
                             style: theme.textTheme.bodySmall,
                           ),
                           const SizedBox(height: 14),
@@ -195,6 +224,37 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                               prefixIcon: Icon(Icons.search_rounded),
                             ),
                           ),
+                          if (_roles.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  FilterChip(
+                                    label: Text('All (${allUsers.length})'),
+                                    selected: _selectedRoleFilter == null,
+                                    onSelected: (_) => setState(
+                                      () => _selectedRoleFilter = null,
+                                    ),
+                                  ),
+                                  for (final role in _roles) ...[
+                                    const SizedBox(width: 8),
+                                    FilterChip(
+                                      label: Text(
+                                        '${role.name} (${allUsers.where((u) => u.roles.any((r) => r.id == role.id)).length})',
+                                      ),
+                                      selected:
+                                          _selectedRoleFilter?.id == role.id,
+                                      onSelected: (selected) => setState(
+                                        () => _selectedRoleFilter =
+                                            selected ? role : null,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -219,6 +279,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                                 padding: const EdgeInsets.only(bottom: 10),
                                 child: _UserCard(
                                   user: user,
+                                  onOpenProfile: () => _showUserProfile(user),
                                   onEditRoles: () => _editRoles(user),
                                   onChangePassword: () => _changePassword(user),
                                 ),
@@ -234,6 +295,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                                 padding: const EdgeInsets.only(bottom: 10),
                                 child: _UserCard(
                                   user: user,
+                                  onOpenProfile: () => _showUserProfile(user),
                                   onEditRoles: () => _editRoles(user),
                                   onChangePassword: () => _changePassword(user),
                                 ),
@@ -281,11 +343,13 @@ class _UserSectionHeader extends StatelessWidget {
 class _UserCard extends StatelessWidget {
   const _UserCard({
     required this.user,
+    required this.onOpenProfile,
     required this.onEditRoles,
     required this.onChangePassword,
   });
 
   final ManagedTenantUser user;
+  final VoidCallback onOpenProfile;
   final VoidCallback onEditRoles;
   final VoidCallback onChangePassword;
 
@@ -299,77 +363,243 @@ class _UserCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: colors.outlineVariant),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              backgroundColor: colors.primaryContainer,
-              foregroundColor: colors.onPrimaryContainer,
-              child: Text(_initials(user.name)),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user.name,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onOpenProfile,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                backgroundColor: colors.primaryContainer,
+                foregroundColor: colors.onPrimaryContainer,
+                child: Text(_initials(user.name)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.name,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      user.email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 9),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: user.roles.isEmpty
+                          ? [const _RoleChip(label: 'No role assigned')]
+                          : [
+                              for (final role in user.roles)
+                                _RoleChip(label: role.name),
+                            ],
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuButton<String>(
+                tooltip: 'Manage ${user.name}',
+                onSelected: (value) {
+                  if (value == 'profile') onOpenProfile();
+                  if (value == 'roles') onEditRoles();
+                  if (value == 'password') onChangePassword();
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'profile',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.badge_outlined),
+                      title: Text('View profile'),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    user.email,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
+                  PopupMenuItem(
+                    value: 'roles',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.admin_panel_settings_outlined),
+                      title: Text('Edit roles'),
                     ),
                   ),
-                  const SizedBox(height: 9),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: user.roles.isEmpty
-                        ? [const _RoleChip(label: 'No role assigned')]
-                        : [
-                            for (final role in user.roles)
-                              _RoleChip(label: role.name),
-                          ],
+                  PopupMenuItem(
+                    value: 'password',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.password_rounded),
+                      title: Text('Change password'),
+                    ),
                   ),
                 ],
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UserProfileSheet extends StatelessWidget {
+  const _UserProfileSheet({
+    required this.user,
+    required this.onEditRoles,
+    required this.onChangePassword,
+  });
+
+  final ManagedTenantUser user;
+  final VoidCallback onEditRoles;
+  final VoidCallback onChangePassword;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-            PopupMenuButton<String>(
-              tooltip: 'Manage ${user.name}',
-              onSelected: (value) {
-                if (value == 'roles') onEditRoles();
-                if (value == 'password') onChangePassword();
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: 'roles',
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.admin_panel_settings_outlined),
-                    title: Text('Edit roles'),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: colors.primaryContainer,
+                child: Text(
+                  _initials(user.name),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: colors.onPrimaryContainer,
                   ),
                 ),
-                PopupMenuItem(
-                  value: 'password',
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.password_rounded),
-                    title: Text('Change password'),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      user.email,
+                      style: TextStyle(color: colors.onSurfaceVariant, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Divider(),
+          const SizedBox(height: 12),
+          Text(
+            'User Account Details',
+            style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                const Icon(Icons.fingerprint_outlined, size: 16, color: AppColors.muted),
+                const SizedBox(width: 8),
+                const Text('User ID: ', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                Expanded(
+                  child: Text(
+                    user.id,
+                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                    overflow: TextOverflow.ellipsis,
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.copy_outlined, size: 16),
+                  tooltip: 'Copy user ID',
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: user.id));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('User ID copied to clipboard.')),
+                    );
+                  },
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Assigned Dynamic Roles',
+            style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: user.roles.isEmpty
+                ? [
+                    const Chip(
+                      label: Text('No dynamic roles assigned'),
+                      side: BorderSide.none,
+                    ),
+                  ]
+                : [
+                    for (final role in user.roles)
+                      Chip(
+                        avatar: const Icon(Icons.verified_user_outlined, size: 15),
+                        label: Text(role.name),
+                        backgroundColor: colors.primaryContainer.withValues(alpha: 0.45),
+                        side: BorderSide.none,
+                      ),
+                  ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onChangePassword,
+                  icon: const Icon(Icons.lock_reset_outlined),
+                  label: const Text('Change password'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: onEditRoles,
+                  icon: const Icon(Icons.admin_panel_settings_outlined),
+                  label: const Text('Edit roles'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
