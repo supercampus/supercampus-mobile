@@ -73,6 +73,7 @@ class StudentReportsPage extends StatelessWidget {
       ),
       body: StudentReportsAnalyticsScreen(
         session: session,
+        onOpenModule: onOpenModule,
       ),
       bottomNavigationBar: DashboardNavBar(
         selectedId: 'analysis',

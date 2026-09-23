@@ -111,11 +111,6 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
       }
     }
 
-    // 2. If no backend announcements yet, load defaults
-    if (items.isEmpty) {
-      items.addAll(_defaultCampusCirculars);
-    }
-
     // Sort newest first
     items.sort((a, b) => b.date.compareTo(a.date));
 
@@ -370,7 +365,8 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Check back later for circulars and department notices',
+                        'Official notices and circulars published by admin@mec.local will appear here',
+                        textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 13, color: mutedColor),
                       ),
                     ],
@@ -638,49 +634,6 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
   }
-
-  static final List<CampusWallNotice> _defaultCampusCirculars = [
-    CampusWallNotice(
-      id: 'CIRC-01',
-      category: 'Circulars',
-      title: 'Annual Campus Sports Meet 2026 - Registration Open',
-      content:
-          'All students are hereby informed that the Annual Inter-Department Sports Meet will commence from 28th September 2026. Interested participants should register via the Physical Education department before 24th September.',
-      author: 'admin@mec.local',
-      date: DateTime.now().subtract(const Duration(hours: 3)),
-      attachmentName: 'sports_meet_schedule_2026.pdf',
-    ),
-    CampusWallNotice(
-      id: 'CIRC-02',
-      category: 'Examinations',
-      title: 'End-Semester Theory Exam Time Table Notification',
-      content:
-          'The finalized timetable for the upcoming End-Semester Theory Examinations (Autumn 2026) has been officially released. Students can download the subject-wise session timings and seating layout guideline.',
-      author: 'admin@mec.local',
-      date: DateTime.now().subtract(const Duration(hours: 14)),
-      attachmentName: 'exam_timetable_autumn2026.pdf',
-      isUrgent: true,
-    ),
-    CampusWallNotice(
-      id: 'CIRC-03',
-      category: 'Academics',
-      title: 'Library Extended Hours During Examination Week',
-      content:
-          'To assist students with exam preparation, Central Campus Library reading halls and digital resource labs will remain open 24/7 beginning next Monday. Digital booking slots are available on the portal.',
-      author: 'admin@mec.local',
-      date: DateTime.now().subtract(const Duration(days: 1)),
-      attachmentName: 'library_reading_hall_rules.pdf',
-    ),
-    CampusWallNotice(
-      id: 'CIRC-04',
-      category: 'Administrative',
-      title: 'Holiday Notification - Gandhi Jayanti Campus Closure',
-      content:
-          'The institution will remain closed on 2nd October 2026 in observance of Gandhi Jayanti. Essential emergency services, campus security, and residential mess facilities will function as usual.',
-      author: 'admin@mec.local',
-      date: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-  ];
 }
 
 class _NoticeCard extends StatelessWidget {

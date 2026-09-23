@@ -28,7 +28,10 @@ class BackendTimetableRepository extends MockTimetableRepository {
     final ownedClient = client ?? http.Client();
     try {
       final token = await accessTokenProvider();
-      final root = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+      var root = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+      if (root.endsWith('/api')) {
+        root = root.substring(0, root.length - 4);
+      }
       final response = await ownedClient.get(
         Uri.parse('$root/api/v1/timetable/context'),
         headers: {'Authorization': 'Bearer $token'},

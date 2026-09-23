@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/skeleton_loading.dart';
-
-import '../../../core/theme/app_theme.dart';
 import '../../../core/access/module_catalog.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/backend_timetable_repository.dart';
@@ -53,12 +51,19 @@ class _TimetableShellState extends State<TimetableShell> {
   Future<TimetableRepository> _loadRepository() async {
     final baseUrl = widget.baseUrl;
     final provider = widget.accessTokenProvider;
-    if (baseUrl == null || provider == null)
+    if (baseUrl == null || provider == null) {
       return MockTimetableRepository.shared;
-    return BackendTimetableRepository.load(
-      baseUrl: baseUrl,
-      accessTokenProvider: provider,
-    );
+    }
+    try {
+      final repo = await BackendTimetableRepository.load(
+        baseUrl: baseUrl,
+        accessTokenProvider: provider,
+      );
+      return repo;
+    } catch (e) {
+      debugPrint('Backend timetable loading failed, falling back to mock schedule: $e');
+      return MockTimetableRepository.shared;
+    }
   }
 
   void _retry() => setState(() => _repository = _loadRepository());
