@@ -83,6 +83,27 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     }
   }
 
+  Future<void> _editUser(ManagedTenantUser user) async {
+    final updated = await showDialog<_EditUserValue>(
+      context: context,
+      builder: (context) => _EditUserDialog(user: user),
+    );
+    if (updated == null || !mounted) return;
+    try {
+      await widget.repository.updateUser(
+        user.id,
+        name: updated.name,
+        email: updated.email,
+      );
+      await _load();
+      if (mounted) {
+        _showMessage('${updated.name}\'s profile was updated.');
+      }
+    } catch (error) {
+      if (mounted) _showMessage(error.toString(), error: true);
+    }
+  }
+
   void _showUserProfile(ManagedTenantUser user) {
     showModalBottomSheet<void>(
       context: context,
@@ -93,6 +114,10 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       ),
       builder: (sheetContext) => _UserProfileSheet(
         user: user,
+        onEditUser: () {
+          Navigator.pop(sheetContext);
+          _editUser(user);
+        },
         onEditRoles: () {
           Navigator.pop(sheetContext);
           _editRoles(user);
@@ -280,6 +305,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                                 child: _UserCard(
                                   user: user,
                                   onOpenProfile: () => _showUserProfile(user),
+                                  onEditUser: () => _editUser(user),
                                   onEditRoles: () => _editRoles(user),
                                   onChangePassword: () => _changePassword(user),
                                 ),
@@ -296,6 +322,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                                 child: _UserCard(
                                   user: user,
                                   onOpenProfile: () => _showUserProfile(user),
+                                  onEditUser: () => _editUser(user),
                                   onEditRoles: () => _editRoles(user),
                                   onChangePassword: () => _changePassword(user),
                                 ),
@@ -344,12 +371,14 @@ class _UserCard extends StatelessWidget {
   const _UserCard({
     required this.user,
     required this.onOpenProfile,
+    required this.onEditUser,
     required this.onEditRoles,
     required this.onChangePassword,
   });
 
   final ManagedTenantUser user;
   final VoidCallback onOpenProfile;
+  final VoidCallback onEditUser;
   final VoidCallback onEditRoles;
   final VoidCallback onChangePassword;
 
@@ -414,6 +443,7 @@ class _UserCard extends StatelessWidget {
                 tooltip: 'Manage ${user.name}',
                 onSelected: (value) {
                   if (value == 'profile') onOpenProfile();
+                  if (value == 'edit') onEditUser();
                   if (value == 'roles') onEditRoles();
                   if (value == 'password') onChangePassword();
                 },
@@ -424,6 +454,14 @@ class _UserCard extends StatelessWidget {
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.badge_outlined),
                       title: Text('View profile'),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.edit_outlined),
+                      title: Text('Edit user'),
                     ),
                   ),
                   PopupMenuItem(
@@ -455,11 +493,13 @@ class _UserCard extends StatelessWidget {
 class _UserProfileSheet extends StatelessWidget {
   const _UserProfileSheet({
     required this.user,
+    required this.onEditUser,
     required this.onEditRoles,
     required this.onChangePassword,
   });
 
   final ManagedTenantUser user;
+  final VoidCallback onEditUser;
   final VoidCallback onEditRoles;
   final VoidCallback onChangePassword;
 
@@ -580,6 +620,12 @@ class _UserProfileSheet extends StatelessWidget {
                   ],
           ),
           const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: onEditUser,
+            icon: const Icon(Icons.edit_outlined),
+            label: const Text('Edit user profile (Name & Email)'),
+          ),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -591,7 +637,7 @@ class _UserProfileSheet extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: FilledButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: onEditRoles,
                   icon: const Icon(Icons.admin_panel_settings_outlined),
                   label: const Text('Edit roles'),
@@ -773,6 +819,111 @@ class _PasswordDialogState extends State<_PasswordDialog> {
       FilledButton(onPressed: _submit, child: const Text('Change password')),
     ],
   );
+}
+
+class _EditUserDialog extends StatefulWidget {
+  const _EditUserDialog({required this.user});
+  final ManagedTenantUser user;
+
+  @override
+  State<_EditUserDialog> createState() => _EditUserDialogState();
+}
+
+class _EditUserDialogState extends State<_EditUserDialog> {
+  late final TextEditingController _name;
+  late final TextEditingController _email;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.user.name);
+    _email = TextEditingController(text: widget.user.email);
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final name = _name.text.trim();
+    final email = _email.text.trim();
+    if (name.isEmpty) {
+      setState(() => _error = 'Please enter the user\'s full name.');
+      return;
+    }
+    if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
+      setState(() => _error = 'Please enter a valid email address.');
+      return;
+    }
+    Navigator.pop(
+      context,
+      _EditUserValue(name: name, email: email),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Edit user details'),
+    content: SizedBox(
+      width: 440,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _name,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Full name',
+                prefixIcon: Icon(Icons.person_outline),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Email address',
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _error!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: _submit,
+        child: const Text('Save changes'),
+      ),
+    ],
+  );
+}
+
+class _EditUserValue {
+  const _EditUserValue({required this.name, required this.email});
+  final String name;
+  final String email;
 }
 
 class _CreateUserDialog extends StatefulWidget {

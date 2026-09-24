@@ -224,6 +224,26 @@ class AdminStudentRepository {
     );
   }
 
+  Future<void> updateUser(
+    String userId, {
+    String? name,
+    String? email,
+  }) async {
+    await _request(
+      (headers) => _client.put(
+        _baseUri.resolve(
+          '/api/v1/authorization/users/${Uri.encodeComponent(userId)}',
+        ),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({
+          if (name != null) 'name': name.trim(),
+          if (email != null) 'email': email.trim().toLowerCase(),
+        }),
+      ),
+    );
+  }
+
+
   Future<void> createUser({
     required String name,
     required String email,
