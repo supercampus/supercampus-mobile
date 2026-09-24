@@ -9,12 +9,14 @@ import '../../authentication/data/auth_repository.dart';
 import '../../modules/presentation/today_glance.dart';
 import '../../modules/presentation/widgets/home_sheets.dart';
 
-/// Clean, optimized, and executive-grade dashboard for institutional staff and administrators.
+/// High-productivity, executive-grade command dashboard for campus administrators and staff.
 ///
-/// Removes the old scrollable cards and stacked cards across tenant MEC, providing
-/// a neat, accessible, high-contrast workspace tailored to each role
-/// (Admin, Captain, Accountant, Stationery Owner, Faculty, Security, Librarian, Warden, Staff).
-class AdminDashboardScreen extends StatelessWidget {
+/// Designed for daily, multi-hour use:
+/// - Fast Bento Grid app launcher (zero walls of text)
+/// - Interactive category workspace tabs
+/// - Real operational metrics & quick shortcuts
+/// - Role-tailored views for Admin, Captain, Accountant, Stationery Owner, Faculty, Security, etc.
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({
     super.key,
     required this.session,
@@ -48,6 +50,16 @@ class AdminDashboardScreen extends StatelessWidget {
   final AdvisorStudentsSource? advisorStudentsSource;
   final GlanceFacts? glance;
   final ValueChanged<TodayClass>? onOpenAttendanceClass;
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  int _selectedCategoryIndex = 0;
+
+  UserSession get session => widget.session;
+  EffectivePermissions get permissions => widget.permissions;
 
   Color _roleColor() {
     if (session.isAdmin) return const Color(0xFF4F46E5);
@@ -85,25 +97,20 @@ class AdminDashboardScreen extends StatelessWidget {
     return ModuleCatalog.administration;
   }
 
+  String _timeGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final hasAdminConsole = session.isAdmin || permissions.canSeeModule(ModuleCatalog.administration);
-    final hasCommerceServices = permissions.canSeeModule(ModuleCatalog.canteen) ||
-        permissions.canSeeModule(ModuleCatalog.tuitionFee) ||
-        permissions.canSeeModule(ModuleCatalog.vendorManagement);
-    final hasSecurityServices = permissions.canSeeModule(ModuleCatalog.gatepass);
-    final hasAcademicServices = permissions.canSeeModule(ModuleCatalog.attendance) ||
-        permissions.canSeeModule(ModuleCatalog.examination) ||
-        permissions.canSeeModule(ModuleCatalog.timetable) ||
-        permissions.canSeeModule(ModuleCatalog.academics);
-    final hasFacilityServices = permissions.canSeeModule(ModuleCatalog.library) ||
-        permissions.canSeeModule(ModuleCatalog.hostel);
-
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8FAFC),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -122,84 +129,42 @@ class AdminDashboardScreen extends StatelessWidget {
                           30,
                     ),
                     children: [
-                      _buildWelcomeBanner(context),
+                      _buildHeroPulseBanner(context),
+                      const SizedBox(height: 14),
+                      _buildQuickActionShortcuts(context),
                       const SizedBox(height: 16),
-                      _buildKpiSummary(context),
-                      if (hasAdminConsole) ...[
-                        const SizedBox(height: 22),
-                        _buildSectionHeader(
-                          context,
-                          title: 'Administrative Console',
-                          subtitle: 'Core institution control, directories & notices',
-                          icon: Icons.admin_panel_settings_outlined,
-                          iconColor: const Color(0xFF4F46E5),
+                      _buildKpiBentoGrid(context),
+                      const SizedBox(height: 20),
+                      if (session.isAdmin) ...[
+                        _buildCategoryFilterBar(context),
+                        const SizedBox(height: 14),
+                      ],
+                      _buildWorkspaceBentoGrid(context),
+                      if (widget.advisorStudentsSource != null) ...[
+                        const SizedBox(height: 24),
+                        _buildSectionTitle(
+                          'Advisee Students',
+                          'Student mentorship & academic tracking',
+                          Icons.people_outline_rounded,
+                          const Color(0xFF4F46E5),
                         ),
-                        const SizedBox(height: 12),
-                        _buildCoreAdminGrid(context),
+                        const SizedBox(height: 10),
+                        AdvisorStudentsSection(source: widget.advisorStudentsSource!),
                       ],
-                      if (hasCommerceServices) ...[
+                      if (widget.glance != null && permissions.canSeeModule(ModuleCatalog.attendance)) ...[
                         const SizedBox(height: 24),
-                        _buildCommerceSectionHeader(context),
-                        const SizedBox(height: 12),
-                        _buildCommerceServices(context),
-                      ],
-                      if (hasSecurityServices) ...[
-                        const SizedBox(height: 24),
-                        _buildSecuritySectionHeader(context),
-                        const SizedBox(height: 12),
-                        _buildSecurityServices(context),
-                      ],
-                      if (hasAcademicServices) ...[
-                        const SizedBox(height: 24),
-                        _buildSectionHeader(
-                          context,
-                          title: 'Academic Management',
-                          subtitle: 'Rosters, schedules, grading & campus facilities',
-                          icon: Icons.school_outlined,
-                          iconColor: const Color(0xFF2563EB),
+                        _buildSectionTitle(
+                          "Today's Schedule & Roll",
+                          'Assigned lecture periods & attendance status',
+                          Icons.calendar_today_rounded,
+                          const Color(0xFF0284C7),
                         ),
-                        const SizedBox(height: 12),
-                        _buildAcademicServices(context),
-                      ],
-                      if (hasFacilityServices) ...[
-                        const SizedBox(height: 24),
-                        _buildSectionHeader(
-                          context,
-                          title: 'Campus Facilities',
-                          subtitle: 'Central library, reading halls & hostel blocks',
-                          icon: Icons.apartment_rounded,
-                          iconColor: const Color(0xFF9333EA),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildFacilityServices(context),
-                      ],
-                      if (advisorStudentsSource != null) ...[
-                        const SizedBox(height: 24),
-                        _buildSectionHeader(
-                          context,
-                          title: 'Advisee Students',
-                          subtitle: 'Student mentorship, profiles & performance tracking',
-                          icon: Icons.people_outline_rounded,
-                          iconColor: const Color(0xFF4F46E5),
-                        ),
-                        const SizedBox(height: 12),
-                        AdvisorStudentsSection(source: advisorStudentsSource!),
-                      ],
-                      if (glance != null && permissions.canSeeModule(ModuleCatalog.attendance)) ...[
-                        const SizedBox(height: 24),
-                        _buildSectionHeader(
-                          context,
-                          title: "Today's Schedule & Roll",
-                          subtitle: 'Assigned lecture periods and class roll call',
-                          icon: Icons.calendar_today_rounded,
-                          iconColor: const Color(0xFF0284C7),
-                        ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         TodayGlance(
                           permissions: permissions,
-                          facts: glance!,
-                          onOpenModule: (id) => onOpenModule(id),
-                          onOpenClass: onOpenAttendanceClass,
+                          facts: widget.glance!,
+                          onOpenModule: (id) => widget.onOpenModule(id),
+                          onOpenClass: widget.onOpenAttendanceClass,
                         ),
                       ],
                     ],
@@ -213,9 +178,9 @@ class AdminDashboardScreen extends StatelessWidget {
                       initials: initialsOf(session.displayName),
                       avatarUrl: session.photoUrl,
                       onHome: () {},
-                      onModules: () => onOpenModule(_primaryModuleId()),
-                      onProfile: onProfileTap,
-                      onScan: onScan == null ? null : () => onScan!(context),
+                      onModules: () => widget.onOpenModule(_primaryModuleId()),
+                      onProfile: widget.onProfileTap,
+                      onScan: widget.onScan == null ? null : () => widget.onScan!(context),
                     ),
                   ),
                 ],
@@ -227,8 +192,12 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
+  // ===========================================================================
+  // 1. TOP BAR
+  // ===========================================================================
   Widget _buildTopBar(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final roleColor = _roleColor();
     final roleIcon = _roleIcon();
     final roleBadge = session.roleBadgeText;
@@ -236,10 +205,10 @@ class AdminDashboardScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
+        color: isDark ? const Color(0xFF111827) : Colors.white,
         border: Border(
           bottom: BorderSide(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            color: isDark ? const Color(0xFF1F2937) : const Color(0xFFE2E8F0),
             width: 1,
           ),
         ),
@@ -249,14 +218,21 @@ class AdminDashboardScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: roleColor.withValues(alpha: 0.1),
+              gradient: LinearGradient(
+                colors: [roleColor, roleColor.withValues(alpha: 0.8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: roleColor.withValues(alpha: 0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Icon(
-              roleIcon,
-              color: roleColor,
-              size: 22,
-            ),
+            child: Icon(roleIcon, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -268,9 +244,11 @@ class AdminDashboardScreen extends StatelessWidget {
                   children: [
                     Text(
                       'SuperCampus',
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        letterSpacing: -0.3,
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -294,9 +272,10 @@ class AdminDashboardScreen extends StatelessWidget {
                 ),
                 Text(
                   session.email.isNotEmpty ? session.email : session.roleDisplayTitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.outline,
+                  style: TextStyle(
                     fontSize: 11.5,
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -305,12 +284,15 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
           IconButton(
             tooltip: 'Campus notifications',
-            onPressed: onAlertsTap,
+            onPressed: widget.onAlertsTap,
             icon: Stack(
               clipBehavior: Clip.none,
               children: [
-                const Icon(Icons.notifications_none_rounded),
-                if (hasAlerts)
+                Icon(
+                  Icons.notifications_none_rounded,
+                  color: isDark ? Colors.white : const Color(0xFF334155),
+                ),
+                if (widget.hasAlerts)
                   Positioned(
                     right: 0,
                     top: 0,
@@ -328,122 +310,450 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
           IconButton(
             tooltip: 'Profile & Settings',
-            onPressed: onProfileTap,
-            icon: const Icon(Icons.settings_outlined),
+            onPressed: widget.onProfileTap,
+            icon: Icon(
+              Icons.settings_outlined,
+              color: isDark ? Colors.white : const Color(0xFF334155),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildWelcomeBanner(BuildContext context) {
+  // ===========================================================================
+  // 2. HERO PULSE BANNER
+  // ===========================================================================
+  Widget _buildHeroPulseBanner(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final displayName = session.displayName.isNotEmpty
         ? session.displayName
         : session.roleBadgeText;
-    final roleTitle = session.roleDisplayTitle;
-    final department = session.department;
-    final subtitle = (department != null && department.isNotEmpty)
-        ? '$roleTitle · Dept of $department'
-        : roleTitle;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+              : [Colors.white, const Color(0xFFF8FAFC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome, $displayName',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1E293B),
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF10B981),
-                          shape: BoxShape.circle,
-                        ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${_timeGreeting()}, $displayName',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        letterSpacing: -0.3,
                       ),
-                      const SizedBox(width: 6),
-                      const Text(
-                        'Mahindra Engineering College · Active Session',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF475569),
-                        ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      session.roleDisplayTitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.25),
                   ),
                 ),
-              ],
-            ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    const Text(
+                      'Live & Healthy',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF059669),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildKpiSummary(BuildContext context) {
+  // ===========================================================================
+  // 3. FAST ACTION SHORTCUTS BAR
+  // ===========================================================================
+  Widget _buildQuickActionShortcuts(BuildContext context) {
+    final List<Widget> shortcuts = [];
+
+    if (session.isAdmin) {
+      shortcuts.addAll([
+        _buildActionPill(
+          icon: Icons.campaign_rounded,
+          label: 'Broadcast',
+          color: const Color(0xFF0D9488),
+          onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'announcements'),
+        ),
+        _buildActionPill(
+          icon: Icons.person_add_alt_1_rounded,
+          label: 'Add User',
+          color: const Color(0xFF4F46E5),
+          onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'users'),
+        ),
+        _buildActionPill(
+          icon: Icons.storefront_rounded,
+          label: 'Live Sales',
+          color: const Color(0xFF059669),
+          onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'dashboard'),
+        ),
+        if (widget.onScan != null)
+          _buildActionPill(
+            icon: Icons.qr_code_scanner_rounded,
+            label: 'Scan QR',
+            color: const Color(0xFF0891B2),
+            onTap: () => widget.onScan!(context),
+          ),
+      ]);
+    } else if (session.isCaptain) {
+      shortcuts.addAll([
+        _buildActionPill(
+          icon: Icons.receipt_long_rounded,
+          label: 'Orders Queue',
+          color: const Color(0xFF059669),
+          onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'orders'),
+        ),
+        if (widget.onScan != null)
+          _buildActionPill(
+            icon: Icons.qr_code_scanner_rounded,
+            label: 'Scan Token',
+            color: const Color(0xFF0891B2),
+            onTap: () => widget.onScan!(context),
+          ),
+        _buildActionPill(
+          icon: Icons.history_rounded,
+          label: 'History',
+          color: const Color(0xFF6366F1),
+          onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'order_history'),
+        ),
+      ]);
+    } else if (session.isAccountant) {
+      shortcuts.addAll([
+        _buildActionPill(
+          icon: Icons.account_balance_wallet_rounded,
+          label: 'Recharge Wallets',
+          color: const Color(0xFF4F46E5),
+          onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'wallet'),
+        ),
+        _buildActionPill(
+          icon: Icons.receipt_long_rounded,
+          label: 'Transactions',
+          color: const Color(0xFF0284C7),
+          onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'transactions'),
+        ),
+        _buildActionPill(
+          icon: Icons.request_quote_rounded,
+          label: 'Tuition Invoices',
+          color: const Color(0xFF059669),
+          onTap: () => widget.onOpenModule(ModuleCatalog.tuitionFee, 'dues'),
+        ),
+      ]);
+    } else if (session.isStationeryOwner) {
+      shortcuts.addAll([
+        _buildActionPill(
+          icon: Icons.menu_book_rounded,
+          label: 'Item Catalog',
+          color: const Color(0xFF0891B2),
+          onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'menu'),
+        ),
+        _buildActionPill(
+          icon: Icons.shopping_bag_outlined,
+          label: 'Print & Orders',
+          color: const Color(0xFF059669),
+          onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'orders'),
+        ),
+      ]);
+    } else if (session.isFaculty) {
+      shortcuts.addAll([
+        _buildActionPill(
+          icon: Icons.fact_check_outlined,
+          label: 'Take Roll Call',
+          color: const Color(0xFF2563EB),
+          onTap: () => widget.onOpenModule(ModuleCatalog.attendance, 'mark'),
+        ),
+        _buildActionPill(
+          icon: Icons.assignment_outlined,
+          label: 'Internal Marks',
+          color: const Color(0xFF6366F1),
+          onTap: () => widget.onOpenModule(ModuleCatalog.examination, 'marks'),
+        ),
+        _buildActionPill(
+          icon: Icons.schedule_rounded,
+          label: 'My Schedule',
+          color: const Color(0xFF8B5CF6),
+          onTap: () => widget.onOpenModule(ModuleCatalog.timetable, 'schedule'),
+        ),
+      ]);
+    } else if (session.isSecurityStaff) {
+      shortcuts.addAll([
+        if (widget.onScan != null)
+          _buildActionPill(
+            icon: Icons.qr_code_scanner_rounded,
+            label: 'Scan Pass QR',
+            color: const Color(0xFF0284C7),
+            onTap: () => widget.onScan!(context),
+          ),
+        _buildActionPill(
+          icon: Icons.history_rounded,
+          label: 'Gate Movement',
+          color: const Color(0xFF0D9488),
+          onTap: () => widget.onOpenModule(ModuleCatalog.gatepass, 'movement_logs'),
+        ),
+        _buildActionPill(
+          icon: Icons.badge_outlined,
+          label: 'Visitors',
+          color: const Color(0xFF4F46E5),
+          onTap: () => widget.onOpenModule(ModuleCatalog.gatepass, 'visitors'),
+        ),
+      ]);
+    }
+
+    if (shortcuts.isEmpty) return const SizedBox.shrink();
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          for (var i = 0; i < shortcuts.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            shortcuts[i],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionPill({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : const Color(0xFF1E293B),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // 4. METRIC BENTO GRID (Zero fluff, clean numbers)
+  // ===========================================================================
+  Widget _buildKpiBentoGrid(BuildContext context) {
+    if (session.isAdmin) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 550;
+          if (isWide) {
+            return Row(
+              children: [
+                Expanded(
+                  child: _buildStatTile(
+                    title: 'Users & Roles',
+                    value: 'Admin Desk',
+                    badge: 'Full Access',
+                    icon: Icons.manage_accounts_outlined,
+                    color: const Color(0xFF4F46E5),
+                    onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'users'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildStatTile(
+                    title: 'Student Registry',
+                    value: 'Directory',
+                    badge: 'All Depts',
+                    icon: Icons.school_outlined,
+                    color: const Color(0xFF0284C7),
+                    onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'students'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildStatTile(
+                    title: 'Shops & Sales',
+                    value: 'Live Metrics',
+                    badge: 'Counters Active',
+                    icon: Icons.storefront_outlined,
+                    color: const Color(0xFF059669),
+                    onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'dashboard'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildStatTile(
+                    title: 'Gate Security',
+                    value: 'Pass Control',
+                    badge: 'Active Gate',
+                    icon: Icons.security_rounded,
+                    color: const Color(0xFF0891B2),
+                    onTap: () => widget.onOpenModule(ModuleCatalog.gatepass),
+                  ),
+                ),
+              ],
+            );
+          }
+          return Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatTile(
+                      title: 'Users & Roles',
+                      value: 'Admin Desk',
+                      badge: 'Full Access',
+                      icon: Icons.manage_accounts_outlined,
+                      color: const Color(0xFF4F46E5),
+                      onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'users'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildStatTile(
+                      title: 'Student Registry',
+                      value: 'Directory',
+                      badge: 'All Depts',
+                      icon: Icons.school_outlined,
+                      color: const Color(0xFF0284C7),
+                      onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'students'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatTile(
+                      title: 'Shops & Sales',
+                      value: 'Live Metrics',
+                      badge: 'Counters Active',
+                      icon: Icons.storefront_outlined,
+                      color: const Color(0xFF059669),
+                      onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'dashboard'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildStatTile(
+                      title: 'Gate Security',
+                      value: 'Pass Control',
+                      badge: 'Active Gate',
+                      icon: Icons.security_rounded,
+                      color: const Color(0xFF0891B2),
+                      onTap: () => widget.onOpenModule(ModuleCatalog.gatepass),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      );
+    }
+
     if (session.isCaptain) {
       return Row(
         children: [
           Expanded(
-            child: _buildMetricTile(
-              title: 'Live Orders',
-              value: 'Orders Queue',
-              subtitle: 'Active counter queue',
+            child: _buildStatTile(
+              title: 'Orders Queue',
+              value: 'Live Orders',
+              badge: 'Kitchen Prep',
               icon: Icons.receipt_long_rounded,
-              iconColor: const Color(0xFF059669),
-              onTap: () => onOpenModule(ModuleCatalog.canteen, 'orders'),
+              color: const Color(0xFF059669),
+              onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'orders'),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: _buildMetricTile(
-              title: 'Quick Scan',
+            child: _buildStatTile(
+              title: 'Verification',
               value: 'Scan Token',
-              subtitle: 'Verify student order QR',
+              badge: 'Fast QR',
               icon: Icons.qr_code_scanner_rounded,
-              iconColor: const Color(0xFF0891B2),
-              onTap: onScan != null ? () => onScan!(context) : () => onOpenModule(ModuleCatalog.canteen, 'orders'),
+              color: const Color(0xFF0891B2),
+              onTap: widget.onScan != null ? () => widget.onScan!(context) : () => widget.onOpenModule(ModuleCatalog.canteen, 'orders'),
             ),
           ),
         ],
@@ -454,24 +764,24 @@ class AdminDashboardScreen extends StatelessWidget {
       return Row(
         children: [
           Expanded(
-            child: _buildMetricTile(
+            child: _buildStatTile(
               title: 'Student Wallets',
-              value: 'Recharges',
-              subtitle: 'Browse student balances',
+              value: 'Recharge Directory',
+              badge: 'Balances',
               icon: Icons.account_balance_wallet_rounded,
-              iconColor: const Color(0xFF4F46E5),
-              onTap: () => onOpenModule(ModuleCatalog.canteen, 'wallet'),
+              color: const Color(0xFF4F46E5),
+              onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'wallet'),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: _buildMetricTile(
-              title: 'Ledger Activity',
+            child: _buildStatTile(
+              title: 'Activity Ledger',
               value: 'Transactions',
-              subtitle: 'Recent credit history',
+              badge: 'Recent Audit',
               icon: Icons.receipt_long_rounded,
-              iconColor: const Color(0xFF0284C7),
-              onTap: () => onOpenModule(ModuleCatalog.canteen, 'transactions'),
+              color: const Color(0xFF0284C7),
+              onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'transactions'),
             ),
           ),
         ],
@@ -482,24 +792,24 @@ class AdminDashboardScreen extends StatelessWidget {
       return Row(
         children: [
           Expanded(
-            child: _buildMetricTile(
+            child: _buildStatTile(
               title: 'Store Catalog',
-              value: 'Inventory',
-              subtitle: 'Stationery items & prices',
+              value: 'Items & Prices',
+              badge: 'Stock Active',
               icon: Icons.menu_book_rounded,
-              iconColor: const Color(0xFF0891B2),
-              onTap: () => onOpenModule(ModuleCatalog.canteen, 'menu'),
+              color: const Color(0xFF0891B2),
+              onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'menu'),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: _buildMetricTile(
-              title: 'Item Orders',
+            child: _buildStatTile(
+              title: 'Student Orders',
               value: 'Pending Queue',
-              subtitle: 'Student print & items',
+              badge: 'Fulfillment',
               icon: Icons.shopping_bag_outlined,
-              iconColor: const Color(0xFF059669),
-              onTap: () => onOpenModule(ModuleCatalog.canteen, 'orders'),
+              color: const Color(0xFF059669),
+              onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'orders'),
             ),
           ),
         ],
@@ -510,24 +820,24 @@ class AdminDashboardScreen extends StatelessWidget {
       return Row(
         children: [
           Expanded(
-            child: _buildMetricTile(
-              title: 'Class Attendance',
+            child: _buildStatTile(
+              title: 'Attendance Desk',
               value: 'Roll Call',
-              subtitle: "Mark today's attendance",
+              badge: "Today's Mark",
               icon: Icons.fact_check_outlined,
-              iconColor: const Color(0xFF2563EB),
-              onTap: () => onOpenModule(ModuleCatalog.attendance, 'mark'),
+              color: const Color(0xFF2563EB),
+              onTap: () => widget.onOpenModule(ModuleCatalog.attendance, 'mark'),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: _buildMetricTile(
+            child: _buildStatTile(
               title: 'Examinations',
               value: 'Internal Marks',
-              subtitle: 'Batch score entry',
+              badge: 'Grading',
               icon: Icons.assignment_outlined,
-              iconColor: const Color(0xFF6366F1),
-              onTap: () => onOpenModule(ModuleCatalog.examination, 'marks'),
+              color: const Color(0xFF6366F1),
+              onTap: () => widget.onOpenModule(ModuleCatalog.examination, 'marks'),
             ),
           ),
         ],
@@ -538,133 +848,56 @@ class AdminDashboardScreen extends StatelessWidget {
       return Row(
         children: [
           Expanded(
-            child: _buildMetricTile(
+            child: _buildStatTile(
               title: 'Gate Scanner',
-              value: 'Scan Pass',
-              subtitle: 'Verify student outpass',
+              value: 'Scan Outpass',
+              badge: 'Verification',
               icon: Icons.qr_code_scanner_rounded,
-              iconColor: const Color(0xFF0284C7),
-              onTap: onScan != null ? () => onScan!(context) : () => onOpenModule(ModuleCatalog.gatepass, 'scan'),
+              color: const Color(0xFF0284C7),
+              onTap: widget.onScan != null ? () => widget.onScan!(context) : () => widget.onOpenModule(ModuleCatalog.gatepass, 'scan'),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: _buildMetricTile(
+            child: _buildStatTile(
               title: 'Movement Logs',
               value: 'Gate History',
-              subtitle: 'Campus entry & exits',
+              badge: 'Live Log',
               icon: Icons.history_rounded,
-              iconColor: const Color(0xFF0D9488),
-              onTap: () => onOpenModule(ModuleCatalog.gatepass, 'movement_logs'),
+              color: const Color(0xFF0D9488),
+              onTap: () => widget.onOpenModule(ModuleCatalog.gatepass, 'movement_logs'),
             ),
           ),
         ],
       );
     }
 
-    if (session.isLibrarian) {
-      return Row(
-        children: [
-          Expanded(
-            child: _buildMetricTile(
-              title: 'Book Catalog',
-              value: 'Library Search',
-              subtitle: 'Find titles & authors',
-              icon: Icons.local_library_outlined,
-              iconColor: const Color(0xFF9333EA),
-              onTap: () => onOpenModule(ModuleCatalog.library, 'catalog'),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _buildMetricTile(
-              title: 'Lending Desk',
-              value: 'Circulation',
-              subtitle: 'Issue & return books',
-              icon: Icons.assignment_returned_outlined,
-              iconColor: const Color(0xFF7C3AED),
-              onTap: () => onOpenModule(ModuleCatalog.library, 'issues'),
-            ),
-          ),
-        ],
-      );
-    }
-
-    if (session.isHostelWarden) {
-      return Row(
-        children: [
-          Expanded(
-            child: _buildMetricTile(
-              title: 'Hostel Blocks',
-              value: 'Room Allotment',
-              subtitle: 'Student residency directory',
-              icon: Icons.apartment_rounded,
-              iconColor: const Color(0xFFD97706),
-              onTap: () => onOpenModule(ModuleCatalog.hostel),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _buildMetricTile(
-              title: 'Outpass Approvals',
-              value: 'Night Leaves',
-              subtitle: 'Review student requests',
-              icon: Icons.approval_rounded,
-              iconColor: const Color(0xFF059669),
-              onTap: () => onOpenModule(ModuleCatalog.gatepass, 'outpass_pending'),
-            ),
-          ),
-        ],
-      );
-    }
-
-    // Default / Admin:
-    return Row(
-      children: [
-        Expanded(
-          child: _buildMetricTile(
-            title: 'Users & Staff',
-            value: 'Admin Desk',
-            subtitle: 'Role & accounts control',
-            icon: Icons.manage_accounts_outlined,
-            iconColor: const Color(0xFF4F46E5),
-            onTap: () => onOpenModule(ModuleCatalog.administration, 'users'),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildMetricTile(
-            title: 'Students',
-            value: 'Directory',
-            subtitle: 'Enrolled students',
-            icon: Icons.school_outlined,
-            iconColor: const Color(0xFF0284C7),
-            onTap: () => onOpenModule(ModuleCatalog.administration, 'students'),
-          ),
-        ),
-      ],
-    );
+    return const SizedBox.shrink();
   }
 
-  Widget _buildMetricTile({
+  Widget _buildStatTile({
     required String title,
     required String value,
-    required String subtitle,
+    required String badge,
     required IconData icon,
-    required Color iconColor,
+    required Color color,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Material(
-      color: Colors.white,
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -672,35 +905,51 @@ class AdminDashboardScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF64748B),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, color: color, size: 18),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      badge,
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
                     ),
                   ),
-                  Icon(icon, color: iconColor, size: 18),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 15,
+                style: TextStyle(
+                  fontSize: 14.5,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1E293B),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF94A3B8),
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  letterSpacing: -0.2,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 1),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                ),
               ),
             ],
           ),
@@ -709,623 +958,303 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color iconColor,
+  // ===========================================================================
+  // 5. CATEGORY FILTER TABS (Instant focus for daily multi-hour use)
+  // ===========================================================================
+  Widget _buildCategoryFilterBar(BuildContext context) {
+    final categories = ['All Services', 'Administration', 'Commerce & Ops', 'Academics', 'Facilities'];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          for (var i = 0; i < categories.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            _buildFilterChip(
+              label: categories[i],
+              isSelected: _selectedCategoryIndex == i,
+              onTap: () => setState(() => _selectedCategoryIndex = i),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
   }) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Material(
+      color: isSelected
+          ? const Color(0xFF4F46E5)
+          : isDark
+              ? const Color(0xFF1E293B)
+              : Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected
+                  ? const Color(0xFF4F46E5)
+                  : isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
+            ),
           ),
-          child: Icon(icon, size: 16, color: iconColor),
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1E293B),
-                letterSpacing: -0.1,
-              ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              color: isSelected
+                  ? Colors.white
+                  : isDark
+                      ? const Color(0xFFE2E8F0)
+                      : const Color(0xFF475569),
             ),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF64748B),
-              ),
-            ),
-          ],
+          ),
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildCoreAdminGrid(BuildContext context) {
-    return Column(
-      children: [
-        _buildActionCard(
-          title: 'User Management',
-          description: 'Faculty, staff & administrator accounts, role permissions and credential resets',
-          icon: Icons.manage_accounts_rounded,
-          accentColor: const Color(0xFF4F46E5),
-          badgeText: 'Full Access',
-          actions: [
-            _QuickActionChip(
-              label: 'Manage Users',
-              onTap: () => onOpenModule(ModuleCatalog.administration, 'users'),
-            ),
-          ],
-          onTap: () => onOpenModule(ModuleCatalog.administration, 'users'),
-        ),
-        const SizedBox(height: 10),
-        _buildActionCard(
-          title: 'Student Registry',
-          description: 'Student profiles, institutional roll numbers, departments, sections and academic years',
-          icon: Icons.people_alt_outlined,
-          accentColor: const Color(0xFF0284C7),
-          badgeText: 'Student Records',
-          actions: [
-            _QuickActionChip(
-              label: 'View Students',
-              onTap: () => onOpenModule(ModuleCatalog.administration, 'students'),
-            ),
-          ],
-          onTap: () => onOpenModule(ModuleCatalog.administration, 'students'),
-        ),
-        const SizedBox(height: 10),
-        _buildActionCard(
-          title: 'Campus Announcements',
-          description: 'Institutional broadcasts, circulars, department notifications and event notices',
-          icon: Icons.campaign_outlined,
-          accentColor: const Color(0xFF0D9488),
-          badgeText: 'Broadcasts',
-          actions: [
-            _QuickActionChip(
-              label: 'Post Announcement',
-              onTap: () => onOpenModule(ModuleCatalog.administration, 'announcements'),
-            ),
-          ],
-          onTap: () => onOpenModule(ModuleCatalog.administration, 'announcements'),
-        ),
-        const SizedBox(height: 10),
-        _buildActionCard(
-          title: 'Maintenance & Operations',
-          description: 'Campus facility status, routine maintenance scheduling and service log updates',
-          icon: Icons.build_outlined,
-          accentColor: const Color(0xFFD97706),
-          badgeText: 'Operations',
-          actions: [
-            _QuickActionChip(
-              label: 'Maintenance Log',
-              onTap: () => onOpenModule(ModuleCatalog.administration, 'maintenance'),
-            ),
-          ],
-          onTap: () => onOpenModule(ModuleCatalog.administration, 'maintenance'),
-        ),
-      ],
-    );
-  }
+  // ===========================================================================
+  // 6. WORKSPACE BENTO GRID OF APPS (Zero text walls, sleek & clickable)
+  // ===========================================================================
+  Widget _buildWorkspaceBentoGrid(BuildContext context) {
+    final List<Widget> tiles = [];
 
-  Widget _buildCommerceSectionHeader(BuildContext context) {
-    if (session.isCaptain) {
-      return _buildSectionHeader(
-        context,
-        title: 'Canteen Operations',
-        subtitle: 'Live counter queue & token fulfillment',
-        icon: Icons.restaurant_rounded,
-        iconColor: const Color(0xFF059669),
-      );
-    }
-    if (session.isAccountant) {
-      return _buildSectionHeader(
-        context,
-        title: 'Campus Finance & Wallets',
-        subtitle: 'Student accounts, balances & fee administration',
-        icon: Icons.account_balance_wallet_rounded,
-        iconColor: const Color(0xFF4F46E5),
-      );
-    }
-    if (session.isStationeryOwner) {
-      return _buildSectionHeader(
-        context,
-        title: 'Stationery Store',
-        subtitle: 'Inventory stock, catalog & student requests',
-        icon: Icons.edit_note_rounded,
-        iconColor: const Color(0xFF0891B2),
-      );
-    }
-    return _buildSectionHeader(
-      context,
-      title: 'Campus Commerce & Services',
-      subtitle: 'Live vendor operations, security & financials',
-      icon: Icons.storefront_outlined,
-      iconColor: const Color(0xFF059669),
-    );
-  }
+    // Category 0 = All, 1 = Admin, 2 = Commerce, 3 = Academics, 4 = Facilities
+    final showAll = _selectedCategoryIndex == 0;
+    final showAdmin = showAll || _selectedCategoryIndex == 1;
+    final showCommerce = showAll || _selectedCategoryIndex == 2;
+    final showAcademics = showAll || _selectedCategoryIndex == 3;
+    final showFacilities = showAll || _selectedCategoryIndex == 4;
 
-  Widget _buildCommerceServices(BuildContext context) {
-    final List<Widget> cards = [];
+    // --- Core Admin ---
+    if ((session.isAdmin || permissions.canSeeModule(ModuleCatalog.administration)) && showAdmin) {
+      tiles.add(_buildAppTile(
+        title: 'Users & Roles',
+        tag: 'Full Access',
+        icon: Icons.manage_accounts_rounded,
+        color: const Color(0xFF4F46E5),
+        onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'users'),
+      ));
+      tiles.add(_buildAppTile(
+        title: 'Student Registry',
+        tag: 'Enrolled Records',
+        icon: Icons.people_alt_outlined,
+        color: const Color(0xFF0284C7),
+        onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'students'),
+      ));
+      tiles.add(_buildAppTile(
+        title: 'Announcements',
+        tag: 'Broadcasts',
+        icon: Icons.campaign_rounded,
+        color: const Color(0xFF0D9488),
+        onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'announcements'),
+      ));
+      tiles.add(_buildAppTile(
+        title: 'System Maintenance',
+        tag: 'Operational',
+        icon: Icons.build_circle_outlined,
+        color: const Color(0xFFD97706),
+        onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'maintenance'),
+      ));
+    }
 
-    if (permissions.canSeeModule(ModuleCatalog.canteen)) {
+    // --- Commerce & Ops ---
+    if (permissions.canSeeModule(ModuleCatalog.canteen) && showCommerce) {
       if (session.isCaptain) {
-        cards.add(
-          _buildActionCard(
-            title: 'Canteen Counter & Orders',
-            description: 'Live student food orders, kitchen preparation, ready tokens and counter fulfillment',
-            icon: Icons.restaurant_rounded,
-            accentColor: const Color(0xFF059669),
-            badgeText: 'Counter Desk',
-            actions: [
-              _QuickActionChip(
-                label: 'Order Queue',
-                onTap: () => onOpenModule(ModuleCatalog.canteen, 'orders'),
-              ),
-              _QuickActionChip(
-                label: 'Order History',
-                onTap: () => onOpenModule(ModuleCatalog.canteen, 'order_history'),
-              ),
-              if (onScan != null)
-                _QuickActionChip(
-                  label: 'Scan Token',
-                  onTap: () => onScan!(context),
-                ),
-            ],
-            onTap: () => onOpenModule(ModuleCatalog.canteen),
-          ),
-        );
+        tiles.add(_buildAppTile(
+          title: 'Canteen Orders',
+          tag: 'Live Counter',
+          icon: Icons.restaurant_rounded,
+          color: const Color(0xFF059669),
+          onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'orders'),
+        ));
       } else if (session.isAccountant) {
-        cards.add(
-          _buildActionCard(
-            title: 'Student Wallets & Recharges',
-            description: 'Search student accounts, credit wallet balances, review ledger entries and manage online top-up limits',
-            icon: Icons.account_balance_wallet_rounded,
-            accentColor: const Color(0xFF4F46E5),
-            badgeText: 'Finance Desk',
-            actions: [
-              _QuickActionChip(
-                label: 'Wallet Directory',
-                onTap: () => onOpenModule(ModuleCatalog.canteen, 'wallet'),
-              ),
-              _QuickActionChip(
-                label: 'Credit Balance',
-                onTap: () => onOpenModule(ModuleCatalog.canteen, 'top_up'),
-              ),
-              _QuickActionChip(
-                label: 'Activity Ledger',
-                onTap: () => onOpenModule(ModuleCatalog.canteen, 'transactions'),
-              ),
-            ],
-            onTap: () => onOpenModule(ModuleCatalog.canteen),
-          ),
-        );
+        tiles.add(_buildAppTile(
+          title: 'Student Wallets',
+          tag: 'Recharges',
+          icon: Icons.account_balance_wallet_rounded,
+          color: const Color(0xFF4F46E5),
+          onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'wallet'),
+        ));
       } else if (session.isStationeryOwner) {
-        cards.add(
-          _buildActionCard(
-            title: 'Stationery Store Operations',
-            description: 'Manage stationery item prices, stock availability, student printing requests and counter orders',
-            icon: Icons.edit_note_rounded,
-            accentColor: const Color(0xFF0891B2),
-            badgeText: 'Store Desk',
-            actions: [
-              _QuickActionChip(
-                label: 'Inventory Catalog',
-                onTap: () => onOpenModule(ModuleCatalog.canteen, 'menu'),
-              ),
-              _QuickActionChip(
-                label: 'Item Orders',
-                onTap: () => onOpenModule(ModuleCatalog.canteen, 'orders'),
-              ),
-            ],
-            onTap: () => onOpenModule(ModuleCatalog.canteen),
-          ),
-        );
-      } else if (session.isAdmin) {
-        cards.add(
-          _buildActionCard(
-            title: 'Shops & Sales Dashboard',
-            description: 'Real-time sales tracking, counter order volume, revenue analytics and vendor operations',
-            icon: Icons.storefront_rounded,
-            accentColor: const Color(0xFF059669),
-            badgeText: 'Live Metrics',
-            actions: [
-              _QuickActionChip(
-                label: 'Sales Dashboard',
-                onTap: () => onOpenModule(ModuleCatalog.canteen, 'dashboard'),
-              ),
-              _QuickActionChip(
-                label: 'Vendors & Counters',
-                onTap: () => onOpenModule(ModuleCatalog.canteen, 'vendors'),
-              ),
-              _QuickActionChip(
-                label: 'Live Orders',
-                onTap: () => onOpenModule(ModuleCatalog.canteen, 'orders'),
-              ),
-            ],
-            onTap: () => onOpenModule(ModuleCatalog.canteen),
-          ),
-        );
+        tiles.add(_buildAppTile(
+          title: 'Stationery Catalog',
+          tag: 'Store & Stock',
+          icon: Icons.edit_note_rounded,
+          color: const Color(0xFF0891B2),
+          onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'menu'),
+        ));
       } else {
-        cards.add(
-          _buildActionCard(
-            title: 'Campus Dining & Stores',
-            description: 'Campus cafeteria, stationery store, food orders and dining transactions',
-            icon: Icons.storefront_rounded,
-            accentColor: const Color(0xFF059669),
-            badgeText: 'Dining',
-            actions: [
-              _QuickActionChip(
-                label: 'Browse Store',
-                onTap: () => onOpenModule(ModuleCatalog.canteen, 'menu'),
-              ),
-              _QuickActionChip(
-                label: 'My Orders',
-                onTap: () => onOpenModule(ModuleCatalog.canteen, 'orders'),
-              ),
-            ],
-            onTap: () => onOpenModule(ModuleCatalog.canteen),
-          ),
-        );
+        tiles.add(_buildAppTile(
+          title: 'Shops & Sales',
+          tag: 'Live Analytics',
+          icon: Icons.storefront_rounded,
+          color: const Color(0xFF059669),
+          onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'dashboard'),
+        ));
       }
     }
 
-    if (permissions.canSeeModule(ModuleCatalog.tuitionFee)) {
-      cards.add(
-        _buildActionCard(
-          title: 'Tuition & Fee Collection',
-          description: 'Semester tuition fees, invoice generation, payment receipts and outstanding dues ledger',
-          icon: Icons.receipt_long_rounded,
-          accentColor: const Color(0xFF0284C7),
-          badgeText: 'Fees',
-          actions: [
-            _QuickActionChip(
-              label: 'Fee Invoices',
-              onTap: () => onOpenModule(ModuleCatalog.tuitionFee, 'dues'),
-            ),
-            _QuickActionChip(
-              label: 'Payment Receipts',
-              onTap: () => onOpenModule(ModuleCatalog.tuitionFee, 'receipts'),
-            ),
-          ],
-          onTap: () => onOpenModule(ModuleCatalog.tuitionFee),
-        ),
-      );
+    if (permissions.canSeeModule(ModuleCatalog.tuitionFee) && showCommerce) {
+      tiles.add(_buildAppTile(
+        title: 'Tuition & Fees',
+        tag: 'Invoices & Dues',
+        icon: Icons.receipt_long_rounded,
+        color: const Color(0xFF0284C7),
+        onTap: () => widget.onOpenModule(ModuleCatalog.tuitionFee),
+      ));
     }
 
-    if (permissions.canSeeModule(ModuleCatalog.vendorManagement)) {
-      cards.add(
-        _buildActionCard(
-          title: 'Vendor Management',
-          description: 'Campus supplier contracts, procurement purchase orders, vendor invoices and work fulfillment',
-          icon: Icons.handshake_outlined,
-          accentColor: const Color(0xFF0D9488),
-          badgeText: 'Procurement',
-          actions: [
-            _QuickActionChip(
-              label: 'Vendors List',
-              onTap: () => onOpenModule(ModuleCatalog.vendorManagement, 'vendors'),
-            ),
-            _QuickActionChip(
-              label: 'Purchase Orders',
-              onTap: () => onOpenModule(ModuleCatalog.vendorManagement, 'purchase_orders'),
-            ),
-          ],
-          onTap: () => onOpenModule(ModuleCatalog.vendorManagement),
-        ),
-      );
+    if (permissions.canSeeModule(ModuleCatalog.vendorManagement) && showCommerce) {
+      tiles.add(_buildAppTile(
+        title: 'Vendors & Orders',
+        tag: 'Procurement',
+        icon: Icons.handshake_outlined,
+        color: const Color(0xFF0D9488),
+        onTap: () => widget.onOpenModule(ModuleCatalog.vendorManagement),
+      ));
     }
 
-    return Column(
-      children: [
-        for (var i = 0; i < cards.length; i++) ...[
-          if (i > 0) const SizedBox(height: 10),
-          cards[i],
-        ],
-      ],
-    );
-  }
-
-  Widget _buildSecuritySectionHeader(BuildContext context) {
-    if (session.isSecurityStaff) {
-      return _buildSectionHeader(
-        context,
-        title: 'Gate Security & Checkpoint',
-        subtitle: 'Live scanning, departure verification & visitor log',
-        icon: Icons.security_rounded,
-        iconColor: const Color(0xFF0284C7),
-      );
+    // --- Academics ---
+    if (permissions.canSeeModule(ModuleCatalog.attendance) && showAcademics) {
+      tiles.add(_buildAppTile(
+        title: 'Attendance Desk',
+        tag: 'Roll & Rosters',
+        icon: Icons.fact_check_outlined,
+        color: const Color(0xFF2563EB),
+        onTap: () => widget.onOpenModule(ModuleCatalog.attendance),
+      ));
     }
-    return _buildSectionHeader(
-      context,
-      title: 'Gatepass & Campus Access',
-      subtitle: 'Student movement approvals, visitor logs & gate security',
-      icon: Icons.qr_code_scanner_rounded,
-      iconColor: const Color(0xFF0891B2),
-    );
-  }
 
-  Widget _buildSecurityServices(BuildContext context) {
-    if (session.isSecurityStaff) {
-      return _buildActionCard(
-        title: 'Gate Security Checkpoint',
-        description: 'Scan student outpasses, verify departure permissions, visitor check-in and daily movement logs',
+    if (permissions.canSeeModule(ModuleCatalog.examination) && showAcademics) {
+      tiles.add(_buildAppTile(
+        title: 'Examinations',
+        tag: 'Marks & Grades',
+        icon: Icons.assignment_outlined,
+        color: const Color(0xFF6366F1),
+        onTap: () => widget.onOpenModule(ModuleCatalog.examination),
+      ));
+    }
+
+    if (permissions.canSeeModule(ModuleCatalog.timetable) && showAcademics) {
+      tiles.add(_buildAppTile(
+        title: 'Timetable',
+        tag: 'Master Schedule',
+        icon: Icons.schedule_rounded,
+        color: const Color(0xFF8B5CF6),
+        onTap: () => widget.onOpenModule(ModuleCatalog.timetable),
+      ));
+    }
+
+    if (permissions.canSeeModule(ModuleCatalog.academics) && showAcademics) {
+      tiles.add(_buildAppTile(
+        title: 'Curriculum & Depts',
+        tag: 'Programmes',
+        icon: Icons.auto_stories_outlined,
+        color: const Color(0xFF3B82F6),
+        onTap: () => widget.onOpenModule(ModuleCatalog.academics),
+      ));
+    }
+
+    // --- Facilities & Security ---
+    if (permissions.canSeeModule(ModuleCatalog.gatepass) && (showFacilities || showAll)) {
+      tiles.add(_buildAppTile(
+        title: 'Gate Security',
+        tag: 'Passes & Checkpoint',
         icon: Icons.qr_code_scanner_rounded,
-        accentColor: const Color(0xFF0284C7),
-        badgeText: 'Checkpoint Desk',
-        actions: [
-          if (onScan != null)
-            _QuickActionChip(
-              label: 'Scan Pass QR',
-              onTap: () => onScan!(context),
+        color: const Color(0xFF0891B2),
+        onTap: () => widget.onOpenModule(ModuleCatalog.gatepass),
+      ));
+    }
+
+    if (permissions.canSeeModule(ModuleCatalog.library) && showFacilities) {
+      tiles.add(_buildAppTile(
+        title: 'Central Library',
+        tag: 'Catalog & Lending',
+        icon: Icons.local_library_outlined,
+        color: const Color(0xFF9333EA),
+        onTap: () => widget.onOpenModule(ModuleCatalog.library),
+      ));
+    }
+
+    if (permissions.canSeeModule(ModuleCatalog.hostel) && showFacilities) {
+      tiles.add(_buildAppTile(
+        title: 'Hostel Residency',
+        tag: 'Room Allotment',
+        icon: Icons.apartment_rounded,
+        color: const Color(0xFF64748B),
+        onTap: () => widget.onOpenModule(ModuleCatalog.hostel),
+      ));
+    }
+
+    if (tiles.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 30),
+          child: Text(
+            'No workspaces in this category',
+            style: TextStyle(
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.outline,
             ),
-          _QuickActionChip(
-            label: 'Movement Logs',
-            onTap: () => onOpenModule(ModuleCatalog.gatepass, 'movement_logs'),
           ),
-          _QuickActionChip(
-            label: 'Visitor Registry',
-            onTap: () => onOpenModule(ModuleCatalog.gatepass, 'visitors'),
-          ),
-        ],
-        onTap: () => onOpenModule(ModuleCatalog.gatepass),
+        ),
       );
     }
 
-    final isApprover = session.roleIds.any((r) =>
-        const {'parent', 'warden', 'principal', 'class_advisor', 'hod', 'head_of_department'}.contains(r.toLowerCase()));
-
-    if (isApprover) {
-      return _buildActionCard(
-        title: 'Gatepass Approvals',
-        description: 'Review student outpass and leave requests, parent consent notes and issue gate clearance',
-        icon: Icons.approval_rounded,
-        accentColor: const Color(0xFF0891B2),
-        badgeText: 'Approvals',
-        actions: [
-          _QuickActionChip(
-            label: 'Pending Passes',
-            onTap: () => onOpenModule(ModuleCatalog.gatepass, 'outpass_pending'),
-          ),
-          _QuickActionChip(
-            label: 'Leave Requests',
-            onTap: () => onOpenModule(ModuleCatalog.gatepass, 'leave_pending'),
-          ),
-          _QuickActionChip(
-            label: 'History',
-            onTap: () => onOpenModule(ModuleCatalog.gatepass, 'outpass_history'),
-          ),
-        ],
-        onTap: () => onOpenModule(ModuleCatalog.gatepass),
-      );
-    }
-
-    return _buildActionCard(
-      title: 'Gatepass Security',
-      description: 'Daily campus movement, security checkpoint scanning, visitor logs and outpass approvals',
-      icon: Icons.qr_code_scanner_rounded,
-      accentColor: const Color(0xFF0891B2),
-      badgeText: 'Gate Security',
-      actions: [
-        _QuickActionChip(
-          label: 'Access Logs',
-          onTap: () => onOpenModule(ModuleCatalog.gatepass, 'logs'),
-        ),
-        _QuickActionChip(
-          label: 'Visitors',
-          onTap: () => onOpenModule(ModuleCatalog.gatepass, 'visitors'),
-        ),
-      ],
-      onTap: () => onOpenModule(ModuleCatalog.gatepass),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 500;
+        return GridView.count(
+          crossAxisCount: isWide ? 3 : 2,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: isWide ? 1.5 : 1.35,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: tiles,
+        );
+      },
     );
   }
 
-  Widget _buildAcademicServices(BuildContext context) {
-    final List<Widget> cards = [];
-
-    if (permissions.canSeeModule(ModuleCatalog.attendance)) {
-      cards.add(
-        _buildActionCard(
-          title: 'Attendance Desk',
-          description: 'Campus-wide attendance rosters, faculty marking, daily student attendance reports',
-          icon: Icons.fact_check_outlined,
-          accentColor: const Color(0xFF2563EB),
-          badgeText: 'Academic',
-          actions: [
-            _QuickActionChip(
-              label: 'Take Roll Call',
-              onTap: () => onOpenModule(ModuleCatalog.attendance, 'mark'),
-            ),
-            _QuickActionChip(
-              label: 'Class Roster',
-              onTap: () => onOpenModule(ModuleCatalog.attendance, 'roster'),
-            ),
-            _QuickActionChip(
-              label: 'Reports',
-              onTap: () => onOpenModule(ModuleCatalog.attendance, 'reports'),
-            ),
-          ],
-          onTap: () => onOpenModule(ModuleCatalog.attendance),
-        ),
-      );
-    }
-
-    if (permissions.canSeeModule(ModuleCatalog.examination)) {
-      cards.add(
-        _buildActionCard(
-          title: 'Examinations & Marks',
-          description: 'Master examination schedules, batch marks entry, grade sheets and student report cards',
-          icon: Icons.assignment_outlined,
-          accentColor: const Color(0xFF6366F1),
-          badgeText: 'Exams',
-          actions: [
-            _QuickActionChip(
-              label: 'Exam Schedule',
-              onTap: () => onOpenModule(ModuleCatalog.examination, 'schedule'),
-            ),
-            _QuickActionChip(
-              label: 'Marks Entry',
-              onTap: () => onOpenModule(ModuleCatalog.examination, 'marks'),
-            ),
-            _QuickActionChip(
-              label: 'Grade Sheets',
-              onTap: () => onOpenModule(ModuleCatalog.examination, 'results'),
-            ),
-          ],
-          onTap: () => onOpenModule(ModuleCatalog.examination),
-        ),
-      );
-    }
-
-    if (permissions.canSeeModule(ModuleCatalog.timetable)) {
-      cards.add(
-        _buildActionCard(
-          title: 'Timetable & Scheduling',
-          description: 'Master weekly schedules, lecture room allocations and faculty substitutions',
-          icon: Icons.schedule_rounded,
-          accentColor: const Color(0xFF8B5CF6),
-          badgeText: 'Timetable',
-          actions: [
-            _QuickActionChip(
-              label: 'Weekly Schedule',
-              onTap: () => onOpenModule(ModuleCatalog.timetable, 'schedule'),
-            ),
-            _QuickActionChip(
-              label: 'Substitutions',
-              onTap: () => onOpenModule(ModuleCatalog.timetable, 'substitution'),
-            ),
-          ],
-          onTap: () => onOpenModule(ModuleCatalog.timetable),
-        ),
-      );
-    }
-
-    if (permissions.canSeeModule(ModuleCatalog.academics)) {
-      cards.add(
-        _buildActionCard(
-          title: 'Academics & Curriculum',
-          description: 'Department degree programmes, subject syllabi, class registrations and academic structures',
-          icon: Icons.auto_stories_outlined,
-          accentColor: const Color(0xFF3B82F6),
-          badgeText: 'Curriculum',
-          actions: [
-            _QuickActionChip(
-              label: 'Programmes',
-              onTap: () => onOpenModule(ModuleCatalog.academics, 'programmes'),
-            ),
-            _QuickActionChip(
-              label: 'Subjects',
-              onTap: () => onOpenModule(ModuleCatalog.academics, 'subjects'),
-            ),
-          ],
-          onTap: () => onOpenModule(ModuleCatalog.academics),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        for (var i = 0; i < cards.length; i++) ...[
-          if (i > 0) const SizedBox(height: 10),
-          cards[i],
-        ],
-      ],
-    );
-  }
-
-  Widget _buildFacilityServices(BuildContext context) {
-    final List<Widget> cards = [];
-
-    if (permissions.canSeeModule(ModuleCatalog.library)) {
-      cards.add(
-        _buildActionCard(
-          title: 'Library System & Books',
-          description: 'Institutional library book catalog, lending desk, student borrowing and return tracking',
-          icon: Icons.local_library_outlined,
-          accentColor: const Color(0xFF9333EA),
-          badgeText: 'Library',
-          actions: [
-            _QuickActionChip(
-              label: 'Book Catalog',
-              onTap: () => onOpenModule(ModuleCatalog.library, 'catalog'),
-            ),
-            _QuickActionChip(
-              label: 'Lending Desk',
-              onTap: () => onOpenModule(ModuleCatalog.library, 'issues'),
-            ),
-            _QuickActionChip(
-              label: 'Announcements',
-              onTap: () => onOpenModule(ModuleCatalog.library, 'announcement'),
-            ),
-          ],
-          onTap: () => onOpenModule(ModuleCatalog.library),
-        ),
-      );
-    }
-
-    if (permissions.canSeeModule(ModuleCatalog.hostel)) {
-      cards.add(
-        _buildActionCard(
-          title: 'Hostel Operations',
-          description: 'Student residential blocks, room allotment, mess management and outpass records',
-          icon: Icons.apartment_rounded,
-          accentColor: const Color(0xFF64748B),
-          badgeText: 'Hostel',
-          actions: [
-            _QuickActionChip(
-              label: 'Room Allocations',
-              onTap: () => onOpenModule(ModuleCatalog.hostel, 'residency'),
-            ),
-            _QuickActionChip(
-              label: 'Mess Schedule',
-              onTap: () => onOpenModule(ModuleCatalog.hostel, 'mess'),
-            ),
-          ],
-          onTap: () => onOpenModule(ModuleCatalog.hostel),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        for (var i = 0; i < cards.length; i++) ...[
-          if (i > 0) const SizedBox(height: 10),
-          cards[i],
-        ],
-      ],
-    );
-  }
-
-  Widget _buildActionCard({
+  Widget _buildAppTile({
     required String title,
-    required String description,
+    required String tag,
     required IconData icon,
-    required Color accentColor,
-    required String badgeText,
-    required List<_QuickActionChip> actions,
+    required Color color,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Material(
-      color: Colors.white,
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(13),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.02),
@@ -1336,130 +1265,102 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    width: 42,
-                    height: 42,
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(
-                      color: accentColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(icon, color: accentColor, size: 22),
+                    child: Icon(icon, color: color, size: 20),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                title,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF1E293B),
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: accentColor.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                badgeText,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: accentColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          description,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF64748B),
-                            height: 1.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 4),
                   const Icon(
-                    Icons.chevron_right_rounded,
-                    color: Color(0xFFCBD5E1),
-                    size: 20,
+                    Icons.arrow_forward_rounded,
+                    size: 14,
+                    color: Color(0xFF94A3B8),
                   ),
                 ],
               ),
-              if (actions.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: actions,
-                ),
-              ],
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      letterSpacing: -0.2,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    tag,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ],
           ),
         ),
       ),
     );
   }
-}
 
-class _QuickActionChip extends StatelessWidget {
-  const _QuickActionChip({
-    required this.label,
-    required this.onTap,
-  });
+  Widget _buildSectionTitle(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFF1F5F9),
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF334155),
-                ),
-              ),
-              const SizedBox(width: 3),
-              const Icon(
-                Icons.arrow_forward_rounded,
-                size: 11,
-                color: Color(0xFF64748B),
-              ),
-            ],
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
           ),
+          child: Icon(icon, size: 16, color: color),
         ),
-      ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                letterSpacing: -0.1,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
