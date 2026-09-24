@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/media/media_scope.dart';
@@ -137,12 +138,20 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
   }
 
   Future<void> _edit(ManagedStudent student) async {
+    final availableDepts = (_students ?? const <ManagedStudent>[])
+        .map((s) => s.department.trim())
+        .where((d) => d.isNotEmpty)
+        .toSet()
+        .toList();
     final saved = await showModalBottomSheet<ManagedStudent>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (context) =>
-          _EditStudentSheet(student: student, repository: widget.repository),
+      builder: (context) => _EditStudentSheet(
+        student: student,
+        repository: widget.repository,
+        availableDepartments: availableDepts,
+      ),
     );
     if (saved == null || !mounted) return;
     setState(() {
@@ -773,6 +782,130 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
 }
 
 
+class ParsedDepartment {
+  const ParsedDepartment({required this.programme, required this.course});
+  final String programme;
+  final String course;
+}
+
+ParsedDepartment parseDepartmentAndProgramme(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) {
+    return const ParsedDepartment(
+      programme: 'B.Tech',
+      course: 'Artificial Intelligence & Data Science',
+    );
+  }
+
+  String prog = '';
+  String coursePart = trimmed;
+  if (trimmed.toLowerCase().contains(' in ')) {
+    final idx = trimmed.toLowerCase().indexOf(' in ');
+    prog = trimmed.substring(0, idx).trim();
+    coursePart = trimmed.substring(idx + 4).trim();
+  }
+
+  // Normalize programme
+  final progUpper = prog.toUpperCase().replaceAll('.', '').replaceAll(' ', '');
+  String normalizedProg;
+  if (progUpper == 'BE') {
+    normalizedProg = 'B.E';
+  } else if (progUpper == 'BTECH') {
+    normalizedProg = 'B.Tech';
+  } else if (progUpper == 'ME') {
+    normalizedProg = 'M.E';
+  } else if (progUpper == 'MTECH') {
+    normalizedProg = 'M.Tech';
+  } else if (progUpper == 'MBA') {
+    normalizedProg = 'MBA';
+  } else if (progUpper == 'MCA') {
+    normalizedProg = 'MCA';
+  } else {
+    normalizedProg = prog.isNotEmpty ? prog : '';
+  }
+
+  // Match coursePart against known courses or fuzzy match
+  final courseUpper = coursePart.toUpperCase();
+  String normalizedCourse;
+
+  if (courseUpper.contains('ARTIFICIAL INTELLIGENCE') &&
+      (courseUpper.contains('MACHINE') || courseUpper.contains('AIML'))) {
+    normalizedCourse =
+        'Computer Science & Engineering (Artificial Intelligence & Machine Learning)';
+    if (normalizedProg.isEmpty) normalizedProg = 'B.E';
+  } else if (courseUpper.contains('ARTIFICIAL INTELLIGENCE') ||
+      courseUpper.contains('DATA SCIENCE') ||
+      courseUpper.contains('AIDS')) {
+    normalizedCourse = 'Artificial Intelligence & Data Science';
+    if (normalizedProg.isEmpty) normalizedProg = 'B.Tech';
+  } else if (courseUpper.contains('CYBER')) {
+    normalizedCourse =
+        'Computer Science & Engineering (Cyber Security)';
+    if (normalizedProg.isEmpty) normalizedProg = 'B.E';
+  } else if (courseUpper.contains('BUSINESS') || courseUpper.contains('CSBS')) {
+    normalizedCourse = 'Computer Science & Business Systems';
+    if (normalizedProg.isEmpty) normalizedProg = 'B.E';
+  } else if (courseUpper.contains('INFORMATION') || courseUpper == 'IT') {
+    normalizedCourse = 'Information Technology';
+    if (normalizedProg.isEmpty) normalizedProg = 'B.Tech';
+  } else if (courseUpper.contains('COMPUTER SCIENCE') || courseUpper == 'CSE') {
+    normalizedCourse = 'Computer Science & Engineering';
+    if (normalizedProg.isEmpty) normalizedProg = 'B.E';
+  } else if (courseUpper.contains('ELECTRONICS & COMM') ||
+      courseUpper.contains('ELECTRONICS AND COMM') ||
+      courseUpper.contains('ECE')) {
+    normalizedCourse = 'Electronics & Communication Engineering';
+    if (normalizedProg.isEmpty) normalizedProg = 'B.E';
+  } else if (courseUpper.contains('ELECTRICAL') || courseUpper.contains('EEE')) {
+    normalizedCourse = 'Electrical & Electronics Engineering';
+    if (normalizedProg.isEmpty) normalizedProg = 'B.E';
+  } else if (courseUpper.contains('MECHANICAL')) {
+    normalizedCourse = 'Mechanical Engineering';
+    if (normalizedProg.isEmpty) normalizedProg = 'B.E';
+  } else if (courseUpper.contains('CIVIL')) {
+    normalizedCourse = 'Civil Engineering';
+    if (normalizedProg.isEmpty) normalizedProg = 'B.E';
+  } else {
+    normalizedCourse = coursePart;
+    if (normalizedProg.isEmpty) normalizedProg = 'B.E';
+  }
+
+  return ParsedDepartment(
+    programme: normalizedProg,
+    course: normalizedCourse,
+  );
+}
+
+String formatDepartment({required String programme, required String course}) {
+  final cleanProg = programme.trim();
+  final cleanCourse = course.trim();
+  if (cleanProg.isEmpty) return cleanCourse;
+  if (cleanCourse.isEmpty) return cleanProg;
+  return '$cleanProg in $cleanCourse';
+}
+
+String recommendProgrammeForCourse(String course, {String? current}) {
+  final c = course.toUpperCase();
+  if (c.contains('INFORMATION TECHNOLOGY') ||
+      c.contains('ARTIFICIAL INTELLIGENCE & DATA SCIENCE')) {
+    return 'B.Tech';
+  }
+  return 'B.E';
+}
+
+const _defaultStandardCourses = [
+  'Artificial Intelligence & Data Science',
+  'Computer Science & Engineering',
+  'Computer Science & Engineering (Artificial Intelligence & Machine Learning)',
+  'Computer Science & Engineering (Cyber Security)',
+  'Computer Science & Business Systems',
+  'Information Technology',
+  'Electronics & Communication Engineering',
+  'Electrical & Electronics Engineering',
+  'Mechanical Engineering',
+  'Civil Engineering',
+];
+
 class _StudentProfileSheet extends StatelessWidget {
   const _StudentProfileSheet({
     required this.student,
@@ -790,6 +923,7 @@ class _StudentProfileSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final parsedDept = parseDepartmentAndProgramme(student.department);
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       child: Column(
@@ -857,7 +991,8 @@ class _StudentProfileSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           _detailRow(Icons.pin_outlined, 'Roll number', student.rollNumber),
-          _detailRow(Icons.domain_outlined, 'Department', student.department),
+          _detailRow(Icons.school_outlined, 'Programme', parsedDept.programme),
+          _detailRow(Icons.domain_outlined, 'Department (Course)', parsedDept.course),
           _detailRow(Icons.calendar_today_outlined, 'Year of study', 'Year ${student.yearOfStudy}'),
           if (student.section != null && student.section!.isNotEmpty)
             _detailRow(Icons.class_outlined, 'Section', student.section!),
@@ -941,10 +1076,15 @@ class _StudentProfileSheet extends StatelessWidget {
 }
 
 class _EditStudentSheet extends StatefulWidget {
-  const _EditStudentSheet({required this.student, required this.repository});
+  const _EditStudentSheet({
+    required this.student,
+    required this.repository,
+    this.availableDepartments = const [],
+  });
 
   final ManagedStudent student;
   final AdminStudentRepository repository;
+  final List<String> availableDepartments;
 
   @override
   State<_EditStudentSheet> createState() => _EditStudentSheetState();
@@ -954,7 +1094,6 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _roll;
-  late final TextEditingController _department;
   late final TextEditingController _mobile;
   late final TextEditingController _email;
   late final TextEditingController _section;
@@ -964,6 +1103,10 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
   late int _year;
   late String _status;
   late ManagedStudentResidency _residency;
+  late String _selectedProgramme;
+  late String _selectedCourse;
+  late final List<String> _programmeOptions;
+  late final List<String> _courseOptions;
   bool _saving = false;
   String? _error;
 
@@ -973,7 +1116,6 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
     final student = widget.student;
     _name = TextEditingController(text: student.name);
     _roll = TextEditingController(text: student.rollNumber);
-    _department = TextEditingController(text: student.department);
     _mobile = TextEditingController(text: student.mobileNumber);
     _email = TextEditingController(text: student.email);
     _section = TextEditingController(text: student.section ?? '');
@@ -992,13 +1134,39 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
     };
     _status = statuses.contains(student.status) ? student.status : 'active';
     _residency = student.residency;
+
+    final parsed = parseDepartmentAndProgramme(student.department);
+    _selectedProgramme = parsed.programme;
+    _selectedCourse = parsed.course;
+
+    final progSet = <String>{
+      'B.E',
+      'B.Tech',
+      'M.E',
+      'M.Tech',
+      'MBA',
+      'MCA',
+      if (_selectedProgramme.isNotEmpty) _selectedProgramme,
+    };
+    _programmeOptions = progSet.toList()..sort();
+
+    final dynamicCourses = <String>{};
+    for (final raw in widget.availableDepartments) {
+      final p = parseDepartmentAndProgramme(raw);
+      if (p.course.isNotEmpty) dynamicCourses.add(p.course);
+    }
+    final courseSet = <String>{
+      ..._defaultStandardCourses,
+      ...dynamicCourses,
+      if (_selectedCourse.isNotEmpty) _selectedCourse,
+    };
+    _courseOptions = courseSet.toList()..sort();
   }
 
   @override
   void dispose() {
     _name.dispose();
     _roll.dispose();
-    _department.dispose();
     _mobile.dispose();
     _email.dispose();
     _section.dispose();
@@ -1018,11 +1186,15 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
       _error = null;
     });
     try {
+      final formattedDepartment = formatDepartment(
+        programme: _selectedProgramme,
+        course: _selectedCourse,
+      );
       final saved = await widget.repository.updateStudent(
         widget.student.copyWith(
           name: _name.text.trim(),
           rollNumber: _roll.text.trim(),
-          department: _department.text.trim(),
+          department: formattedDepartment,
           mobileNumber: _mobile.text.trim(),
           email: _email.text.trim().toLowerCase(),
           section: _section.text.trim(),
@@ -1103,11 +1275,85 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
                 decoration: const InputDecoration(labelText: 'Mobile number'),
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _department,
-                textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(labelText: 'Department'),
-                validator: _required,
+              DropdownButtonFormField<String>(
+                key: ValueKey('programme_$_selectedProgramme'),
+                initialValue: _programmeOptions.contains(_selectedProgramme)
+                    ? _selectedProgramme
+                    : _programmeOptions.first,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Programme (BE / B.Tech / etc.)',
+                  prefixIcon: Icon(Icons.school_outlined),
+                ),
+                items: [
+                  for (final p in _programmeOptions)
+                    DropdownMenuItem(value: p, child: Text(p)),
+                ],
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedProgramme = val);
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                key: ValueKey('course_$_selectedCourse'),
+                initialValue: _courseOptions.contains(_selectedCourse)
+                    ? _selectedCourse
+                    : _courseOptions.first,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Department (Course)',
+                  prefixIcon: Icon(Icons.domain_outlined),
+                ),
+                items: [
+                  for (final c in _courseOptions)
+                    DropdownMenuItem(
+                      value: c,
+                      child: Text(
+                        c,
+                        style: const TextStyle(fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _selectedCourse = val;
+                      _selectedProgramme = recommendProgrammeForCourse(
+                        val,
+                        current: _selectedProgramme,
+                      );
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.muted),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Saved as: ${formatDepartment(programme: _selectedProgramme, course: _selectedCourse)}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -1316,8 +1562,8 @@ class _AdminAnnouncementsPageState extends State<_AdminAnnouncementsPage> {
       heading: 'Publish campus announcement',
       submitLabel: 'Publish now',
       supportingText:
-          'This appears immediately on every account in your campus. Add a cover image to make the update easier to notice.',
-      coverImageOnly: true,
+          'This appears immediately on the Campus Wall for students and faculty. Attach a circular PDF or cover image.',
+      coverImageOnly: false,
     );
     if (draft == null) return;
     try {
@@ -1341,6 +1587,19 @@ class _AdminAnnouncementsPageState extends State<_AdminAnnouncementsPage> {
           context,
         ).showSnackBar(SnackBar(content: Text(error.toString())));
       }
+    }
+  }
+
+  Future<void> _openAttachment(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null &&
+        await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      return;
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open attachment.')),
+      );
     }
   }
 
@@ -1368,53 +1627,93 @@ class _AdminAnnouncementsPageState extends State<_AdminAnnouncementsPage> {
         : ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
             itemCount: _items.length,
-            itemBuilder: (context, index) => Card(
-              elevation: 0,
-              child: ListTile(
-                leading: _announcementHasImage(_items[index])
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.network(
-                          _items[index].attachmentUrl!,
-                          width: 52,
-                          height: 52,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const SizedBox.square(
-                            dimension: 52,
-                            child: Icon(Icons.broken_image_outlined),
+            itemBuilder: (context, index) {
+              final item = _items[index];
+              final hasImage = _announcementHasImage(item);
+              final hasPdf = _announcementHasPdf(item);
+              final hasAttachment = item.attachmentUrl != null;
+
+              return Card(
+                elevation: 0,
+                child: ListTile(
+                  onTap: hasAttachment ? () => _openAttachment(item.attachmentUrl!) : null,
+                  leading: hasImage
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            item.attachmentUrl!,
+                            width: 52,
+                            height: 52,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const SizedBox.square(
+                              dimension: 52,
+                              child: Icon(Icons.broken_image_outlined),
+                            ),
                           ),
-                        ),
-                      )
-                    : const Icon(Icons.campaign_outlined),
-                title: Text(_items[index].title),
-                subtitle: Text(
-                  '${_items[index].message}\n'
-                  '${_items[index].status.toUpperCase()} · ${_items[index].createdByName}',
+                        )
+                      : hasPdf
+                      ? Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.picture_as_pdf_rounded,
+                            color: Color(0xFFEF4444),
+                            size: 24,
+                          ),
+                        )
+                      : const Icon(Icons.campaign_outlined),
+                  title: Text(item.title),
+                  subtitle: Text(
+                    '${item.message}\n'
+                    '${item.status.toUpperCase()} · ${item.createdByName}'
+                    '${item.attachmentName != null ? ' · 📎 ${item.attachmentName}' : ''}',
+                  ),
+                  isThreeLine: true,
+                  trailing: item.status == 'pending'
+                      ? PopupMenuButton<String>(
+                          onSelected: (value) => _decide(item, value),
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(
+                              value: 'approved',
+                              child: Text('Approve'),
+                            ),
+                            PopupMenuItem(
+                              value: 'rejected',
+                              child: Text('Reject'),
+                            ),
+                          ],
+                        )
+                      : hasAttachment
+                      ? IconButton(
+                          tooltip: hasPdf ? 'Open PDF circular' : 'Open attachment',
+                          icon: Icon(
+                            hasPdf
+                                ? Icons.picture_as_pdf_outlined
+                                : Icons.open_in_new,
+                            color: hasPdf ? const Color(0xFFEF4444) : null,
+                          ),
+                          onPressed: () => _openAttachment(item.attachmentUrl!),
+                        )
+                      : null,
                 ),
-                isThreeLine: true,
-                trailing: _items[index].status == 'pending'
-                    ? PopupMenuButton<String>(
-                        onSelected: (value) => _decide(_items[index], value),
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(
-                            value: 'approved',
-                            child: Text('Approve'),
-                          ),
-                          PopupMenuItem(
-                            value: 'rejected',
-                            child: Text('Reject'),
-                          ),
-                        ],
-                      )
-                    : null,
-              ),
-            ),
+              );
+            },
           ),
   );
 }
 
 bool _announcementHasImage(LibraryAnnouncement item) {
   return isAnnouncementImageAttachment(item.attachmentName, item.attachmentUrl);
+}
+
+bool _announcementHasPdf(LibraryAnnouncement item) {
+  final name = (item.attachmentName ?? '').toLowerCase();
+  final url = (item.attachmentUrl ?? '').toLowerCase();
+  return name.endsWith('.pdf') || url.contains('.pdf');
 }
 
 class _AdminMaintenancePage extends StatefulWidget {

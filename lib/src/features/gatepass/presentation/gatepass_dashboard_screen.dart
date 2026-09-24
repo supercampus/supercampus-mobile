@@ -53,7 +53,6 @@ class GatepassDashboardScreen extends StatelessWidget {
                 title: 'Gatepass',
                 subtitle: '${store.student.residency.label} access',
                 leading: ModuleBackButton(onPressed: onExitModule),
-                trailing: ModuleHomeButton(onPressed: onExitModule),
               ),
               const SizedBox(height: 20),
               _CampusStatusCard(store: store, onRetry: onRetryLocation),

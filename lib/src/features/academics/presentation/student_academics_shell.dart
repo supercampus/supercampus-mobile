@@ -42,7 +42,6 @@ class StudentAcademicsShell extends StatefulWidget {
 class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
   final _attendanceKey = GlobalKey();
   final _marksKey = GlobalKey();
-  final _analysisKey = GlobalKey();
   List<StudentAssessment> _assessments = const [];
   bool _loadingAssessments = false;
   String? _assessmentError;
@@ -68,11 +67,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       setState(() => _showMarksResults = true);
       return;
     }
-    final key = switch (widget.initialAction) {
-      'analysis' => _analysisKey,
-      _ => _attendanceKey,
-    };
-    final target = key.currentContext;
+    final target = _attendanceKey.currentContext;
     if (target != null) {
       Scrollable.ensureVisible(target, duration: Duration.zero, alignment: 0);
     }
@@ -139,58 +134,69 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    appBar: AppBar(
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-      leading: ModuleBackButton(
-        onPressed: _showAttendanceHistory || _showMarksResults
-            ? () => setState(() {
-                _showAttendanceHistory = false;
-                _showMarksResults = false;
-              })
-            : widget.onExitModule,
-        color: Colors.black,
+  Widget build(BuildContext context) => PopScope(
+    canPop: !_showAttendanceHistory && !_showMarksResults,
+    onPopInvokedWithResult: (didPop, _) {
+      if (didPop) return;
+      if (_showAttendanceHistory || _showMarksResults) {
+        setState(() {
+          _showAttendanceHistory = false;
+          _showMarksResults = false;
+        });
+      }
+    },
+    child: Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        titleSpacing: 0,
+        leading: ModuleBackButton(
+          onPressed: _showAttendanceHistory || _showMarksResults
+              ? () => setState(() {
+                  _showAttendanceHistory = false;
+                  _showMarksResults = false;
+                })
+              : widget.onExitModule,
+          color: Colors.black,
+        ),
+        title: const Text(
+          'Academics',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+        ),
       ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Academics', style: TextStyle(fontWeight: FontWeight.w600)),
-          Text(
-            widget.session.displayName,
-            style: const TextStyle(fontSize: 11, color: Colors.black54),
-          ),
-        ],
-      ),
-    ),
-    body: _showAttendanceHistory
-        ? SingleChildScrollView(
-            key: const ValueKey('attendance-history-page'),
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 32),
-            child: _attendanceHistory(),
-          )
-        : _showMarksResults
-        ? SingleChildScrollView(
-            key: const ValueKey('marks-results-page'),
-            padding: const EdgeInsets.fromLTRB(18, 20, 18, 32),
-            child: _marks(),
-          )
-        : SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                KeyedSubtree(key: _attendanceKey, child: _attendance()),
-                const SizedBox(height: 10),
-                KeyedSubtree(key: _marksKey, child: _marksResultsLink()),
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 24),
-                KeyedSubtree(key: _analysisKey, child: _analysis()),
-              ],
+      body: _showAttendanceHistory
+          ? SingleChildScrollView(
+              key: const ValueKey('attendance-history-page'),
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 32),
+              child: _attendanceHistory(),
+            )
+          : _showMarksResults
+          ? SingleChildScrollView(
+              key: const ValueKey('marks-results-page'),
+              padding: const EdgeInsets.fromLTRB(18, 20, 18, 32),
+              child: _marks(),
+            )
+          : RefreshIndicator(
+              onRefresh: _refresh,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _timetableCard(),
+                    const SizedBox(height: 16),
+                    KeyedSubtree(key: _attendanceKey, child: _attendance()),
+                    const SizedBox(height: 16),
+                    _attendanceOverviewTable(),
+                    const SizedBox(height: 16),
+                    KeyedSubtree(key: _marksKey, child: _marksResultsLink()),
+                  ],
+                ),
+              ),
             ),
-          ),
+    ),
   );
 
   int _count(String key) => switch (_attendanceSummary?[key]) {
@@ -213,25 +219,21 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
   }
 
   void _openTimetable() {
-    if (widget.onOpenModule != null) {
-      widget.onOpenModule!(ModuleCatalog.timetable);
-    } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => TimetableShell(
-            session: widget.session,
-            scope: PermissionScope.own,
-            canConfigure: false,
-            onSignOut: () {},
-            onExitModule: () => Navigator.of(context).pop(),
-          ),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => TimetableShell(
+          session: widget.session,
+          scope: PermissionScope.own,
+          canConfigure: false,
+          onSignOut: () {},
+          onExitModule: () => Navigator.of(context).pop(),
         ),
-      );
-    }
+      ),
+    );
   }
 
   Widget _timetableCard() => Padding(
-    padding: const EdgeInsets.only(bottom: 20),
+    padding: EdgeInsets.zero,
     child: Material(
       color: Colors.white,
       shape: RoundedRectangleBorder(
@@ -338,17 +340,16 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
   Widget _attendance() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      _timetableCard(),
       const Text(
-        'Attendance overview',
-        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500),
+        'Attendance',
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
       ),
-      const SizedBox(height: 6),
+      const SizedBox(height: 4),
       const Text(
-        'Your attendance by subject',
-        style: TextStyle(color: AppColors.muted),
+        'Overall attendance status and calendar records',
+        style: TextStyle(color: AppColors.muted, fontSize: 13),
       ),
-      const SizedBox(height: 18),
+      const SizedBox(height: 14),
       if (_loadingAttendance && _attendanceSummary == null)
         const ThinkingOrbLoading(
           size: 96,
@@ -374,6 +375,251 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       ],
     ],
   );
+
+  int _countVal(Object? value) => switch (value) {
+    final int v => v,
+    final num v => v.round(),
+    _ => 0,
+  };
+
+  Widget _attendanceOverviewTable() {
+    final bySubjectRaw = _attendanceSummary?['bySubject'];
+    List<Map<String, dynamic>> subjectList = [];
+    if (bySubjectRaw is List && bySubjectRaw.isNotEmpty) {
+      subjectList = bySubjectRaw
+          .whereType<Map>()
+          .map((m) => m.map((k, v) => MapEntry(k.toString(), v)))
+          .toList();
+    } else {
+      final map = <String, Map<String, dynamic>>{};
+      for (final r in _attendanceRecords) {
+        final id = r['subjectOfferingId']?.toString() ??
+            r['subjectName']?.toString() ??
+            'other';
+        final entry = map.putIfAbsent(id, () => {
+          'subjectName': r['subjectName'] ?? 'Unknown Subject',
+          'subjectCode': r['subjectCode'] ?? '',
+          'totalClasses': 0,
+          'presentClasses': 0,
+          'absentClasses': 0,
+          'onDutyClasses': 0,
+        });
+        entry['totalClasses'] = (entry['totalClasses'] as int) + 1;
+        final status = r['status']?.toString();
+        if (status == 'present') {
+          entry['presentClasses'] = (entry['presentClasses'] as int) + 1;
+        } else if (status == 'absent') {
+          entry['absentClasses'] = (entry['absentClasses'] as int) + 1;
+        } else if (status == 'od') {
+          entry['onDutyClasses'] = (entry['onDutyClasses'] as int) + 1;
+        }
+      }
+      subjectList = map.values.toList();
+    }
+
+    if (subjectList.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Attendance Overview',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Subject-wise breakdown of attended and missed classes',
+          style: TextStyle(color: AppColors.muted, fontSize: 13),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFFE5E7EB), width: 1),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              Container(
+                color: const Color(0xFFF9FAFB),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: const Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: Text(
+                        'Subject',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF4B5563),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        'Total',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF4B5563),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        'Present',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF4B5563),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        'Absent',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF4B5563),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        'Att. %',
+                        textAlign: TextAlign.end,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF4B5563),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: subjectList.length,
+                separatorBuilder: (_, __) =>
+                    const Divider(height: 1, thickness: 1, color: Color(0xFFF3F4F6)),
+                itemBuilder: (context, index) {
+                  final s = subjectList[index];
+                  final total = _countVal(s['totalClasses']);
+                  final present =
+                      _countVal(s['presentClasses']) + _countVal(s['onDutyClasses']);
+                  final absent = _countVal(s['absentClasses']);
+                  final double pct = s['percentage'] != null
+                      ? _number(s['percentage'])
+                      : (total > 0 ? (present / total * 100) : 0.0);
+                  final isLow = pct < 75;
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 4,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                s['subjectName']?.toString() ?? 'Subject',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (s['subjectCode'] != null &&
+                                  s['subjectCode'].toString().isNotEmpty)
+                                Text(
+                                  s['subjectCode'].toString(),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.muted,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            '$total',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF374151),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            '$present',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF059669),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            '$absent',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: absent > 0
+                                  ? const Color(0xFFDC2626)
+                                  : const Color(0xFF6B7280),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            '${pct.round()}%',
+                            textAlign: TextAlign.end,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: isLow
+                                  ? const Color(0xFFDC2626)
+                                  : const Color(0xFF059669),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _attendanceHistoryLink() => Card(
     elevation: 0,
@@ -617,16 +863,6 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       final date = DateTime.tryParse(record['heldOn']?.toString() ?? '');
       return date != null && isSameDay(date, _selectedAttendanceDay);
     }).toList();
-    final dates = records
-        .map((record) => DateTime.tryParse(record['heldOn']?.toString() ?? ''))
-        .whereType<DateTime>()
-        .toList();
-    final earliest = dates.isEmpty
-        ? DateTime(DateTime.now().year - 1)
-        : dates.reduce((a, b) => a.isBefore(b) ? a : b);
-    final latest = dates.isEmpty
-        ? DateTime(DateTime.now().year + 1, 12, 31)
-        : dates.reduce((a, b) => a.isAfter(b) ? a : b);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1273,132 +1509,6 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
     ),
   );
 
-  double? get _resultAverage {
-    final published = _assessments.where(
-      (assessment) => assessment.maximumMarks > 0,
-    );
-    if (published.isEmpty) return null;
-    final obtained = published.fold<double>(
-      0,
-      (total, assessment) => total + assessment.marksObtained,
-    );
-    final maximum = published.fold<double>(
-      0,
-      (total, assessment) => total + assessment.maximumMarks,
-    );
-    return maximum == 0 ? null : obtained / maximum * 100;
-  }
-
-  double? get _attendancePercentage => _count('totalClasses') == 0
-      ? null
-      : _number(_attendanceSummary?['percentage']);
-
-  Widget _analysis() {
-    final attendance = _attendancePercentage;
-    final result = _resultAverage;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'Academic analysis',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 10),
-        Card(
-          elevation: 0,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _analysisMetric(
-                        Icons.fact_check_outlined,
-                        'Attendance',
-                        attendance == null ? '—' : '${_mark(attendance)}%',
-                        attendance != null && attendance < 75
-                            ? Colors.orange
-                            : Colors.green,
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 38,
-                      child: VerticalDivider(width: 24),
-                    ),
-                    Expanded(
-                      child: _analysisMetric(
-                        Icons.assessment_outlined,
-                        'Result average',
-                        result == null ? '—' : '${_mark(result)}%',
-                        const Color(0xFF4A4E9C),
-                      ),
-                    ),
-                  ],
-                ),
-                if (attendance != null && attendance < 75) ...[
-                  const Divider(height: 20),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.warning_amber_rounded,
-                        color: Colors.orange,
-                        size: 19,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Attendance is below the required 75%.',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _analysisMetric(
-    IconData icon,
-    String label,
-    String value,
-    Color color,
-  ) => Row(
-    children: [
-      Icon(icon, color: color, size: 21),
-      const SizedBox(width: 8),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11, color: AppColors.muted),
-            ),
-          ],
-        ),
-      ),
-    ],
-  );
 }
 
 enum _WeeklyAttendanceStatus { present, absent, onDuty }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/skeleton_loading.dart';
 import '../../authentication/data/auth_repository.dart';
@@ -324,7 +325,7 @@ class _GatepassShellState extends State<GatepassShell> {
       GatepassAccessScreen(store: store),
     ];
 
-    const titles = ['Gatepass', 'Requests', 'Visitors', 'Gate access'];
+    const titles = ['Gatepass', 'Pass history', 'Invite visitor', 'Recent movement'];
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -334,9 +335,15 @@ class _GatepassShellState extends State<GatepassShell> {
         appBar: _selectedIndex == 0
             ? null
             : AppBar(
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.ink,
+                elevation: 0,
+                surfaceTintColor: Colors.transparent,
                 leading: ModuleBackButton(onPressed: _handleBack),
-                title: Text(titles[_selectedIndex]),
-                actions: [ModuleHomeButton(onPressed: widget.onExitModule)],
+                title: Text(
+                  titles[_selectedIndex],
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+                ),
               ),
         body: IndexedStack(index: _selectedIndex, children: pages),
       ),

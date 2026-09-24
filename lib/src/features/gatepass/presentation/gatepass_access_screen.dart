@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
@@ -11,23 +10,137 @@ class GatepassAccessScreen extends StatelessWidget {
 
   final GatepassStore store;
 
+  void _showMovementDetails(
+    BuildContext context,
+    GateMovement movement,
+    List<GateMovement> allMovements,
+  ) {
+    String outTimeStr;
+    String inTimeStr;
+
+    if (movement.direction == MovementDirection.exit) {
+      outTimeStr = formatTime(movement.recordedAt);
+      final returns = allMovements
+          .where(
+            (m) =>
+                m.direction == MovementDirection.entry &&
+                m.recordedAt.isAfter(movement.recordedAt),
+          )
+          .toList()
+        ..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+      inTimeStr = returns.isNotEmpty
+          ? formatTime(returns.first.recordedAt)
+          : 'Pending return';
+    } else {
+      inTimeStr = formatTime(movement.recordedAt);
+      final departures = allMovements
+          .where(
+            (m) =>
+                m.direction == MovementDirection.exit &&
+                m.recordedAt.isBefore(movement.recordedAt),
+          )
+          .toList()
+        ..sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
+      outTimeStr = departures.isNotEmpty
+          ? formatTime(departures.first.recordedAt)
+          : 'Not recorded';
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Movement Details',
+                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Column(
+                  children: [
+                    _DetailRow(
+                      icon: Icons.logout_rounded,
+                      label: 'Out Time',
+                      value: outTimeStr,
+                      valueColor: AppColors.gateMagenta,
+                    ),
+                    const Divider(height: 20, color: Color(0xFFE5E7EB)),
+                    _DetailRow(
+                      icon: Icons.login_rounded,
+                      label: 'In Time',
+                      value: inTimeStr,
+                      valueColor: inTimeStr == 'Pending return'
+                          ? const Color(0xFFD97706)
+                          : const Color(0xFF059669),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Column(
+                  children: [
+                    _DetailRow(
+                      icon: Icons.calendar_today_outlined,
+                      label: 'Date',
+                      value: formatShortDate(movement.recordedAt),
+                    ),
+                    const Divider(height: 16, color: Color(0xFFF3F4F6)),
+                    _DetailRow(
+                      icon: Icons.meeting_room_outlined,
+                      label: 'Gate',
+                      value: movement.gate,
+                    ),
+                    const Divider(height: 16, color: Color(0xFFF3F4F6)),
+                    _DetailRow(
+                      icon: Icons.verified_outlined,
+                      label: 'Method',
+                      value: movement.method,
+                    ),
+                    const Divider(height: 16, color: Color(0xFFF3F4F6)),
+                    _DetailRow(
+                      icon: Icons.swap_horiz_rounded,
+                      label: 'Recorded Direction',
+                      value: movement.direction == MovementDirection.entry
+                          ? 'Campus Entry'
+                          : 'Campus Exit',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final approvedPasses =
-        store.requests
-            .where(
-              (request) =>
-                  request.status == ApprovalStatus.approved &&
-                  request.qrPayload?.isNotEmpty == true &&
-                  request.returnAt.isAfter(now),
-            )
-            .toList()
-          ..sort((left, right) => left.returnAt.compareTo(right.returnAt));
-    final approved = approvedPasses.firstOrNull;
-    final daily = store.dailyPass;
-    final pass = approved?.qrPayload ?? daily?.qrPayload;
-    final manualCode = approved?.manualCode ?? daily?.manualCode;
     return SafeArea(
       child: Center(
         child: ConstrainedBox(
@@ -36,95 +149,14 @@ class GatepassAccessScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
             children: [
               const GatepassPageHeader(
-                title: 'Campus access',
-                subtitle: 'Present this code at the gate',
+                title: 'Recent movement',
+                subtitle: 'Campus entry and exit logs',
               ),
               const SizedBox(height: 20),
-              if (pass == null)
-                _NoPassCard(zone: store.zone, reason: store.dailyPassIssue)
-              else
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF171719),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: QrImageView(
-                          data: pass,
-                          size: 210,
-                          eyeStyle: const QrEyeStyle(color: Color(0xFF171719)),
-                          dataModuleStyle: const QrDataModuleStyle(
-                            color: Color(0xFF171719),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        approved == null
-                            ? 'DAILY ACCESS'
-                            : approved.type.label.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        manualCode ?? '----',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 8,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Use this 6-digit code if the QR cannot be scanned',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                      const SizedBox(height: 10),
-                      const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.verified_user_outlined,
-                            color: AppColors.gateLime,
-                            size: 16,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'Server-verified gate QR',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 24),
-              Text(
-                'Movement history',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 10),
               GatepassSurface(
                 child: store.movements.isEmpty
                     ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 22),
+                        padding: EdgeInsets.symmetric(vertical: 32),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -143,12 +175,16 @@ class GatepassAccessScreen extends StatelessWidget {
                         children: store.movements
                             .map(
                               (movement) => ListTile(
+                                onTap: () => _showMovementDetails(
+                                  context,
+                                  movement,
+                                  store.movements,
+                                ),
                                 leading: Icon(
                                   movement.direction == MovementDirection.entry
                                       ? Icons.login
                                       : Icons.logout,
-                                  color:
-                                      movement.direction ==
+                                  color: movement.direction ==
                                           MovementDirection.entry
                                       ? const Color(0xFF087A4B)
                                       : AppColors.gateMagenta,
@@ -157,11 +193,31 @@ class GatepassAccessScreen extends StatelessWidget {
                                   movement.direction == MovementDirection.entry
                                       ? 'Entry'
                                       : 'Exit',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                                 subtitle: Text(
                                   '${formatShortDate(movement.recordedAt)} • ${movement.gate}',
                                 ),
-                                trailing: Text(formatTime(movement.recordedAt)),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      formatTime(movement.recordedAt),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    const Icon(
+                                      Icons.chevron_right_rounded,
+                                      size: 18,
+                                      color: Color(0xFFC7C7CC),
+                                    ),
+                                  ],
+                                ),
                               ),
                             )
                             .toList(),
@@ -175,70 +231,39 @@ class GatepassAccessScreen extends StatelessWidget {
   }
 }
 
-/// Shown in place of the QR when today's pass could not be activated.
-///
-/// The rest of the screen — movement history, the request list behind it —
-/// stays exactly where it was. Only the code itself is missing, so only the
-/// code's place says so.
-///
-/// Being outside the fence gets its own wording and its own icon. It is not a
-/// fault and there is nothing for the reader to fix: the pass issues itself
-/// when they arrive, and the screen is already watching for that.
-class _NoPassCard extends StatelessWidget {
-  const _NoPassCard({required this.zone, this.reason});
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
 
-  final CampusZone zone;
-  final String? reason;
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
-    final outside = zone == CampusZone.outside;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F0FF),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            outside ? Icons.location_off_outlined : Icons.qr_code_2_outlined,
-            size: 40,
-            color: AppColors.gateBlue,
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: AppColors.muted),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, color: AppColors.muted),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: valueColor ?? AppColors.ink,
           ),
-          const SizedBox(height: 12),
-          Text(
-            outside ? 'Outside campus' : 'No entry QR yet',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            reason ?? "Today's campus entry QR is not active yet.",
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.muted),
-          ),
-          if (outside) ...[
-            const SizedBox(height: 14),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                SizedBox(width: 10),
-                Flexible(
-                  child: Text(
-                    'Watching for the campus boundary',
-                    style: TextStyle(color: AppColors.muted, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

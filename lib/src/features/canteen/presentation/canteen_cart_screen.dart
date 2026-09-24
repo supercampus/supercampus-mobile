@@ -125,10 +125,7 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
-        backgroundColor: AppColors.ink,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
-        ),
+        backgroundColor: Colors.transparent,
         builder: (_) => OrderPickupSheet(
           order: result.order,
           onRefresh: widget.onRefresh,

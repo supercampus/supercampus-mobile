@@ -296,8 +296,6 @@ class AdminStudentRepository {
           'name': student.name.trim(),
           'rollNo': student.rollNumber.trim(),
           'department': student.department.trim(),
-          if (student.departmentId case final departmentId?)
-            'departmentId': departmentId,
           'mobileNumber': student.mobileNumber.trim(),
           'email': student.email.trim().toLowerCase(),
           'status': student.status,

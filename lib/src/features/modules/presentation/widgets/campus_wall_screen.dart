@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/access/module_catalog.dart';
 import '../../../../core/widgets/skeleton_loading.dart';
 import '../../../authentication/data/auth_repository.dart';
@@ -584,15 +585,28 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
                         ),
                       ),
                       TextButton.icon(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Viewing ${notice.attachmentName}...',
+                        onPressed: () async {
+                          final value = notice.attachmentUrl;
+                          if (value != null && value.isNotEmpty) {
+                            final uri = Uri.tryParse(value);
+                            if (uri != null &&
+                                await launchUrl(
+                                  uri,
+                                  mode: LaunchMode.externalApplication,
+                                )) {
+                              return;
+                            }
+                          }
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Viewing ${notice.attachmentName}...',
+                                ),
+                                behavior: SnackBarBehavior.floating,
                               ),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
+                            );
+                          }
                         },
                         icon: const Icon(Icons.open_in_new, size: 16),
                         label: const Text('Open'),
@@ -764,43 +778,62 @@ class _NoticeCard extends StatelessWidget {
                   ),
                 ),
 
-                // PDF Attachment pill if present
+                // PDF / Attachment pill if present
                 if (notice.attachmentName != null) ...[
                   const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF2C2C30)
-                          : const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.attachment_rounded,
-                          size: 14,
-                          color: Color(0xFF6B7280),
+                  Builder(
+                    builder: (context) {
+                      final isPdf = notice.attachmentName!.toLowerCase().endsWith('.pdf') ||
+                          (notice.attachmentUrl?.toLowerCase().contains('.pdf') ?? false);
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
                         ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            notice.attachmentName!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF4B5563),
+                        decoration: BoxDecoration(
+                          color: isPdf
+                              ? const Color(0xFFEF4444).withValues(alpha: isDark ? 0.18 : 0.08)
+                              : isDark
+                              ? const Color(0xFF2C2C30)
+                              : const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(8),
+                          border: isPdf
+                              ? Border.all(
+                                  color: const Color(0xFFEF4444).withValues(alpha: 0.25),
+                                )
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isPdf
+                                  ? Icons.picture_as_pdf_rounded
+                                  : Icons.attachment_rounded,
+                              size: 14,
+                              color: isPdf
+                                  ? const Color(0xFFEF4444)
+                                  : const Color(0xFF6B7280),
                             ),
-                          ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                notice.attachmentName!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: isPdf
+                                      ? (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C))
+                                      : const Color(0xFF4B5563),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ],
               ],

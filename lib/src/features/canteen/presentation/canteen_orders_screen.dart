@@ -1,12 +1,10 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../data/canteen_models.dart';
+import 'order_pickup_sheet.dart';
 import 'widgets/canteen_surface.dart';
-import 'widgets/order_delivered_view.dart';
 
 enum OrderFilter { active, history }
 
@@ -270,7 +268,7 @@ class _OrderCard extends StatelessWidget {
   }
 }
 
-class FullScreenOrderQrScreen extends StatefulWidget {
+class FullScreenOrderQrScreen extends StatelessWidget {
   const FullScreenOrderQrScreen({
     super.key,
     required this.order,
@@ -283,262 +281,13 @@ class FullScreenOrderQrScreen extends StatefulWidget {
   final CanteenOrder? Function()? latestOrderFinder;
 
   @override
-  State<FullScreenOrderQrScreen> createState() => _FullScreenOrderQrScreenState();
-}
-
-class _FullScreenOrderQrScreenState extends State<FullScreenOrderQrScreen> {
-  late CanteenOrder _order;
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _order = widget.order;
-    _startPolling();
-  }
-
-  void _startPolling() {
-    if (_order.status == CanteenOrderStatus.completed) return;
-    _timer = Timer.periodic(const Duration(milliseconds: 1500), (_) async {
-      if (!mounted) return;
-      if (widget.onRefresh != null) {
-        try {
-          await widget.onRefresh!();
-        } catch (_) {}
-      }
-      if (!mounted) return;
-      final latest = widget.latestOrderFinder?.call();
-      if (latest != null && latest.status != _order.status) {
-        setState(() {
-          _order = latest;
-        });
-        if (_order.status == CanteenOrderStatus.completed) {
-          _timer?.cancel();
-          _timer = null;
-        }
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (_order.status == CanteenOrderStatus.completed) {
-      return Scaffold(
-        backgroundColor: const Color(0xFF111014),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF111014),
-          foregroundColor: Colors.white,
-          title: Text('Order #${_order.displayId}'),
-          leading: IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close_rounded),
-            tooltip: 'Close',
-          ),
-        ),
-        body: SafeArea(
-          child: Center(
-            child: OrderDeliveredView(
-              order: _order,
-              onDone: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ),
-      );
-    }
-
-    final qrSize = (MediaQuery.sizeOf(context).width - 100).clamp(200.0, 320.0);
-    final isReady = _order.status == CanteenOrderStatus.ready;
-    final statusColor = switch (_order.status) {
-      CanteenOrderStatus.ready => AppColors.amber,
-      CanteenOrderStatus.completed => const Color(0xFF4ADE80),
-      CanteenOrderStatus.rejected || CanteenOrderStatus.cancelled => Colors.redAccent,
-      _ => const Color(0xFF93C5FD),
-    };
-
     return Scaffold(
-      backgroundColor: const Color(0xFF111014),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF111014),
-        foregroundColor: Colors.white,
-        title: Text('Order #${_order.displayId}'),
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.close_rounded),
-          tooltip: 'Close',
-        ),
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(
-                    isReady
-                        ? 'READY FOR PICKUP'
-                        : _order.status.label.toUpperCase(),
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black54,
-                        blurRadius: 20,
-                        offset: Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: QrImageView(
-                    data: _order.qrPayload ?? _order.id,
-                    size: qrSize,
-                    padding: EdgeInsets.zero,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                if (_order.tokenNumber != null) ...[
-                  const Text(
-                    'PICKUP TOKEN',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12,
-                      letterSpacing: 1.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${_order.tokenNumber}',
-                    style: const TextStyle(
-                      color: AppColors.amber,
-                      fontSize: 48,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                const Text(
-                  'Show this QR at the counter to collect your order.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 22),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E1C24),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (final line in _order.lines)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              Text(
-                                '${line.quantity}×',
-                                style: const TextStyle(
-                                  color: Color(0xFF93C5FD),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  line.item.name,
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              Text(
-                                formatCurrency(line.total),
-                                style: const TextStyle(color: Colors.white70),
-                              ),
-                            ],
-                          ),
-                        ),
-                      const Divider(color: Colors.white12, height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${_order.itemCount} item${_order.itemCount == 1 ? '' : 's'}',
-                            style: const TextStyle(color: Colors.white54),
-                          ),
-                          Text(
-                            formatCurrency(_order.total),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: isReady ? AppColors.amber : const Color(0xFF2A2832),
-                        foregroundColor: isReady ? AppColors.ink : Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text(
-                        'Done',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      backgroundColor: Colors.transparent,
+      body: OrderPickupSheet(
+        order: order,
+        onRefresh: onRefresh,
+        latestOrderFinder: latestOrderFinder,
       ),
     );
   }

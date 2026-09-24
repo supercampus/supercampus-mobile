@@ -95,4 +95,83 @@ void main() {
     expect(saved.status, 'approved');
     expect(saved.attachmentUrl, 'https://cdn.example.test/event.png');
   });
+
+  test('publishes a circular with PDF attachment', () async {
+    final repository = LibrarianRepository(
+      baseUrl: 'https://api.example.test',
+      accessTokenProvider: ({bool forceRefresh = false}) async => 'token',
+      client: MockClient((request) async {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['announcementType'], 'Circular');
+        expect(body['attachmentName'], 'exam-circular.pdf');
+        expect(body['attachmentUrl'], 'https://cdn.example.test/exam-circular.pdf');
+        return http.Response(
+          jsonEncode({
+            'data': {
+              'id': 'announcement-circular-1',
+              'announcementType': body['announcementType'],
+              'announcementDate': body['announcementDate'],
+              'title': body['title'],
+              'message': body['message'],
+              'status': 'approved',
+              'createdByName': 'Campus Admin',
+              'createdAt': '2026-09-24T08:00:00Z',
+              'attachmentName': body['attachmentName'],
+              'attachmentUrl': body['attachmentUrl'],
+            },
+          }),
+          201,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+
+    final saved = await repository.createAnnouncement(
+      type: 'Circular',
+      announcementDate: DateTime(2026, 9, 24),
+      title: 'Mid-term Exam Circular',
+      message: 'Official circular regarding semester exams schedule and guidelines.',
+      attachmentName: 'exam-circular.pdf',
+      attachmentUrl: 'https://cdn.example.test/exam-circular.pdf',
+    );
+
+    expect(saved.type, 'Circular');
+    expect(saved.attachmentName, 'exam-circular.pdf');
+    expect(saved.attachmentUrl, 'https://cdn.example.test/exam-circular.pdf');
+    expect(saved.status, 'approved');
+  });
+
+  test('surfaces actual backend error message on failure', () async {
+    final repository = LibrarianRepository(
+      baseUrl: 'https://api.example.test',
+      accessTokenProvider: ({bool forceRefresh = false}) async => 'token',
+      client: MockClient((request) async {
+        return http.Response(
+          jsonEncode({
+            'error': 'Enter an announcement type, date, title and description',
+            'code': 'bad_request',
+          }),
+          400,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+
+    expect(
+      () => repository.createAnnouncement(
+        type: 'Circular',
+        announcementDate: DateTime(2026, 9, 24),
+        title: '',
+        message: '',
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (e) => e.message,
+          'message',
+          'Enter an announcement type, date, title and description',
+        ),
+      ),
+    );
+  });
 }
+

@@ -31,9 +31,10 @@ class GatepassRequestsScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: PopupMenuButton<GatepassPassKind>(
+              GatepassPageHeader(
+                title: 'Pass history',
+                subtitle: 'Track your leave and outpass requests',
+                trailing: PopupMenuButton<GatepassPassKind>(
                   tooltip: 'Apply for a pass',
                   onSelected: (kind) => kind == GatepassPassKind.leavePass
                       ? onApplyLeavePass()
@@ -56,7 +57,7 @@ class GatepassRequestsScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 16),
               if (requests.isEmpty)
                 const GatepassSurface(
                   padding: EdgeInsets.symmetric(vertical: 42, horizontal: 20),

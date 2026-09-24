@@ -68,11 +68,29 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
       initialDate: initial,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 90)),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+            primary: AppColors.primary,
+            onPrimary: Colors.white,
+          ),
+        ),
+        child: child!,
+      ),
     );
     if (date == null || !mounted) return;
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(initial),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+            primary: AppColors.primary,
+            onPrimary: Colors.white,
+          ),
+        ),
+        child: child!,
+      ),
     );
     if (time == null || !mounted) return;
     final value = DateTime(
@@ -137,6 +155,10 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.ink,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -144,6 +166,7 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
               child: Text(
                 'Apply for ${widget.passKind.label.toLowerCase()}',
                 overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
               ),
             ),
             const SizedBox(width: 4),
@@ -224,7 +247,9 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
                       onChanged: (value) =>
                           setState(() => _type = value ?? _type),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
+                  ] else ...[
+                    const SizedBox(height: 14),
                   ],
                   Row(
                     children: [

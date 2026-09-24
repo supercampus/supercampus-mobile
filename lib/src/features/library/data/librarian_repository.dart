@@ -265,11 +265,16 @@ class LibrarianRepository {
         : jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final error = decoded['error'];
-      throw StateError(
-        error is Map && error['message'] is String
-            ? error['message'] as String
-            : 'Library request failed (${response.statusCode}).',
-      );
+      final message = error is Map && error['message'] is String
+          ? error['message'] as String
+          : error is String && error.trim().isNotEmpty
+              ? error.trim()
+              : decoded['message'] is String && (decoded['message'] as String).trim().isNotEmpty
+                  ? (decoded['message'] as String).trim()
+                  : response.body.trim().isNotEmpty
+                      ? response.body.trim()
+                      : 'Library request failed (${response.statusCode}).';
+      throw StateError(message);
     }
     final data = decoded['data'];
     return data is Map<String, dynamic> ? data : <String, dynamic>{};

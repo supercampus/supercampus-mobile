@@ -30,54 +30,57 @@ class StudentReportsPage extends StatelessWidget {
         isDark ? const Color(0xFF141416) : const Color(0xFFF7F7F9);
     final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
 
-    return Scaffold(
-      backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: true,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: Center(
-            child: Material(
-              color: isDark ? const Color(0xFF2A2A2E) : Colors.white,
-              shape: const CircleBorder(),
-              elevation: isDark ? 0 : 1,
-              shadowColor: Colors.black.withValues(alpha: 0.04),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: () => Navigator.of(context).pop(),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.chevron_left_rounded,
-                    color: textColor,
-                    size: 24,
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        backgroundColor: backgroundColor,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          centerTitle: true,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: Center(
+              child: Material(
+                color: isDark ? const Color(0xFF2A2A2E) : Colors.white,
+                shape: const CircleBorder(),
+                elevation: isDark ? 0 : 1,
+                shadowColor: Colors.black.withValues(alpha: 0.04),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.chevron_left_rounded,
+                      color: textColor,
+                      size: 24,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        title: Text(
-          'Reports & Analysis',
-          style: TextStyle(
-            color: textColor,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
+          title: Text(
+            'Reports & Analysis',
+            style: TextStyle(
+              color: textColor,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
-      ),
-      body: StudentReportsAnalyticsScreen(
-        session: session,
-        onOpenModule: onOpenModule,
-      ),
-      bottomNavigationBar: DashboardNavBar(
-        selectedId: 'analysis',
-        onSelect: (id) => _handleNavSelect(context, id),
+        body: StudentReportsAnalyticsScreen(
+          session: session,
+          onOpenModule: onOpenModule,
+        ),
+        bottomNavigationBar: DashboardNavBar(
+          selectedId: 'analysis',
+          onSelect: (id) => _handleNavSelect(context, id),
+        ),
       ),
     );
   }

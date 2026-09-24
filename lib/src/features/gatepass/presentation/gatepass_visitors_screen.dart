@@ -26,7 +26,7 @@ class GatepassVisitorsScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
             children: [
               GatepassPageHeader(
-                title: 'Visitors',
+                title: 'Invite visitor',
                 subtitle: 'Pre-schedule a campus visit',
                 trailing: IconButton.filled(
                   tooltip: 'Invite visitor',

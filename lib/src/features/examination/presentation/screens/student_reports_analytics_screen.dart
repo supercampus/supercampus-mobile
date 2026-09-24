@@ -13,8 +13,6 @@ import '../../../canteen/data/backend_canteen_repository.dart';
 import '../../../canteen/data/canteen_models.dart';
 import '../../../gatepass/data/backend_gatepass_repository.dart';
 import '../../../gatepass/data/gatepass_models.dart';
-import '../../../library/data/backend_library_repository.dart';
-import '../../../library/data/library_models.dart';
 
 class StudentReportsAnalyticsScreen extends StatefulWidget {
   const StudentReportsAnalyticsScreen({
@@ -49,12 +47,11 @@ class _StudentReportsAnalyticsScreenState
   Map<String, dynamic>? _attendanceSummary;
   CanteenStore? _canteenStore;
   GatepassStore? _gatepassStore;
-  List<LibraryVisitPass> _libraryBookings = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadOverallServicesData();
   }
 
@@ -121,25 +118,11 @@ class _StudentReportsAnalyticsScreenState
         debugPrint('Gatepass store load notice: $e');
       }
 
-      // 4. Library service
-      List<LibraryVisitPass> libraryBookings = [];
-      try {
-        final libraryRepo = BackendLibraryRepository(
-          baseUrl: _backendBaseUrl,
-          accessTokenProvider: ({bool forceRefresh = false}) async =>
-              token ?? '',
-        );
-        libraryBookings = await libraryRepo.loadBookings();
-      } catch (e) {
-        debugPrint('Library bookings load notice: $e');
-      }
-
       if (mounted) {
         setState(() {
           _attendanceSummary = attendance;
           _canteenStore = canteenStore;
           _gatepassStore = gatepassStore;
-          _libraryBookings = libraryBookings;
           _isLoading = false;
         });
       }
@@ -202,8 +185,6 @@ class _StudentReportsAnalyticsScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderCard(isMobile, isDark),
-                const SizedBox(height: 16),
                 _buildOverallServicesKpis(isMobile, isDark),
                 const SizedBox(height: 20),
                 _buildServiceNavigationTabs(isMobile, isDark),
@@ -217,120 +198,6 @@ class _StudentReportsAnalyticsScreenState
           ),
         );
       },
-    );
-  }
-
-  Widget _buildHeaderCard(bool isMobile, bool isDark) {
-    final session = widget.session;
-    final name = widget.isParent
-        ? '${session.displayName} (Ward)'
-        : session.displayName;
-    final rollNo = session.idNumber ?? 'Student';
-    final dept = session.departmentOrWard;
-    final sec = session.sectionId;
-
-    final subtitleParts = <String>[
-      'Roll: $rollNo',
-      if (dept != null && dept.isNotEmpty) dept,
-      if (sec != null && sec.isNotEmpty) 'Section $sec',
-    ];
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(isMobile ? 14 : 18),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF222226) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? const Color(0xFF2C2C30) : AppColors.border,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.0 : 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              _initialsOf(name),
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        name,
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : AppColors.ink,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Text(
-                        'Live Portal Services',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitleParts.join(' • '),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.muted,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: 'Refresh live data',
-            onPressed: _loadOverallServicesData,
-            icon: const Icon(Icons.refresh_rounded, size: 20),
-          ),
-        ],
-      ),
     );
   }
 
@@ -356,9 +223,6 @@ class _StudentReportsAnalyticsScreenState
     final approvedPasses =
         passes.where((r) => r.status == ApprovalStatus.approved).length;
 
-    // 4. Library calculation
-    final libraryBookingsCount = _libraryBookings.length;
-
     final kpis = [
       {
         'title': 'Attendance Rate',
@@ -383,14 +247,6 @@ class _StudentReportsAnalyticsScreenState
         'icon': Icons.badge_rounded,
         'color': const Color(0xFF0EA5E9),
         'moduleId': ModuleCatalog.gatepass,
-      },
-      {
-        'title': 'Library Bookings',
-        'value': '$libraryBookingsCount Bookings',
-        'sub': 'Reading hall reservations',
-        'icon': Icons.local_library_rounded,
-        'color': const Color(0xFF8B5CF6),
-        'moduleId': ModuleCatalog.library,
       },
     ];
 
@@ -422,82 +278,61 @@ class _StudentReportsAnalyticsScreenState
 
   Widget _buildKpiCard(Map<String, dynamic> item, bool isDark) {
     final color = item['color'] as Color;
-    final moduleId = item['moduleId'] as String?;
 
-    return Material(
-      color: isDark ? const Color(0xFF222226) : Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF222226) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        onTap: moduleId != null && widget.onOpenModule != null
-            ? () => widget.onOpenModule!(moduleId)
-            : null,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark ? const Color(0xFF2C2C30) : AppColors.border,
+        border: Border.all(
+          color: isDark ? const Color(0xFF2C2C30) : AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Icon(item['icon'] as IconData, color: color, size: 18),
           ),
-          child: Column(
+          const SizedBox(height: 6),
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(item['icon'] as IconData, color: color, size: 18),
-                  ),
-                  if (widget.onOpenModule != null)
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 11,
-                      color: isDark ? Colors.white38 : AppColors.muted,
-                    ),
-                ],
+              Text(
+                item['title'] as String,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.muted,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 6),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item['title'] as String,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.muted,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    item['value'] as String,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    item['sub'] as String,
-                    style: const TextStyle(fontSize: 10, color: AppColors.muted),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              const SizedBox(height: 2),
+              Text(
+                item['value'] as String,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                item['sub'] as String,
+                style: const TextStyle(fontSize: 10, color: AppColors.muted),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -532,7 +367,6 @@ class _StudentReportsAnalyticsScreenState
           Tab(text: 'Attendance'),
           Tab(text: 'Canteen & Wallet'),
           Tab(text: 'Gatepasses'),
-          Tab(text: 'Library Activity'),
         ],
       ),
     );
@@ -549,8 +383,6 @@ class _StudentReportsAnalyticsScreenState
             return _buildCanteenServiceSection(isMobile, isDark);
           case 2:
             return _buildGatepassServiceSection(isMobile, isDark);
-          case 3:
-            return _buildLibraryServiceSection(isMobile, isDark);
           default:
             return const SizedBox.shrink();
         }
@@ -1206,124 +1038,6 @@ class _StudentReportsAnalyticsScreenState
   }
 
   // -------------------------------------------------------------
-  // LIBRARY TAB
-  // -------------------------------------------------------------
-  Widget _buildLibraryServiceSection(bool isMobile, bool isDark) {
-    final bookings = _libraryBookings;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF222226) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark ? const Color(0xFF2C2C30) : AppColors.border,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Library Reading Room & Study Hall',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                  if (widget.onOpenModule != null)
-                    TextButton.icon(
-                      onPressed: () =>
-                          widget.onOpenModule!(ModuleCatalog.library),
-                      icon: const Icon(Icons.bookmark_add_rounded, size: 16),
-                      label: const Text('Reserve Slot'),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (bookings.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                    child: Text(
-                      'No reading hall reservations or slot bookings yet',
-                      style: TextStyle(fontSize: 13, color: AppColors.muted),
-                    ),
-                  ),
-                )
-              else
-                for (final b in bookings.take(6)) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.deepPurple.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.chair_alt_rounded,
-                            size: 18,
-                            color: Colors.deepPurple,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                b.zoneName,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                '${_formatDate(b.start)} · ${b.durationMinutes} mins (${_formatTime(b.start)} - ${_formatTime(b.end)})',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.muted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.deepPurple.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            b.status.name.toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.deepPurple,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1),
-                ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // -------------------------------------------------------------
   // REPORT EXPORT CARD
   // -------------------------------------------------------------
   Widget _buildExportReportsCard(BuildContext context, bool isDark) {
@@ -1433,7 +1147,6 @@ class _StudentReportsAnalyticsScreenState
     final walletBal = _walletBalance(_canteenStore);
     final totalOrders = _canteenStore?.orders.length ?? 0;
     final totalPasses = _gatepassStore?.requests.length ?? 0;
-    final libraryBookings = _libraryBookings.length;
 
     final rows = <List<String>>[
       ['Service', 'Metric', 'Value'],
@@ -1446,7 +1159,6 @@ class _StudentReportsAnalyticsScreenState
       ['Campus Canteen', 'Wallet Balance', 'INR ${walletBal.toStringAsFixed(2)}'],
       ['Campus Canteen', 'Total Orders Placed', '$totalOrders'],
       ['Campus Gatepass', 'Total Passes Generated', '$totalPasses'],
-      ['Library', 'Study Hall Bookings', '$libraryBookings'],
     ];
 
     final csv = rows
@@ -1548,23 +1260,8 @@ class _StudentReportsAnalyticsScreenState
     return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
   }
 
-  static String _formatTime(DateTime dt) {
-    final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final m = dt.minute.toString().padLeft(2, '0');
-    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
-    return '$h:$m $ampm';
-  }
-
   double _walletBalance(CanteenStore? store) {
     if (store == null || store.walletBalances.isEmpty) return 0.0;
     return store.walletBalances.values.fold(0.0, (sum, b) => sum + b);
-  }
-
-  String _initialsOf(String name) {
-    final parts =
-        name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    if (parts.isEmpty) return 'S';
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first[0] + parts.last[0]).toUpperCase();
   }
 }

@@ -167,6 +167,12 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
     return isAnnouncementImageAttachment(_attachmentName, _attachmentUrl);
   }
 
+  bool get _attachmentIsPdf {
+    final name = (_attachmentName ?? '').toLowerCase();
+    final url = (_attachmentUrl ?? '').toLowerCase();
+    return name.endsWith('.pdf') || url.contains('.pdf');
+  }
+
   bool _isImageName(String name) => const [
     '.jpg',
     '.jpeg',
@@ -178,6 +184,7 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
   @override
   Widget build(BuildContext context) {
     final mediaAvailable = MediaScope.maybeOf(context) != null;
+    final isCircular = _type.text.toLowerCase().contains('circular');
     return Padding(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -283,13 +290,35 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
               const SizedBox(height: 12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.add_photo_alternate_outlined),
-                title: Text(_attachmentName ?? 'Announcement image'),
+                leading: Icon(
+                  _attachmentIsPdf
+                      ? Icons.picture_as_pdf_outlined
+                      : _attachmentIsImage
+                      ? Icons.image_outlined
+                      : isCircular
+                      ? Icons.picture_as_pdf_outlined
+                      : Icons.attach_file_rounded,
+                  color: _attachmentIsPdf
+                      ? const Color(0xFFEF4444)
+                      : null,
+                ),
+                title: Text(
+                  _attachmentName ??
+                      (isCircular
+                          ? 'Circular document (PDF)'
+                          : widget.coverImageOnly
+                          ? 'Announcement cover image'
+                          : 'Attachment (PDF / Image)'),
+                ),
                 subtitle: Text(
                   _attachmentName == null
                       ? widget.coverImageOnly
                             ? 'Add and crop a JPG, PNG or WebP cover (optional)'
+                            : isCircular
+                            ? 'Upload a circular PDF or cover image (optional)'
                             : 'Add a JPG, PNG, WebP or PDF attachment (optional)'
+                      : _attachmentIsPdf
+                      ? 'Official PDF circular attached and ready'
                       : _attachmentIsImage
                       ? 'Cropped to 16:7 and ready to publish'
                       : 'Attachment uploaded and ready to publish',
@@ -299,30 +328,140 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
                         dimension: 22,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : IconButton(
-                        tooltip: 'Attach file',
-                        onPressed: mediaAvailable ? _attachFile : null,
-                        icon: Icon(
-                          _attachmentName == null
-                              ? Icons.upload_file_outlined
-                              : Icons.check_circle_outline,
-                        ),
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_attachmentName != null)
+                            IconButton(
+                              tooltip: 'Remove attachment',
+                              icon: const Icon(Icons.close, size: 20),
+                              onPressed: () => setState(() {
+                                _attachmentName = null;
+                                _attachmentUrl = null;
+                              }),
+                            ),
+                          IconButton(
+                            tooltip: _attachmentName == null
+                                ? (isCircular ? 'Upload circular PDF' : 'Attach file')
+                                : 'Change attachment',
+                            onPressed: mediaAvailable ? _attachFile : null,
+                            icon: Icon(
+                              _attachmentName == null
+                                  ? (isCircular
+                                      ? Icons.upload_file_outlined
+                                      : Icons.upload_file_outlined)
+                                  : Icons.edit_outlined,
+                            ),
+                          ),
+                        ],
                       ),
               ),
-              if (_attachmentIsImage && _attachmentUrl != null) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: AspectRatio(
-                    aspectRatio: 16 / 7,
-                    child: Image.network(
-                      _attachmentUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const ColoredBox(
-                        color: Color(0xFFF0EDF8),
-                        child: Center(child: Icon(Icons.broken_image_outlined)),
-                      ),
+              if (_attachmentIsPdf && _attachmentUrl != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFEF4444).withValues(alpha: 0.25),
                     ),
                   ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.picture_as_pdf_rounded,
+                          color: Color(0xFFEF4444),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _attachmentName ?? 'Circular document.pdf',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'Official PDF circular ready to publish',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFFB91C1C),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Remove PDF',
+                        icon: const Icon(Icons.close, size: 20),
+                        onPressed: () => setState(() {
+                          _attachmentName = null;
+                          _attachmentUrl = null;
+                        }),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (_attachmentIsImage && _attachmentUrl != null) ...[
+                Stack(
+                  alignment: Alignment.topRight,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 7,
+                        child: Image.network(
+                          _attachmentUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const ColoredBox(
+                            color: Color(0xFFF0EDF8),
+                            child: Center(
+                              child: Icon(Icons.broken_image_outlined),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: CircleAvatar(
+                        radius: 14,
+                        backgroundColor: Colors.black54,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          iconSize: 16,
+                          color: Colors.white,
+                          tooltip: 'Remove image',
+                          icon: const Icon(Icons.close),
+                          onPressed: () => setState(() {
+                            _attachmentName = null;
+                            _attachmentUrl = null;
+                          }),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
               ],

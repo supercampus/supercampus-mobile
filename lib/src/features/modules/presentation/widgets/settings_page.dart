@@ -1,8 +1,10 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/access/effective_permissions.dart';
 import '../../../../core/access/module_catalog.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/auth_repository.dart';
 import '../../../canteen/data/backend_canteen_repository.dart';
 import '../../../canteen/presentation/transaction_pin_sheet.dart';
@@ -37,6 +39,42 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  ThemeMode _currentThemeMode = ThemeMode.system;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentThemeMode();
+  }
+
+  Future<void> _loadCurrentThemeMode() async {
+    try {
+      final preferences = SharedPreferencesAsync();
+      final key =
+          'supercampus.theme.${widget.session.email.trim().toLowerCase()}';
+      final stored = await preferences.getString(key);
+      if (stored != null) {
+        final mode = ThemeMode.values.firstWhere(
+          (m) => m.name == stored,
+          orElse: () => ThemeMode.system,
+        );
+        if (mounted) {
+          setState(() => _currentThemeMode = mode);
+        }
+      }
+    } catch (_) {}
+  }
+
+  String _themeModeLabel(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return 'Light';
+      case ThemeMode.dark:
+        return 'Dark';
+      case ThemeMode.system:
+        return 'System';
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -92,67 +130,126 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
         children: [
-          // Profile card
+          // Profile card / Student identity bar
           _buildCard(
             color: cardColor,
             shadowColor: shadowColor,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: () => _openProfile(context),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: isDark ? const Color(0xFF323238) : const Color(0xFFEDEDF0),
-                      backgroundImage: widget.session.photoUrl != null &&
-                              widget.session.photoUrl!.isNotEmpty
-                          ? NetworkImage(widget.session.photoUrl!)
-                          : null,
-                      child: widget.session.photoUrl == null ||
-                              widget.session.photoUrl!.isEmpty
-                          ? Icon(Icons.person, color: mutedColor, size: 26)
-                          : null,
+            child: widget.session.role == UserRole.student
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: isDark
+                              ? const Color(0xFF323238)
+                              : const Color(0xFFEDEDF0),
+                          backgroundImage: widget.session.photoUrl != null &&
+                                  widget.session.photoUrl!.isNotEmpty
+                              ? NetworkImage(widget.session.photoUrl!)
+                              : null,
+                          child: widget.session.photoUrl == null ||
+                                  widget.session.photoUrl!.isEmpty
+                              ? Icon(Icons.person, color: mutedColor, size: 26)
+                              : null,
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.session.displayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                'Campus ID: ${widget.session.idNumber ?? 'Not assigned'}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: mutedColor,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () => _openProfile(context),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      child: Row(
                         children: [
-                          Text(
-                            widget.session.displayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: textColor,
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundColor: isDark
+                                ? const Color(0xFF323238)
+                                : const Color(0xFFEDEDF0),
+                            backgroundImage: widget.session.photoUrl != null &&
+                                    widget.session.photoUrl!.isNotEmpty
+                                ? NetworkImage(widget.session.photoUrl!)
+                                : null,
+                            child: widget.session.photoUrl == null ||
+                                    widget.session.photoUrl!.isEmpty
+                                ? Icon(Icons.person, color: mutedColor, size: 26)
+                                : null,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.session.displayName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: textColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  widget.session.departmentOrWard ??
+                                      widget.session.role.label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: mutedColor,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            widget.session.departmentOrWard ??
-                                widget.session.role.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: mutedColor,
-                            ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: const Color(0xFFC7C7CC),
+                            size: 22,
                           ),
                         ],
                       ),
                     ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: const Color(0xFFC7C7CC),
-                      size: 22,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
           ),
 
           const SizedBox(height: 22),
@@ -209,21 +306,34 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 _buildDivider(dividerColor),
                 _SettingsTile(
-                  icon: Icons.dark_mode_outlined,
-                  title: 'Dark mode',
+                  icon: Icons.palette_outlined,
+                  title: 'Appearance',
                   textColor: textColor,
                   isDark: isDark,
-                  trailing: Transform.scale(
-                    scale: 0.85,
-                    child: CupertinoSwitch(
-                      value: isDark,
-                      activeTrackColor: const Color(0xFF5E5CE6),
-                      onChanged: (val) {
-                        widget.onThemeModeChanged(
-                          val ? ThemeMode.dark : ThemeMode.light,
-                        );
-                      },
-                    ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _themeModeLabel(_currentThemeMode),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: mutedColor,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Color(0xFFC7C7CC),
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                  onTap: () => _openThemeSelector(
+                    context,
+                    isDark,
+                    textColor,
+                    mutedColor,
                   ),
                 ),
               ],
@@ -243,7 +353,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: 'About application',
                   textColor: textColor,
                   isDark: isDark,
-                  onTap: () => _openAbout(context, isDark, textColor, mutedColor),
+                  onTap: () =>
+                      _openAbout(context, isDark, textColor, mutedColor),
                 ),
                 _buildDivider(dividerColor),
                 _SettingsTile(
@@ -253,14 +364,82 @@ class _SettingsPageState extends State<SettingsPage> {
                   isDark: isDark,
                   onTap: () => openHelpdesk(context),
                 ),
+                if (widget.session.role != UserRole.student) ...[
+                  _buildDivider(dividerColor),
+                  _SettingsTile(
+                    icon: Icons.delete_outline_rounded,
+                    title: 'Deactivate my account',
+                    textColor: const Color(0xFFE53935),
+                    iconColor: const Color(0xFFE53935),
+                    isDark: isDark,
+                    onTap: () => _confirmDeactivate(context),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Group 3: Legal & Account Management
+          _buildCard(
+            color: cardColor,
+            shadowColor: shadowColor,
+            child: Column(
+              children: [
+                _SettingsTile(
+                  icon: Icons.privacy_tip_outlined,
+                  title: 'Privacy Policy',
+                  textColor: textColor,
+                  isDark: isDark,
+                  trailing: const Icon(
+                    Icons.open_in_new_rounded,
+                    color: Color(0xFFC7C7CC),
+                    size: 18,
+                  ),
+                  onTap: () => _openWebUrl('https://supercampus.ai/privacy'),
+                ),
                 _buildDivider(dividerColor),
                 _SettingsTile(
-                  icon: Icons.delete_outline_rounded,
-                  title: 'Deactivate my account',
-                  textColor: const Color(0xFFE53935),
-                  iconColor: const Color(0xFFE53935),
+                  icon: Icons.description_outlined,
+                  title: 'Terms & Conditions',
+                  textColor: textColor,
                   isDark: isDark,
-                  onTap: () => _confirmDeactivate(context),
+                  trailing: const Icon(
+                    Icons.open_in_new_rounded,
+                    color: Color(0xFFC7C7CC),
+                    size: 18,
+                  ),
+                  onTap: () => _openWebUrl('https://supercampus.ai/terms'),
+                ),
+                if (widget.session.role != UserRole.student) ...[
+                  _buildDivider(dividerColor),
+                  _SettingsTile(
+                    icon: Icons.person_remove_outlined,
+                    title: 'Delete Account (Web Request)',
+                    textColor: textColor,
+                    isDark: isDark,
+                    trailing: const Icon(
+                      Icons.open_in_new_rounded,
+                      color: Color(0xFFC7C7CC),
+                      size: 18,
+                    ),
+                    onTap: () =>
+                        _openWebUrl('https://supercampus.ai/delete-account'),
+                  ),
+                ],
+                _buildDivider(dividerColor),
+                _SettingsTile(
+                  icon: Icons.support_agent_rounded,
+                  title: 'Contact & Support',
+                  textColor: textColor,
+                  isDark: isDark,
+                  trailing: const Icon(
+                    Icons.open_in_new_rounded,
+                    color: Color(0xFFC7C7CC),
+                    size: 18,
+                  ),
+                  onTap: () => _openWebUrl('https://supercampus.ai/contact'),
                 ),
               ],
             ),
@@ -303,10 +482,137 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  void _openThemeSelector(
+    BuildContext context,
+    bool isDark,
+    Color textColor,
+    Color mutedColor,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF222226) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: Text(
+                    'Choose Theme',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildThemeOptionTile(
+                  title: 'Light',
+                  subtitle: 'Always use light theme',
+                  icon: Icons.light_mode_outlined,
+                  mode: ThemeMode.light,
+                  isDark: isDark,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+                _buildThemeOptionTile(
+                  title: 'Dark',
+                  subtitle: 'Always use dark theme',
+                  icon: Icons.dark_mode_outlined,
+                  mode: ThemeMode.dark,
+                  isDark: isDark,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+                _buildThemeOptionTile(
+                  title: 'System',
+                  subtitle: 'Follow device system preference',
+                  icon: Icons.brightness_auto_outlined,
+                  mode: ThemeMode.system,
+                  isDark: isDark,
+                  textColor: textColor,
+                  mutedColor: mutedColor,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildThemeOptionTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required ThemeMode mode,
+    required bool isDark,
+    required Color textColor,
+    required Color mutedColor,
+  }) {
+    final isSelected = _currentThemeMode == mode;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      leading: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : (isDark ? const Color(0xFF2C2C32) : const Color(0xFFF1F2F6)),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          icon,
+          color: isSelected ? AppColors.primary : textColor,
+          size: 20,
+        ),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          color: isSelected ? AppColors.primary : textColor,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(fontSize: 12, color: mutedColor),
+      ),
+      trailing: isSelected
+          ? Icon(
+              Icons.check_circle_rounded,
+              color: AppColors.primary,
+              size: 22,
+            )
+          : null,
+      onTap: () {
+        Navigator.of(context).pop();
+        setState(() => _currentThemeMode = mode);
+        widget.onThemeModeChanged(mode);
+      },
+    );
+  }
+
   void _openProfile(BuildContext context) {
     showHomeSheet(
       context: context,
-      title: 'Profile',
+      title: widget.session.role == UserRole.student
+          ? 'Profile Details'
+          : 'Profile',
       expand: true,
       child: ProfileSheet(
         session: widget.session,
@@ -478,6 +784,17 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _openWebUrl(String url) async {
+    final uri = Uri.parse(url);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {
+      // Ignored or handled gracefully
+    }
   }
 }
 
