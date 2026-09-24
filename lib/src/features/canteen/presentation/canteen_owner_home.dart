@@ -1031,12 +1031,18 @@ class _MenuItemDialogState extends State<_MenuItemDialog> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: SizedBox.square(
-                    dimension: 72,
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.border),
+                    ),
                     child: _imageBytes != null
-                        ? Image.memory(_imageBytes!, fit: BoxFit.cover)
+                        ? Image.memory(_imageBytes!, fit: BoxFit.contain)
                         : _imageUrl != null && _imageUrl!.isNotEmpty
-                        ? Image.network(_imageUrl!, fit: BoxFit.cover)
+                        ? Image.network(_imageUrl!, fit: BoxFit.contain)
                         : const ColoredBox(
                             color: Color(0xFFE9EDF5),
                             child: Icon(Icons.image_outlined),

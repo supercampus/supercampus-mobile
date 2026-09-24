@@ -23,9 +23,10 @@ class MenuItemArt extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: radius,
-      child: SizedBox(
+      child: Container(
         width: size,
         height: size,
+        color: const Color(0xFFF8FAFC),
         child: image == null || image.isEmpty
             ? _Fallback(store: item.store, size: size)
             : Image.network(
@@ -60,11 +61,15 @@ String menuItemThumbnailUrl(String raw, {int pixels = 256}) {
     return raw;
   }
   final bounded = pixels.clamp(64, 512);
+  final isPng = raw.toLowerCase().contains('.png');
+  final transform = isPng
+      ? 'c_fill,w_$bounded,h_$bounded/'
+      : 'c_fill,w_$bounded,h_$bounded,q_auto/';
   return uri
       .replace(
         path: uri.path.replaceFirst(
           '/image/upload/',
-          '/image/upload/c_fill,w_$bounded,h_$bounded,q_auto/',
+          '/image/upload/$transform',
         ),
       )
       .toString();

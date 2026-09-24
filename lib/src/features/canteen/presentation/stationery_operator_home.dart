@@ -655,14 +655,20 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
     children: [
       ClipRRect(
         borderRadius: BorderRadius.circular(10),
-        child: SizedBox.square(
-          dimension: 92,
+        child: Container(
+          width: 92,
+          height: 92,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.border),
+          ),
           child: _imageBytes != null
-              ? Image.memory(_imageBytes!, fit: BoxFit.cover)
+              ? Image.memory(_imageBytes!, fit: BoxFit.contain)
               : _imageUrl != null && _imageUrl!.isNotEmpty
               ? Image.network(
                   _imageUrl!,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   errorBuilder: (_, _, _) => _imagePlaceholder(),
                 )
               : _imagePlaceholder(),

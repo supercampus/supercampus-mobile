@@ -40,7 +40,7 @@ Future<PickedImage?> pickImageFile({String? dialogTitle}) async {
 
   final input = web.HTMLInputElement()
     ..type = 'file'
-    ..accept = 'image/*'
+    ..accept = 'image/*,.png,.jpg,.jpeg,.webp,.gif'
     ..style.position = 'absolute'
     ..style.bottom = '0'
     ..style.left = '0'
@@ -97,13 +97,49 @@ Future<PickedImage?> pickImageFile({String? dialogTitle}) async {
 }
 
 Future<PickedImage?> _processImageFile(web.File file) async {
-  // Try to transcode and optimize to JPEG via browser canvas
-  // This automatically handles iPhone HEIC photos and scales down huge images.
+  final rawName = file.name.isNotEmpty ? file.name : 'upload';
+  final dotIndex = rawName.lastIndexOf('.');
+  final baseName = dotIndex != -1 ? rawName.substring(0, dotIndex) : rawName;
+  final ext = dotIndex != -1 ? rawName.substring(dotIndex).toLowerCase() : '';
+  final mimeType = file.type.toLowerCase();
+
+  final isPng = ext == '.png' || mimeType == 'image/png';
+  final isWebp = ext == '.webp' || mimeType == 'image/webp';
+  final isGif = ext == '.gif' || mimeType == 'image/gif';
+  final isSvg = ext == '.svg' || mimeType == 'image/svg+xml';
+
+  // 1. Transparent image formats (PNG, WebP, GIF, SVG):
+  // Preserve transparency completely. Never transcode to JPEG as JPEG destroys alpha channels.
+  if (isPng || isWebp || isGif || isSvg) {
+    final rawBytes = await _readFileBytes(file);
+    if (rawBytes != null && rawBytes.isNotEmpty) {
+      if (rawBytes.length <= 10 * 1024 * 1024) {
+        final fileName = isPng
+            ? (ext == '.png' ? rawName : '$baseName.png')
+            : (isWebp
+                ? (ext == '.webp' ? rawName : '$baseName.webp')
+                : (isGif
+                    ? (ext == '.gif' ? rawName : '$baseName.gif')
+                    : rawName));
+        return PickedImage(bytes: rawBytes, name: fileName);
+      }
+
+      // If oversized for PNG (> 10MB), downscale using canvas and export as PNG (preserving alpha channel)
+      if (isPng) {
+        final convertedPng = await _convertImageToPng(file);
+        if (convertedPng != null && convertedPng.isNotEmpty) {
+          return PickedImage(bytes: convertedPng, name: '$baseName.png');
+        }
+      }
+
+      return PickedImage(bytes: rawBytes, name: rawName);
+    }
+  }
+
+  // 2. Photos, JPEG, HEIC, HEIF, camera captures:
+  // Transcode to JPEG and optimize via browser canvas.
   final convertedBytes = await _convertImageToJpeg(file);
   if (convertedBytes != null && convertedBytes.isNotEmpty) {
-    final rawName = file.name.isNotEmpty ? file.name : 'upload';
-    final dotIndex = rawName.lastIndexOf('.');
-    final baseName = dotIndex != -1 ? rawName.substring(0, dotIndex) : rawName;
     return PickedImage(bytes: convertedBytes, name: '$baseName.jpg');
   }
 
@@ -113,6 +149,63 @@ Future<PickedImage?> _processImageFile(web.File file) async {
 
   final fileName = file.name.isNotEmpty ? file.name : 'upload.jpg';
   return PickedImage(bytes: rawBytes, name: fileName);
+}
+
+Future<Uint8List?> _convertImageToPng(web.File file) async {
+  try {
+    final img = web.HTMLImageElement();
+    final url = web.URL.createObjectURL(file);
+    img.src = url;
+
+    final loaded = Completer<bool>();
+    img.addEventListener('load', ((web.Event _) => loaded.complete(true)).toJS);
+    img.addEventListener(
+      'error',
+      ((web.Event _) => loaded.complete(false)).toJS,
+    );
+
+    final ok = await loaded.future;
+    if (!ok) {
+      web.URL.revokeObjectURL(url);
+      return null;
+    }
+
+    int width = img.naturalWidth;
+    int height = img.naturalHeight;
+    if (width <= 0 || height <= 0) {
+      web.URL.revokeObjectURL(url);
+      return null;
+    }
+
+    const int maxDim = 1920;
+    if (width > maxDim || height > maxDim) {
+      if (width > height) {
+        height = (height * maxDim / width).round();
+        width = maxDim;
+      } else {
+        width = (width * maxDim / height).round();
+        height = maxDim;
+      }
+    }
+
+    final canvas = web.HTMLCanvasElement()
+      ..width = width
+      ..height = height;
+
+    final ctx = canvas.getContext('2d') as web.CanvasRenderingContext2D;
+    ctx.clearRect(0, 0, width.toDouble(), height.toDouble());
+    ctx.drawImage(img, 0, 0, width.toDouble(), height.toDouble());
+    web.URL.revokeObjectURL(url);
+
+    final dataUrl = canvas.toDataURL('image/png');
+    final commaIndex = dataUrl.indexOf(',');
+    if (commaIndex != -1) {
+      return base64Decode(dataUrl.substring(commaIndex + 1));
+    }
+  } catch (_) {
+    // If canvas conversion fails, fallback to raw bytes
+  }
+  return null;
 }
 
 Future<Uint8List?> _convertImageToJpeg(web.File file) async {
