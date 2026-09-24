@@ -150,6 +150,137 @@ class UserSession {
         roles.contains('superadmin');
   }
 
+  /// Whether the user is a Canteen Captain or food counter operator.
+  bool get isCaptain {
+    final roles = <String>{
+      roleKey,
+      ...roleIds,
+    }.map((r) => r.trim().toLowerCase()).toSet();
+    return roles.contains('captain') ||
+        roles.contains('canteen_captain') ||
+        roles.contains('canteen_operator');
+  }
+
+  /// Whether the user is an Accountant or Finance manager.
+  bool get isAccountant {
+    final roles = <String>{
+      roleKey,
+      ...roleIds,
+    }.map((r) => r.trim().toLowerCase()).toSet();
+    return roles.contains('accountant') ||
+        roles.contains('finance') ||
+        roles.contains('fee_manager') ||
+        roles.contains('accounts');
+  }
+
+  /// Whether the user is a Stationery Shop owner or operator.
+  bool get isStationeryOwner {
+    final roles = <String>{
+      roleKey,
+      ...roleIds,
+    }.map((r) => r.trim().toLowerCase()).toSet();
+    return roles.contains('stationery_operator') ||
+        roles.contains('stationery_owner') ||
+        roles.contains('stationery') ||
+        roles.contains('bookstore');
+  }
+
+  /// Convenient getter for the user's academic department
+  String? get department => departmentOrWard ?? departmentId;
+
+  /// Whether the user is an Academic Faculty member, Advisor, or HOD.
+  bool get isFaculty {
+    final roles = <String>{
+      roleKey,
+      ...roleIds,
+    }.map((r) => r.trim().toLowerCase()).toSet();
+    return role == UserRole.staff ||
+        roles.contains('faculty') ||
+        roles.contains('staff') ||
+        roles.contains('teacher') ||
+        roles.contains('professor') ||
+        roles.contains('class_advisor') ||
+        roles.contains('hod') ||
+        roles.contains('head_of_department');
+  }
+
+  /// Whether the user is campus Gate Security.
+  bool get isSecurityStaff {
+    final roles = <String>{
+      roleKey,
+      ...roleIds,
+    }.map((r) => r.trim().toLowerCase()).toSet();
+    return role == UserRole.security ||
+        roles.contains('security') ||
+        roles.contains('gate_security');
+  }
+
+  /// Whether the user is a Librarian.
+  bool get isLibrarian {
+    final roles = <String>{
+      roleKey,
+      ...roleIds,
+    }.map((r) => r.trim().toLowerCase()).toSet();
+    return roles.contains('librarian') ||
+        roles.contains('library') ||
+        roles.contains('library_manager');
+  }
+
+  /// Whether the user is a Hostel Warden.
+  bool get isHostelWarden {
+    final roles = <String>{
+      roleKey,
+      ...roleIds,
+    }.map((r) => r.trim().toLowerCase()).toSet();
+    return roles.contains('warden') ||
+        roles.contains('hostel_warden') ||
+        roles.contains('hostel');
+  }
+
+  /// High-visibility short role badge text for institutional portal headers.
+  String get roleBadgeText {
+    if (isAdmin) return 'ADMIN';
+    if (isCaptain) return 'CAPTAIN';
+    if (isAccountant) return 'ACCOUNTS';
+    if (isStationeryOwner) return 'STATIONERY';
+    final roles = <String>{
+      roleKey,
+      ...roleIds,
+    }.map((r) => r.trim().toLowerCase()).toSet();
+    if (roles.contains('hod') || roles.contains('head_of_department')) return 'HOD';
+    if (roles.contains('class_advisor')) return 'ADVISOR';
+    if (isFaculty) return 'FACULTY';
+    if (isSecurityStaff) return 'SECURITY';
+    if (isLibrarian) return 'LIBRARY';
+    if (isHostelWarden) return 'WARDEN';
+    if (isStudent) return 'STUDENT';
+    return 'STAFF';
+  }
+
+  /// Human-readable descriptive title for the user's role on campus.
+  String get roleDisplayTitle {
+    if (isAdmin) return 'Central Administration & Institutional Desk';
+    if (isCaptain) return 'Canteen Counter & Real-Time Orders';
+    if (isAccountant) return 'Campus Accounts & Student Wallets';
+    if (isStationeryOwner) return 'Stationery Store & Inventory';
+    final roles = <String>{
+      roleKey,
+      ...roleIds,
+    }.map((r) => r.trim().toLowerCase()).toSet();
+    if (roles.contains('hod') || roles.contains('head_of_department')) {
+      return 'Head of Department · Academic Operations';
+    }
+    if (roles.contains('class_advisor')) {
+      return 'Class Advisor · Student Mentoring & Roll';
+    }
+    if (isFaculty) return 'Academic Faculty & Teaching Desk';
+    if (isSecurityStaff) return 'Campus Gate Security & Access Control';
+    if (isLibrarian) return 'Central Library & Resources Desk';
+    if (isHostelWarden) return 'Hostel Administration & Student Residency';
+    if (isStudent) return 'Student Portal';
+    return 'Campus Operations & Staff Workspace';
+  }
+
   /// Generate mock JWT token with signed contextual claims payload
   static String generateMockJwt({
     required String email,

@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -187,20 +188,25 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       );
     }
 
-    if (widget.session.isAdmin) {
-      return AdminDashboardScreen(
-        session: widget.session,
-        permissions: widget.permissions,
-        onOpenModule: widget.onOpenModule,
-        onQuickAction: widget.onQuickAction,
-        onSignOut: widget.onSignOut,
-        onProfileTap: _openProfileSheet,
-        onAlertsTap: _openAlerts,
-        hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
-        onScan: widget.onScan,
-      );
-    }
+    // Clean, accessible, executive portal dashboard across all institutional roles:
+    // Captain, Accountant, Stationery Owner, Faculty, Security, Librarian, Warden, Admin, Staff.
+    return AdminDashboardScreen(
+      session: widget.session,
+      permissions: widget.permissions,
+      onOpenModule: widget.onOpenModule,
+      onQuickAction: widget.onQuickAction,
+      onSignOut: widget.onSignOut,
+      onProfileTap: _openProfileSheet,
+      onAlertsTap: _openAlerts,
+      hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
+      onScan: widget.onScan,
+      advisorStudentsSource: widget.advisorStudentsSource,
+      glance: _glance,
+      onOpenAttendanceClass: widget.onOpenAttendanceClass,
+    );
+  }
 
+  Widget _buildLegacyFeed(BuildContext context) {
     final modules = orderModules(
       portalModules(widget.session, widget.permissions),
       widget.moduleOrder,
