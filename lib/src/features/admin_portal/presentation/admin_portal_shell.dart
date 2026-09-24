@@ -20,18 +20,28 @@ class AdminPortalShell extends StatefulWidget {
     required this.libraryRepository,
     required this.studentRepository,
     required this.maintenanceRepository,
+    this.initialSection = 0,
+    this.onExitModule,
   });
 
   final LibrarianRepository libraryRepository;
   final AdminStudentRepository studentRepository;
   final MaintenanceRepository maintenanceRepository;
+  final int initialSection;
+  final VoidCallback? onExitModule;
 
   @override
   State<AdminPortalShell> createState() => _AdminPortalShellState();
 }
 
 class _AdminPortalShellState extends State<AdminPortalShell> {
-  var _selected = 0;
+  late int _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = widget.initialSection.clamp(0, 3);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +53,18 @@ class _AdminPortalShellState extends State<AdminPortalShell> {
     ];
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: widget.onExitModule != null
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: widget.onExitModule,
+                tooltip: 'Back to Admin Portal',
+              ),
+              title: const Text('Admin Console'),
+              centerTitle: false,
+              elevation: 0,
+            )
+          : null,
       body: SafeArea(
         child: Column(
           children: [

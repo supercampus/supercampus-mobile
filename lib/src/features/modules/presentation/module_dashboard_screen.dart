@@ -28,6 +28,7 @@ import 'widgets/dashboard_nav_bar.dart';
 import 'widgets/settings_page.dart';
 import 'widgets/campus_wall_screen.dart';
 import 'widgets/student_reports_page.dart';
+import '../../admin_portal/presentation/admin_dashboard_screen.dart';
 
 /// One portal for every user. The module list is a projection of
 /// [EffectivePermissions] over [ModuleCatalog] — there are no role checks in
@@ -183,6 +184,20 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
           selectedId: '',
           onSelect: _onNavSelect,
         ),
+      );
+    }
+
+    if (widget.session.isAdmin) {
+      return AdminDashboardScreen(
+        session: widget.session,
+        permissions: widget.permissions,
+        onOpenModule: widget.onOpenModule,
+        onQuickAction: widget.onQuickAction,
+        onSignOut: widget.onSignOut,
+        onProfileTap: _openProfileSheet,
+        onAlertsTap: _openAlerts,
+        hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
+        onScan: widget.onScan,
       );
     }
 

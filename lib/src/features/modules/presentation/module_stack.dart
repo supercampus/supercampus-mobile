@@ -245,20 +245,125 @@ _CardPalette _paletteFor(ModuleDescriptor module, EffectivePermissions perms) {
 }
 
 _CardPalette _paletteFromSeed(ModuleDescriptor module) {
-  // Module identity comes from composition and iconography. Colour is the
-  // product language shared by every tenant-facing card.
-  return _CardPalette(
-    from: const Color(0xFF4200FF),
-    to: const Color(0xFF9600FF),
-    hero: const Color(0xFF30258D),
-    plate: const Color(0xFF776CF5),
-    tiles: const [
-      Color(0xFF776CF5),
-      Color(0xFF594DE5),
-      Color(0xFF9600FF),
-      Color(0xFF4200FF),
-    ],
-  );
+  switch (module.id) {
+    case ModuleCatalog.administration:
+      return const _CardPalette(
+        from: Color(0xFF1E293B),
+        to: Color(0xFF334155),
+        hero: Color(0xFF0F172A),
+        plate: Color(0xFF475569),
+        tiles: [
+          Color(0xFF334155),
+          Color(0xFF475569),
+          Color(0xFF64748B),
+          Color(0xFF1E293B),
+        ],
+      );
+    case ModuleCatalog.examination:
+      return const _CardPalette(
+        from: Color(0xFF1E40AF),
+        to: Color(0xFF3B82F6),
+        hero: Color(0xFF172554),
+        plate: Color(0xFF2563EB),
+        tiles: [
+          Color(0xFF2563EB),
+          Color(0xFF3B82F6),
+          Color(0xFF60A5FA),
+          Color(0xFF1D4ED8),
+        ],
+      );
+    case ModuleCatalog.timetable:
+      return const _CardPalette(
+        from: Color(0xFF5B21B6),
+        to: Color(0xFF7C3AED),
+        hero: Color(0xFF4C1D95),
+        plate: Color(0xFF6D28D9),
+        tiles: [
+          Color(0xFF7C3AED),
+          Color(0xFF8B5CF6),
+          Color(0xFF6D28D9),
+          Color(0xFF5B21B6),
+        ],
+      );
+    case ModuleCatalog.canteen:
+      return const _CardPalette(
+        from: Color(0xFF9A3412),
+        to: Color(0xFFC2410C),
+        hero: Color(0xFF7C2D12),
+        plate: Color(0xFFEA580C),
+        tiles: [
+          Color(0xFFEA580C),
+          Color(0xFFF97316),
+          Color(0xFFC2410C),
+          Color(0xFF9A3412),
+        ],
+      );
+    case ModuleCatalog.tuitionFee:
+      return const _CardPalette(
+        from: Color(0xFF0F766E),
+        to: Color(0xFF0D9488),
+        hero: Color(0xFF134E4A),
+        plate: Color(0xFF14B8A6),
+        tiles: [
+          Color(0xFF0D9488),
+          Color(0xFF14B8A6),
+          Color(0xFF2DD4BF),
+          Color(0xFF0F766E),
+        ],
+      );
+    case ModuleCatalog.library:
+      return const _CardPalette(
+        from: Color(0xFF6B21A8),
+        to: Color(0xFF9333EA),
+        hero: Color(0xFF581C87),
+        plate: Color(0xFF7E22CE),
+        tiles: [
+          Color(0xFF9333EA),
+          Color(0xFFA855F7),
+          Color(0xFF7E22CE),
+          Color(0xFF6B21A8),
+        ],
+      );
+    case ModuleCatalog.hostel:
+      return const _CardPalette(
+        from: Color(0xFF334155),
+        to: Color(0xFF475569),
+        hero: Color(0xFF1E293B),
+        plate: Color(0xFF64748B),
+        tiles: [
+          Color(0xFF475569),
+          Color(0xFF64748B),
+          Color(0xFF334155),
+          Color(0xFF1E293B),
+        ],
+      );
+    case ModuleCatalog.academics:
+      return const _CardPalette(
+        from: Color(0xFF1E3A8A),
+        to: Color(0xFF1D4ED8),
+        hero: Color(0xFF172554),
+        plate: Color(0xFF2563EB),
+        tiles: [
+          Color(0xFF2563EB),
+          Color(0xFF3B82F6),
+          Color(0xFF1D4ED8),
+          Color(0xFF1E3A8A),
+        ],
+      );
+    default:
+      return const _CardPalette(
+        from: Color(0xFF2563EB),
+        to: Color(0xFF4F46E5),
+        hero: Color(0xFF1E40AF),
+        plate: Color(0xFF3B82F6),
+        tiles: [
+          Color(0xFF3B82F6),
+          Color(0xFF4F46E5),
+          Color(0xFF6366F1),
+          Color(0xFF2563EB),
+        ],
+      );
+  }
 }
 
 /// The mark colours on the attendance strip, off 13.png.

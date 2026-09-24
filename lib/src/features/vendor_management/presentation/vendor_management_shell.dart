@@ -655,11 +655,11 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
               category: s.category,
               isActive: s.isActive,
               isOpen: s.isOpen,
-              ordersToday: s.shopKey == 'mec-canteen' ? 268 : 5,
-              revenueToday: s.shopKey == 'mec-canteen' ? 16420.0 : 250.0,
-              totalOrders: s.shopKey == 'mec-canteen' ? 41200 : 800,
-              totalRevenue: s.shopKey == 'mec-canteen' ? 2580000.0 : 42000.0,
-              activeOrders: s.shopKey == 'mec-canteen' ? 4 : 1,
+              ordersToday: 0,
+              revenueToday: 0.0,
+              totalOrders: 0,
+              totalRevenue: 0.0,
+              activeOrders: 0,
             )).toList();
 
     final currentTimeStr = DateFormat('hh:mm:ss a').format(DateTime.now()).toLowerCase();
@@ -928,57 +928,73 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  // Progress meter
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: SizedBox(
-                      height: 14,
-                      child: Row(
+                  Builder(
+                    builder: (context) {
+                      final ordersPct = (data.paymentSplit['ordersPercentage'] as num?)?.toDouble() ?? 100.0;
+                      final adhocPct = (data.paymentSplit['adhocPercentage'] as num?)?.toDouble() ?? 0.0;
+                      final ordersFlex = ordersPct > 0 ? ordersPct.round().clamp(1, 100) : (adhocPct > 0 ? 0 : 100);
+                      final adhocFlex = adhocPct > 0 ? adhocPct.round().clamp(1, 100) : 0;
+                      final foodRev = (kpi.revenue * (ordersPct / 100.0)).round();
+                      final qrRev = (kpi.revenue * (adhocPct / 100.0)).round();
+
+                      return Column(
                         children: [
-                          Expanded(
-                            flex: 96,
-                            child: Container(color: const Color(0xFF059669)),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: SizedBox(
+                              height: 14,
+                              child: Row(
+                                children: [
+                                  if (ordersFlex > 0)
+                                    Expanded(
+                                      flex: ordersFlex,
+                                      child: Container(color: const Color(0xFF059669)),
+                                    ),
+                                  if (adhocFlex > 0)
+                                    Expanded(
+                                      flex: adhocFlex,
+                                      child: Container(color: const Color(0xFF7C3AED)),
+                                    ),
+                                ],
+                              ),
+                            ),
                           ),
-                          Expanded(
-                            flex: 4,
-                            child: Container(color: const Color(0xFF7C3AED)),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF059669),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Food Orders (${ordersPct.toStringAsFixed(0)}%): ₹${_formatIndianNumber(foodRev)}',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF7C3AED),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'QR Payments (${adhocPct.toStringAsFixed(0)}%): ₹${_formatIndianNumber(qrRev)}',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                              ),
+                            ],
                           ),
                         ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF059669),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'Food Orders (96%): ₹${_formatIndianNumber((kpi.revenue * 0.96).round())}',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF7C3AED),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'QR Payments (4%): ₹${_formatIndianNumber((kpi.revenue * 0.04).round())}',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -1026,63 +1042,82 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: SizedBox(
-                      height: 12,
-                      child: Row(
+                  Builder(
+                    builder: (context) {
+                      final completedPct = (data.orderStatusDistribution['completed'] as num?)?.toDouble() ?? 100.0;
+                      final cancelledPct = (data.orderStatusDistribution['cancelled'] as num?)?.toDouble() ?? 0.0;
+                      final completedFlex = completedPct > 0 ? completedPct.round().clamp(1, 100) : (cancelledPct > 0 ? 0 : 100);
+                      final cancelledFlex = cancelledPct > 0 ? cancelledPct.round().clamp(1, 100) : 0;
+                      final completedCount = kpi.platformOrders > 0
+                          ? ((kpi.platformOrders * (completedPct / 100.0)).round()).clamp(0, kpi.platformOrders)
+                          : 0;
+                      final cancelledCount = (kpi.platformOrders - completedCount).clamp(0, kpi.platformOrders);
+
+                      return Column(
                         children: [
-                          Expanded(
-                            flex: 99,
-                            child: Container(color: const Color(0xFF10B981)),
-                          ),
-                          Expanded(
-                            flex: 1,
-                            child: Container(color: const Color(0xFFEF4444)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF10B981),
-                              shape: BoxShape.circle,
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: SizedBox(
+                              height: 12,
+                              child: Row(
+                                children: [
+                                  if (completedFlex > 0)
+                                    Expanded(
+                                      flex: completedFlex,
+                                      child: Container(color: const Color(0xFF10B981)),
+                                    ),
+                                  if (cancelledFlex > 0)
+                                    Expanded(
+                                      flex: cancelledFlex,
+                                      child: Container(color: const Color(0xFFEF4444)),
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Completed: ${_formatIndianNumber((kpi.platformOrders * 0.99).round())} (99%)',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                          const SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF10B981),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Completed: ${_formatIndianNumber(completedCount)} (${completedPct.toStringAsFixed(0)}%)',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFEF4444),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Cancelled: ${_formatIndianNumber(cancelledCount)} (${cancelledPct.toStringAsFixed(0)}%)',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ],
-                      ),
-                      Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFEF4444),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Cancelled: ${_formatIndianNumber((kpi.platformOrders * 0.01).round())} (1%)',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                          ),
-                        ],
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ],
               ),

@@ -133,6 +133,23 @@ class UserSession {
         roles.contains('student');
   }
 
+  /// Whether the user has system or portal administrative authority.
+  bool get isAdmin {
+    final lowerEmail = email.trim().toLowerCase();
+    final roles = <String>{
+      roleKey,
+      ...roleIds,
+    }.map((r) => r.trim().toLowerCase()).toSet();
+
+    return role == UserRole.admin ||
+        activePortalFamily == PortalFamily.admin ||
+        lowerEmail.startsWith('admin@') ||
+        lowerEmail == 'admin@mec.local' ||
+        roles.contains('admin') ||
+        roles.contains('administrator') ||
+        roles.contains('superadmin');
+  }
+
   /// Generate mock JWT token with signed contextual claims payload
   static String generateMockJwt({
     required String email,

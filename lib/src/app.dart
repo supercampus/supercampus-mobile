@@ -1153,6 +1153,13 @@ class _SupercampusAppState extends State<SupercampusApp>
 
     final module = switch (resolvedModuleId) {
       ModuleCatalog.administration => AdminPortalShell(
+        initialSection: switch (_openModuleAction) {
+          'students' => 1,
+          'announcements' => 2,
+          'maintenance' => 3,
+          _ => 0,
+        },
+        onExitModule: exit,
         maintenanceRepository: _maintenanceRepository,
         libraryRepository: LibrarianRepository(
           baseUrl: _resolvedBackendBaseUrl,
