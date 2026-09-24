@@ -73,3 +73,62 @@ List<StudentYearGroup<T>> groupStudentsByYear<T>(
       StudentYearGroup(year: year, students: grouped[year]!),
   ];
 }
+
+class StudentDepartmentGroup<T> {
+  const StudentDepartmentGroup({
+    required this.department,
+    required this.students,
+  });
+
+  final String department;
+  final List<T> students;
+
+  String get label {
+    final trimmed = department.trim();
+    return trimmed.isEmpty ? 'General / Unassigned' : trimmed;
+  }
+}
+
+class StudentYearDepartmentGroup<T> {
+  const StudentYearDepartmentGroup({
+    required this.year,
+    required this.departments,
+    required this.students,
+  });
+
+  final int? year;
+  final List<StudentDepartmentGroup<T>> departments;
+  final List<T> students;
+
+  String get label => studentYearLabel(year);
+}
+
+List<StudentYearDepartmentGroup<T>> groupStudentsByYearAndDepartment<T>(
+  Iterable<T> students, {
+  required int? Function(T student) yearOf,
+  required String Function(T student) departmentOf,
+}) {
+  final yearGroups = groupStudentsByYear(students, yearOf);
+  return [
+    for (final yearGroup in yearGroups) ...[
+      () {
+        final deptMap = <String, List<T>>{};
+        for (final student in yearGroup.students) {
+          final dept = departmentOf(student).trim();
+          deptMap.putIfAbsent(dept.isEmpty ? 'General' : dept, () => <T>[]).add(student);
+        }
+        final sortedDepts = deptMap.keys.toList()..sort();
+        final deptGroups = [
+          for (final dept in sortedDepts)
+            StudentDepartmentGroup(department: dept, students: deptMap[dept]!),
+        ];
+        return StudentYearDepartmentGroup(
+          year: yearGroup.year,
+          departments: deptGroups,
+          students: yearGroup.students,
+        );
+      }(),
+    ],
+  ];
+}
+

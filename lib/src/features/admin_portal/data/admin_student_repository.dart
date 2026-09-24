@@ -111,6 +111,7 @@ class ManagedTenantUser {
     required this.roles,
     required this.active,
     this.yearOfStudy,
+    this.department,
   });
 
   final String id;
@@ -119,6 +120,7 @@ class ManagedTenantUser {
   final List<ManagedUserRole> roles;
   final bool active;
   final int? yearOfStudy;
+  final String? department;
 }
 
 class AdminStudentRepository {
@@ -355,6 +357,7 @@ class AdminStudentRepository {
     email: value['email']?.toString() ?? '',
     active: value['active'] != false,
     yearOfStudy: parseStudentYear(value['yearOfStudy'] ?? value['year']),
+    department: value['department']?.toString(),
     roles: (value['roles'] as List? ?? const [])
         .whereType<Map<String, dynamic>>()
         .map(_role)

@@ -157,6 +157,9 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
   }
 
   ManagedStudentResidency? _residencyFilter;
+  int? _selectedYear;
+  String? _selectedDepartment;
+
 
   void _showStudentProfile(ManagedStudent student) {
     showModalBottomSheet<void>(
@@ -202,20 +205,52 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final query = _query.trim().toLowerCase();
     final allStudents = _students ?? const <ManagedStudent>[];
-    final rows = allStudents
-        .where(
-          (student) =>
-              (_residencyFilter == null || student.residency == _residencyFilter) &&
-              (query.isEmpty ||
-                  '${student.name} ${student.rollNumber} ${student.department} ${student.email} ${student.mobileNumber} ${student.section ?? ''}'
-                      .toLowerCase()
-                      .contains(query)),
-        )
-        .toList();
-    final groups = groupStudentsByYear(rows, (student) => student.yearOfStudy);
+
+    final distinctYears = allStudents
+        .map((s) => s.yearOfStudy ?? 2)
+        .toSet()
+        .toList()
+      ..sort();
+
+    final distinctDepartments = allStudents
+        .map((s) => s.department.trim())
+        .where((d) => d.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+
+    final rows = allStudents.where((student) {
+      if (_residencyFilter != null && student.residency != _residencyFilter) {
+        return false;
+      }
+      if (_selectedYear != null && (student.yearOfStudy ?? 2) != _selectedYear) {
+        return false;
+      }
+      if (_selectedDepartment != null &&
+          student.department.trim().toLowerCase() !=
+              _selectedDepartment!.trim().toLowerCase()) {
+        return false;
+      }
+      if (query.isNotEmpty) {
+        final content =
+            '${student.name} ${student.rollNumber} ${student.department} ${student.email} ${student.mobileNumber} ${student.section ?? ''}'
+                .toLowerCase();
+        if (!content.contains(query)) return false;
+      }
+      return true;
+    }).toList();
+
+    final groups = groupStudentsByYearAndDepartment(
+      rows,
+      yearOf: (student) => student.yearOfStudy,
+      departmentOf: (student) => student.department,
+    );
 
     final totalDayScholars = allStudents
         .where((s) => s.residency == ManagedStudentResidency.dayScholar)
@@ -223,6 +258,11 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
     final totalHostellers = allStudents
         .where((s) => s.residency == ManagedStudentResidency.hosteller)
         .length;
+
+    final hasActiveFilter = _selectedYear != null ||
+        _selectedDepartment != null ||
+        _residencyFilter != null ||
+        query.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -243,12 +283,118 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
             child: TextField(
               onChanged: (value) => setState(() => _query = value),
               decoration: const InputDecoration(
-                hintText: 'Search students',
+                hintText: 'Search by name, roll, dept or email',
                 prefixIcon: Icon(Icons.search_rounded),
               ),
             ),
           ),
-          if (_students != null)
+          if (_students != null) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHighest.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.outlineVariant),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int?>(
+                          value: _selectedYear,
+                          isExpanded: true,
+                          icon: const Icon(Icons.arrow_drop_down_rounded),
+                          hint: const Row(
+                            children: [
+                              Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.muted),
+                              SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'All Years',
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          items: [
+                            DropdownMenuItem<int?>(
+                              value: null,
+                              child: Text(
+                                'All Years (${allStudents.length})',
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            for (final year in distinctYears)
+                              DropdownMenuItem<int?>(
+                                value: year,
+                                child: Text(
+                                  '${studentYearLabel(year)} (${allStudents.where((s) => (s.yearOfStudy ?? 2) == year).length})',
+                                  style: const TextStyle(fontSize: 13),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                          ],
+                          onChanged: (val) => setState(() => _selectedYear = val),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHighest.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colors.outlineVariant),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String?>(
+                          value: _selectedDepartment,
+                          isExpanded: true,
+                          icon: const Icon(Icons.arrow_drop_down_rounded),
+                          hint: const Row(
+                            children: [
+                              Icon(Icons.apartment_outlined, size: 14, color: AppColors.muted),
+                              SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'All Depts',
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          items: [
+                            DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text(
+                                'All Departments (${allStudents.length})',
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            for (final dept in distinctDepartments)
+                              DropdownMenuItem<String?>(
+                                value: dept,
+                                child: Text(
+                                  '$dept (${allStudents.where((s) => s.department.trim().toLowerCase() == dept.toLowerCase()).length})',
+                                  style: const TextStyle(fontSize: 13),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                          ],
+                          onChanged: (val) => setState(() => _selectedDepartment = val),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -281,13 +427,27 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                           : null,
                     ),
                   ),
+                  if (hasActiveFilter) ...[
+                    const SizedBox(width: 8),
+                    ActionChip(
+                      avatar: const Icon(Icons.clear_all_rounded, size: 16),
+                      label: const Text('Reset filters'),
+                      onPressed: () => setState(() {
+                        _selectedYear = null;
+                        _selectedDepartment = null;
+                        _residencyFilter = null;
+                        _query = '';
+                      }),
+                    ),
+                  ],
                 ],
               ),
             ),
+          ],
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
-              'Tap any student card for profile details. Edit identity, residency, and contacts.',
+              'Select Year and Department dropdowns to filter. Tap dropdown sections to expand/collapse.',
               style: TextStyle(color: AppColors.muted, fontSize: 12),
             ),
           ),
@@ -303,203 +463,153 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                 : _students == null
                 ? const Center(child: CircularProgressIndicator())
                 : rows.isEmpty
-                ? const Center(child: Text('No students match your filter'))
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.people_outline_rounded, size: 48, color: AppColors.muted),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'No students match your filter',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        if (hasActiveFilter) ...[
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: () => setState(() {
+                              _selectedYear = null;
+                              _selectedDepartment = null;
+                              _residencyFilter = null;
+                              _query = '';
+                            }),
+                            icon: const Icon(Icons.clear_all_rounded),
+                            label: const Text('Clear all filters'),
+                          ),
+                        ],
+                      ],
+                    ),
+                  )
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
                     children: [
-                      for (final group in groups) ...[
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(2, 10, 2, 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                      for (final yearGroup in groups) ...[
+                        Card(
+                          elevation: 0,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(color: colors.outlineVariant),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Theme(
+                            data: theme.copyWith(dividerColor: Colors.transparent),
+                            child: ExpansionTile(
+                              key: PageStorageKey('year_${yearGroup.year}'),
+                              initiallyExpanded: true,
+                              leading: CircleAvatar(
+                                radius: 17,
+                                backgroundColor: colors.primaryContainer,
+                                foregroundColor: colors.onPrimaryContainer,
+                                child: const Icon(Icons.school_outlined, size: 17),
+                              ),
+                              title: Row(
                                 children: [
-                                  Text(
-                                    group.label,
-                                    style: Theme.of(context).textTheme.titleSmall
-                                        ?.copyWith(fontWeight: FontWeight.w800),
+                                  Expanded(
+                                    child: Text(
+                                      yearGroup.label,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14.5,
+                                      ),
+                                    ),
                                   ),
-                                  const Spacer(),
-                                  Text(
-                                    '${group.students.length} students',
-                                    style: Theme.of(context).textTheme.labelMedium
-                                        ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: colors.primaryContainer.withValues(alpha: 0.6),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      '${yearGroup.students.length}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: colors.primary,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${group.students.where((s) => s.residency == ManagedStudentResidency.dayScholar).length} Day Scholars · '
-                                '${group.students.where((s) => s.residency == ManagedStudentResidency.hosteller).length} Hostellers',
-                                style: const TextStyle(
-                                  color: AppColors.muted,
-                                  fontSize: 11,
-                                ),
+                              subtitle: Text(
+                                '${yearGroup.students.where((s) => s.residency == ManagedStudentResidency.dayScholar).length} Day Scholars · '
+                                '${yearGroup.students.where((s) => s.residency == ManagedStudentResidency.hosteller).length} Hostellers',
+                                style: const TextStyle(color: AppColors.muted, fontSize: 11),
                               ),
-                            ],
-                          ),
-                        ),
-                        for (final student in group.students)
-                          Card(
-                            elevation: 0,
-                            margin: const EdgeInsets.only(bottom: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(
-                                color: Theme.of(context).colorScheme.outlineVariant,
-                              ),
-                            ),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(16),
-                              onTap: () => _showStudentProfile(student),
-                              child: Padding(
-                                padding: const EdgeInsets.all(14),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 20,
-                                          backgroundColor: Theme.of(context)
-                                              .colorScheme
-                                              .primaryContainer,
-                                          child: Text(
-                                            student.name.isNotEmpty
-                                                ? student.name.substring(0, 1).toUpperCase()
-                                                : 'S',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onPrimaryContainer,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                student.name,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w800,
-                                                  fontSize: 15,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                '${student.rollNumber} • ${student.department}',
-                                                style: const TextStyle(
-                                                  color: AppColors.muted,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        IconButton(
-                                          tooltip: 'Edit student',
-                                          onPressed: _savingId == null
-                                              ? () => _edit(student)
-                                              : null,
-                                          icon: const Icon(Icons.edit_outlined),
-                                        ),
-                                      ],
-                                    ),
-                                    if ((student.section ?? '').isNotEmpty ||
-                                        student.email.isNotEmpty) ...[
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        [
-                                          if ((student.section ?? '').isNotEmpty)
-                                            'Section ${student.section}',
-                                          if (student.email.isNotEmpty)
-                                            student.email,
-                                        ].join(' • '),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: AppColors.muted,
-                                          fontSize: 12,
+                              childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                              children: [
+                                for (final deptGroup in yearGroup.departments) ...[
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8, bottom: 4),
+                                    child: Card(
+                                      elevation: 0,
+                                      color: colors.surfaceContainerHighest.withValues(alpha: 0.25),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(
+                                          color: colors.outlineVariant.withValues(alpha: 0.6),
                                         ),
                                       ),
-                                    ],
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 3,
+                                      clipBehavior: Clip.antiAlias,
+                                      child: Theme(
+                                        data: theme.copyWith(dividerColor: Colors.transparent),
+                                        child: ExpansionTile(
+                                          key: PageStorageKey(
+                                            'year_${yearGroup.year}_dept_${deptGroup.department}',
                                           ),
-                                          decoration: BoxDecoration(
-                                            color: student.residency ==
-                                                    ManagedStudentResidency.dayScholar
-                                                ? Colors.teal.withValues(alpha: 0.12)
-                                                : Colors.indigo.withValues(alpha: 0.12),
-                                            borderRadius: BorderRadius.circular(12),
+                                          initiallyExpanded: true,
+                                          leading: const Icon(
+                                            Icons.apartment_outlined,
+                                            size: 18,
+                                            color: AppColors.primary,
                                           ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                student.residency ==
-                                                        ManagedStudentResidency.dayScholar
-                                                    ? Icons.directions_bus_outlined
-                                                    : Icons.apartment_outlined,
-                                                size: 13,
-                                                color: student.residency ==
-                                                        ManagedStudentResidency.dayScholar
-                                                    ? Colors.teal
-                                                    : Colors.indigo,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                student.residency.label,
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: student.residency ==
-                                                          ManagedStudentResidency.dayScholar
-                                                      ? Colors.teal
-                                                      : Colors.indigo,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        TextButton.icon(
-                                          style: TextButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
+                                          title: Text(
+                                            deptGroup.label,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 13.5,
                                             ),
-                                            visualDensity: VisualDensity.compact,
                                           ),
-                                          onPressed: () => _showStudentProfile(student),
-                                          icon: const Icon(Icons.badge_outlined, size: 16),
-                                          label: const Text('View profile'),
+                                          trailing: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 7,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: colors.surfaceContainerHighest,
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              '${deptGroup.students.length} students',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                          childrenPadding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                                          children: [
+                                            for (final student in deptGroup.students)
+                                              _buildStudentCard(student),
+                                          ],
                                         ),
-                                      ],
+                                      ),
                                     ),
-                                    if (_savingId == student.id) ...[
-                                      const SizedBox(height: 8),
-                                      const LinearProgressIndicator(minHeight: 2),
-                                    ],
-                                  ],
-                                ),
-                              ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
+                        ),
                       ],
                     ],
                   ),
@@ -508,7 +618,160 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
       ),
     );
   }
+
+  Widget _buildStudentCard(ManagedStudent student) {
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _showStudentProfile(student),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor:
+                        Theme.of(context).colorScheme.primaryContainer,
+                    child: Text(
+                      student.name.isNotEmpty
+                          ? student.name.substring(0, 1).toUpperCase()
+                          : 'S',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color:
+                            Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          student.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${student.rollNumber} • ${student.department}',
+                          style: const TextStyle(
+                            color: AppColors.muted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Edit student',
+                    onPressed: _savingId == null ? () => _edit(student) : null,
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
+                ],
+              ),
+              if ((student.section ?? '').isNotEmpty ||
+                  student.email.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  [
+                    if ((student.section ?? '').isNotEmpty)
+                      'Section ${student.section}',
+                    if (student.email.isNotEmpty) student.email,
+                  ].join(' • '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: student.residency ==
+                              ManagedStudentResidency.dayScholar
+                          ? Colors.teal.withValues(alpha: 0.12)
+                          : Colors.indigo.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          student.residency ==
+                                  ManagedStudentResidency.dayScholar
+                              ? Icons.directions_bus_outlined
+                              : Icons.apartment_outlined,
+                          size: 13,
+                          color: student.residency ==
+                                  ManagedStudentResidency.dayScholar
+                              ? Colors.teal
+                              : Colors.indigo,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          student.residency.label,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: student.residency ==
+                                    ManagedStudentResidency.dayScholar
+                                ? Colors.teal
+                                : Colors.indigo,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    onPressed: () => _showStudentProfile(student),
+                    icon: const Icon(Icons.badge_outlined, size: 16),
+                    label: const Text('View profile'),
+                  ),
+                ],
+              ),
+              if (_savingId == student.id) ...[
+                const SizedBox(height: 8),
+                const LinearProgressIndicator(minHeight: 2),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
+
 
 class _StudentProfileSheet extends StatelessWidget {
   const _StudentProfileSheet({

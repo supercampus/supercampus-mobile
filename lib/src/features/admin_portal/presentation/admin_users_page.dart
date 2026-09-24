@@ -179,9 +179,10 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     final otherUsers = users
         .where((user) => !user.roles.any((role) => role.key == 'student'))
         .toList();
-    final studentGroups = groupStudentsByYear(
+    final studentGroups = groupStudentsByYearAndDepartment(
       studentUsers,
-      (user) => user.yearOfStudy,
+      yearOf: (user) => user.yearOfStudy,
+      departmentOf: (user) => user.department ?? '',
     );
 
     return Scaffold(
@@ -299,17 +300,48 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                               label: group.label,
                               count: group.students.length,
                             ),
-                            for (final user in group.students)
+                            for (final deptGroup in group.departments) ...[
                               Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: _UserCard(
-                                  user: user,
-                                  onOpenProfile: () => _showUserProfile(user),
-                                  onEditUser: () => _editUser(user),
-                                  onEditRoles: () => _editRoles(user),
-                                  onChangePassword: () => _changePassword(user),
+                                padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.apartment_outlined,
+                                      size: 14,
+                                      color: AppColors.muted,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      deptGroup.label,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.muted,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      '${deptGroup.students.length}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.muted,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
+                              for (final user in deptGroup.students)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: _UserCard(
+                                    user: user,
+                                    onOpenProfile: () => _showUserProfile(user),
+                                    onEditUser: () => _editUser(user),
+                                    onEditRoles: () => _editRoles(user),
+                                    onChangePassword: () => _changePassword(user),
+                                  ),
+                                ),
+                            ],
                           ],
                           if (otherUsers.isNotEmpty) ...[
                             _UserSectionHeader(
