@@ -9,7 +9,7 @@ import '../../authentication/data/auth_repository.dart';
 import '../../modules/presentation/today_glance.dart';
 import '../../modules/presentation/widgets/home_sheets.dart';
 
-/// High-productivity, executive-grade command dashboard for campus administrators and staff.
+/// Clean, high-productivity Bento Grid dashboard for campus administrators and staff.
 ///
 /// Designed for daily, multi-hour use:
 /// - Fast Bento Grid app launcher (zero walls of text)
@@ -86,7 +86,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   String _primaryModuleId() {
-    if (session.isAdmin) return ModuleCatalog.administration;
+    if (session.isAdmin) return ModuleCatalog.canteen;
     if (session.isCaptain) return ModuleCatalog.canteen;
     if (session.isAccountant) return ModuleCatalog.canteen;
     if (session.isStationeryOwner) return ModuleCatalog.canteen;
@@ -94,14 +94,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     if (session.isLibrarian) return ModuleCatalog.library;
     if (session.isHostelWarden) return ModuleCatalog.hostel;
     if (session.isFaculty) return ModuleCatalog.attendance;
-    return ModuleCatalog.administration;
-  }
-
-  String _timeGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    return ModuleCatalog.canteen;
   }
 
   @override
@@ -122,19 +115,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ListView(
                     padding: EdgeInsets.fromLTRB(
                       16,
-                      12,
+                      14,
                       16,
                       CampusNavBar.heightFor(context) +
                           MediaQuery.paddingOf(context).bottom +
                           30,
                     ),
                     children: [
-                      _buildHeroPulseBanner(context),
-                      const SizedBox(height: 14),
                       _buildQuickActionShortcuts(context),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       _buildKpiBentoGrid(context),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 18),
                       if (session.isAdmin) ...[
                         _buildCategoryFilterBar(context),
                         const SizedBox(height: 14),
@@ -322,108 +313,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   // ===========================================================================
-  // 2. HERO PULSE BANNER
-  // ===========================================================================
-  Widget _buildHeroPulseBanner(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final displayName = session.displayName.isNotEmpty
-        ? session.displayName
-        : session.roleBadgeText;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-              : [Colors.white, const Color(0xFFF8FAFC)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${_timeGreeting()}, $displayName',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      session.roleDisplayTitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.25),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF10B981),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    const Text(
-                      'Live & Healthy',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF059669),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ===========================================================================
-  // 3. FAST ACTION SHORTCUTS BAR
+  // 2. FAST ACTION SHORTCUTS BAR
   // ===========================================================================
   Widget _buildQuickActionShortcuts(BuildContext context) {
     final List<Widget> shortcuts = [];
@@ -431,20 +321,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     if (session.isAdmin) {
       shortcuts.addAll([
         _buildActionPill(
-          icon: Icons.campaign_rounded,
-          label: 'Broadcast',
-          color: const Color(0xFF0D9488),
-          onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'announcements'),
-        ),
-        _buildActionPill(
-          icon: Icons.person_add_alt_1_rounded,
-          label: 'Add User',
-          color: const Color(0xFF4F46E5),
-          onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'users'),
-        ),
-        _buildActionPill(
           icon: Icons.storefront_rounded,
-          label: 'Live Sales',
+          label: 'Live Sales Dashboard',
           color: const Color(0xFF059669),
           onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'dashboard'),
         ),
@@ -523,12 +401,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           onTap: () => widget.onOpenModule(ModuleCatalog.attendance, 'mark'),
         ),
         _buildActionPill(
-          icon: Icons.assignment_outlined,
-          label: 'Internal Marks',
-          color: const Color(0xFF6366F1),
-          onTap: () => widget.onOpenModule(ModuleCatalog.examination, 'marks'),
-        ),
-        _buildActionPill(
           icon: Icons.schedule_rounded,
           label: 'My Schedule',
           color: const Color(0xFF8B5CF6),
@@ -549,12 +421,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           label: 'Gate Movement',
           color: const Color(0xFF0D9488),
           onTap: () => widget.onOpenModule(ModuleCatalog.gatepass, 'movement_logs'),
-        ),
-        _buildActionPill(
-          icon: Icons.badge_outlined,
-          label: 'Visitors',
-          color: const Color(0xFF4F46E5),
-          onTap: () => widget.onOpenModule(ModuleCatalog.gatepass, 'visitors'),
         ),
       ]);
     }
@@ -589,7 +455,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
@@ -600,7 +466,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 16, color: color),
-              const SizedBox(width: 6),
+              const SizedBox(width: 7),
               Text(
                 label,
                 style: TextStyle(
@@ -617,119 +483,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   // ===========================================================================
-  // 4. METRIC BENTO GRID (Zero fluff, clean numbers)
+  // 3. OPERATIONAL KPI CARD (Real metrics, zero fluff)
   // ===========================================================================
   Widget _buildKpiBentoGrid(BuildContext context) {
     if (session.isAdmin) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 550;
-          if (isWide) {
-            return Row(
-              children: [
-                Expanded(
-                  child: _buildStatTile(
-                    title: 'Users & Roles',
-                    value: 'Admin Desk',
-                    badge: 'Full Access',
-                    icon: Icons.manage_accounts_outlined,
-                    color: const Color(0xFF4F46E5),
-                    onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'users'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildStatTile(
-                    title: 'Student Registry',
-                    value: 'Directory',
-                    badge: 'All Depts',
-                    icon: Icons.school_outlined,
-                    color: const Color(0xFF0284C7),
-                    onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'students'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildStatTile(
-                    title: 'Shops & Sales',
-                    value: 'Live Metrics',
-                    badge: 'Counters Active',
-                    icon: Icons.storefront_outlined,
-                    color: const Color(0xFF059669),
-                    onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'dashboard'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildStatTile(
-                    title: 'Gate Security',
-                    value: 'Pass Control',
-                    badge: 'Active Gate',
-                    icon: Icons.security_rounded,
-                    color: const Color(0xFF0891B2),
-                    onTap: () => widget.onOpenModule(ModuleCatalog.gatepass),
-                  ),
-                ),
-              ],
-            );
-          }
-          return Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatTile(
-                      title: 'Users & Roles',
-                      value: 'Admin Desk',
-                      badge: 'Full Access',
-                      icon: Icons.manage_accounts_outlined,
-                      color: const Color(0xFF4F46E5),
-                      onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'users'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildStatTile(
-                      title: 'Student Registry',
-                      value: 'Directory',
-                      badge: 'All Depts',
-                      icon: Icons.school_outlined,
-                      color: const Color(0xFF0284C7),
-                      onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'students'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatTile(
-                      title: 'Shops & Sales',
-                      value: 'Live Metrics',
-                      badge: 'Counters Active',
-                      icon: Icons.storefront_outlined,
-                      color: const Color(0xFF059669),
-                      onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'dashboard'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildStatTile(
-                      title: 'Gate Security',
-                      value: 'Pass Control',
-                      badge: 'Active Gate',
-                      icon: Icons.security_rounded,
-                      color: const Color(0xFF0891B2),
-                      onTap: () => widget.onOpenModule(ModuleCatalog.gatepass),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          );
-        },
-      );
+      return _buildSalesHeroCard(context);
     }
 
     if (session.isCaptain) {
@@ -832,12 +590,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: _buildStatTile(
-              title: 'Examinations',
-              value: 'Internal Marks',
-              badge: 'Grading',
-              icon: Icons.assignment_outlined,
-              color: const Color(0xFF6366F1),
-              onTap: () => widget.onOpenModule(ModuleCatalog.examination, 'marks'),
+              title: 'Timetable',
+              value: 'Lectures',
+              badge: 'Schedule',
+              icon: Icons.schedule_rounded,
+              color: const Color(0xFF8B5CF6),
+              onTap: () => widget.onOpenModule(ModuleCatalog.timetable),
             ),
           ),
         ],
@@ -873,6 +631,102 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
 
     return const SizedBox.shrink();
+  }
+
+  Widget _buildSalesHeroCard(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'dashboard'),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF059669).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.storefront_rounded,
+                  color: Color(0xFF059669),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Live Metrics',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF059669).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'Counters Active',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF059669),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Shops & Sales Dashboard',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: Color(0xFF94A3B8),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildStatTile({
@@ -959,10 +813,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   // ===========================================================================
-  // 5. CATEGORY FILTER TABS (Instant focus for daily multi-hour use)
+  // 4. CATEGORY FILTER TABS
   // ===========================================================================
   Widget _buildCategoryFilterBar(BuildContext context) {
-    final categories = ['All Services', 'Administration', 'Commerce & Ops', 'Academics', 'Facilities'];
+    final categories = ['All Services', 'Commerce & Ops', 'Academics', 'Facilities & Security'];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -1029,49 +883,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   // ===========================================================================
-  // 6. WORKSPACE BENTO GRID OF APPS (Zero text walls, sleek & clickable)
+  // 5. WORKSPACE BENTO GRID OF APPS (Zero text walls, sleek & clickable)
   // ===========================================================================
   Widget _buildWorkspaceBentoGrid(BuildContext context) {
     final List<Widget> tiles = [];
 
-    // Category 0 = All, 1 = Admin, 2 = Commerce, 3 = Academics, 4 = Facilities
+    // Category 0 = All, 1 = Commerce & Ops, 2 = Academics, 3 = Facilities & Security
     final showAll = _selectedCategoryIndex == 0;
-    final showAdmin = showAll || _selectedCategoryIndex == 1;
-    final showCommerce = showAll || _selectedCategoryIndex == 2;
-    final showAcademics = showAll || _selectedCategoryIndex == 3;
-    final showFacilities = showAll || _selectedCategoryIndex == 4;
-
-    // --- Core Admin ---
-    if ((session.isAdmin || permissions.canSeeModule(ModuleCatalog.administration)) && showAdmin) {
-      tiles.add(_buildAppTile(
-        title: 'Users & Roles',
-        tag: 'Full Access',
-        icon: Icons.manage_accounts_rounded,
-        color: const Color(0xFF4F46E5),
-        onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'users'),
-      ));
-      tiles.add(_buildAppTile(
-        title: 'Student Registry',
-        tag: 'Enrolled Records',
-        icon: Icons.people_alt_outlined,
-        color: const Color(0xFF0284C7),
-        onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'students'),
-      ));
-      tiles.add(_buildAppTile(
-        title: 'Announcements',
-        tag: 'Broadcasts',
-        icon: Icons.campaign_rounded,
-        color: const Color(0xFF0D9488),
-        onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'announcements'),
-      ));
-      tiles.add(_buildAppTile(
-        title: 'System Maintenance',
-        tag: 'Operational',
-        icon: Icons.build_circle_outlined,
-        color: const Color(0xFFD97706),
-        onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'maintenance'),
-      ));
-    }
+    final showCommerce = showAll || _selectedCategoryIndex == 1;
+    final showAcademics = showAll || _selectedCategoryIndex == 2;
+    final showFacilities = showAll || _selectedCategoryIndex == 3;
 
     // --- Commerce & Ops ---
     if (permissions.canSeeModule(ModuleCatalog.canteen) && showCommerce) {
@@ -1120,6 +941,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ));
     }
 
+    if (permissions.canSeeModule(ModuleCatalog.canteen) && !session.isAccountant && showCommerce) {
+      tiles.add(_buildAppTile(
+        title: 'Student Wallets',
+        tag: 'Recharges',
+        icon: Icons.account_balance_wallet_rounded,
+        color: const Color(0xFF4F46E5),
+        onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'wallet'),
+      ));
+    }
+
     if (permissions.canSeeModule(ModuleCatalog.vendorManagement) && showCommerce) {
       tiles.add(_buildAppTile(
         title: 'Vendors & Orders',
@@ -1138,16 +969,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         icon: Icons.fact_check_outlined,
         color: const Color(0xFF2563EB),
         onTap: () => widget.onOpenModule(ModuleCatalog.attendance),
-      ));
-    }
-
-    if (permissions.canSeeModule(ModuleCatalog.examination) && showAcademics) {
-      tiles.add(_buildAppTile(
-        title: 'Examinations',
-        tag: 'Marks & Grades',
-        icon: Icons.assignment_outlined,
-        color: const Color(0xFF6366F1),
-        onTap: () => widget.onOpenModule(ModuleCatalog.examination),
       ));
     }
 
