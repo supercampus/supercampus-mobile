@@ -543,7 +543,7 @@ class _Feed extends StatelessWidget {
         else ...[
           const _SectionLabel('Your modules'),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 8, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: ModuleStack(
               modules: modules,
               permissions: permissions,

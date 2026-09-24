@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 
 import '../../authentication/data/auth_http_client.dart';
 import '../../authentication/data/auth_repository.dart';
+import 'vendor_models.dart';
 
 class VendorShop {
   const VendorShop({
@@ -114,6 +115,7 @@ abstract interface class VendorRepository {
   Future<VendorShop> createVendor(VendorShopDraft draft);
   Future<VendorShop> updateVendor(String shopId, VendorShopDraft draft);
   Future<void> toggleVendorStatus(VendorShop shop, bool active);
+  Future<SalesDashboardData> getSalesDashboard();
 }
 
 class BackendVendorRepository implements VendorRepository {
@@ -193,6 +195,18 @@ class BackendVendorRepository implements VendorRepository {
       qrPayments: shop.qrPayments,
     );
     await updateVendor(shop.id, draft);
+  }
+
+  @override
+  Future<SalesDashboardData> getSalesDashboard() async {
+    final response = await _request(
+      (headers) => _client.get(
+        _uri('/api/v1/operations/canteen/sales-dashboard'),
+        headers: headers,
+      ),
+    );
+    final data = _data(response);
+    return SalesDashboardData.fromJson(data);
   }
 
   Future<http.Response> _request(

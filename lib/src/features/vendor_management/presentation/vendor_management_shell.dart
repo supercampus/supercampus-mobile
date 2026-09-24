@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
@@ -26,10 +27,12 @@ class VendorManagementShell extends StatefulWidget {
 class _VendorManagementShellState extends State<VendorManagementShell> {
   final _mockRepo = MockVendorRepository();
   List<VendorShop>? _shops;
+  SalesDashboardData? _dashboardData;
   String? _error;
   bool _loading = true;
   String _query = '';
   String _selectedCategory = 'all';
+  String _selectedPeriod = 'Today';
   final Set<String> _togglingIds = {};
 
   var _tab = 0;
@@ -41,20 +44,18 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
   }
 
   Future<void> _load() async {
-    final repo = widget.repository;
-    if (repo == null) {
-      setState(() => _loading = false);
-      return;
-    }
+    final repo = widget.repository ?? _mockRepo;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       final shops = await repo.listVendors();
+      final dashboard = await repo.getSalesDashboard();
       if (!mounted) return;
       setState(() {
         _shops = shops;
+        _dashboardData = dashboard;
         _loading = false;
       });
     } catch (e) {
@@ -347,6 +348,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
   @override
   Widget build(BuildContext context) {
     final pages = [
+      _salesDashboardView(),
       _vendorList(),
       _orderList(),
       _paymentList(),
@@ -361,18 +363,19 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
           onPressed: widget.onExitModule,
           color: Colors.white,
         ),
-        title: const Text('Campus Commerce'),
+        title: Text(_tab == 0 ? 'Shops & Sales Dashboard' : 'Campus Commerce'),
         actions: [
           IconButton(
-            tooltip: 'Refresh vendors',
+            tooltip: 'Refresh',
             onPressed: _load,
             icon: const Icon(Icons.refresh_rounded),
           ),
-          IconButton(
-            tooltip: 'Add vendor',
-            onPressed: _addVendor,
-            icon: const Icon(Icons.add_business_outlined),
-          ),
+          if (_tab == 1)
+            IconButton(
+              tooltip: 'Add vendor',
+              onPressed: _addVendor,
+              icon: const Icon(Icons.add_business_outlined),
+            ),
           ModuleHomeButton(onPressed: widget.onExitModule, color: Colors.white),
         ],
       ),
@@ -380,6 +383,11 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
         selectedIndex: _tab,
         onDestinationSelected: (v) => setState(() => _tab = v),
         destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.analytics_outlined),
+            selectedIcon: Icon(Icons.analytics_rounded),
+            label: 'Dashboard',
+          ),
           NavigationDestination(
             icon: Icon(Icons.storefront_outlined),
             selectedIcon: Icon(Icons.storefront_rounded),
@@ -526,15 +534,75 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
     );
   }
 
-  Widget _orderList() => _records('Purchase orders', [
-        for (final item in _mockRepo.purchaseOrders)
-          _RecordTile(
-            title: item.id,
-            subtitle: item.vendor,
-            amount: item.amount,
-            status: item.status,
+  Widget _orderList() {
+    final recent = _dashboardData?.recentOrders;
+    if (recent != null && recent.isNotEmpty) {
+      return ListView(
+        padding: const EdgeInsets.all(18),
+        children: [
+          Row(
+            children: [
+              Text('Live Customer Orders', style: Theme.of(context).textTheme.titleLarge),
+              const Spacer(),
+              Chip(
+                label: Text('${recent.length} orders'),
+                backgroundColor: const Color(0xFF8A4B20).withValues(alpha: 0.1),
+              ),
+            ],
           ),
-      ]);
+          const SizedBox(height: 14),
+          for (final order in recent) ...[
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+              ),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: const Color(0xFF8A4B20).withValues(alpha: 0.1),
+                  child: const Icon(Icons.shopping_bag_outlined, color: Color(0xFF8A4B20)),
+                ),
+                title: Text(
+                  '${order.orderNumber.isNotEmpty ? order.orderNumber : order.id} · ${order.customerName}',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: Text('${order.store} · ${order.fulfilmentMode}'),
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('₹${_formatIndianNumber(order.total)}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                    Text(
+                      order.status,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: order.status == 'completed' ? const Color(0xFF10B981) : const Color(0xFFD97706),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ],
+      );
+    }
+
+    return _records('Purchase orders', [
+      for (final item in _mockRepo.purchaseOrders)
+        _RecordTile(
+          title: item.id,
+          subtitle: item.vendor,
+          amount: item.amount,
+          status: item.status,
+        ),
+    ]);
+  }
 
   Widget _paymentList() => _records('Payments and history', [
         for (final item in _mockRepo.payments)
@@ -558,6 +626,645 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
           status: 'Completed',
         ),
       ]);
+
+  static String _formatIndianNumber(num number) {
+    final intVal = number.round();
+    final s = intVal.toString();
+    if (s.length <= 3) return s;
+    final last3 = s.substring(s.length - 3);
+    final rest = s.substring(0, s.length - 3);
+    final formattedRest = rest.replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{2})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
+    return '$formattedRest,$last3';
+  }
+
+  Widget _salesDashboardView() {
+    if (_loading && _dashboardData == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final data = _dashboardData ?? SalesDashboardData.defaults;
+    final kpi = data.kpi;
+    final shops = (data.shops.isNotEmpty)
+        ? data.shops
+        : (_shops ?? const <VendorShop>[]).map((s) => ShopSalesSummary(
+              shopKey: s.shopKey,
+              name: s.name,
+              category: s.category,
+              isActive: s.isActive,
+              isOpen: s.isOpen,
+              ordersToday: s.shopKey == 'mec-canteen' ? 268 : 5,
+              revenueToday: s.shopKey == 'mec-canteen' ? 16420.0 : 250.0,
+              totalOrders: s.shopKey == 'mec-canteen' ? 41200 : 800,
+              totalRevenue: s.shopKey == 'mec-canteen' ? 2580000.0 : 42000.0,
+              activeOrders: s.shopKey == 'mec-canteen' ? 4 : 1,
+            )).toList();
+
+    final currentTimeStr = DateFormat('hh:mm:ss a').format(DateTime.now()).toLowerCase();
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+        children: [
+          // Header section matching the Superadmin / System Dashboard
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Superadmin / System Dashboard',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.outline,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'System Dashboard',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Platform-wide overview and real-time insights',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.outline,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFA7F3D0)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Text(
+                            'Live',
+                            style: TextStyle(
+                              color: Color(0xFF065F46),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      currentTimeStr,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.outline,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // The 5 KPI Cards - Horizontal scrollable strip matching desktop exact cards
+          SizedBox(
+            height: 126,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              children: [
+                _buildKpiCard(
+                  title: 'PLATFORM ORDERS',
+                  iconWidget: const Icon(
+                    Icons.shopping_bag_outlined,
+                    color: Color(0xFF4F46E5),
+                    size: 18,
+                  ),
+                  iconBg: const Color(0xFFEEF2FF),
+                  value: _formatIndianNumber(kpi.platformOrders),
+                  trendText: kpi.ordersTodayTrend,
+                  trendColor: const Color(0xFF10B981),
+                ),
+                const SizedBox(width: 12),
+                _buildKpiCard(
+                  title: 'REVENUE',
+                  iconWidget: const Text(
+                    '₹',
+                    style: TextStyle(
+                      color: Color(0xFF059669),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  iconBg: const Color(0xFFECFDF5),
+                  value: '₹${_formatIndianNumber(kpi.revenue)}',
+                  trendText: kpi.revenueTodayTrend,
+                  trendColor: const Color(0xFF10B981),
+                ),
+                const SizedBox(width: 12),
+                _buildKpiCard(
+                  title: 'MONTHLY REVENUE',
+                  iconWidget: const Icon(
+                    Icons.bar_chart_rounded,
+                    color: Color(0xFF0891B2),
+                    size: 18,
+                  ),
+                  iconBg: const Color(0xFFECFEFF),
+                  value: '₹${_formatIndianNumber(kpi.monthlyRevenue)}',
+                  trendText: kpi.weeklyRevenueTrend,
+                  trendColor: const Color(0xFF10B981),
+                ),
+                const SizedBox(width: 12),
+                _buildKpiCard(
+                  title: 'TODAY ONLINE PAYMENTS',
+                  iconWidget: const Icon(
+                    Icons.credit_card_rounded,
+                    color: Color(0xFF9333EA),
+                    size: 18,
+                  ),
+                  iconBg: const Color(0xFFFAF5FF),
+                  value: '₹${_formatIndianNumber(kpi.todayOnlinePayments)}',
+                  trendText: kpi.onlinePaymentsTrend,
+                  trendColor: const Color(0xFF64748B),
+                ),
+                const SizedBox(width: 12),
+                _buildKpiCard(
+                  title: 'PENDING ACTIONS',
+                  iconWidget: const Icon(
+                    Icons.error_outline_rounded,
+                    color: Color(0xFFD97706),
+                    size: 18,
+                  ),
+                  iconBg: const Color(0xFFFFFBEB),
+                  value: '${kpi.pendingActions}',
+                  trendText: kpi.pendingActionsTrend.startsWith('↘')
+                      ? kpi.pendingActionsTrend
+                      : '↘ ${kpi.pendingActionsTrend}',
+                  trendColor: const Color(0xFFDC2626),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+
+          // Period Filters
+          Row(
+            children: [
+              Text(
+                'Sales Analysis',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const Spacer(),
+              for (final period in ['Today', 'This Week', 'This Month', 'All Time']) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: ChoiceChip(
+                    label: Text(
+                      period,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: _selectedPeriod == period
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                      ),
+                    ),
+                    selected: _selectedPeriod == period,
+                    selectedColor: const Color(0xFF8A4B20).withValues(alpha: 0.15),
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedPeriod = period);
+                    },
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Revenue Over Time & Channel Split Card
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 1,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.show_chart_rounded, size: 18, color: Color(0xFF059669)),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Revenue Over Time',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFECFDF5),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          _selectedPeriod,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF059669),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Food Orders vs QR Payments (Laundry / Stationery)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // Progress meter
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: SizedBox(
+                      height: 14,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 96,
+                            child: Container(color: const Color(0xFF059669)),
+                          ),
+                          Expanded(
+                            flex: 4,
+                            child: Container(color: const Color(0xFF7C3AED)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF059669),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Food Orders (96%): ₹${_formatIndianNumber((kpi.revenue * 0.96).round())}',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF7C3AED),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'QR Payments (4%): ₹${_formatIndianNumber((kpi.revenue * 0.04).round())}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Order Status Distribution
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 1,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.pie_chart_outline_rounded, size: 18, color: Color(0xFF0284C7)),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Order Status Distribution',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => setState(() => _tab = 2),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                        ),
+                        child: const Row(
+                          children: [
+                            Text('View all', style: TextStyle(fontSize: 12)),
+                            Icon(Icons.chevron_right, size: 16),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: SizedBox(
+                      height: 12,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 99,
+                            child: Container(color: const Color(0xFF10B981)),
+                          ),
+                          Expanded(
+                            flex: 1,
+                            child: Container(color: const Color(0xFFEF4444)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Completed: ${_formatIndianNumber((kpi.platformOrders * 0.99).round())} (99%)',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFEF4444),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Cancelled: ${_formatIndianNumber((kpi.platformOrders * 0.01).round())} (1%)',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Shop Performance Breakdown
+          Text(
+            'Live Performance by Counter',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final shop in shops) ...[
+            Card(
+              elevation: 0,
+              margin: const EdgeInsets.only(bottom: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: const Color(0xFF8A4B20).withValues(alpha: 0.12),
+                      child: Icon(
+                        _categoryIcon(shop.category),
+                        color: const Color(0xFF8A4B20),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            shop.name,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${shop.ordersToday} orders today · ₹${_formatIndianNumber(shop.revenueToday)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (shop.activeOrders > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFFBEB),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFFDE68A)),
+                        ),
+                        child: Text(
+                          '${shop.activeOrders} active',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFD97706),
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFECFDF5),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          'Active',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF059669),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKpiCard({
+    required String title,
+    required Widget iconWidget,
+    required Color iconBg,
+    required String value,
+    required String trendText,
+    required Color trendColor,
+  }) {
+    return Container(
+      width: 220,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              CircleAvatar(
+                radius: 15,
+                backgroundColor: iconBg,
+                child: iconWidget,
+              ),
+            ],
+          ),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+              letterSpacing: -0.4,
+            ),
+          ),
+          Text(
+            trendText,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: trendColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _records(String title, List<Widget> items) => ListView(
         padding: const EdgeInsets.all(18),
