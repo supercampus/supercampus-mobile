@@ -1,0 +1,1 @@
+Release 20260925: Dedicated Add/Edit Menu Item screen with Cost, Selling Price, and Sales Profit analytics
