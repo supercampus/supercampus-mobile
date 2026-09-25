@@ -3,24 +3,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supercampus_mobile/src/core/widgets/launch_brand_intro.dart';
 
 void main() {
-  testWidgets('shows the approved logo and lightweight Poppins tagline', (
+  testWidgets('shows 1-second animated hero logo reveal with Brittany SuperCampus branding', (
     tester,
   ) async {
     await tester.pumpWidget(
       const MaterialApp(home: Scaffold(body: LaunchBrandIntro())),
     );
 
+    // Initial frame shows the hero logo and branding on pure white
     expect(find.byType(Image), findsOneWidget);
-    expect(find.text('the one stop for campus application'), findsOneWidget);
+    expect(find.text('SuperCampus'), findsOneWidget);
 
-    final tagline = tester.widget<Text>(
-      find.text('the one stop for campus application'),
-    );
-    expect(tagline.style?.fontFamily, 'Poppins');
-    expect(tagline.style?.fontWeight, FontWeight.w400);
-    expect(tagline.style?.fontSize, 9);
+    final brandText = tester.widget<Text>(find.text('SuperCampus'));
+    expect(brandText.style?.fontFamily, 'Brittany');
 
-    await tester.pump(const Duration(milliseconds: 1900));
+    // The legacy tagline is removed
+    expect(find.text('the one stop for campus application'), findsNothing);
+
+    // Pump to mid-animation (500ms)
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(Image), findsOneWidget);
+
+    // Complete the 1-second animation
+    await tester.pump(const Duration(milliseconds: 600));
     expect(tester.takeException(), isNull);
   });
 }

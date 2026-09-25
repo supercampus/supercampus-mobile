@@ -1,12 +1,9 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
-/// A short, one-shot brand moment shown over the first rendered frame.
+/// A 1-second animated brand logo reveal shown over the first rendered frame.
 ///
-/// The approved artwork stays at a fixed size throughout. Motion is provided
-/// by the orbit, light sweep and text reveal around it, so the logo is never
-/// cropped or subjected to a zoom animation.
+/// Features a pure white canvas, animated hero logo reveal in the center,
+/// and signature 'SuperCampus' script branding at the bottom.
 class LaunchBrandIntro extends StatefulWidget {
   const LaunchBrandIntro({super.key});
 
@@ -23,7 +20,7 @@ class _LaunchBrandIntroState extends State<LaunchBrandIntro>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1900),
+      duration: const Duration(milliseconds: 1000),
     )..forward();
   }
 
@@ -41,84 +38,71 @@ class _LaunchBrandIntroState extends State<LaunchBrandIntro>
       animation: _controller,
       builder: (context, child) {
         final value = _controller.value;
-        final exit = Curves.easeInCubic.transform(
-          ((value - 0.84) / 0.16).clamp(0.0, 1.0),
+        if (value >= 1.0) return const SizedBox.shrink();
+
+        // 0.0 -> 0.40: Logo smooth scale & fade-in reveal
+        final revealProgress = Curves.easeOutCubic.transform(
+          (value / 0.40).clamp(0.0, 1.0),
         );
-        final reveal = Curves.easeOutCubic.transform(
-          (value / 0.42).clamp(0.0, 1.0),
-        );
-        final tagline = Curves.easeOutBack.transform(
-          ((value - 0.38) / 0.32).clamp(0.0, 1.0),
+        final logoScale = 0.85 + (0.15 * revealProgress);
+        final logoOpacity = revealProgress;
+
+        // 0.15 -> 0.50: Bottom signature text fades in
+        final textOpacity = Curves.easeOut.transform(
+          ((value - 0.15) / 0.35).clamp(0.0, 1.0),
         );
 
+        // 0.75 -> 1.0: Whole intro gracefully dissolves as app opens
+        final exitProgress = Curves.easeInOutCubic.transform(
+          ((value - 0.75) / 0.25).clamp(0.0, 1.0),
+        );
+        final totalOpacity = (1.0 - exitProgress).clamp(0.0, 1.0);
+
         return IgnorePointer(
-          ignoring: value >= 0.98,
+          ignoring: value >= 0.75,
           child: Opacity(
-            opacity: 1 - exit,
-            child: Transform.translate(
-              offset: Offset(0, -18 * exit),
-              child: ColoredBox(
-                color: const Color(0xFF5712F4),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    CustomPaint(painter: _LaunchEnergyPainter(value)),
-                    Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: 224,
-                            height: 224,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(42),
-                              child: Image.asset(
-                                'assets/branding/supercampus_app_icon.png',
-                                fit: BoxFit.contain,
-                                semanticLabel: 'SuperCampus',
-                              ),
-                            ),
+            opacity: totalOpacity,
+            child: ColoredBox(
+              color: Colors.white,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Center(
+                    child: Transform.scale(
+                      scale: logoScale,
+                      child: Opacity(
+                        opacity: logoOpacity,
+                        child: SizedBox(
+                          width: 146,
+                          height: 126,
+                          child: Image.asset(
+                            'assets/branding/supercampus_mark_hero_hd.png',
+                            fit: BoxFit.contain,
+                            semanticLabel: 'SuperCampus Logo',
                           ),
-                          const SizedBox(height: 22),
-                          ClipRect(
-                            child: Align(
-                              heightFactor: reveal.clamp(0.001, 1.0),
-                              alignment: Alignment.bottomCenter,
-                              child: const Text(
-                                'SuperCampus',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontFamily: 'Poppins',
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 7),
-                          Transform.translate(
-                            offset: Offset(0, 12 * (1 - tagline)),
-                            child: Opacity(
-                              opacity: tagline.clamp(0.0, 1.0),
-                              child: const Text(
-                                'the one stop for campus application',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Color(0xFFE9DEFF),
-                                  fontFamily: 'Poppins',
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w400,
-                                  letterSpacing: 0.35,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  Positioned(
+                    bottom: 48,
+                    left: 0,
+                    right: 0,
+                    child: Opacity(
+                      opacity: textOpacity,
+                      child: const Text(
+                        'SuperCampus',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Brittany',
+                          fontSize: 26,
+                          color: Color(0xFF18181B),
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -126,50 +110,4 @@ class _LaunchBrandIntroState extends State<LaunchBrandIntro>
       },
     );
   }
-}
-
-class _LaunchEnergyPainter extends CustomPainter {
-  const _LaunchEnergyPainter(this.progress);
-
-  final double progress;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero) - const Offset(0, 42);
-    final orbitProgress = Curves.easeInOutCubic.transform(progress);
-    final orbitPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = Colors.white.withValues(alpha: 0.16);
-    for (var index = 0; index < 3; index++) {
-      final radius = 128.0 + index * 28;
-      final start = -math.pi / 2 + orbitProgress * math.pi * (1.4 + index * .2);
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        start,
-        math.pi * (0.36 + index * 0.08),
-        false,
-        orbitPaint,
-      );
-    }
-
-    final sweepX = (progress * 1.8 - 0.4) * size.width;
-    final sweep = Path()
-      ..moveTo(sweepX - 120, 0)
-      ..lineTo(sweepX + 28, 0)
-      ..lineTo(sweepX - 150, size.height)
-      ..lineTo(sweepX - 298, size.height)
-      ..close();
-    canvas.drawPath(
-      sweep,
-      Paint()
-        ..shader = const LinearGradient(
-          colors: [Colors.transparent, Color(0x2EFFFFFF), Colors.transparent],
-        ).createShader(Rect.fromLTWH(sweepX - 300, 0, 330, size.height)),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_LaunchEnergyPainter oldDelegate) =>
-      oldDelegate.progress != progress;
 }

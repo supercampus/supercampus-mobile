@@ -20,6 +20,7 @@ void main() {
     // Verify Login Screen branding with Brittany and Poppins
     final brandTitle = tester.widget<Text>(find.text('SuperCampus'));
     expect(brandTitle.style?.fontFamily, 'Brittany');
+    expect(brandTitle.style?.fontSize, lessThanOrEqualTo(36));
 
     final subtitle = tester.widget<Text>(
       find.text('login to your account issued by your instituition'),

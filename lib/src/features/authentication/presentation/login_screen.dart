@@ -592,15 +592,15 @@ class _SignInView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 32),
+              const SizedBox(height: 36),
               const Text(
                 'SuperCampus',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Brittany',
-                  fontSize: 52,
+                  fontSize: 34,
                   color: Color(0xFF18181B),
-                  height: 1.15,
+                  height: 1.1,
                 ),
               ),
               const SizedBox(height: 6),
