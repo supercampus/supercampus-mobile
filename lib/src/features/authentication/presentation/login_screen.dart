@@ -585,28 +585,36 @@ class _SignInView extends StatelessWidget {
   Widget build(BuildContext context) {
     return _AuthPage(
       onBack: onBack,
+      showBack: false,
       child: AutofillGroup(
         child: Form(
           key: formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const _BrandLockup(centered: false),
-              const SizedBox(height: 44),
-              Text(
-                'Welcome back',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0,
+              const SizedBox(height: 32),
+              const Text(
+                'SuperCampus',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Brittany',
+                  fontSize: 52,
+                  color: Color(0xFF18181B),
+                  height: 1.15,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Use the account issued by your institution.',
-                style: Theme.of(context).textTheme.bodyMedium,
+              const SizedBox(height: 6),
+              const Text(
+                'login to your account issued by your instituition',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xFF71717A),
+                ),
               ),
-              const SizedBox(height: 34),
+              const SizedBox(height: 40),
               _FieldLabel(
                 label: 'Email address',
                 child: TextFormField(
@@ -614,9 +622,59 @@ class _SignInView extends StatelessWidget {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.username],
-                  decoration: const InputDecoration(
-                    hintText: 'name@college.edu',
-                    prefixIcon: Icon(Icons.mail_outline_rounded),
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF18181B),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Enter your email',
+                    hintStyle: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFFA1A1AA),
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.mail_outline_rounded,
+                      color: Color(0xFF71717A),
+                      size: 20,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFE4E4E7),
+                        width: 1.2,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF6366F1),
+                        width: 1.8,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFEF4444),
+                        width: 1.2,
+                      ),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFEF4444),
+                        width: 1.8,
+                      ),
+                    ),
                   ),
                   validator: validateEmail,
                   onFieldSubmitted: (_) => passwordFocusNode.requestFocus(),
@@ -631,9 +689,25 @@ class _SignInView extends StatelessWidget {
                   obscureText: obscurePassword,
                   textInputAction: TextInputAction.done,
                   autofillHints: const [AutofillHints.password],
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF18181B),
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Enter your password',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded),
+                    hintStyle: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFFA1A1AA),
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      color: Color(0xFF71717A),
+                      size: 20,
+                    ),
                     suffixIcon: IconButton(
                       tooltip: obscurePassword
                           ? 'Show password'
@@ -643,6 +717,42 @@ class _SignInView extends StatelessWidget {
                         obscurePassword
                             ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
+                        color: const Color(0xFF71717A),
+                        size: 20,
+                      ),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFE4E4E7),
+                        width: 1.2,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF6366F1),
+                        width: 1.8,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFEF4444),
+                        width: 1.2,
+                      ),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFEF4444),
+                        width: 1.8,
                       ),
                     ),
                   ),
@@ -652,41 +762,74 @@ class _SignInView extends StatelessWidget {
                   },
                 ),
               ),
+              const SizedBox(height: 6),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: isSubmitting ? null : onForgotPassword,
-                  child: const Text('Forgot password?'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF4F46E5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 6,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    'Forgot password?',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF4F46E5),
+                    ),
+                  ),
                 ),
               ),
               if (errorMessage != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _ErrorBanner(message: errorMessage!),
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
               ] else
-                const SizedBox(height: 14),
+                const SizedBox(height: 20),
               if (isSubmitting)
                 const SkeletonBox(
-                  height: 54,
+                  height: 52,
                   borderRadius: BorderRadius.all(Radius.circular(12)),
                 )
               else
                 FilledButton(
                   onPressed: onSubmit,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.ink,
+                    backgroundColor: const Color(0xFF18181B),
                     foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(54),
+                    minimumSize: const Size.fromHeight(52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
                   ),
-                  child: const Text('Sign in'),
+                  child: const Text(
+                    'Sign in',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-              const SizedBox(height: 18),
-              Text(
+              const SizedBox(height: 22),
+              const Text(
                 'Your access and campus services are managed by your institution administrator.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.muted,
-                  height: 1.5,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Color(0xFF71717A),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  height: 1.45,
                 ),
               ),
             ],
@@ -727,37 +870,51 @@ class _ResetPasswordView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 64),
             Align(
               alignment: Alignment.centerLeft,
-              child: Container(
-                width: 52,
-                height: 52,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF0F2F6),
-                  shape: BoxShape.circle,
+              child: InkWell(
+                onTap: onBack,
+                borderRadius: BorderRadius.circular(22),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFD9D9D9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.chevron_left_rounded,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
                 ),
-                child: const Icon(Icons.key_rounded, color: AppColors.ink),
               ),
             ),
-            const SizedBox(height: 26),
-            Text(
+            const SizedBox(height: 36),
+            const Text(
               'Reset your password',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontSize: 29,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF18181B),
+                height: 1.2,
               ),
             ),
             const SizedBox(height: 10),
-            Text(
+            const Text(
               'Enter your registered email address. We will send instructions to regain access.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(height: 1.55),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: Color(0xFF71717A),
+                height: 1.5,
+              ),
             ),
-            const SizedBox(height: 34),
+            const SizedBox(height: 32),
             _FieldLabel(
               label: 'Email address',
               child: TextFormField(
@@ -765,9 +922,59 @@ class _ResetPasswordView extends StatelessWidget {
                 autofocus: true,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xFF18181B),
+                ),
+                decoration: InputDecoration(
                   hintText: 'name@college.edu',
-                  prefixIcon: Icon(Icons.mail_outline_rounded),
+                  hintStyle: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFFA1A1AA),
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.mail_outline_rounded,
+                    color: Color(0xFF71717A),
+                    size: 20,
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFE4E4E7),
+                      width: 1.2,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF6366F1),
+                      width: 1.8,
+                    ),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFEF4444),
+                      width: 1.2,
+                    ),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFEF4444),
+                      width: 1.8,
+                    ),
+                  ),
                 ),
                 validator: validateEmail,
                 onFieldSubmitted: (_) {
@@ -776,24 +983,37 @@ class _ResetPasswordView extends StatelessWidget {
               ),
             ),
             if (errorMessage != null) ...[
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
               _ErrorBanner(message: errorMessage!),
-            ],
-            const SizedBox(height: 24),
+              const SizedBox(height: 16),
+            ] else
+              const SizedBox(height: 24),
             if (isSubmitting)
               const SkeletonBox(
-                height: 54,
+                height: 52,
                 borderRadius: BorderRadius.all(Radius.circular(12)),
               )
             else
               FilledButton(
                 onPressed: onSubmit,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.ink,
+                  backgroundColor: const Color(0xFF18181B),
                   foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(54),
+                  minimumSize: const Size.fromHeight(52),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
                 ),
-                child: const Text('Send reset link'),
+                child: const Text(
+                  'Send reset link',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
               ),
           ],
         ),
@@ -954,9 +1174,10 @@ class _PasswordResetCompletionScreenState
                                 const Text(
                                   'Create new password',
                                   style: TextStyle(
-                                    color: AppColors.ink,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Poppins',
+                                    color: Color(0xFF18181B),
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w700,
                                     height: 1.15,
                                   ),
                                 ),
@@ -964,8 +1185,10 @@ class _PasswordResetCompletionScreenState
                                 const Text(
                                   'Choose a secure password for your SuperCampus account.',
                                   style: TextStyle(
-                                    color: AppColors.muted,
+                                    fontFamily: 'Poppins',
+                                    color: Color(0xFF71717A),
                                     fontSize: 14,
+                                    fontWeight: FontWeight.w400,
                                     height: 1.5,
                                   ),
                                 ),
@@ -979,11 +1202,25 @@ class _PasswordResetCompletionScreenState
                                       AutofillHints.newPassword,
                                     ],
                                     textInputAction: TextInputAction.next,
+                                    style: const TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 14.5,
+                                      fontWeight: FontWeight.w400,
+                                      color: Color(0xFF18181B),
+                                    ),
                                     validator: _validatePassword,
                                     decoration: InputDecoration(
                                       hintText: 'At least 8 characters',
+                                      hintStyle: const TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w400,
+                                        color: Color(0xFFA1A1AA),
+                                      ),
                                       prefixIcon: const Icon(
                                         Icons.lock_outline_rounded,
+                                        color: Color(0xFF71717A),
+                                        size: 20,
                                       ),
                                       suffixIcon: IconButton(
                                         tooltip: _obscurePassword
@@ -997,6 +1234,43 @@ class _PasswordResetCompletionScreenState
                                           _obscurePassword
                                               ? Icons.visibility_outlined
                                               : Icons.visibility_off_outlined,
+                                          color: const Color(0xFF71717A),
+                                          size: 20,
+                                        ),
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 16,
+                                          ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFFE4E4E7),
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFF6366F1),
+                                          width: 1.8,
+                                        ),
+                                      ),
+                                      errorBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFFEF4444),
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      focusedErrorBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFFEF4444),
+                                          width: 1.8,
                                         ),
                                       ),
                                     ),
@@ -1012,12 +1286,26 @@ class _PasswordResetCompletionScreenState
                                       AutofillHints.newPassword,
                                     ],
                                     textInputAction: TextInputAction.done,
+                                    style: const TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 14.5,
+                                      fontWeight: FontWeight.w400,
+                                      color: Color(0xFF18181B),
+                                    ),
                                     validator: _validateConfirmation,
                                     onFieldSubmitted: (_) => _submit(),
                                     decoration: InputDecoration(
                                       hintText: 'Enter it again',
+                                      hintStyle: const TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w400,
+                                        color: Color(0xFFA1A1AA),
+                                      ),
                                       prefixIcon: const Icon(
                                         Icons.verified_user_outlined,
+                                        color: Color(0xFF71717A),
+                                        size: 20,
                                       ),
                                       suffixIcon: IconButton(
                                         tooltip: _obscureConfirmation
@@ -1031,6 +1319,43 @@ class _PasswordResetCompletionScreenState
                                           _obscureConfirmation
                                               ? Icons.visibility_outlined
                                               : Icons.visibility_off_outlined,
+                                          color: const Color(0xFF71717A),
+                                          size: 20,
+                                        ),
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 16,
+                                          ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFFE4E4E7),
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFF6366F1),
+                                          width: 1.8,
+                                        ),
+                                      ),
+                                      errorBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFFEF4444),
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      focusedErrorBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFFEF4444),
+                                          width: 1.8,
                                         ),
                                       ),
                                     ),
@@ -1048,7 +1373,13 @@ class _PasswordResetCompletionScreenState
                                   onPressed:
                                       _isSubmitting || missingToken ? null : _submit,
                                   style: FilledButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
+                                    backgroundColor: const Color(0xFF18181B),
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size.fromHeight(52),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 0,
                                   ),
                                   child: _isSubmitting
                                       ? const SizedBox(
@@ -1059,12 +1390,28 @@ class _PasswordResetCompletionScreenState
                                             color: Colors.white,
                                           ),
                                         )
-                                      : const Text('Create password'),
+                                      : const Text(
+                                          'Create password',
+                                          style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                                 const SizedBox(height: 10),
                                 TextButton(
                                   onPressed: widget.onBackToLogin,
-                                  child: const Text('Back to login'),
+                                  child: const Text(
+                                    'Back to login',
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF4F46E5),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -1087,7 +1434,7 @@ class _AuthPage extends StatelessWidget {
   const _AuthPage({
     required this.onBack,
     required this.child,
-    this.showBack = true,
+    this.showBack = false,
   });
 
   final VoidCallback onBack;
@@ -1099,9 +1446,9 @@ class _AuthPage extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
+          padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
           child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight - 40),
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
             child: Center(
               child: SizedBox(
                 width: 440,
@@ -1111,15 +1458,29 @@ class _AuthPage extends StatelessWidget {
                     if (showBack) ...[
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: IconButton(
-                          tooltip: 'Back',
-                          onPressed: onBack,
-                          icon: const Icon(Icons.arrow_back_rounded),
+                        child: InkWell(
+                          onTap: onBack,
+                          borderRadius: BorderRadius.circular(22),
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFD9D9D9),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.chevron_left_rounded,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
                     ] else
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 16),
                     child,
                   ],
                 ),
@@ -1160,15 +1521,17 @@ class _BrandLockup extends StatelessWidget {
             Text(
               'SuperCampus',
               style: TextStyle(
+                fontFamily: 'Poppins',
                 color: AppColors.ink,
                 fontSize: 19,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 letterSpacing: 0,
               ),
             ),
             Text(
               'INTEGRATED CAMPUS SYSTEM',
               style: TextStyle(
+                fontFamily: 'Poppins',
                 color: AppColors.muted,
                 fontSize: 8,
                 fontWeight: FontWeight.w500,
@@ -1196,8 +1559,9 @@ class _FieldLabel extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            color: AppColors.ink,
-            fontSize: 13,
+            fontFamily: 'Poppins',
+            color: Color(0xFF18181B),
+            fontSize: 13.5,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -1216,22 +1580,29 @@ class _ErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF1F1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFECACA)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline_rounded, color: Color(0xFFB42318)),
+          const Icon(
+            Icons.error_outline_rounded,
+            color: Color(0xFFDC2626),
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
               style: const TextStyle(
-                color: Color(0xFF8A1C13),
+                fontFamily: 'Poppins',
+                color: Color(0xFF991B1B),
                 fontSize: 13,
+                fontWeight: FontWeight.w400,
                 height: 1.45,
               ),
             ),
