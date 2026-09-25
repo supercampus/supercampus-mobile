@@ -334,10 +334,36 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
         ),
         const Spacer(),
         if (widget.onWorkMode != null)
-          IconButton(
-            tooltip: 'Switch to owner workspace',
-            onPressed: widget.onWorkMode,
-            icon: const Icon(Icons.storefront_outlined),
+          Tooltip(
+            message: 'Switch to work mode (orders queue)',
+            child: InkWell(
+              onTap: widget.onWorkMode,
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                margin: const EdgeInsets.only(right: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.work_outline_rounded, size: 14, color: AppColors.primary),
+                    SizedBox(width: 4),
+                    Text(
+                      'Work mode',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         IconButton(
           tooltip: 'History',

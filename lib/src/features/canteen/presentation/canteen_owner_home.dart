@@ -12,6 +12,8 @@ import '../../../core/widgets/swipe_action_card.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
+import 'widgets/order_status_badge.dart';
+import 'widgets/owner_captain_sales_analytics.dart';
 
 class CanteenOwnerHome extends StatefulWidget {
   const CanteenOwnerHome({
@@ -154,6 +156,11 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
         busy: _busy,
         onEdit: _editItem,
         onDelete: (id) => _run(() => widget.onDeleteMenuItem(id)),
+      ),
+      OwnerCaptainSalesAnalytics(
+        store: scopedStore,
+        busy: _busy,
+        onRefresh: () => _run(widget.onRefresh),
       ),
     ];
 
@@ -818,14 +825,7 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      status.label,
-      style: const TextStyle(
-        color: AppColors.muted,
-        fontSize: 12,
-        letterSpacing: 0.1,
-      ),
-    );
+    return OrderStatusGradientBadge(status: status);
   }
 }
 
@@ -1157,6 +1157,11 @@ class _SectionTabs extends StatelessWidget {
               value: 1,
               icon: Icon(Icons.restaurant_menu_outlined),
               label: Text('Menu'),
+            ),
+            ButtonSegment(
+              value: 2,
+              icon: Icon(Icons.analytics_outlined),
+              label: Text('Captain Sales'),
             ),
           ],
           selected: {index},

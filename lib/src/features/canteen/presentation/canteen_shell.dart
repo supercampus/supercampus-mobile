@@ -62,7 +62,7 @@ class _CanteenShellState extends State<CanteenShell> {
 
   bool get _canUseWorkMode {
     final session = widget.session;
-    return _store?.canManage == true &&
+    return (_store?.canManage == true || session.isCaptain) &&
         session.role != UserRole.student &&
         session.activePortalFamily != PortalFamily.student;
   }
@@ -529,9 +529,18 @@ class _CanteenShellState extends State<CanteenShell> {
       );
     }
 
-    if (widget.session.isCaptain || (store.canManage && !store.canManageMenu)) {
+    final isCaptain = widget.session.isCaptain || (store.canManage && !store.canManageMenu);
+    if (isCaptain && _ownerWorkMode) {
+      final captainStore = store.staffState.mode == CanteenStaffMode.work
+          ? store
+          : store.copyWith(
+              staffState: CanteenStaffState(
+                mode: CanteenStaffMode.work,
+                shopOpen: store.staffState.shopOpen,
+              ),
+            );
       return CanteenCaptainHome(
-        store: store,
+        store: captainStore,
         onExitModule: widget.onExitModule,
         onSignOut: widget.onSignOut,
         onRefresh: () => _loadStore(silent: true),
@@ -633,12 +642,24 @@ class _CanteenShellState extends State<CanteenShell> {
       ),
     ];
 
-    return PopScope(
+    final eatContent = PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) handlePop();
       },
       child: IndexedStack(index: _selectedIndex, children: pages),
     );
+
+    if (isCaptain) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: SafeArea(
+          bottom: false,
+          child: eatContent,
+        ),
+      );
+    }
+
+    return eatContent;
   }
 }

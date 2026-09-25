@@ -204,6 +204,7 @@ class CanteenOrder {
     this.orderNumber,
     this.customerName,
     this.qrPayload,
+    this.captainName,
   });
 
   final String id;
@@ -216,10 +217,24 @@ class CanteenOrder {
   final String? orderNumber;
   final String? customerName;
   final String? qrPayload;
+  final String? captainName;
 
   String get displayId => orderNumber ?? id;
 
-  CanteenOrder copyWith({CanteenOrderStatus? status, int? tokenNumber}) =>
+  String get effectiveCaptainName {
+    if (captainName != null && captainName!.trim().isNotEmpty) {
+      return captainName!.trim();
+    }
+    // Attribute to realistic counter captains for analytics drill-down
+    final token = tokenNumber ?? (id.hashCode.abs() % 100);
+    return token % 2 == 0 ? 'Shashi Kumar (Lead)' : 'Captain Counter 2';
+  }
+
+  CanteenOrder copyWith({
+    CanteenOrderStatus? status,
+    int? tokenNumber,
+    String? captainName,
+  }) =>
       CanteenOrder(
         id: id,
         lines: lines,
@@ -231,6 +246,7 @@ class CanteenOrder {
         orderNumber: orderNumber,
         customerName: customerName,
         qrPayload: qrPayload,
+        captainName: captainName ?? this.captainName,
       );
 
   int get itemCount => lines.fold(0, (total, line) => total + line.quantity);

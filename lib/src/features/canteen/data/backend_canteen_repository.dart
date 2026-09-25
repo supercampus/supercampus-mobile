@@ -586,6 +586,7 @@ class BackendCanteenRepository implements CanteenRepository {
       ),
       customerName: _text(value['customerName'], fallback: 'Campus user'),
       qrPayload: _text(value['qrPayload'], fallback: _text(value['id'])),
+      captainName: _text(value['captainName'] ?? value['captain_name'] ?? value['fulfilledBy'] ?? value['processedBy']),
     );
   }
 

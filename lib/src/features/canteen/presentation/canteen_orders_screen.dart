@@ -5,6 +5,7 @@ import '../../../core/utils/formatters.dart';
 import '../data/canteen_models.dart';
 import 'order_pickup_sheet.dart';
 import 'widgets/canteen_surface.dart';
+import 'widgets/order_status_badge.dart';
 
 enum OrderFilter { active, history }
 
@@ -124,16 +125,6 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = order.status.isActive;
-    final statusColor = switch (order.status) {
-      CanteenOrderStatus.pending => const Color(0xFFB96708),
-      CanteenOrderStatus.accepted => AppColors.primary,
-      CanteenOrderStatus.preparing => const Color(0xFFB96708),
-      CanteenOrderStatus.ready => AppColors.success,
-      CanteenOrderStatus.completed => const Color(0xFF168A5B),
-      CanteenOrderStatus.rejected => Theme.of(context).colorScheme.error,
-      CanteenOrderStatus.cancelled => Theme.of(context).colorScheme.error,
-    };
-
     return CanteenSurface(
       onTap: onTap,
       child: Column(
@@ -148,20 +139,7 @@ class _OrderCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  order.status.label,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+              OrderStatusGradientBadge(status: order.status),
             ],
           ),
           const SizedBox(height: 7),

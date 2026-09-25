@@ -7,6 +7,7 @@ import '../../../core/widgets/swipe_action_card.dart';
 import '../../scanner/presentation/scan_qr_screen.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
+import 'widgets/order_status_badge.dart';
 
 /// Order-only workspace for staff assigned to a canteen as captains.
 ///
@@ -445,10 +446,7 @@ class _CaptainOrderCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Text(
-                  order.status.label,
-                  style: const TextStyle(color: AppColors.primary),
-                ),
+                OrderStatusGradientBadge(status: order.status),
               ],
             ),
             const Divider(height: 25),
@@ -555,8 +553,9 @@ class _CaptainHistory extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
+                            const SizedBox(height: 2),
                             Text(
-                              '#${order.displayId} · ${order.status.label} · ${formatShortDate(order.createdAt)}',
+                              '#${order.displayId} · ${formatShortDate(order.createdAt)}',
                               style: const TextStyle(
                                 color: AppColors.muted,
                                 fontSize: 12,
@@ -565,6 +564,12 @@ class _CaptainHistory extends StatelessWidget {
                           ],
                         ),
                       ),
+                      OrderStatusGradientBadge(
+                        status: order.status,
+                        fontSize: 10.5,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                      ),
+                      const SizedBox(width: 8),
                       Text(
                         formatCurrency(order.total),
                         style: const TextStyle(fontWeight: FontWeight.w700),
