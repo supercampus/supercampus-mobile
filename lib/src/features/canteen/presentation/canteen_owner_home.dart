@@ -2,8 +2,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
-import '../../../core/utils/image_picker_helper.dart';
-
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/campus_nav_bar.dart';
 import '../../../core/utils/formatters.dart';
@@ -14,6 +12,7 @@ import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
 import 'widgets/order_status_badge.dart';
 import 'widgets/owner_captain_sales_analytics.dart';
+import 'canteen_menu_item_editor_screen.dart';
 
 class CanteenOwnerHome extends StatefulWidget {
   const CanteenOwnerHome({
@@ -287,13 +286,14 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
   }
 
   Future<void> _editItem(CanteenMenuItem? item) async {
-    final result = await showDialog<CanteenMenuItem>(
-      context: context,
-      builder: (_) => _MenuItemDialog(
-        item: item,
-        shops: _assignedShops,
-        selectedShopKey: _activeShopKey!,
-        onUploadMedia: widget.onUploadMedia,
+    final result = await Navigator.of(context).push<CanteenMenuItem>(
+      MaterialPageRoute(
+        builder: (_) => CanteenMenuItemEditorScreen(
+          item: item,
+          shops: _assignedShops,
+          selectedShopKey: _activeShopKey!,
+          onUploadMedia: widget.onUploadMedia,
+        ),
       ),
     );
     if (result != null) {
@@ -848,13 +848,22 @@ class _OwnerMenu extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
       children: [
-        Text('Menu management', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Menu management', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              '${items.length} items',
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
         for (final item in items)
           Padding(
-            padding: const EdgeInsets.only(bottom: 9),
+            padding: const EdgeInsets.only(bottom: 10),
             child: CanteenSurface(
-              padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
+              padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
               child: Row(
                 children: [
                   MenuItemArt(item: item, size: 52),
@@ -863,10 +872,96 @@ class _OwnerMenu extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item.name),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (item.isInstant)
+                              Container(
+                                margin: const EdgeInsets.only(left: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade100,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Instant',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.amber.shade900,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              'Sell: ${formatCurrency(item.price)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12.5,
+                                color: Color(0xFF1E293B),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Cost: ${formatCurrency(item.effectiveCost)}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: item.profit >= 0
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                    : const Color(0xFFEF4444).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                item.profit >= 0
+                                    ? '+${formatCurrency(item.profit)}'
+                                    : formatCurrency(item.profit),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: item.profit >= 0
+                                      ? const Color(0xFF047857)
+                                      : const Color(0xFFB91C1C),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
                         Text(
-                          '${formatCurrency(item.price)} - ${item.isAvailable ? 'Available' : 'Unavailable'}',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          '${item.category} · ${item.isAvailable ? 'Available' : 'Unavailable'}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: item.isAvailable
+                                ? const Color(0xFF087A53)
+                                : const Color(0xFFB42318),
+                          ),
                         ),
                       ],
                     ),
@@ -874,12 +969,12 @@ class _OwnerMenu extends StatelessWidget {
                   IconButton(
                     tooltip: 'Edit item',
                     onPressed: busy ? null : () => onEdit(item),
-                    icon: const Icon(Icons.edit_outlined),
+                    icon: const Icon(Icons.edit_outlined, size: 20),
                   ),
                   IconButton(
                     tooltip: 'Delete item',
                     onPressed: busy ? null : () => onDelete(item.id),
-                    icon: const Icon(Icons.delete_outline),
+                    icon: const Icon(Icons.delete_outline, size: 20),
                   ),
                 ],
               ),
@@ -887,248 +982,6 @@ class _OwnerMenu extends StatelessWidget {
           ),
       ],
     );
-  }
-}
-
-class _MenuItemDialog extends StatefulWidget {
-  const _MenuItemDialog({
-    this.item,
-    required this.shops,
-    required this.selectedShopKey,
-    required this.onUploadMedia,
-  });
-
-  final CanteenMenuItem? item;
-  final List<CanteenShop> shops;
-  final String selectedShopKey;
-  final Future<String> Function(Uint8List bytes, String filename) onUploadMedia;
-
-  @override
-  State<_MenuItemDialog> createState() => _MenuItemDialogState();
-}
-
-class _MenuItemDialogState extends State<_MenuItemDialog> {
-  late final TextEditingController _name;
-  late final TextEditingController _description;
-  late final TextEditingController _price;
-  late final TextEditingController _category;
-  late String _shopKey;
-  String? _imageUrl;
-  Uint8List? _imageBytes;
-  bool _uploading = false;
-  late bool _available;
-  late bool _vegetarian;
-  late bool _instant;
-
-  @override
-  void initState() {
-    super.initState();
-    final item = widget.item;
-    _name = TextEditingController(text: item?.name ?? '');
-    _description = TextEditingController(text: item?.description ?? '');
-    _price = TextEditingController(text: item?.price.toStringAsFixed(0) ?? '');
-    _category = TextEditingController(text: item?.category ?? 'meals');
-    final itemShopKey = item?.effectiveShopKey;
-    _shopKey = widget.shops.any((shop) => shop.shopKey == itemShopKey)
-        ? itemShopKey!
-        : widget.selectedShopKey;
-    _imageUrl = item?.imageUrl;
-    _available = item?.isAvailable ?? true;
-    _vegetarian = item?.isVegetarian ?? true;
-    _instant = item?.isInstant ?? false;
-  }
-
-  @override
-  void dispose() {
-    _name.dispose();
-    _description.dispose();
-    _price.dispose();
-    _category.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.item == null ? 'Add menu item' : 'Edit menu item'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _name,
-              decoration: const InputDecoration(labelText: 'Name'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _description,
-              decoration: const InputDecoration(labelText: 'Description'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _price,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(labelText: 'Price'),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: _shopKey,
-              decoration: const InputDecoration(labelText: 'Shop'),
-              items: [
-                for (final shop in widget.shops)
-                  DropdownMenuItem(value: shop.shopKey, child: Text(shop.name)),
-              ],
-              onChanged: (value) => setState(() {
-                _shopKey = value ?? _shopKey;
-              }),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: _imageBytes != null
-                        ? Image.memory(_imageBytes!, fit: BoxFit.contain)
-                        : _imageUrl != null && _imageUrl!.isNotEmpty
-                        ? Image.network(_imageUrl!, fit: BoxFit.contain)
-                        : const ColoredBox(
-                            color: Color(0xFFE9EDF5),
-                            child: Icon(Icons.image_outlined),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _uploading ? null : _pickAndUploadImage,
-                    icon: _uploading
-                        ? const SizedBox.square(
-                            dimension: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.upload_outlined),
-                    label: Text(
-                      _imageUrl == null ? 'Upload item image' : 'Replace image',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Categories are named by whoever runs the counter, so this is a
-            // free label rather than a fixed list: stationery needs its own.
-            TextField(
-              controller: _category,
-              decoration: const InputDecoration(
-                labelText: 'Category',
-                hintText: 'meals, snacks, Hair Care & Shampoo',
-              ),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Available'),
-              value: _available,
-              onChanged: (value) => setState(() => _available = value),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Vegetarian'),
-              value: _vegetarian,
-              onChanged: (value) => setState(() => _vegetarian = value),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Instant'),
-              subtitle: const Text('Served straight from the counter'),
-              value: _instant,
-              onChanged: (value) => setState(() => _instant = value),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _uploading
-              ? null
-              : () {
-                  final price = double.tryParse(_price.text.trim());
-                  if (_name.text.trim().isEmpty ||
-                      _category.text.trim().isEmpty ||
-                      price == null ||
-                      price <= 0) {
-                    return;
-                  }
-                  Navigator.pop(
-                    context,
-                    CanteenMenuItem(
-                      id: widget.item?.id ?? '',
-                      name: _name.text.trim(),
-                      description: _description.text.trim(),
-                      store: MenuStoreLabel.parse(_shopKey),
-                      shopKey: _shopKey,
-                      category: _category.text.trim(),
-                      price: price,
-                      isVegetarian: _vegetarian,
-                      isPopular: widget.item?.isPopular ?? false,
-                      isAvailable: _available,
-                      isInstant: _instant,
-                      prepMinutes: widget.item?.prepMinutes ?? 10,
-                      imageUrl: _imageUrl,
-                    ),
-                  );
-                },
-          child: const Text('Save'),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _pickAndUploadImage() async {
-    try {
-      final picked = await pickImageFile();
-      if (picked == null || picked.bytes.isEmpty || !mounted) return;
-
-      if (picked.bytes.length > 10 * 1024 * 1024) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Images must not exceed 10 MB.')),
-          );
-        }
-        return;
-      }
-
-      setState(() {
-        _uploading = true;
-        _imageBytes = picked.bytes;
-      });
-      final url = await widget.onUploadMedia(picked.bytes, picked.name);
-      if (mounted) setState(() => _imageUrl = url);
-    } catch (error) {
-      if (mounted) {
-        setState(() => _imageBytes = null);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error.toString().replaceFirst('Exception: ', '')),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _uploading = false);
-    }
   }
 }
 
@@ -1162,7 +1015,7 @@ class _SectionTabs extends StatelessWidget {
             ButtonSegment(
               value: 2,
               icon: Icon(Icons.analytics_outlined),
-              label: Text('Captain Sales'),
+              label: Text('Sales & Profit'),
             ),
           ],
           selected: {index},

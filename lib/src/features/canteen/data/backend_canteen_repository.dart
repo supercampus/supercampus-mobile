@@ -342,6 +342,7 @@ class BackendCanteenRepository implements CanteenRepository {
       'category': item.category,
       'price': item.price,
       'actualPrice': item.effectiveActualPrice,
+      'cost': item.cost ?? item.effectiveCost,
       'prepMinutes': item.prepMinutes,
       'isVegetarian': item.isVegetarian,
       'isPopular': item.isPopular,
@@ -499,6 +500,9 @@ class BackendCanteenRepository implements CanteenRepository {
       actualPrice: item['actualPrice'] == null
           ? _number(item['price'])
           : _number(item['actualPrice']),
+      cost: item['cost'] != null
+          ? _number(item['cost'])
+          : (item['costPrice'] != null ? _number(item['costPrice']) : null),
       isVegetarian: item['isVegetarian'] != false,
       isPopular: item['isPopular'] == true,
       isAvailable: item['isAvailable'] != false,
@@ -550,6 +554,11 @@ class BackendCanteenRepository implements CanteenRepository {
                 shopKey: _text(line['store']).toLowerCase(),
                 category: _text(line['category'], fallback: 'meals'),
                 price: _number(line['price']),
+                cost: line['cost'] != null
+                    ? _number(line['cost'])
+                    : (line['costPrice'] != null
+                        ? _number(line['costPrice'])
+                        : null),
                 isVegetarian: line['isVegetarian'] != false,
                 isInstant: line['isInstant'] == true,
               );

@@ -29,6 +29,7 @@ class CanteenMenuItem {
     required this.description,
     required this.category,
     required this.price,
+    this.cost,
     this.actualPrice,
     required this.isVegetarian,
     this.store = MenuStore.classic,
@@ -52,7 +53,22 @@ class CanteenMenuItem {
   /// A label within [store], named by whoever runs the counter — 'meals' for
   /// food, 'Hair Care & Shampoo' for stationery.
   final String category;
+
+  /// Selling price charged to the customer.
   final double price;
+
+  /// Cost price to prepare / procure the item.
+  final double? cost;
+
+  /// Effective cost, defaulting to 70% of price if unconfigured so profit is always available.
+  double get effectiveCost => cost ?? (price * 0.7);
+
+  /// Profit per item = Selling Price - Cost.
+  double get profit => price - effectiveCost;
+
+  /// Profit margin ratio (0.0 to 1.0).
+  double get profitMargin => price > 0 ? (profit / price) : 0.0;
+
   final double? actualPrice;
   double get effectiveActualPrice => actualPrice ?? price;
   final bool isVegetarian;
@@ -72,6 +88,7 @@ class CanteenMenuItem {
     String? shopKey,
     String? category,
     double? price,
+    double? cost,
     double? actualPrice,
     bool? isVegetarian,
     bool? isPopular,
@@ -87,6 +104,7 @@ class CanteenMenuItem {
     shopKey: shopKey ?? this.shopKey,
     category: category ?? this.category,
     price: price ?? this.price,
+    cost: cost ?? this.cost,
     actualPrice: actualPrice ?? this.actualPrice,
     isVegetarian: isVegetarian ?? this.isVegetarian,
     isPopular: isPopular ?? this.isPopular,
@@ -124,6 +142,8 @@ class CartLine {
   final int quantity;
 
   double get total => item.price * quantity;
+  double get costTotal => item.effectiveCost * quantity;
+  double get profitTotal => total - costTotal;
 }
 
 enum CanteenOrderStatus {
@@ -288,6 +308,13 @@ class CanteenOrder {
 
   bool get isInstantOnly =>
       lines.isNotEmpty && lines.every((line) => line.item.isInstant);
+
+  double get totalCost =>
+      lines.fold<double>(0, (sum, line) => sum + line.costTotal);
+
+  double get totalProfit => lines.isEmpty
+      ? total * 0.3
+      : lines.fold<double>(0, (sum, line) => sum + line.profitTotal);
 }
 
 enum WalletTransactionType { credit, debit }

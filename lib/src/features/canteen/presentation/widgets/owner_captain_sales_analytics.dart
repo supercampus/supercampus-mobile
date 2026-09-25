@@ -69,11 +69,30 @@ class _OwnerCaptainSalesAnalyticsState
               ? order.total
               : 0),
     );
+    final totalCost = filtered.fold<double>(
+      0,
+      (sum, order) =>
+          sum +
+          (order.status == CanteenOrderStatus.completed ||
+                  order.status.isActive
+              ? order.totalCost
+              : 0),
+    );
+    final totalProfit = filtered.fold<double>(
+      0,
+      (sum, order) =>
+          sum +
+          (order.status == CanteenOrderStatus.completed ||
+                  order.status.isActive
+              ? order.totalProfit
+              : 0),
+    );
     final totalOrders = filtered.length;
     final deliveredOrders = filtered
         .where((o) => o.status == CanteenOrderStatus.completed)
         .length;
     final aov = totalOrders > 0 ? (totalRevenue / totalOrders) : 0.0;
+    final margin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0.0;
 
     return RefreshIndicator(
       onRefresh: () async => widget.onRefresh(),
@@ -88,14 +107,14 @@ class _OwnerCaptainSalesAnalyticsState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Captain Sales Analytics',
+                      'Sales & Profit Analytics',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                     ),
                     const SizedBox(height: 2),
                     const Text(
-                      'Real-time revenue & fulfillment by captain',
+                      'Real-time revenue, cost & profit tracking',
                       style: TextStyle(fontSize: 12, color: AppColors.muted),
                     ),
                   ],
@@ -129,16 +148,40 @@ class _OwnerCaptainSalesAnalyticsState
           ),
           const SizedBox(height: 16),
 
-          // Overview KPI cards
+          // Overview KPI cards (2 rows of 2 cards for clear financial overview)
           Row(
             children: [
               Expanded(
                 child: _KpiCard(
-                  title: 'Captain Sales',
+                  title: 'Total Sales',
                   value: formatCurrency(totalRevenue),
                   subtitle: '$totalOrders orders',
                   icon: Icons.payments_rounded,
+                  color: const Color(0xFF2563EB),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _KpiCard(
+                  title: 'Net Profit',
+                  value: formatCurrency(totalProfit),
+                  subtitle: '${margin.toStringAsFixed(1)}% margin',
+                  icon: Icons.trending_up_rounded,
                   color: const Color(0xFF10B981),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _KpiCard(
+                  title: 'Total Cost',
+                  value: formatCurrency(totalCost),
+                  subtitle: 'Cost of items',
+                  icon: Icons.inventory_2_outlined,
+                  color: const Color(0xFFF59E0B),
                 ),
               ),
               const SizedBox(width: 10),
@@ -147,19 +190,9 @@ class _OwnerCaptainSalesAnalyticsState
                   title: 'Delivered',
                   value: '$deliveredOrders',
                   subtitle:
-                      '${totalOrders > 0 ? ((deliveredOrders / totalOrders) * 100).toInt() : 0}% fulfilled',
+                      '${totalOrders > 0 ? ((deliveredOrders / totalOrders) * 100).toInt() : 0}% fulfilled · ${formatCurrency(aov)} avg',
                   icon: Icons.check_circle_rounded,
-                  color: const Color(0xFF2563EB),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _KpiCard(
-                  title: 'Avg Value',
-                  value: formatCurrency(aov),
-                  subtitle: '${byCaptain.length} active',
-                  icon: Icons.trending_up_rounded,
-                  color: const Color(0xFFF59E0B),
+                  color: const Color(0xFF8B5CF6),
                 ),
               ),
             ],
@@ -201,6 +234,15 @@ class _OwnerCaptainSalesAnalyticsState
                     (o.status == CanteenOrderStatus.completed ||
                             o.status.isActive
                         ? o.total
+                        : 0),
+              );
+              final captainProfit = captainOrders.fold<double>(
+                0,
+                (sum, o) =>
+                    sum +
+                    (o.status == CanteenOrderStatus.completed ||
+                            o.status.isActive
+                        ? o.totalProfit
                         : 0),
               );
               final revenueRatio =
@@ -275,12 +317,20 @@ class _OwnerCaptainSalesAnalyticsState
                                     color: Color(0xFF0F766E),
                                   ),
                                 ),
-                                Text(
-                                  '${(revenueRatio * 100).toStringAsFixed(1)}% of sales',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.muted,
-                                    fontWeight: FontWeight.w600,
+                                const SizedBox(height: 2),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Profit: ${formatCurrency(captainProfit)}',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF047857),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -369,12 +419,25 @@ class _OwnerCaptainSalesAnalyticsState
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(
-                                    formatCurrency(order.total),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
-                                    ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        formatCurrency(order.total),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Profit: +${formatCurrency(order.totalProfit)}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 10,
+                                          color: Color(0xFF047857),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
