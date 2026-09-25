@@ -136,7 +136,12 @@ class UserSession {
   /// Whether the user has system or portal administrative authority.
   bool get isAdmin {
     final lowerEmail = email.trim().toLowerCase();
-    if (lowerEmail == 'shashi@mec.local' || lowerEmail.contains('captain')) return false;
+    if (lowerEmail == 'shashi@mec.local' ||
+        lowerEmail.contains('captain') ||
+        lowerEmail == 'akhil@gmail.com' ||
+        isCanteenOwner) {
+      return false;
+    }
     final roles = <String>{
       roleKey,
       ...roleIds,
@@ -149,6 +154,20 @@ class UserSession {
         roles.contains('admin') ||
         roles.contains('administrator') ||
         roles.contains('superadmin');
+  }
+
+  /// Whether the user is the Canteen Owner or general food court operator.
+  bool get isCanteenOwner {
+    final lowerEmail = email.trim().toLowerCase();
+    final roles = <String>{
+      roleKey,
+      ...roleIds,
+    }.map((r) => r.trim().toLowerCase()).toSet();
+    return lowerEmail == 'akhil@gmail.com' ||
+        roles.contains('canteen_owner') ||
+        roles.contains('shop_owner') ||
+        roles.contains('canteen_manager') ||
+        (roles.contains('owner') && !roles.contains('stationery'));
   }
 
   /// Whether the user is a Canteen Captain or food counter operator.
@@ -194,6 +213,15 @@ class UserSession {
 
   /// Whether the user is an Academic Faculty member, Advisor, or HOD.
   bool get isFaculty {
+    if (isCanteenOwner ||
+        isCaptain ||
+        isStationeryOwner ||
+        isAccountant ||
+        isSecurityStaff ||
+        isLibrarian ||
+        isHostelWarden) {
+      return false;
+    }
     final roles = <String>{
       roleKey,
       ...roleIds,
@@ -244,6 +272,7 @@ class UserSession {
   /// High-visibility short role badge text for institutional portal headers.
   String get roleBadgeText {
     if (isAdmin) return 'ADMIN';
+    if (isCanteenOwner) return 'OWNER';
     if (isCaptain) return 'CAPTAIN';
     if (isAccountant) return 'ACCOUNTS';
     if (isStationeryOwner) return 'STATIONERY';
@@ -264,6 +293,7 @@ class UserSession {
   /// Human-readable descriptive title for the user's role on campus.
   String get roleDisplayTitle {
     if (isAdmin) return 'Central Administration & Institutional Desk';
+    if (isCanteenOwner) return 'Canteen & Food Court Owner Workspace';
     if (isCaptain) return 'Canteen Counter & Real-Time Orders';
     if (isAccountant) return 'Campus Accounts & Student Wallets';
     if (isStationeryOwner) return 'Stationery Store & Inventory';

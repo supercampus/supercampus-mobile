@@ -27,6 +27,7 @@ class CanteenOwnerHome extends StatefulWidget {
     required this.onSaveMenuItem,
     required this.onDeleteMenuItem,
     required this.onUploadMedia,
+    this.isMainHome = false,
   });
 
   final CanteenStore store;
@@ -40,6 +41,7 @@ class CanteenOwnerHome extends StatefulWidget {
   final Future<void> Function(CanteenMenuItem item, bool create) onSaveMenuItem;
   final Future<void> Function(String itemId) onDeleteMenuItem;
   final Future<String> Function(Uint8List bytes, String filename) onUploadMedia;
+  final bool isMainHome;
 
   @override
   State<CanteenOwnerHome> createState() => _CanteenOwnerHomeState();
@@ -52,9 +54,11 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
 
   List<CanteenShop> get _assignedShops {
     final assigned = widget.store.assignedShopKeys.toSet();
-    return widget.store.shops
-        .where((shop) => shop.isActive && assigned.contains(shop.shopKey))
+    final filtered = widget.store.shops
+        .where((shop) => shop.isActive && (assigned.isEmpty || assigned.contains(shop.shopKey)))
         .toList();
+    if (filtered.isNotEmpty) return filtered;
+    return widget.store.shops.where((shop) => shop.isActive).toList();
   }
 
   String? get _activeShopKey {
@@ -165,7 +169,10 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: ModuleBackButton(onPressed: widget.onExitModule),
+        leading: widget.isMainHome
+            ? null
+            : ModuleBackButton(onPressed: widget.onExitModule),
+        automaticallyImplyLeading: !widget.isMainHome,
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

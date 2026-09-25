@@ -36,7 +36,7 @@ class MockCanteenRepository implements CanteenRepository {
         CanteenShop(
           id: 'shop-classic',
           shopKey: 'classic',
-          name: 'Campus Classic',
+          name: 'Campus Canteen',
           category: 'canteen',
         ),
         CanteenShop(
@@ -59,6 +59,13 @@ class MockCanteenRepository implements CanteenRepository {
         ),
       ],
       assignedShopKeys: const ['classic', 'bites', 'stationery'],
+      canManage: email.trim().toLowerCase() == 'akhil@gmail.com' ||
+          email.trim().toLowerCase().contains('owner'),
+      canManageMenu: true,
+      staffState: (email.trim().toLowerCase() == 'akhil@gmail.com' ||
+              email.trim().toLowerCase().contains('owner'))
+          ? const CanteenStaffState(mode: CanteenStaffMode.work, shopOpen: true)
+          : const CanteenStaffState(),
       menu: List.unmodifiable(_menu),
       orders: List.unmodifiable(_orders),
       walletTransactions: List.unmodifiable(_transactions),

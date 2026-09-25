@@ -33,6 +33,7 @@ class CanteenShell extends StatefulWidget {
     this.onProfileTap,
     this.hasAlerts = false,
     this.photoUrl,
+    this.isMainHome = false,
   });
 
   final StudentSession session;
@@ -44,6 +45,7 @@ class CanteenShell extends StatefulWidget {
   final VoidCallback? onProfileTap;
   final bool hasAlerts;
   final String? photoUrl;
+  final bool isMainHome;
 
   @override
   State<CanteenShell> createState() => _CanteenShellState();
@@ -62,7 +64,9 @@ class _CanteenShellState extends State<CanteenShell> {
 
   bool get _canUseWorkMode {
     final session = widget.session;
-    return (_store?.canManage == true || session.isCaptain) &&
+    return (_store?.canManage == true ||
+            session.isCaptain ||
+            session.isCanteenOwner) &&
         session.role != UserRole.student &&
         session.activePortalFamily != PortalFamily.student;
   }
@@ -77,7 +81,8 @@ class _CanteenShellState extends State<CanteenShell> {
 
   bool get _isLaundryOperator =>
       widget.session.email.trim().toLowerCase() == 'laundry@mec.local' ||
-      (_store?.canManage == true &&
+      (!widget.session.isCanteenOwner &&
+          _store?.canManage == true &&
           _store!.assignedShopKeys.contains('mec-laundry'));
 
   @override
@@ -529,7 +534,8 @@ class _CanteenShellState extends State<CanteenShell> {
       );
     }
 
-    final isCaptain = widget.session.isCaptain || (store.canManage && !store.canManageMenu);
+    final isCaptain = widget.session.isCaptain ||
+        (store.canManage && !store.canManageMenu && !widget.session.isCanteenOwner);
     if (isCaptain && _ownerWorkMode) {
       final captainStore = store.staffState.mode == CanteenStaffMode.work
           ? store
@@ -578,6 +584,7 @@ class _CanteenShellState extends State<CanteenShell> {
         onDeleteMenuItem: _deleteMenuItem,
         onUploadMedia: (bytes, filename) =>
             _repository.uploadMedia(bytes, filename: filename),
+        isMainHome: widget.isMainHome,
       );
     }
 

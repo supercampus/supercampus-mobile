@@ -63,6 +63,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Color _roleColor() {
     if (session.isAdmin) return const Color(0xFF4F46E5);
+    if (session.isCanteenOwner) return const Color(0xFF059669);
     if (session.isCaptain) return const Color(0xFF059669);
     if (session.isAccountant) return const Color(0xFF4F46E5);
     if (session.isStationeryOwner) return const Color(0xFF0891B2);
@@ -75,6 +76,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   IconData _roleIcon() {
     if (session.isAdmin) return Icons.admin_panel_settings_rounded;
+    if (session.isCanteenOwner) return Icons.storefront_rounded;
     if (session.isCaptain) return Icons.restaurant_rounded;
     if (session.isAccountant) return Icons.account_balance_wallet_rounded;
     if (session.isStationeryOwner) return Icons.edit_note_rounded;
@@ -87,6 +89,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   String _primaryModuleId() {
     if (session.isAdmin) return ModuleCatalog.canteen;
+    if (session.isCanteenOwner) return ModuleCatalog.canteen;
     if (session.isCaptain) return ModuleCatalog.canteen;
     if (session.isAccountant) return ModuleCatalog.canteen;
     if (session.isStationeryOwner) return ModuleCatalog.canteen;

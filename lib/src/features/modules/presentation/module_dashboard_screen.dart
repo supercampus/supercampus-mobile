@@ -201,6 +201,41 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       );
     }
 
+    if (widget.session.isCanteenOwner) {
+      final safeBottom = MediaQuery.paddingOf(context).bottom;
+      return Stack(
+        children: [
+          CanteenShell(
+            session: widget.session as dynamic,
+            onExitModule: () {},
+            onSignOut: widget.onSignOut,
+            repository: widget.canteenRepository,
+            onAlertsTap: _openAlerts,
+            onProfileTap: _openProfileSheet,
+            hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
+            photoUrl: widget.session.photoUrl,
+            isMainHome: true,
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: safeBottom + 10,
+            child: CampusNavBar(
+              selectedId: 'home',
+              initials: initialsOf(widget.session.displayName),
+              avatarUrl: widget.session.photoUrl,
+              onHome: () {},
+              onModules: _openModules,
+              onProfile: _openProfileSheet,
+              onScan: widget.onScan == null
+                  ? null
+                  : () => widget.onScan!(context),
+            ),
+          ),
+        ],
+      );
+    }
+
     // Clean, accessible, executive portal dashboard across all institutional roles:
     // Accountant, Stationery Owner, Faculty, Security, Librarian, Warden, Admin, Staff.
     return AdminDashboardScreen(
