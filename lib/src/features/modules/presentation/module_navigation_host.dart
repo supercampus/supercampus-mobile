@@ -43,6 +43,10 @@ class ModuleNavigationHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (session.isCaptain) {
+      return child;
+    }
+
     if (session.isStudent) {
       final safeBottom = MediaQuery.paddingOf(context).bottom;
       const navHeight = 76.0;

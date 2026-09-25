@@ -498,7 +498,10 @@ class _CanteenShellState extends State<CanteenShell> {
       );
     }
     if (store == null) {
-      return const SkeletonList(rows: 6, rowHeight: 84);
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: const SafeArea(child: SkeletonList(rows: 6, rowHeight: 84)),
+      );
     }
 
     if (_isStationeryOperator) {
@@ -526,7 +529,7 @@ class _CanteenShellState extends State<CanteenShell> {
       );
     }
 
-    if (store.canManage && !store.canManageMenu) {
+    if (widget.session.isCaptain || (store.canManage && !store.canManageMenu)) {
       return CanteenCaptainHome(
         store: store,
         onExitModule: widget.onExitModule,
@@ -538,6 +541,10 @@ class _CanteenShellState extends State<CanteenShell> {
           await _repository.scanOrder(payload);
           await _loadStore(silent: true);
         },
+        onProfileTap: widget.onProfileTap,
+        photoUrl: widget.photoUrl ?? widget.session.photoUrl,
+        displayName: widget.session.displayName,
+        isMainHome: widget.session.isCaptain,
       );
     }
 

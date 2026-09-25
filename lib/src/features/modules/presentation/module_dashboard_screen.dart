@@ -188,8 +188,21 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       );
     }
 
+    if (widget.session.isCaptain) {
+      return CanteenShell(
+        session: widget.session as dynamic,
+        onExitModule: () {},
+        onSignOut: widget.onSignOut,
+        repository: widget.canteenRepository,
+        onAlertsTap: _openAlerts,
+        onProfileTap: _openProfileSheet,
+        hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
+        photoUrl: widget.session.photoUrl,
+      );
+    }
+
     // Clean, accessible, executive portal dashboard across all institutional roles:
-    // Captain, Accountant, Stationery Owner, Faculty, Security, Librarian, Warden, Admin, Staff.
+    // Accountant, Stationery Owner, Faculty, Security, Librarian, Warden, Admin, Staff.
     return AdminDashboardScreen(
       session: widget.session,
       permissions: widget.permissions,

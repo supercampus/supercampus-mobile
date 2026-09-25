@@ -21,6 +21,10 @@ class CanteenCaptainHome extends StatefulWidget {
     required this.onModeChanged,
     required this.onOrderStatusChanged,
     this.onScanOrder,
+    this.onProfileTap,
+    this.photoUrl,
+    this.displayName,
+    this.isMainHome = false,
   });
 
   final CanteenStore store;
@@ -31,6 +35,10 @@ class CanteenCaptainHome extends StatefulWidget {
   final Future<void> Function(String orderId, CanteenOrderStatus status)
   onOrderStatusChanged;
   final Future<void> Function(String qrPayload)? onScanOrder;
+  final VoidCallback? onProfileTap;
+  final String? photoUrl;
+  final String? displayName;
+  final bool isMainHome;
 
   @override
   State<CanteenCaptainHome> createState() => _CanteenCaptainHomeState();
@@ -75,6 +83,73 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
     });
   }
 
+  void _openFallbackProfileSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                backgroundImage: widget.photoUrl != null && widget.photoUrl!.isNotEmpty
+                    ? NetworkImage(widget.photoUrl!)
+                    : null,
+                child: widget.photoUrl == null || widget.photoUrl!.isEmpty
+                    ? Text(
+                        _initials(widget.displayName ?? widget.store.user.name),
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      )
+                    : null,
+              ),
+              const SizedBox(height: 14),
+              Text(
+                widget.displayName ?? widget.store.user.name,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                widget.store.user.email,
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 24),
+              const Divider(height: 1),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.logout, color: Theme.of(ctx).colorScheme.error),
+                title: Text(
+                  'Sign out',
+                  style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+                ),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  widget.onSignOut();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final active = widget.store.orders
@@ -94,105 +169,112 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
         onRefresh: () => _run(widget.onRefresh),
         onStatus: (id, status) =>
             _run(() => widget.onOrderStatusChanged(id, status)),
+        onSwitchToWork: () => _run(() => widget.onModeChanged(CanteenStaffMode.work)),
       ),
       _CaptainHistory(orders: history, onRefresh: () => _run(widget.onRefresh)),
-      _CaptainProfile(
-        store: widget.store,
-        busy: _busy,
-        onMode: (mode) => _run(() => widget.onModeChanged(mode)),
-        onSignOut: widget.onSignOut,
-      ),
     ];
+
+    final avatarInitials = _initials(widget.displayName ?? widget.store.user.name);
 
     return Scaffold(
       appBar: AppBar(
-        leading: ModuleBackButton(onPressed: widget.onExitModule),
+        leading: widget.isMainHome ? null : ModuleBackButton(onPressed: widget.onExitModule),
+        automaticallyImplyLeading: !widget.isMainHome,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Canteen captain'),
-            Text(
-              working ? 'Work mode' : 'Eat mode',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+            InkWell(
+              borderRadius: BorderRadius.circular(4),
+              onTap: _busy
+                  ? null
+                  : () => _run(() => widget.onModeChanged(
+                        working ? CanteenStaffMode.eat : CanteenStaffMode.work,
+                      )),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    working ? 'Work mode' : 'Eat mode',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.swap_horiz_rounded, size: 14),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: 'Scan order QR',
-            onPressed: _busy || widget.onScanOrder == null
-                ? null
-                : _scanOrder,
-            icon: const Icon(Icons.qr_code_scanner_rounded),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: GestureDetector(
+              onTap: widget.onProfileTap ?? () => _openFallbackProfileSheet(context),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                backgroundImage: widget.photoUrl != null && widget.photoUrl!.isNotEmpty
+                    ? NetworkImage(widget.photoUrl!)
+                    : null,
+                child: widget.photoUrl == null || widget.photoUrl!.isEmpty
+                    ? (avatarInitials.isNotEmpty
+                        ? Text(
+                            avatarInitials,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          )
+                        : const Icon(Icons.person, size: 20, color: Colors.grey))
+                    : null,
+              ),
+            ),
           ),
         ],
       ),
-      floatingActionButton: widget.onScanOrder == null || !working
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: _busy ? null : _scanOrder,
-              icon: const Icon(Icons.qr_code_scanner_rounded),
-              label: const Text('Scan order'),
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-            ),
       body: Column(
         children: [
           if (_busy) const LinearProgressIndicator(minHeight: 2),
-          _CaptainSectionSwitcher(
-            selectedIndex: _index,
-            onSelected: (value) => setState(() => _index = value),
-          ),
           Expanded(
-            child: IndexedStack(index: _index, children: pages),
+            child: IndexedStack(
+              index: _index.clamp(0, 1),
+              children: pages,
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _index.clamp(0, 1),
+        onDestinationSelected: (value) {
+          if (value == 2) {
+            if (!_busy && widget.onScanOrder != null) {
+              _scanOrder();
+            }
+          } else {
+            setState(() => _index = value);
+          }
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long_rounded),
+            label: 'Orders',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history_rounded),
+            label: 'History',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.qr_code_scanner_rounded),
+            selectedIcon: Icon(Icons.qr_code_scanner_rounded),
+            label: 'Scan',
           ),
         ],
       ),
     );
   }
-}
-
-class _CaptainSectionSwitcher extends StatelessWidget {
-  const _CaptainSectionSwitcher({
-    required this.selectedIndex,
-    required this.onSelected,
-  });
-
-  final int selectedIndex;
-  final ValueChanged<int> onSelected;
-
-  @override
-  Widget build(BuildContext context) => ColoredBox(
-    color: Theme.of(context).scaffoldBackgroundColor,
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
-      child: SizedBox(
-        width: double.infinity,
-        child: SegmentedButton<int>(
-          showSelectedIcon: false,
-          segments: const [
-            ButtonSegment(
-              value: 0,
-              icon: Icon(Icons.receipt_long_outlined),
-              label: Text('Orders'),
-            ),
-            ButtonSegment(
-              value: 1,
-              icon: Icon(Icons.history_outlined),
-              label: Text('History'),
-            ),
-            ButtonSegment(
-              value: 2,
-              icon: Icon(Icons.person_outline),
-              label: Text('Profile'),
-            ),
-          ],
-          selected: {selectedIndex},
-          onSelectionChanged: (selection) => onSelected(selection.first),
-        ),
-      ),
-    ),
-  );
 }
 
 class _CaptainQueue extends StatelessWidget {
@@ -202,6 +284,7 @@ class _CaptainQueue extends StatelessWidget {
     required this.busy,
     required this.onRefresh,
     required this.onStatus,
+    this.onSwitchToWork,
   });
 
   final List<CanteenOrder> orders;
@@ -209,6 +292,7 @@ class _CaptainQueue extends StatelessWidget {
   final bool busy;
   final Future<void> Function() onRefresh;
   final void Function(String id, CanteenOrderStatus status) onStatus;
+  final VoidCallback? onSwitchToWork;
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +324,7 @@ class _CaptainQueue extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           if (!working)
-            const _ModeNotice()
+            _ModeNotice(onSwitchToWork: onSwitchToWork)
           else if (orders.isEmpty)
             const CanteenSurface(
               child: Padding(
@@ -495,132 +579,6 @@ class _CaptainHistory extends StatelessWidget {
   }
 }
 
-class _CaptainProfile extends StatelessWidget {
-  const _CaptainProfile({
-    required this.store,
-    required this.busy,
-    required this.onMode,
-    required this.onSignOut,
-  });
-
-  final CanteenStore store;
-  final bool busy;
-  final void Function(CanteenStaffMode mode) onMode;
-  final VoidCallback onSignOut;
-
-  @override
-  Widget build(BuildContext context) {
-    final mode = store.staffState.mode;
-    final shopNames = store.shops
-        .where((shop) => store.assignedShopKeys.contains(shop.shopKey))
-        .map((shop) => shop.name)
-        .join(', ');
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
-      children: [
-        Text(
-          'Captain profile',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: 18),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF4200FF), Color(0xFF9600FF)],
-            ),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 31,
-                backgroundColor: Colors.white.withValues(alpha: .18),
-                foregroundColor: Colors.white,
-                child: Text(
-                  store.user.initials,
-                  style: const TextStyle(fontSize: 22),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      store.user.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      store.user.email,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      shopNames.isEmpty
-                          ? 'Canteen captain'
-                          : '$shopNames · Captain',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 18),
-        CanteenSurface(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Eat / work mode',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 5),
-              const Text(
-                'Work shows the live counter queue. Eat pauses order handling.',
-                style: TextStyle(color: AppColors.muted),
-              ),
-              const SizedBox(height: 14),
-              SegmentedButton<CanteenStaffMode>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(
-                    value: CanteenStaffMode.work,
-                    icon: Icon(Icons.storefront_outlined),
-                    label: Text('Work'),
-                  ),
-                  ButtonSegment(
-                    value: CanteenStaffMode.eat,
-                    icon: Icon(Icons.restaurant_outlined),
-                    label: Text('Eat'),
-                  ),
-                ],
-                selected: {mode},
-                onSelectionChanged: busy
-                    ? null
-                    : (selection) => onMode(selection.first),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        OutlinedButton.icon(
-          onPressed: onSignOut,
-          icon: const Icon(Icons.logout),
-          label: const Text('Sign out'),
-        ),
-      ],
-    );
-  }
-}
-
 class _ModeBadge extends StatelessWidget {
   const _ModeBadge({required this.working});
   final bool working;
@@ -644,25 +602,34 @@ class _ModeBadge extends StatelessWidget {
 }
 
 class _ModeNotice extends StatelessWidget {
-  const _ModeNotice();
+  const _ModeNotice({this.onSwitchToWork});
+  final VoidCallback? onSwitchToWork;
 
   @override
-  Widget build(BuildContext context) => const CanteenSurface(
+  Widget build(BuildContext context) => CanteenSurface(
     child: Padding(
-      padding: EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       child: Column(
         children: [
-          Icon(Icons.restaurant_outlined, size: 39, color: AppColors.primary),
-          SizedBox(height: 10),
-          Text(
+          const Icon(Icons.restaurant_outlined, size: 39, color: AppColors.primary),
+          const SizedBox(height: 10),
+          const Text(
             'You are in eat mode',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
-          SizedBox(height: 5),
-          Text(
-            'Switch to Work in Profile to handle orders.',
+          const SizedBox(height: 5),
+          const Text(
+            'Switch to Work mode to handle orders.',
             style: TextStyle(color: AppColors.muted),
           ),
+          if (onSwitchToWork != null) ...[
+            const SizedBox(height: 14),
+            FilledButton.tonalIcon(
+              onPressed: onSwitchToWork,
+              icon: const Icon(Icons.work_outline_rounded, size: 18),
+              label: const Text('Switch to work mode'),
+            ),
+          ],
         ],
       ),
     ),

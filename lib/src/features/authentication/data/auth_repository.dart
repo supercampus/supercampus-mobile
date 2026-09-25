@@ -136,6 +136,7 @@ class UserSession {
   /// Whether the user has system or portal administrative authority.
   bool get isAdmin {
     final lowerEmail = email.trim().toLowerCase();
+    if (lowerEmail == 'shashi@mec.local' || lowerEmail.contains('captain')) return false;
     final roles = <String>{
       roleKey,
       ...roleIds,
@@ -152,11 +153,14 @@ class UserSession {
 
   /// Whether the user is a Canteen Captain or food counter operator.
   bool get isCaptain {
+    final lowerEmail = email.trim().toLowerCase();
     final roles = <String>{
       roleKey,
       ...roleIds,
     }.map((r) => r.trim().toLowerCase()).toSet();
-    return roles.contains('captain') ||
+    return lowerEmail == 'shashi@mec.local' ||
+        lowerEmail.contains('captain') ||
+        roles.contains('captain') ||
         roles.contains('canteen_captain') ||
         roles.contains('canteen_operator');
   }
