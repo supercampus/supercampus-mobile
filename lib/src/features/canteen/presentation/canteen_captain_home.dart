@@ -349,6 +349,7 @@ class _CaptainQueue extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _CaptainOrderCard(
+                  key: ValueKey('${order.id}_${order.status.name}'),
                   order: order,
                   enabled: !busy,
                   onStatus: onStatus,
@@ -362,6 +363,7 @@ class _CaptainQueue extends StatelessWidget {
 
 class _CaptainOrderCard extends StatelessWidget {
   const _CaptainOrderCard({
+    super.key,
     required this.order,
     required this.enabled,
     required this.onStatus,
@@ -372,24 +374,30 @@ class _CaptainOrderCard extends StatelessWidget {
   final void Function(String id, CanteenOrderStatus status) onStatus;
 
   (CanteenOrderStatus, String, IconData)? get _next {
-    final next = order.nextServiceStep;
+    final next = order.nextServiceStep ??
+        (order.status.isActive ? CanteenOrderStatus.completed : null);
+    if (next == null) return null;
     return switch (next) {
       CanteenOrderStatus.preparing => (
-        next!,
+        next,
         'Start preparing',
         Icons.local_fire_department_outlined,
       ),
       CanteenOrderStatus.ready => (
-        next!,
+        next,
         'Ready for pickup',
         Icons.room_service_outlined,
       ),
       CanteenOrderStatus.completed => (
-        next!,
+        next,
         'Delivered',
         Icons.check_circle_outline,
       ),
-      _ => null,
+      _ => (
+        CanteenOrderStatus.completed,
+        'Delivered',
+        Icons.check_circle_outline,
+      ),
     };
   }
 
@@ -410,6 +418,7 @@ class _CaptainOrderCard extends StatelessWidget {
 
     return SwipeActionCard(
       enabled: enabled,
+      dismissOnCommit: next?.$1 == CanteenOrderStatus.completed,
       forward: next == null
           ? null
           : SwipeAction(

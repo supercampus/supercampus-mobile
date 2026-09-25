@@ -261,7 +261,7 @@ class MockCanteenRepository implements CanteenRepository {
         id: 'ORD-${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}${timestamp.day.toString().padLeft(2, '0')}-${(_orders.length + 241 + sequence).toString().padLeft(4, '0')}',
         lines: List.unmodifiable(shopLines),
         total: shopTotal,
-        status: CanteenOrderStatus.ready,
+        status: CanteenOrderStatus.pending,
         fulfilmentMode: FulfilmentMode.pickup,
         createdAt: timestamp,
         tokenNumber: 42 + _orders.length + sequence,

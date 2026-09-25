@@ -159,7 +159,8 @@ class _SwipeActionCardState extends State<SwipeActionCard>
     }
 
     HapticFeedback.mediumImpact();
-    if (!widget.dismissOnCommit) {
+    final shouldDismiss = projected.isNegative ? true : widget.dismissOnCommit;
+    if (!shouldDismiss) {
       // The row is staying, so the card comes back rather than flying off and
       // reappearing. The spring still inherits the release velocity, so the
       // return continues the gesture instead of cutting it off.

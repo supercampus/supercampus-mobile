@@ -166,5 +166,63 @@ void main() {
         expect(status.canReject, isTrue, reason: '$status was not rejectable');
       }
     });
+
+    test('instant orders advance from pending directly to delivered', () {
+      const instantItem = CanteenMenuItem(
+        id: 'snack-1',
+        name: 'Cookie',
+        description: '',
+        store: MenuStore.bites,
+        category: 'snacks',
+        price: 30,
+        isVegetarian: true,
+        isInstant: true,
+      );
+      final instantOrder = CanteenOrder(
+        id: 'ORD-101',
+        lines: [const CartLine(item: instantItem, quantity: 1)],
+        total: 30,
+        status: CanteenOrderStatus.pending,
+        fulfilmentMode: FulfilmentMode.pickup,
+        createdAt: DateTime.now(),
+      );
+
+      expect(instantOrder.isInstantOrder, isTrue);
+      expect(instantOrder.nextServiceStep, CanteenOrderStatus.completed);
+
+      // Even if an instant order is at ready, it must advance to completed
+      final readyInstant = instantOrder.copyWith(status: CanteenOrderStatus.ready);
+      expect(readyInstant.nextServiceStep, CanteenOrderStatus.completed);
+    });
+
+    test('non-instant orders advance pending -> preparing -> ready -> completed', () {
+      const preparedItem = CanteenMenuItem(
+        id: 'meal-1',
+        name: 'Fried Rice',
+        description: '',
+        store: MenuStore.classic,
+        category: 'meals',
+        price: 120,
+        isVegetarian: true,
+        isInstant: false,
+      );
+      final order = CanteenOrder(
+        id: 'ORD-102',
+        lines: [const CartLine(item: preparedItem, quantity: 1)],
+        total: 120,
+        status: CanteenOrderStatus.pending,
+        fulfilmentMode: FulfilmentMode.pickup,
+        createdAt: DateTime.now(),
+      );
+
+      expect(order.isInstantOrder, isFalse);
+      expect(order.nextServiceStep, CanteenOrderStatus.preparing);
+
+      final preparingOrder = order.copyWith(status: CanteenOrderStatus.preparing);
+      expect(preparingOrder.nextServiceStep, CanteenOrderStatus.ready);
+
+      final readyOrder = order.copyWith(status: CanteenOrderStatus.ready);
+      expect(readyOrder.nextServiceStep, CanteenOrderStatus.completed);
+    });
   });
 }

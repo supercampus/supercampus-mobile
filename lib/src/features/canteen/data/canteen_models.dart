@@ -247,19 +247,12 @@ class CanteenOrder {
       lines.isNotEmpty && lines.every((line) => line.item.isInstant);
 
   CanteenOrderStatus? get nextServiceStep {
-    if (isInstantOrder) {
-      return switch (status) {
-        CanteenOrderStatus.pending || CanteenOrderStatus.accepted =>
-          CanteenOrderStatus.completed,
-        _ => null,
-      };
-    }
     return switch (status) {
       CanteenOrderStatus.pending || CanteenOrderStatus.accepted =>
-        CanteenOrderStatus.preparing,
+        isInstantOrder ? CanteenOrderStatus.completed : CanteenOrderStatus.preparing,
       CanteenOrderStatus.preparing => CanteenOrderStatus.ready,
       CanteenOrderStatus.ready => CanteenOrderStatus.completed,
-      _ => null,
+      _ => status.isActive ? CanteenOrderStatus.completed : null,
     };
   }
 

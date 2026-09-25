@@ -556,14 +556,18 @@ class BackendCanteenRepository implements CanteenRepository {
           return CartLine(item: item, quantity: _integer(line['quantity'], 1));
         })
         .toList(growable: false);
-    final status = switch (_text(value['status'])) {
-      'pending' => CanteenOrderStatus.pending,
-      'accepted' => CanteenOrderStatus.accepted,
-      'preparing' => CanteenOrderStatus.preparing,
-      'ready' => CanteenOrderStatus.ready,
-      'completed' => CanteenOrderStatus.completed,
-      'rejected' => CanteenOrderStatus.rejected,
-      'cancelled' => CanteenOrderStatus.cancelled,
+    final rawStatus = _text(value['status']).toLowerCase().trim();
+    final status = switch (rawStatus) {
+      'pending' || 'placed' || 'created' || 'paid' || 'order_placed' =>
+        CanteenOrderStatus.pending,
+      'accepted' || 'confirmed' => CanteenOrderStatus.accepted,
+      'preparing' || 'in_progress' || 'cooking' || 'packing' =>
+        CanteenOrderStatus.preparing,
+      'ready' || 'ready_for_pickup' || 'packed' => CanteenOrderStatus.ready,
+      'completed' || 'delivered' || 'served' || 'picked_up' =>
+        CanteenOrderStatus.completed,
+      'rejected' || 'declined' => CanteenOrderStatus.rejected,
+      'cancelled' || 'canceled' => CanteenOrderStatus.cancelled,
       _ => CanteenOrderStatus.pending,
     };
     return CanteenOrder(

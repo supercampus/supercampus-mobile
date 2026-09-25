@@ -831,6 +831,7 @@ class _OrdersPage extends StatelessWidget {
                 child: showHistory
                     ? _HistoryOrderCard(order: order)
                     : _LiveOrderCard(
+                        key: ValueKey('${order.id}_${order.status.name}'),
                         order: order,
                         enabled: !busy,
                         onStatus: onStatus,
@@ -844,6 +845,7 @@ class _OrdersPage extends StatelessWidget {
 
 class _LiveOrderCard extends StatelessWidget {
   const _LiveOrderCard({
+    super.key,
     required this.order,
     required this.enabled,
     required this.onStatus,
@@ -854,24 +856,30 @@ class _LiveOrderCard extends StatelessWidget {
   final void Function(String id, CanteenOrderStatus status) onStatus;
 
   (CanteenOrderStatus, String, IconData)? get _next {
-    final next = order.nextServiceStep;
+    final next = order.nextServiceStep ??
+        (order.status.isActive ? CanteenOrderStatus.completed : null);
+    if (next == null) return null;
     return switch (next) {
       CanteenOrderStatus.preparing => (
-        next!,
+        next,
         'Start packing',
         Icons.inventory_outlined,
       ),
       CanteenOrderStatus.ready => (
-        next!,
+        next,
         'Ready for pickup',
         Icons.shopping_bag_outlined,
       ),
       CanteenOrderStatus.completed => (
-        next!,
+        next,
         'Handed over',
         Icons.check_circle_outline,
       ),
-      _ => null,
+      _ => (
+        CanteenOrderStatus.completed,
+        'Handed over',
+        Icons.check_circle_outline,
+      ),
     };
   }
 
@@ -892,6 +900,7 @@ class _LiveOrderCard extends StatelessWidget {
 
     return SwipeActionCard(
       enabled: enabled,
+      dismissOnCommit: next?.$1 == CanteenOrderStatus.completed,
       forward: next == null
           ? null
           : SwipeAction(

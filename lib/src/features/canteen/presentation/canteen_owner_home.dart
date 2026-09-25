@@ -479,6 +479,7 @@ class _OwnerOrdersState extends State<_OwnerOrders> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: _OwnerOrderCard(
+                  key: ValueKey('${order.id}_${order.status.name}'),
                   order: order,
                   busy: busy,
                   onStatus: onStatus,
@@ -669,6 +670,7 @@ class _Metric extends StatelessWidget {
 /// backdrop tells you what will happen before you commit.
 class _OwnerOrderCard extends StatelessWidget {
   const _OwnerOrderCard({
+    super.key,
     required this.order,
     required this.busy,
     required this.onStatus,
@@ -681,24 +683,30 @@ class _OwnerOrderCard extends StatelessWidget {
   /// How the next step should read. The state machine itself lives on the
   /// model, so it can be reasoned about without a widget.
   (CanteenOrderStatus, String, IconData)? get _advance {
-    final next = order.nextServiceStep;
+    final next = order.nextServiceStep ??
+        (order.status.isActive ? CanteenOrderStatus.completed : null);
+    if (next == null) return null;
     return switch (next) {
       CanteenOrderStatus.preparing => (
-        next!,
+        next,
         'Preparing',
         Icons.local_fire_department_outlined,
       ),
       CanteenOrderStatus.ready => (
-        next!,
+        next,
         'Ready for pickup',
         Icons.room_service_outlined,
       ),
       CanteenOrderStatus.completed => (
-        next!,
+        next,
         'Delivered',
         Icons.check_circle_outline,
       ),
-      _ => null,
+      _ => (
+        CanteenOrderStatus.completed,
+        'Delivered',
+        Icons.check_circle_outline,
+      ),
     };
   }
 
@@ -719,6 +727,7 @@ class _OwnerOrderCard extends StatelessWidget {
 
     return SwipeActionCard(
       enabled: !busy,
+      dismissOnCommit: advance?.$1 == CanteenOrderStatus.completed,
       forward: advance == null
           ? null
           : SwipeAction(
