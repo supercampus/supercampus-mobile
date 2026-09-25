@@ -886,6 +886,8 @@ class _LiveOrderCard extends StatelessWidget {
         ? OrderStatusGradients.textColorForStatus(nextStatus)
         : Colors.white;
 
+    final firstItem = order.lines.firstOrNull?.item;
+
     return SwipeActionCard(
       enabled: enabled,
       forward: next == null
@@ -909,15 +911,30 @@ class _LiveOrderCard extends StatelessWidget {
             )
           : null,
       child: CanteenSurface(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: AppColors.primary.withValues(alpha: .1),
-                  foregroundColor: AppColors.primary,
-                  child: Text(_initials(order.customerName)),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: firstItem != null
+                      ? MenuItemArt(item: firstItem, size: 44)
+                      : Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.storefront_outlined,
+                            size: 22,
+                            color: AppColors.primary,
+                          ),
+                        ),
                 ),
                 const SizedBox(width: 11),
                 Expanded(
@@ -926,10 +943,16 @@ class _LiveOrderCard extends StatelessWidget {
                     children: [
                       Text(
                         order.customerName ?? 'Campus user',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
-                        '#${order.displayId}',
+                        '#${order.displayId} · ${formatCurrency(order.total)}',
                         style: const TextStyle(
                           color: AppColors.muted,
                           fontSize: 12,
@@ -938,49 +961,40 @@ class _LiveOrderCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 OrderStatusGradientBadge(status: order.status),
               ],
             ),
-            const Divider(height: 24),
-            for (final line in order.lines)
+            const Divider(height: 18),
+            for (int i = 0; i < order.lines.length; i++)
               Padding(
-                padding: const EdgeInsets.only(bottom: 6),
+                padding: EdgeInsets.only(
+                  bottom: i == order.lines.length - 1 ? 0 : 5,
+                ),
                 child: Row(
                   children: [
                     Text(
-                      '${line.quantity}×',
-                      style: const TextStyle(color: AppColors.primary),
+                      '${order.lines[i].quantity}×',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(width: 7),
-                    Expanded(child: Text(line.item.name)),
-                    Text(formatCurrency(line.total)),
+                    Expanded(
+                      child: Text(
+                        order.lines[i].item.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      formatCurrency(order.lines[i].total),
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
                   ],
                 ),
               ),
-            const SizedBox(height: 5),
-            Row(
-              children: [
-                const Icon(
-                  Icons.swipe_outlined,
-                  size: 17,
-                  color: AppColors.muted,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    next == null ? 'Order settled' : 'Swipe right: ${next.$2}',
-                    style: const TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                Text(
-                  formatCurrency(order.total),
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
           ],
         ),
       ),
@@ -1176,12 +1190,3 @@ class _CounterPausedNotice extends StatelessWidget {
   );
 }
 
-String _initials(String? name) {
-  final parts = (name ?? '')
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .take(2);
-  final value = parts.map((part) => part[0].toUpperCase()).join();
-  return value.isEmpty ? 'SC' : value;
-}
