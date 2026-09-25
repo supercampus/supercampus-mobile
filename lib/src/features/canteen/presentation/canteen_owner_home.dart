@@ -678,33 +678,25 @@ class _OwnerOrderCard extends StatelessWidget {
   final bool busy;
   final void Function(String id, CanteenOrderStatus status) onStatus;
 
-  static const _blue = Color(0xFF2563EB);
-  static const _amber = Color(0xFFF5A623);
-  static const _green = Color(0xFF2E7D52);
-  static const _red = Color(0xFFB42318);
-
   /// How the next step should read. The state machine itself lives on the
   /// model, so it can be reasoned about without a widget.
-  (CanteenOrderStatus, String, IconData, Color)? get _advance {
+  (CanteenOrderStatus, String, IconData)? get _advance {
     final next = order.status.nextServiceStep;
     return switch (next) {
       CanteenOrderStatus.preparing => (
         next!,
         'Preparing',
         Icons.local_fire_department_outlined,
-        _blue,
       ),
       CanteenOrderStatus.ready => (
         next!,
-        'Ready to serve',
+        'Ready for pickup',
         Icons.room_service_outlined,
-        _amber,
       ),
       CanteenOrderStatus.completed => (
         next!,
         'Delivered',
         Icons.check_circle_outline,
-        _green,
       ),
       _ => null,
     };
@@ -713,6 +705,13 @@ class _OwnerOrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final advance = _advance;
+    final advanceStatus = advance?.$1;
+    final advanceGradient = advanceStatus != null
+        ? OrderStatusGradients.forStatus(advanceStatus)
+        : null;
+    final advanceForeground = advanceStatus != null
+        ? OrderStatusGradients.textColorForStatus(advanceStatus)
+        : Colors.white;
 
     return SwipeActionCard(
       enabled: !busy,
@@ -721,8 +720,9 @@ class _OwnerOrderCard extends StatelessWidget {
           : SwipeAction(
               label: advance.$2,
               icon: advance.$3,
-              color: advance.$4,
-              foreground: advance.$4 == _amber ? AppColors.ink : Colors.white,
+              color: advanceGradient?.colors.first ?? AppColors.primary,
+              gradient: advanceGradient,
+              foreground: advanceForeground,
               onCommit: () => onStatus(order.id, advance.$1),
             ),
       backward: !order.status.canReject
@@ -730,7 +730,9 @@ class _OwnerOrderCard extends StatelessWidget {
           : SwipeAction(
               label: 'Reject',
               icon: Icons.close_rounded,
-              color: _red,
+              color: const Color(0xFFEF4444),
+              gradient: OrderStatusGradients.rejected,
+              foreground: Colors.white,
               onCommit: () => onStatus(order.id, CanteenOrderStatus.rejected),
             ),
       child: CanteenSurface(

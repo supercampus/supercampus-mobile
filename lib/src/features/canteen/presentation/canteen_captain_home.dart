@@ -395,6 +395,14 @@ class _CaptainOrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final next = _next;
+    final nextStatus = next?.$1;
+    final nextGradient = nextStatus != null
+        ? OrderStatusGradients.forStatus(nextStatus)
+        : null;
+    final nextForeground = nextStatus != null
+        ? OrderStatusGradients.textColorForStatus(nextStatus)
+        : Colors.white;
+
     return SwipeActionCard(
       enabled: enabled,
       forward: next == null
@@ -402,14 +410,18 @@ class _CaptainOrderCard extends StatelessWidget {
           : SwipeAction(
               label: next.$2,
               icon: next.$3,
-              color: AppColors.primary,
+              color: nextGradient?.colors.first ?? AppColors.primary,
+              gradient: nextGradient,
+              foreground: nextForeground,
               onCommit: () => onStatus(order.id, next.$1),
             ),
       backward: order.status.canReject
           ? SwipeAction(
               label: 'Reject',
               icon: Icons.close_rounded,
-              color: const Color(0xFFB42318),
+              color: const Color(0xFFEF4444),
+              gradient: OrderStatusGradients.rejected,
+              foreground: Colors.white,
               onCommit: () => onStatus(order.id, CanteenOrderStatus.rejected),
             )
           : null,

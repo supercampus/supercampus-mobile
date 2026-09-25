@@ -11,6 +11,7 @@ class SwipeAction {
     required this.label,
     required this.icon,
     required this.color,
+    this.gradient,
     required this.onCommit,
     this.foreground = Colors.white,
   });
@@ -18,6 +19,7 @@ class SwipeAction {
   final String label;
   final IconData icon;
   final Color color;
+  final Gradient? gradient;
   final Color foreground;
   final VoidCallback onCommit;
 }
@@ -251,11 +253,36 @@ class _ActionBackdrop extends StatelessWidget {
   Widget build(BuildContext context) {
     // Armed reads as full strength; before that it is visibly provisional.
     final armed = progress >= 1;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: action.color.withValues(alpha: 0.25 + 0.75 * progress),
+    final alphaMultiplier = (0.25 + 0.75 * progress).clamp(0.0, 1.0);
+    final gradient = action.gradient;
+
+    final BoxDecoration decoration;
+    if (gradient is LinearGradient) {
+      decoration = BoxDecoration(
+        gradient: LinearGradient(
+          colors: gradient.colors
+              .map((c) => c.withValues(alpha: alphaMultiplier))
+              .toList(),
+          begin: gradient.begin,
+          end: gradient.end,
+          stops: gradient.stops,
+        ),
         borderRadius: BorderRadius.circular(12),
-      ),
+      );
+    } else if (gradient != null) {
+      decoration = BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(12),
+      );
+    } else {
+      decoration = BoxDecoration(
+        color: action.color.withValues(alpha: alphaMultiplier),
+        borderRadius: BorderRadius.circular(12),
+      );
+    }
+
+    return DecoratedBox(
+      decoration: decoration,
       child: Align(
         alignment: alignEnd ? Alignment.centerRight : Alignment.centerLeft,
         child: Padding(

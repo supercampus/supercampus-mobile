@@ -11,6 +11,7 @@ import '../../../core/widgets/swipe_action_card.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
+import 'widgets/order_status_badge.dart';
 
 /// A stationery-only workspace. It deliberately does not reuse the food
 /// captain labels or screens: inventory is the primary job at this counter.
@@ -877,6 +878,14 @@ class _LiveOrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final next = _next;
+    final nextStatus = next?.$1;
+    final nextGradient = nextStatus != null
+        ? OrderStatusGradients.forStatus(nextStatus)
+        : null;
+    final nextForeground = nextStatus != null
+        ? OrderStatusGradients.textColorForStatus(nextStatus)
+        : Colors.white;
+
     return SwipeActionCard(
       enabled: enabled,
       forward: next == null
@@ -884,14 +893,18 @@ class _LiveOrderCard extends StatelessWidget {
           : SwipeAction(
               label: next.$2,
               icon: next.$3,
-              color: AppColors.primary,
+              color: nextGradient?.colors.first ?? AppColors.primary,
+              gradient: nextGradient,
+              foreground: nextForeground,
               onCommit: () => onStatus(order.id, next.$1),
             ),
       backward: order.status.canReject
           ? SwipeAction(
               label: 'Reject',
               icon: Icons.close,
-              color: const Color(0xFFB42318),
+              color: const Color(0xFFEF4444),
+              gradient: OrderStatusGradients.rejected,
+              foreground: Colors.white,
               onCommit: () => onStatus(order.id, CanteenOrderStatus.rejected),
             )
           : null,
@@ -925,10 +938,7 @@ class _LiveOrderCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Text(
-                  order.status.label,
-                  style: const TextStyle(color: AppColors.primary),
-                ),
+                OrderStatusGradientBadge(status: order.status),
               ],
             ),
             const Divider(height: 24),
