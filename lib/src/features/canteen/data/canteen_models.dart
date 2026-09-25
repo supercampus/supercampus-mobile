@@ -219,7 +219,49 @@ class CanteenOrder {
   final String? qrPayload;
   final String? captainName;
 
-  String get displayId => orderNumber ?? id;
+  String get displayId {
+    final raw = (orderNumber != null && orderNumber!.trim().isNotEmpty)
+        ? orderNumber!.trim()
+        : null;
+    if (raw != null) {
+      final parsed = int.tryParse(raw);
+      if (parsed != null) {
+        return parsed.toString().padLeft(4, '0');
+      }
+      return raw.padLeft(4, '0');
+    }
+    final digits = id.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isNotEmpty) {
+      final parsed = int.tryParse(digits);
+      if (parsed != null) {
+        return (parsed % 10000).toString().padLeft(4, '0');
+      }
+      return digits.length >= 4
+          ? digits.substring(digits.length - 4)
+          : digits.padLeft(4, '0');
+    }
+    return id.length >= 4 ? id.substring(id.length - 4) : id.padLeft(4, '0');
+  }
+
+  bool get isInstantOrder =>
+      lines.isNotEmpty && lines.every((line) => line.item.isInstant);
+
+  CanteenOrderStatus? get nextServiceStep {
+    if (isInstantOrder) {
+      return switch (status) {
+        CanteenOrderStatus.pending || CanteenOrderStatus.accepted =>
+          CanteenOrderStatus.completed,
+        _ => null,
+      };
+    }
+    return switch (status) {
+      CanteenOrderStatus.pending || CanteenOrderStatus.accepted =>
+        CanteenOrderStatus.preparing,
+      CanteenOrderStatus.preparing => CanteenOrderStatus.ready,
+      CanteenOrderStatus.ready => CanteenOrderStatus.completed,
+      _ => null,
+    };
+  }
 
   String get effectiveCaptainName {
     if (captainName != null && captainName!.trim().isNotEmpty) {

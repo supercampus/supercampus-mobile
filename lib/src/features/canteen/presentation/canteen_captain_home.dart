@@ -372,7 +372,7 @@ class _CaptainOrderCard extends StatelessWidget {
   final void Function(String id, CanteenOrderStatus status) onStatus;
 
   (CanteenOrderStatus, String, IconData)? get _next {
-    final next = order.status.nextServiceStep;
+    final next = order.nextServiceStep;
     return switch (next) {
       CanteenOrderStatus.preparing => (
         next!,
@@ -381,12 +381,12 @@ class _CaptainOrderCard extends StatelessWidget {
       ),
       CanteenOrderStatus.ready => (
         next!,
-        'Mark ready',
+        'Ready for pickup',
         Icons.room_service_outlined,
       ),
       CanteenOrderStatus.completed => (
         next!,
-        'Handed over',
+        'Delivered',
         Icons.check_circle_outline,
       ),
       _ => null,
@@ -401,7 +401,9 @@ class _CaptainOrderCard extends StatelessWidget {
         ? OrderStatusGradients.forStatus(nextStatus)
         : null;
     final nextForeground = nextStatus != null
-        ? OrderStatusGradients.textColorForStatus(nextStatus)
+        ? (nextStatus == CanteenOrderStatus.preparing
+            ? const Color(0xFF78350F)
+            : Colors.white)
         : Colors.white;
 
     final firstItem = order.lines.firstOrNull?.item;
@@ -429,90 +431,78 @@ class _CaptainOrderCard extends StatelessWidget {
             )
           : null,
       child: CanteenSurface(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
           children: [
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: firstItem != null
-                      ? MenuItemArt(item: firstItem, size: 44)
-                      : Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.restaurant_rounded,
-                            size: 22,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        order.customerName ?? 'Campus user',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+            ClipOval(
+              child: SizedBox(
+                width: 48,
+                height: 48,
+                child: firstItem != null
+                    ? MenuItemArt(item: firstItem, size: 48)
+                    : Container(
+                        color: const Color(0xFFF1F5F9),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.restaurant_rounded,
+                          size: 24,
+                          color: AppColors.primary,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '#${order.displayId}${order.tokenNumber == null ? '' : ' · Token ${order.tokenNumber}'} · ${formatCurrency(order.total)}',
-                        style: const TextStyle(
-                          color: AppColors.muted,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                OrderStatusGradientBadge(status: order.status),
-              ],
-            ),
-            const Divider(height: 18),
-            for (int i = 0; i < order.lines.length; i++)
-              Padding(
-                padding: EdgeInsets.only(
-                  bottom: i == order.lines.length - 1 ? 0 : 5,
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      '${order.lines[i].quantity}×',
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        order.lines[i].item.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      formatCurrency(order.lines[i].total),
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                  ],
-                ),
               ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    order.customerName ?? 'Campus user',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        for (int i = 0; i < order.lines.length; i++) ...[
+                          if (i > 0)
+                            const TextSpan(
+                              text: ', ',
+                              style: TextStyle(color: Color(0xFF64748B)),
+                            ),
+                          TextSpan(
+                            text: '${order.lines[i].quantity}× ',
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          TextSpan(
+                            text: order.lines[i].item.name,
+                            style: const TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            OrderNumberStatusBadge(order: order),
           ],
         ),
       ),

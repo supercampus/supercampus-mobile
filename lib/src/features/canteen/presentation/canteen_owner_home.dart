@@ -681,7 +681,7 @@ class _OwnerOrderCard extends StatelessWidget {
   /// How the next step should read. The state machine itself lives on the
   /// model, so it can be reasoned about without a widget.
   (CanteenOrderStatus, String, IconData)? get _advance {
-    final next = order.status.nextServiceStep;
+    final next = order.nextServiceStep;
     return switch (next) {
       CanteenOrderStatus.preparing => (
         next!,
@@ -710,8 +710,12 @@ class _OwnerOrderCard extends StatelessWidget {
         ? OrderStatusGradients.forStatus(advanceStatus)
         : null;
     final advanceForeground = advanceStatus != null
-        ? OrderStatusGradients.textColorForStatus(advanceStatus)
+        ? (advanceStatus == CanteenOrderStatus.preparing
+            ? const Color(0xFF78350F)
+            : Colors.white)
         : Colors.white;
+
+    final firstItem = order.lines.firstOrNull?.item;
 
     return SwipeActionCard(
       enabled: !busy,
@@ -736,42 +740,78 @@ class _OwnerOrderCard extends StatelessWidget {
               onCommit: () => onStatus(order.id, CanteenOrderStatus.rejected),
             ),
       child: CanteenSurface(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _OrderItems(lines: order.lines)),
-                const SizedBox(width: 12),
-                _StatusChip(status: order.status),
-              ],
+            ClipOval(
+              child: SizedBox(
+                width: 48,
+                height: 48,
+                child: firstItem != null
+                    ? MenuItemArt(item: firstItem, size: 48)
+                    : Container(
+                        color: const Color(0xFFF1F5F9),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.restaurant_rounded,
+                          size: 24,
+                          color: AppColors.primary,
+                        ),
+                      ),
+              ),
             ),
-            const Divider(height: 24),
-            Row(
-              children: [
-                Text(
-                  formatCurrency(order.total),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    '#${order.displayId} · ${order.customerName ?? 'Campus user'}',
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    order.customerName ?? 'Campus user',
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.end,
                     style: const TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12,
-                      letterSpacing: 0.1,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E293B),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        for (int i = 0; i < order.lines.length; i++) ...[
+                          if (i > 0)
+                            const TextSpan(
+                              text: ', ',
+                              style: TextStyle(color: Color(0xFF64748B)),
+                            ),
+                          TextSpan(
+                            text: '${order.lines[i].quantity}× ',
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          TextSpan(
+                            text: order.lines[i].item.name,
+                            style: const TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(width: 12),
+            OrderNumberStatusBadge(order: order),
           ],
         ),
       ),
@@ -779,57 +819,7 @@ class _OwnerOrderCard extends StatelessWidget {
   }
 }
 
-/// The items, which are the reason the card exists.
-class _OrderItems extends StatelessWidget {
-  const _OrderItems({required this.lines});
 
-  final List<CartLine> lines;
-
-  @override
-  Widget build(BuildContext context) {
-    if (lines.isEmpty) {
-      return const Text(
-        'Order',
-        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final line in lines)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 2),
-            child: Text(
-              line.quantity > 1
-                  ? '${line.quantity} x ${line.item.name}'
-                  : line.item.name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                // Tighter tracking as the type grows, so the name reads as one
-                // object rather than spaced-out letters.
-                letterSpacing: -0.2,
-                height: 1.25,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-
-  final CanteenOrderStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    return OrderStatusGradientBadge(status: status);
-  }
-}
 
 class _OwnerMenu extends StatelessWidget {
   const _OwnerMenu({

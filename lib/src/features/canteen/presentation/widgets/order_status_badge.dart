@@ -15,7 +15,7 @@ class OrderStatusGradients {
   );
 
   static const LinearGradient preparing = LinearGradient(
-    colors: [Color(0xFFFACC15), Color(0xFFEAB308)],
+    colors: [Color(0xFFFFD200), Color(0xFFFFA000)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -127,6 +127,56 @@ class OrderStatusGradientBadge extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Prominent rounded gradient badge displaying the 4-digit order number (e.g. #0046).
+/// Color gradient reflects the current status of the order:
+/// - Pending: Orange gradient
+/// - Preparing: Yellow gradient
+/// - Ready to pickup: Purple gradient
+/// - Delivered: Green gradient
+class OrderNumberStatusBadge extends StatelessWidget {
+  const OrderNumberStatusBadge({
+    super.key,
+    required this.order,
+    this.width = 104,
+    this.height = 46,
+  });
+
+  final CanteenOrder order;
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final gradient = OrderStatusGradients.forStatus(order.status);
+
+    return Container(
+      width: width,
+      height: height,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(13),
+        boxShadow: [
+          BoxShadow(
+            color: gradient.colors.first.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Text(
+        '#${order.displayId}',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 19,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
