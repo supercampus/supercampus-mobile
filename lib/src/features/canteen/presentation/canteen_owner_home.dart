@@ -103,26 +103,6 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
         appBar: AppBar(
           leading: ModuleBackButton(onPressed: widget.onExitModule),
           title: const Text('Shop operations'),
-          actions: [
-            ModuleHomeButton(onPressed: widget.onExitModule),
-            PopupMenuButton<String>(
-              tooltip: 'Account',
-              icon: const Icon(Icons.account_circle_outlined),
-              onSelected: (value) {
-                if (value == 'sign-out') widget.onSignOut();
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem<String>(
-                  value: 'sign-out',
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.logout),
-                    title: Text('Sign out'),
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
         body: const Center(
           child: Padding(
@@ -195,29 +175,6 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
             tooltip: 'Counter controls',
             icon: const Icon(Icons.tune),
             onPressed: _busy ? null : _openCounterControls,
-          ),
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: _busy ? null : () => _run(widget.onRefresh),
-            icon: const Icon(Icons.refresh),
-          ),
-          ModuleHomeButton(onPressed: widget.onExitModule),
-          PopupMenuButton<String>(
-            tooltip: 'Account',
-            icon: const Icon(Icons.account_circle_outlined),
-            onSelected: (value) {
-              if (value == 'sign-out') widget.onSignOut();
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem<String>(
-                value: 'sign-out',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.logout),
-                  title: Text('Sign out'),
-                ),
-              ),
-            ],
           ),
         ],
       ),

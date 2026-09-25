@@ -141,14 +141,6 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh stationery data',
-            onPressed: _busy ? null : () => _run(widget.onRefresh),
-            icon: const Icon(Icons.refresh),
-          ),
-          ModuleHomeButton(onPressed: widget.onExitModule),
-        ],
       ),
       body: Column(
         children: [

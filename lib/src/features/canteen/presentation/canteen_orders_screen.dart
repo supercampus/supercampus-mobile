@@ -71,15 +71,6 @@ class _CanteenOrdersScreenState extends State<CanteenOrdersScreen> {
           onBack: widget.onBack,
           title: 'My orders',
           subtitle: 'Track active and completed orders',
-          trailing: IconButton.outlined(
-            tooltip: 'Refresh orders',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Orders are up to date.')),
-              );
-            },
-            icon: const Icon(Icons.refresh),
-          ),
         ),
         const SizedBox(height: 20),
         SegmentedButton<OrderFilter>(

@@ -298,13 +298,6 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Student management'),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: _load,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1870,9 +1863,6 @@ class _AdminMaintenancePageState extends State<_AdminMaintenancePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Maintenance control'),
-        actions: [
-          IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded)),
-        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

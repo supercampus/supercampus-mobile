@@ -189,14 +189,6 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh laundry data',
-            onPressed: widget.onRefresh,
-            icon: const Icon(Icons.refresh),
-          ),
-          ModuleHomeButton(onPressed: widget.onExitModule),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 130),

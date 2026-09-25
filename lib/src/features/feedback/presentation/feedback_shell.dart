@@ -190,7 +190,6 @@ class _FeedbackHeader extends StatelessWidget {
           onPressed: onCreate,
           icon: const Icon(Icons.add),
         ),
-        ModuleHomeButton(onPressed: onHome),
       ],
     );
   }

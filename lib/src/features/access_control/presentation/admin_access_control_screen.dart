@@ -75,16 +75,7 @@ class _AdminAccessControlScreenState extends State<AdminAccessControlScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.ink,
-        foregroundColor: Colors.white,
         title: const Text('Access control'),
-        actions: [
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: widget.onSignOut,
-            icon: const Icon(Icons.logout),
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),

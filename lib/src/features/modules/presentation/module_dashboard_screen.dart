@@ -562,7 +562,6 @@ class _Feed extends StatelessWidget {
         if (modules.isEmpty)
           const _NoAccessState()
         else ...[
-          const _SectionLabel('Your modules'),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: ModuleStack(

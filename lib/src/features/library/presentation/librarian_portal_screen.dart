@@ -322,8 +322,6 @@ class _LibrarianPortalScreenState extends State<LibrarianPortalScreen> {
     return Scaffold(
       backgroundColor: AppColors.canvas,
       appBar: AppBar(
-        backgroundColor: AppColors.gateBlue,
-        foregroundColor: Colors.white,
         title: Text(
           const [
             'Library home',
@@ -332,9 +330,6 @@ class _LibrarianPortalScreenState extends State<LibrarianPortalScreen> {
             'Scan request',
           ][_selected],
         ),
-        actions: [
-          IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-        ],
       ),
       body: Column(
         children: [

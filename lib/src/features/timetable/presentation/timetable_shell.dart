@@ -82,12 +82,9 @@ class _TimetableShellState extends State<TimetableShell> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         leading: widget.onExitModule != null
             ? ModuleBackButton(
                 onPressed: widget.onExitModule!,
-                color: Colors.black,
               )
             : null,
         title: const Text('Timetable', style: TextStyle(fontWeight: FontWeight.w600)),

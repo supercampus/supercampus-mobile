@@ -148,8 +148,6 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
     child: Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         titleSpacing: 0,
         leading: ModuleBackButton(
           onPressed: _showAttendanceHistory || _showMarksResults
@@ -158,7 +156,6 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                   _showMarksResults = false;
                 })
               : widget.onExitModule,
-          color: Colors.black,
         ),
         title: const Text(
           'Academics',

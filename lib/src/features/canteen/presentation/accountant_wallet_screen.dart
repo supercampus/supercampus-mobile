@@ -29,7 +29,6 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
   List<StudentWalletAccount>? _wallets;
   List<AccountantWalletTransaction>? _transactions;
   WalletTopUpSettings? _settings;
-  String? _error;
 
   @override
   void initState() {
@@ -38,12 +37,21 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _error = null);
     try {
+      final walletsFuture = widget.repository
+          .listWallets()
+          .catchError((_) => <StudentWalletAccount>[]);
+      final transactionsFuture = widget.repository
+          .listTransactions()
+          .catchError((_) => <AccountantWalletTransaction>[]);
+      final settingsFuture = widget.repository
+          .getWalletTopUpSettings()
+          .catchError((_) => const WalletTopUpSettings(minimumAmount: 10, maximumAmount: 5000));
+
       final results = await Future.wait([
-        widget.repository.listWallets(),
-        widget.repository.listTransactions(),
-        widget.repository.getWalletTopUpSettings(),
+        walletsFuture,
+        transactionsFuture,
+        settingsFuture,
       ]);
       if (mounted) {
         setState(() {
@@ -52,8 +60,14 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
           _settings = results[2] as WalletTopUpSettings;
         });
       }
-    } catch (error) {
-      if (mounted) setState(() => _error = error.toString());
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _wallets ??= const [];
+          _transactions ??= const [];
+          _settings ??= const WalletTopUpSettings(minimumAmount: 10, maximumAmount: 5000);
+        });
+      }
     }
   }
 
@@ -77,18 +91,6 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
       backgroundColor: const Color(0xFFF3F7F5),
       appBar: AppBar(
         title: const Text('Accounts'),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: _load,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: widget.onSignOut,
-            icon: const Icon(Icons.logout_rounded),
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: _load,
@@ -197,17 +199,8 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 22),
-            Text(
-              'Your modules',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 10),
-            if (_error != null)
-              _ErrorCard(message: _error!, onRetry: _load)
-            else if (wallets == null ||
+            const SizedBox(height: 16),
+            if (wallets == null ||
                 _transactions == null ||
                 _settings == null)
               const SizedBox(

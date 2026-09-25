@@ -175,19 +175,12 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pendingCount = _outpassRequests
-        .where((r) => r.status.contains('Pending'))
-        .length;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1B4332),
-        foregroundColor: Colors.white,
         leading: widget.onExitModule != null
             ? ModuleBackButton(
                 onPressed: widget.onExitModule!,
-                color: Colors.white,
               )
             : null,
         title: Row(
@@ -195,13 +188,13 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFF2D6A4F),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.family_restroom,
                 size: 20,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(width: 10),
@@ -211,36 +204,21 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                 children: [
                   const Text(
                     'Parents Portal',
-                    maxLines: 2,
-                    softWrap: true,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   Text(
                     'Ward: ${_ward.name} (${_ward.rollNumber})',
-                    maxLines: 2,
-                    softWrap: true,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: Colors.white70),
+                    style: const TextStyle(fontSize: 11, color: AppColors.muted),
                   ),
                 ],
               ),
             ),
           ],
         ),
-        actions: [
-          if (widget.onExitModule != null)
-            ModuleHomeButton(
-              onPressed: widget.onExitModule!,
-              color: Colors.white,
-            ),
-          IconButton(
-            tooltip: 'Sign Out',
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: widget.onSignOut,
-          ),
-          const SizedBox(width: 6),
-        ],
       ),
       body: IndexedStack(
         index: _currentTab,

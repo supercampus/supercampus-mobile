@@ -125,12 +125,6 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
                 : _scanOrder,
             icon: const Icon(Icons.qr_code_scanner_rounded),
           ),
-          IconButton(
-            tooltip: 'Refresh orders',
-            onPressed: _busy ? null : () => _run(widget.onRefresh),
-            icon: const Icon(Icons.refresh),
-          ),
-          ModuleHomeButton(onPressed: widget.onExitModule),
         ],
       ),
       floatingActionButton: widget.onScanOrder == null || !working

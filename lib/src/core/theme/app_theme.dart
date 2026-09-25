@@ -58,6 +58,21 @@ abstract final class AppTheme {
       fontFamily: 'Poppins',
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.canvas,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.ink,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: IconThemeData(color: AppColors.ink),
+        actionsIconTheme: IconThemeData(color: AppColors.ink),
+        titleTextStyle: TextStyle(
+          fontFamily: 'Poppins',
+          color: AppColors.ink,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
       textTheme: const TextTheme(
         headlineMedium: TextStyle(
           color: AppColors.ink,
@@ -179,6 +194,17 @@ abstract final class AppTheme {
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF1B1E20),
       foregroundColor: Colors.white,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      iconTheme: IconThemeData(color: Colors.white),
+      actionsIconTheme: IconThemeData(color: Colors.white),
+      titleTextStyle: TextStyle(
+        fontFamily: 'Poppins',
+        color: Colors.white,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
     ),
     cardColor: const Color(0xFF171717),
     cardTheme: const CardThemeData(

@@ -23,10 +23,5 @@ class ModuleHomeButton extends StatelessWidget {
   final Color? color;
 
   @override
-  Widget build(BuildContext context) => IconButton(
-    tooltip: 'Home',
-    onPressed: onPressed,
-    color: color,
-    icon: const Icon(Icons.home_outlined),
-  );
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

@@ -357,26 +357,17 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF8A4B20),
-        foregroundColor: Colors.white,
         leading: ModuleBackButton(
           onPressed: widget.onExitModule,
-          color: Colors.white,
         ),
         title: Text(_tab == 0 ? 'Shops & Sales Dashboard' : 'Campus Commerce'),
         actions: [
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: _load,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
           if (_tab == 1)
             IconButton(
               tooltip: 'Add vendor',
               onPressed: _addVendor,
               icon: const Icon(Icons.add_business_outlined),
             ),
-          ModuleHomeButton(onPressed: widget.onExitModule, color: Colors.white),
         ],
       ),
       bottomNavigationBar: NavigationBar(

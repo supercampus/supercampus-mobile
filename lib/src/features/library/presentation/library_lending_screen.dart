@@ -195,14 +195,6 @@ class _LibraryLendingScreenState extends State<LibraryLendingScreen> {
       appBar: AppBar(
         leading: ModuleBackButton(onPressed: widget.onExitModule),
         title: const Text('Library'),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: _load,
-            icon: const Icon(Icons.refresh),
-          ),
-          ModuleHomeButton(onPressed: widget.onExitModule),
-        ],
       ),
       body: SafeArea(
         child: Center(

@@ -57,10 +57,6 @@ class _TuitionFeeScreenState extends State<TuitionFeeScreen> {
     appBar: AppBar(
       title: const Text('Tuition Fee'),
       leading: ModuleBackButton(onPressed: widget.onExitModule),
-      actions: [
-        IconButton(onPressed: _reload, icon: const Icon(Icons.refresh_rounded)),
-        ModuleHomeButton(onPressed: widget.onExitModule),
-      ],
     ),
     body: widget.canManageFees
         ? FutureBuilder<AdminFeeData>(

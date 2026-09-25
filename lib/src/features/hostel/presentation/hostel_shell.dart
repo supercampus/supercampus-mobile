@@ -286,7 +286,6 @@ class _HostelShellState extends State<HostelShell> {
             ? AppBar(
                 leading: ModuleBackButton(onPressed: _handleBack),
                 title: Text(isStaff ? 'Hostel Operations' : 'My Hostel'),
-                actions: [ModuleHomeButton(onPressed: widget.onExitModule)],
               )
             : null,
         body: Padding(

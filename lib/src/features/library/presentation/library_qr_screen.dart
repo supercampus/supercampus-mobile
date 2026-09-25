@@ -35,8 +35,6 @@ class LibraryQrScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: surfaceColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6D357F),
-        foregroundColor: Colors.white,
         title: const Text('Check-In Pass'),
       ),
       body: SafeArea(

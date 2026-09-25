@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
-import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/skeleton_loading.dart';
 import '../../authentication/data/auth_repository.dart';
@@ -335,10 +334,6 @@ class _GatepassShellState extends State<GatepassShell> {
         appBar: _selectedIndex == 0
             ? null
             : AppBar(
-                backgroundColor: Colors.white,
-                foregroundColor: AppColors.ink,
-                elevation: 0,
-                surfaceTintColor: Colors.transparent,
                 leading: ModuleBackButton(onPressed: _handleBack),
                 title: Text(
                   titles[_selectedIndex],

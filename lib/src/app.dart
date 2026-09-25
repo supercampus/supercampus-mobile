@@ -751,8 +751,27 @@ class _SupercampusAppState extends State<SupercampusApp>
           // previously washed the entire student app mint.
           : AppColors.canvas,
       appBarTheme: theme.appBarTheme.copyWith(
-        backgroundColor: primary,
-        foregroundColor: scheme.onPrimary,
+        backgroundColor: brightness == Brightness.dark
+            ? const Color(0xFF1B1E20)
+            : Colors.white,
+        foregroundColor: brightness == Brightness.dark
+            ? Colors.white
+            : AppColors.ink,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: IconThemeData(
+          color: brightness == Brightness.dark ? Colors.white : AppColors.ink,
+        ),
+        actionsIconTheme: IconThemeData(
+          color: brightness == Brightness.dark ? Colors.white : AppColors.ink,
+        ),
+        titleTextStyle: TextStyle(
+          fontFamily: 'Poppins',
+          color: brightness == Brightness.dark ? Colors.white : AppColors.ink,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -1398,7 +1417,6 @@ class _SupercampusAppState extends State<SupercampusApp>
         appBar: AppBar(
           leading: ModuleBackButton(onPressed: exit),
           title: Text(ModuleCatalog.byId(resolvedModuleId)?.title ?? 'Module'),
-          actions: [ModuleHomeButton(onPressed: exit)],
         ),
         body: const Center(child: Text('This module is not available yet.')),
       ),

@@ -42,16 +42,12 @@ class _AcademicManagementShellState extends State<AcademicManagementShell> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.gateBlue,
-        foregroundColor: Colors.white,
         leading: ModuleBackButton(
           onPressed: widget.onExitModule,
-          color: Colors.white,
         ),
         title: const Text('Academic Management'),
         actions: [
           IconButton(onPressed: _add, icon: const Icon(Icons.add)),
-          ModuleHomeButton(onPressed: widget.onExitModule, color: Colors.white),
         ],
       ),
       body: Column(

@@ -429,7 +429,6 @@ class _LibrarianLendingScreenState extends State<LibrarianLendingScreen> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: const Text('Book lending'),
-      actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))],
     ),
     body: _loading
         ? const Center(child: CircularProgressIndicator())

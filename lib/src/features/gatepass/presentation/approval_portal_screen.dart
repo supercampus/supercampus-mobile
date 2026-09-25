@@ -305,16 +305,7 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF1F8F4),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF167447),
-        foregroundColor: Colors.white,
         title: Text(_portalTitle),
-        actions: [
-          IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-          IconButton(
-            onPressed: widget.onSignOut,
-            icon: const Icon(Icons.logout),
-          ),
-        ],
       ),
       body: _body(),
     );

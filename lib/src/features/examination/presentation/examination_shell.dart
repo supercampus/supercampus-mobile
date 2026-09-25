@@ -111,17 +111,13 @@ class _ExaminationShellState extends State<ExaminationShell> {
         return Scaffold(
           backgroundColor: const Color(0xFFF4F6FA),
           appBar: AppBar(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
             leading: _activeFeatureIndex != null
                 ? ModuleBackButton(
                     onPressed: () => setState(() => _activeFeatureIndex = null),
-                    color: Colors.white,
                   )
                 : (widget.onExitModule != null
                       ? ModuleBackButton(
                           onPressed: widget.onExitModule!,
-                          color: Colors.white,
                         )
                       : null),
             title: Row(
@@ -129,13 +125,13 @@ class _ExaminationShellState extends State<ExaminationShell> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.assignment_outlined,
                     size: 20,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -158,7 +154,7 @@ class _ExaminationShellState extends State<ExaminationShell> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 11,
-                          color: Colors.white70,
+                          color: AppColors.muted,
                         ),
                       ),
                     ],
@@ -166,20 +162,6 @@ class _ExaminationShellState extends State<ExaminationShell> {
                 ),
               ],
             ),
-            actions: [
-              if (widget.onExitModule != null)
-                ModuleHomeButton(
-                  onPressed: widget.onExitModule!,
-                  color: Colors.white,
-                ),
-              if (!_isStudent && !_isParent)
-                IconButton(
-                  tooltip: 'Sign Out',
-                  icon: const Icon(Icons.logout, color: Colors.white),
-                  onPressed: widget.onSignOut,
-                ),
-              const SizedBox(width: 6),
-            ],
           ),
           body: _buildBodyContent(),
         );

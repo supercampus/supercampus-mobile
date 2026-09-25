@@ -167,24 +167,17 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
     return Scaffold(
       backgroundColor: isDark ? Colors.black : AppColors.canvas,
       appBar: AppBar(
-        backgroundColor: AppColors.gateBlue,
-        foregroundColor: Colors.white,
         leading: ModuleBackButton(
           onPressed: widget.onExitModule,
-          color: Colors.white,
         ),
         title: const Text('Library Bookings'),
         actions: [
           if (historyCount > 0)
             TextButton.icon(
               onPressed: _openHistory,
-              icon: const Icon(Icons.history, size: 18, color: Colors.white70),
-              label: const Text(
-                'History',
-                style: TextStyle(color: Colors.white70),
-              ),
+              icon: const Icon(Icons.history, size: 18),
+              label: const Text('History'),
             ),
-          ModuleHomeButton(onPressed: widget.onExitModule, color: Colors.white),
         ],
       ),
       body: SafeArea(
@@ -317,14 +310,10 @@ class _BookingHistoryScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: isDark ? Colors.black : AppColors.canvas,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF6D357F),
-        foregroundColor: Colors.white,
         leading: ModuleBackButton(
           onPressed: () => Navigator.of(context).pop(),
-          color: Colors.white,
         ),
         title: const Text('Booking History'),
-        actions: [ModuleHomeButton(onPressed: onHome, color: Colors.white)],
       ),
       body: SafeArea(
         child: Center(

@@ -202,11 +202,6 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
               await _load();
             },
           ),
-          IconButton(
-            tooltip: 'Refresh users',
-            onPressed: _load,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
         ],
       ),
       floatingActionButton: _users == null || _roles.isEmpty

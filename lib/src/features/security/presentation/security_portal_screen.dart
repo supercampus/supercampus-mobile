@@ -167,9 +167,6 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
       backgroundColor: const Color(0xFFF5F2FF),
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.ink,
-        elevation: 0,
         titleSpacing: 20,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,19 +181,6 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh scans',
-            onPressed: _loadHistory,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: widget.onSignOut,
-            icon: const Icon(Icons.logout_rounded),
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: SafeArea(
         top: false,
