@@ -120,7 +120,7 @@ class MockGatepassRepository implements GatepassRepository {
         validFrom: today.add(const Duration(hours: 6)),
         validUntil: today.add(const Duration(hours: 21)),
         qrPayload:
-            'supercampus://gate/day/413225243049/${today.toIso8601String()}',
+            'supercampus://gate/entry/413225243049',
         manualCode: '567890',
       ),
       zone: CampusZone.inside,

@@ -119,22 +119,23 @@ class BackendStudentActivitySource
           'Background status refresh does not activate a daily pass.',
         ),
       ).loadStore();
-      final requests = store.requests.where((request) {
-        final liveStatus =
-            request.status == ApprovalStatus.pending ||
-            request.status == ApprovalStatus.approved;
-        return liveStatus && request.returnAt.isAfter(DateTime.now());
+      final approvedRequests = store.requests.where((request) {
+        final isApproved = request.status == ApprovalStatus.approved;
+        final hasQr = request.qrPayload?.isNotEmpty == true;
+        return isApproved && hasQr && request.returnAt.isAfter(DateTime.now());
       }).toList()..sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
-      if (requests.isEmpty) return const [];
-      final request = requests.first;
-      final isPending = request.status == ApprovalStatus.pending;
+      if (approvedRequests.isEmpty) return const [];
+      final request = approvedRequests.first;
+      final passTitle = request.passKind == GatepassPassKind.leavePass
+          ? 'Leave pass approved'
+          : 'Outpass approved';
       return [
         StudentActivity(
           id: 'gatepass-${request.id}',
           kind: StudentActivityKind.gatepass,
-          title: isPending ? 'Gatepass awaiting approval' : 'Gatepass approved',
+          title: passTitle,
           supporting:
-              '${request.destination} · ${_dateTime(request.departureAt)}',
+              '${request.destination} · Return: ${_dateTime(request.returnAt)}',
           moduleId: ModuleCatalog.gatepass,
           priority: 20,
           statusLabel: request.status.label,

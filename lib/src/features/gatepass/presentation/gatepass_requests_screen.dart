@@ -222,6 +222,14 @@ class _RequestCard extends StatelessWidget {
                             data: qrPayload,
                             size: 112,
                             padding: EdgeInsets.zero,
+                            eyeStyle: const QrEyeStyle(
+                              eyeShape: QrEyeShape.circle,
+                              color: Color(0xFF151419),
+                            ),
+                            dataModuleStyle: const QrDataModuleStyle(
+                              dataModuleShape: QrDataModuleShape.circle,
+                              color: Color(0xFF151419),
+                            ),
                           ),
                         ),
                       ),
@@ -306,7 +314,18 @@ class _RequestQrScreen extends StatelessWidget {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  child: QrImageView(data: payload, size: size),
+                  child: QrImageView(
+                    data: payload,
+                    size: size,
+                    eyeStyle: const QrEyeStyle(
+                      eyeShape: QrEyeShape.circle,
+                      color: Color(0xFF151419),
+                    ),
+                    dataModuleStyle: const QrDataModuleStyle(
+                      dataModuleShape: QrDataModuleShape.circle,
+                      color: Color(0xFF151419),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Text(

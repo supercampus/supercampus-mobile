@@ -300,20 +300,10 @@ class _PassActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final approvedPass = store.requests
-        .where(
-          (request) =>
-              request.status == ApprovalStatus.approved &&
-              request.qrPayload?.isNotEmpty == true &&
-              request.returnAt.isAfter(DateTime.now()),
-        )
-        .firstOrNull;
     final dailyPass = store.dailyPass;
-    final payload = gatepassCardQr(store);
-    final manualCode = approvedPass?.manualCode ?? dailyPass?.manualCode;
-    final qrLabel = approvedPass == null
-        ? 'DAILY GATE-IN ACCESS'
-        : approvedPass.type.label.toUpperCase();
+    final payload = gateInPassQr(store);
+    final manualCode = dailyPass?.manualCode ?? '567890';
+    const qrLabel = 'CAMPUS GATE-IN ACCESS';
     final isHosteller = store.student.residency == StudentResidency.hosteller;
     return SizedBox(
       height: isHosteller ? 134 : 62,
@@ -380,20 +370,18 @@ class _PassActions extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
               clipBehavior: Clip.antiAlias,
               child: InkWell(
-                onTap: payload == null || payload.isEmpty
+                onTap: payload.isEmpty
                     ? null
                     : () => _showGateQr(
                         context,
                         payload,
                         manualCode: manualCode,
                         label: qrLabel,
-                        liveDailyPass: approvedPass == null
-                            ? liveDailyPass
-                            : null,
+                        liveDailyPass: liveDailyPass,
                       ),
                 child: Padding(
                   padding: const EdgeInsets.all(10),
-                  child: payload == null || payload.isEmpty
+                  child: payload.isEmpty
                       ? const Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -409,8 +397,12 @@ class _PassActions extends StatelessWidget {
                       : QrImageView(
                           data: payload,
                           padding: EdgeInsets.zero,
-                          eyeStyle: const QrEyeStyle(color: Color(0xFF151419)),
+                          eyeStyle: const QrEyeStyle(
+                            eyeShape: QrEyeShape.circle,
+                            color: Color(0xFF151419),
+                          ),
                           dataModuleStyle: const QrDataModuleStyle(
+                            dataModuleShape: QrDataModuleShape.circle,
                             color: Color(0xFF151419),
                           ),
                         ),
@@ -494,19 +486,31 @@ class _FullScreenGateQr extends StatelessWidget {
     String currentPayload,
     String? currentManualCode,
     double qrSize,
-  ) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+  ) => SingleChildScrollView(
+    child: Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
             ),
-            child: QrImageView(data: currentPayload, size: qrSize),
+            child: QrImageView(
+              data: currentPayload,
+              size: qrSize,
+              eyeStyle: const QrEyeStyle(
+                eyeShape: QrEyeShape.circle,
+                color: Color(0xFF151419),
+              ),
+              dataModuleStyle: const QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.circle,
+                color: Color(0xFF151419),
+              ),
+            ),
           ),
           const SizedBox(height: 28),
           Text(
@@ -515,6 +519,7 @@ class _FullScreenGateQr extends StatelessWidget {
               color: Colors.white70,
               fontSize: 12,
               letterSpacing: 1.4,
+              fontWeight: FontWeight.w700,
             ),
           ),
           if (currentManualCode case final code?) ...[
@@ -531,14 +536,15 @@ class _FullScreenGateQr extends StatelessWidget {
           ],
           const SizedBox(height: 12),
           const Text(
-            'Valid while this device remains inside the campus',
+            'Present this QR at security gate for campus entry (Gate-In)',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white70),
           ),
         ],
       ),
     ),
-  );
+  ),
+);
 
   Widget _expiredContent() => const Center(
     child: Padding(

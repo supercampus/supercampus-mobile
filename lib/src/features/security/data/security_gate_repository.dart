@@ -100,6 +100,7 @@ class BackendSecurityGateRepository implements SecurityGateRepository {
     if (code.isEmpty) {
       throw const SecurityGateException('Scan a gatepass QR first.');
     }
+    validateGatepassMovementDirection(qrPayload: code, direction: direction);
     final response = await _authorizedRequest(
       (headers) => _client.post(
         _uri('/api/v1/operations/gatepass/scan'),
@@ -204,18 +205,64 @@ class MockSecurityGateRepository implements SecurityGateRepository {
     required GateDirection direction,
     required String checkpoint,
   }) async {
-    if (qrPayload.trim().isEmpty) {
+    final code = qrPayload.trim();
+    if (code.isEmpty) {
       throw const SecurityGateException('Scan a gatepass QR first.');
     }
+    validateGatepassMovementDirection(qrPayload: code, direction: direction);
+    final isOutpass = code.contains('outpass') || code.contains('leave');
     final movement = SecurityGateMovement(
       id: 'scan-${DateTime.now().millisecondsSinceEpoch}',
-      userId: 'Demo campus member',
+      userId: '413225243049',
+      holderName: 'Alex Johnson',
+      passType: direction == GateDirection.entry
+          ? 'Daily Gate-In Pass'
+          : (isOutpass ? 'Approved Outpass' : 'Approved Leave Pass'),
       direction: direction,
       checkpoint: checkpoint,
       createdAt: DateTime.now(),
     );
     _movements.insert(0, movement);
     return movement;
+  }
+}
+
+/// Validates that a gatepass QR code matches the intended movement direction.
+/// Gate-In passes cannot be used to exit campus.
+/// Gate-Out passes (Outpasses/Leave passes) cannot be used to enter campus.
+void validateGatepassMovementDirection({
+  required String qrPayload,
+  required GateDirection direction,
+}) {
+  final code = qrPayload.trim().toLowerCase();
+  if (code.isEmpty) {
+    throw const SecurityGateException('Scan a gatepass QR first.');
+  }
+
+  // Gate-In signatures: daily pass, campus entry, student roll admission
+  final isGateIn = code.contains('/day/') ||
+      code.contains('/entry/') ||
+      code.contains('/gate_in/') ||
+      code.contains('gate-in') ||
+      code.contains('campus_entry');
+
+  // Gate-Out signatures: outpass, leave pass, campus exit
+  final isGateOut = code.contains('/outpass/') ||
+      code.contains('/leave/') ||
+      code.contains('/exit/') ||
+      code.startsWith('sc-outpass:') ||
+      code.startsWith('mec-gp-');
+
+  if (direction == GateDirection.entry && isGateOut && !isGateIn) {
+    throw const SecurityGateException(
+      'Invalid pass: This is an Outpass/Leave pass (Gate-Out). It cannot be used for campus Gate-In.',
+    );
+  }
+
+  if (direction == GateDirection.exit && isGateIn && !isGateOut) {
+    throw const SecurityGateException(
+      'Invalid pass: This is a Gate-In pass. Campus exit (Gate-Out) requires an approved Outpass or Leave pass.',
+    );
   }
 }
 

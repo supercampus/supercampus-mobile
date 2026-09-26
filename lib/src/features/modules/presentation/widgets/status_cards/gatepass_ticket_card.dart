@@ -151,11 +151,11 @@ class GatepassTicketCard extends StatelessWidget {
                         version: QrVersions.auto,
                         padding: EdgeInsets.zero,
                         eyeStyle: QrEyeStyle(
-                          eyeShape: QrEyeShape.square,
+                          eyeShape: QrEyeShape.circle,
                           color: textColor,
                         ),
                         dataModuleStyle: QrDataModuleStyle(
-                          dataModuleShape: QrDataModuleShape.square,
+                          dataModuleShape: QrDataModuleShape.circle,
                           color: textColor,
                         ),
                       ),

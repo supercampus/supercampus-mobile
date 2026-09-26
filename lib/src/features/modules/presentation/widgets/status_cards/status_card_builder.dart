@@ -86,26 +86,34 @@ List<StatusCardData> buildStudentStatusCards({
   }
 
   // ---------------------------------------------------------------------------
-  // 2. Gatepass (Admission / Exit Ticket) - Active gatepass only
+  // 2. Gatepass (Outpass / Leave Pass) - Valid approved pass only (Gate-Out)
   // ---------------------------------------------------------------------------
   final gpActivity = glance?.activities
       .where((a) => a.kind == StudentActivityKind.gatepass)
       .firstOrNull;
 
-  final qrPayload = glance?.gatepassQr ?? 'MEC-GP-PASS-8842';
-  if (gpActivity != null) {
+  final qrPayload = glance?.gatepassQr;
+  final isValidOutpassQr = qrPayload != null &&
+      qrPayload.isNotEmpty &&
+      !qrPayload.contains('/day/') &&
+      !qrPayload.contains('/entry/') &&
+      !qrPayload.contains('/gate_in/');
+
+  if (gpActivity != null &&
+      gpActivity.statusLabel?.toLowerCase() == 'approved' &&
+      isValidOutpassQr) {
     cards.add(
       GatepassTicketCardData(
         id: gpActivity.id,
-        title: gpActivity.title.toLowerCase().contains('gatepass')
-            ? gpActivity.title.toLowerCase()
-            : 'your gatepass',
-        status: gpActivity.statusLabel?.toLowerCase().contains('pending') == true
-            ? ApprovalStatus.pending
-            : ApprovalStatus.approved,
+        title: gpActivity.title.toLowerCase().contains('leave')
+            ? 'leave pass'
+            : (gpActivity.title.toLowerCase().contains('outpass')
+                ? 'outpass'
+                : 'your gatepass'),
+        status: ApprovalStatus.approved,
         validUntilText: gpActivity.supporting.isNotEmpty
             ? gpActivity.supporting
-            : 'VALID UNTIL 09:30 PM',
+            : 'VALID FOR EXIT',
         destination: 'Campus Exit',
         qrPayload: qrPayload,
       ),
@@ -114,11 +122,11 @@ List<StatusCardData> buildStudentStatusCards({
     cards.add(
       GatepassTicketCardData(
         id: 'gp-current',
-        title: 'your gatepass',
+        title: 'outpass',
         status: ApprovalStatus.approved,
         validUntilText: 'VALID UNTIL 09:30 PM',
         destination: 'City Center',
-        qrPayload: qrPayload,
+        qrPayload: qrPayload ?? 'supercampus://gate/outpass/GP-PREVIEW',
       ),
     );
   }
