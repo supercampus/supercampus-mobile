@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../../authentication/data/auth_repository.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/transaction_result_overlay.dart';
+import '../../library/data/librarian_repository.dart';
+import '../../modules/presentation/today_glance.dart';
 import '../../modules/presentation/widgets/home_top_bar.dart';
+import '../../modules/presentation/widgets/status_cards/status_card_builder.dart';
+import '../../modules/presentation/widgets/status_cards/status_card_carousel.dart';
+import '../../modules/presentation/widgets/status_cards/status_card_models.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
@@ -29,6 +35,10 @@ class StudentCanteenHome extends StatefulWidget {
     this.hasAlerts = false,
     this.photoUrl,
     this.onScanLaundryQr,
+    this.onOpenModule,
+    this.glance,
+    this.announcements,
+    this.session,
   });
 
   final CanteenStore store;
@@ -48,6 +58,10 @@ class StudentCanteenHome extends StatefulWidget {
   final bool hasAlerts;
   final String? photoUrl;
   final VoidCallback? onScanLaundryQr;
+  final ValueChanged<String>? onOpenModule;
+  final GlanceFacts? glance;
+  final List<LibraryAnnouncement>? announcements;
+  final UserSession? session;
 
   @override
   State<StudentCanteenHome> createState() => _StudentCanteenHomeState();
@@ -160,6 +174,32 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
     });
   }
 
+  void _handleStatusCardTap(StatusCardData card) {
+    if (card.type == StatusCardType.foodOrder) {
+      widget.onOpenOrders();
+      return;
+    }
+    if (card.moduleId == 'canteen' && card.type == StatusCardType.laundry) {
+      setState(() {
+        _shopKey = 'mec-laundry';
+        _subCategory = null;
+        _query = '';
+      });
+      return;
+    }
+    if (card.moduleId == 'canteen' && card.type == StatusCardType.stationery) {
+      setState(() {
+        _shopKey = 'stationery';
+        _subCategory = null;
+        _query = '';
+      });
+      return;
+    }
+    if (widget.onOpenModule != null) {
+      widget.onOpenModule!(card.moduleId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -177,6 +217,18 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                 ),
                 children: [
                   _buildHeader(context),
+                  if (!_isSearching) ...[
+                    const SizedBox(height: 14),
+                    StatusCardCarousel(
+                      cards: buildStudentStatusCards(
+                        store: widget.store,
+                        glance: widget.glance,
+                        announcements: widget.announcements,
+                        session: widget.session,
+                      ),
+                      onCardTap: _handleStatusCardTap,
+                    ),
+                  ],
                   if (_isSearching) ...[
                     const SizedBox(height: 14),
                     TextField(

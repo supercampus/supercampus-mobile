@@ -105,6 +105,7 @@ class ModuleDashboardScreen extends StatefulWidget {
 class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
   List<Insight> _insights = const [];
   GlanceFacts _glance = GlanceFacts.empty;
+  List<LibraryAnnouncement>? _announcements;
   String _selectedNavId = 'home';
   int _unreadNotifications = 0;
   CanteenStaffMode _canteenStaffMode = CanteenStaffMode.work;
@@ -125,6 +126,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
     super.initState();
     _loadGlance();
     _loadNotifications();
+    _loadAnnouncements();
   }
 
   @override
@@ -140,6 +142,26 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
     if (oldWidget.notificationRepository != widget.notificationRepository ||
         oldWidget.notificationRevision != widget.notificationRevision) {
       _loadNotifications();
+    }
+    if (oldWidget.announcementRepository != widget.announcementRepository) {
+      _loadAnnouncements();
+    }
+  }
+
+  Future<void> _loadAnnouncements() async {
+    final repository = widget.announcementRepository;
+    if (repository == null) return;
+    try {
+      final values = await repository.announcements();
+      if (mounted) {
+        setState(() {
+          _announcements = values
+              .where((a) => a.status.toLowerCase() == 'published')
+              .toList();
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _announcements = const []);
     }
   }
 
@@ -192,6 +214,9 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
             onProfileTap: _openProfileSheet,
             hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
             photoUrl: widget.session.photoUrl,
+            onOpenModule: (moduleId) => widget.onOpenModule(moduleId),
+            glance: _glance,
+            announcements: _announcements,
           ),
         ),
         bottomNavigationBar: DashboardNavBar(

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/skeleton_loading.dart';
 import '../../../screens/tuition_fee/razorpay_checkout.dart';
 import '../../authentication/data/auth_repository.dart';
+import '../../library/data/librarian_repository.dart';
+import '../../modules/presentation/today_glance.dart';
 import '../data/backend_canteen_repository.dart';
 import '../data/canteen_models.dart';
 import '../data/canteen_repository.dart';
@@ -36,6 +38,9 @@ class CanteenShell extends StatefulWidget {
     this.isMainHome = false,
     this.initialStaffMode,
     this.onStaffModeChanged,
+    this.onOpenModule,
+    this.glance,
+    this.announcements,
   });
 
   final StudentSession session;
@@ -50,6 +55,9 @@ class CanteenShell extends StatefulWidget {
   final bool isMainHome;
   final CanteenStaffMode? initialStaffMode;
   final ValueChanged<CanteenStaffMode>? onStaffModeChanged;
+  final ValueChanged<String>? onOpenModule;
+  final GlanceFacts? glance;
+  final List<LibraryAnnouncement>? announcements;
 
   @override
   State<CanteenShell> createState() => _CanteenShellState();
@@ -651,6 +659,10 @@ class _CanteenShellState extends State<CanteenShell> {
         hasAlerts: widget.hasAlerts,
         photoUrl: widget.photoUrl ?? widget.session.photoUrl,
         onScanLaundryQr: () => _scanLaundryQr(context),
+        onOpenModule: widget.onOpenModule,
+        glance: widget.glance,
+        announcements: widget.announcements,
+        session: widget.session,
       ),
       CanteenOrdersScreen(
         orders: store.orders,
