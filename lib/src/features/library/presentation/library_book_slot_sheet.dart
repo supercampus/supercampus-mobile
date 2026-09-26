@@ -115,7 +115,19 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
     final available = _available;
     final validTime = _isValidTimeRange;
     final canBook = available > 0 && validTime;
-    final surfaceColor = isDark ? Colors.black : AppColors.canvas;
+    final p = context.palette;
+    final surfaceColor = context.adaptive(
+      light: AppColors.canvas,
+      dark: p.surfaceRaised,
+    );
+    final accentInk = context.adaptive(
+      light: const Color(0xFF6D357F),
+      dark: const Color(0xFFD8A5E8),
+    );
+    final dangerInk = context.adaptive(
+      light: const Color(0xFFB71C1C),
+      dark: const Color(0xFFFCA5A5),
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -140,9 +152,9 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.local_library_outlined,
-                  color: Color(0xFF6D357F),
+                  color: accentInk,
                 ),
                 const SizedBox(width: 10),
                 Text(
@@ -221,7 +233,7 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white54 : AppColors.muted,
+                          color: p.inkSecondary,
                         ),
                       ),
                     ),
@@ -280,7 +292,7 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white54 : AppColors.muted,
+                          color: p.inkSecondary,
                         ),
                       ),
                     ),
@@ -337,23 +349,23 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFB71C1C).withValues(alpha: 0.08),
+                      color: dangerInk.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(
                           Icons.warning_amber_rounded,
-                          color: Color(0xFFB71C1C),
+                          color: dangerInk,
                           size: 20,
                         ),
-                        SizedBox(width: 10),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             'End time must be after start time.',
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFFB71C1C),
+                              color: dangerInk,
                               fontSize: 13,
                             ),
                           ),
@@ -366,8 +378,8 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: available > 0
-                          ? const Color(0xFF6D357F).withValues(alpha: 0.08)
-                          : const Color(0xFFB71C1C).withValues(alpha: 0.08),
+                          ? accentInk.withValues(alpha: 0.08)
+                          : dangerInk.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
@@ -377,8 +389,8 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
                               ? Icons.groups_outlined
                               : Icons.block_outlined,
                           color: available > 0
-                              ? const Color(0xFF6D357F)
-                              : const Color(0xFFB71C1C),
+                              ? accentInk
+                              : dangerInk,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -390,7 +402,7 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
                               fontWeight: FontWeight.w500,
                               color: available > 0
                                   ? null
-                                  : const Color(0xFFB71C1C),
+                                  : dangerInk,
                               fontSize: 13,
                             ),
                           ),
@@ -433,9 +445,7 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       label,
       style: TextStyle(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white54
-            : AppColors.muted,
+        color: context.palette.inkSecondary,
         letterSpacing: 1.2,
         fontSize: 11,
         fontWeight: FontWeight.w600,

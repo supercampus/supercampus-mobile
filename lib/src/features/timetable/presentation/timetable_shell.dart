@@ -8,6 +8,7 @@ import '../data/backend_timetable_repository.dart';
 import '../data/mock_timetable_repository.dart';
 import '../data/timetable_repository.dart';
 import 'faculty_dashboard_screen.dart';
+import 'timetable_tones.dart';
 import 'view_only_timetable_screen.dart';
 
 class TimetableShell extends StatefulWidget {
@@ -80,7 +81,7 @@ class _TimetableShellState extends State<TimetableShell> {
         !isAllocator && widget.session.activePortalFamily == PortalFamily.staff;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: context.timetableCanvas,
       appBar: AppBar(
         leading: widget.onExitModule != null
             ? ModuleBackButton(

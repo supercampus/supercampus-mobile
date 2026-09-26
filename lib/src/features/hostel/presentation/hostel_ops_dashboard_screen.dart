@@ -33,9 +33,9 @@ class HostelOpsDashboardScreen extends StatelessWidget {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Live occupancy, gate movements, outpass overdue flags and operational queues.',
-            style: TextStyle(color: AppColors.muted, fontSize: 13),
+            style: TextStyle(color: context.palette.inkSecondary, fontSize: 13),
           ),
           const SizedBox(height: 16),
 
@@ -69,37 +69,37 @@ class HostelOpsDashboardScreen extends StatelessWidget {
         title: 'Active Residents',
         value: '2,843',
         icon: Icons.people_alt_outlined,
-        color: AppColors.primary,
+        color: context.palette.brandInk,
       ),
       _MetricTile(
         title: 'Currently Inside',
         value: '2,162',
         icon: Icons.home_rounded,
-        color: Colors.green.shade700,
+        color: context.adaptive(light: Colors.green.shade700, dark: Colors.green.shade200),
       ),
       _MetricTile(
         title: 'Currently Outside',
         value: '681',
         icon: Icons.directions_walk_rounded,
-        color: Colors.orange.shade800,
+        color: context.adaptive(light: Colors.orange.shade800, dark: Colors.orange.shade200),
       ),
       _MetricTile(
         title: 'On Approved Leave',
         value: '184',
         icon: Icons.flight_takeoff_rounded,
-        color: Colors.blue.shade700,
+        color: context.adaptive(light: Colors.blue.shade700, dark: Colors.blue.shade200),
       ),
       _MetricTile(
         title: 'Available Beds',
         value: '127',
         icon: Icons.single_bed_outlined,
-        color: Colors.teal.shade700,
+        color: context.adaptive(light: Colors.teal.shade700, dark: Colors.teal.shade200),
       ),
       _MetricTile(
         title: 'Open Complaints',
         value: '${store.complaints.length}',
         icon: Icons.error_outline_rounded,
-        color: Colors.red.shade700,
+        color: context.adaptive(light: Colors.red.shade700, dark: Colors.red.shade200),
       ),
     ];
 
@@ -118,9 +118,9 @@ class HostelOpsDashboardScreen extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.palette.surface,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.palette.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,7 +138,7 @@ class HostelOpsDashboardScreen extends StatelessWidget {
               ),
               Text(
                 m.title,
-                style: const TextStyle(fontSize: 10, color: AppColors.muted),
+                style: TextStyle(fontSize: 10, color: context.palette.inkSecondary),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -155,35 +155,35 @@ class HostelOpsDashboardScreen extends StatelessWidget {
         title: 'Students Overdue from Outpass',
         count: '3 Students',
         icon: Icons.timer_off_outlined,
-        color: Colors.red.shade800,
+        color: context.adaptive(light: Colors.red.shade800, dark: Colors.red.shade200),
         onTap: onOpenOutpasses,
       ),
       _QueueRow(
         title: 'Pending Hostel Applications',
         count: '12 Pending',
         icon: Icons.assignment_outlined,
-        color: Colors.amber.shade900,
+        color: context.adaptive(light: Colors.amber.shade900, dark: Colors.amber.shade200),
         onTap: onOpenInventory,
       ),
       _QueueRow(
         title: 'Room Change Requests',
         count: '${store.roomChangeRequests.length} Requests',
         icon: Icons.swap_horiz_rounded,
-        color: Colors.purple.shade800,
+        color: context.adaptive(light: Colors.purple.shade800, dark: Colors.purple.shade200),
         onTap: onOpenRoomChanges,
       ),
       _QueueRow(
         title: 'Maintenance Complaints',
         count: '${store.complaints.length} Open',
         icon: Icons.build_outlined,
-        color: Colors.deepOrange.shade800,
+        color: context.adaptive(light: Colors.deepOrange.shade800, dark: Colors.deepOrange.shade200),
         onTap: onOpenComplaints,
       ),
       _QueueRow(
         title: 'Pending Hostel Clearances',
         count: '5 Pending',
         icon: Icons.fact_check_outlined,
-        color: Colors.indigo.shade800,
+        color: context.adaptive(light: Colors.indigo.shade800, dark: Colors.indigo.shade200),
         onTap: onOpenClearance,
       ),
     ];
@@ -193,9 +193,9 @@ class HostelOpsDashboardScreen extends StatelessWidget {
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.palette.surface,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.palette.border),
           ),
           child: ListTile(
             leading: CircleAvatar(
@@ -225,7 +225,7 @@ class HostelOpsDashboardScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(Icons.chevron_right, color: AppColors.muted),
+                Icon(Icons.chevron_right, color: context.palette.inkSecondary),
               ],
             ),
             onTap: q.onTap,
@@ -238,9 +238,9 @@ class HostelOpsDashboardScreen extends StatelessWidget {
   Widget _buildOutpassQueue(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -280,7 +280,7 @@ class HostelOpsDashboardScreen extends StatelessWidget {
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: context.adaptive(light: Colors.green.shade50, dark: Colors.green.withValues(alpha: 0.18)),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -288,7 +288,7 @@ class HostelOpsDashboardScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green.shade800,
+                      color: context.adaptive(light: Colors.green.shade800, dark: Colors.green.shade200),
                     ),
                   ),
                 ),

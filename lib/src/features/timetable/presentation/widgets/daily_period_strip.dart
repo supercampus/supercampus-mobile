@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../data/timetable_models.dart';
+import '../timetable_tones.dart';
 
 enum TimetableAudience { student, staff }
 
@@ -37,7 +38,10 @@ class DailyPeriodStrip extends StatelessWidget {
             ),
             Text(
               '$assigned of $periodsPerDay assigned',
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              style: TextStyle(
+                fontSize: 12,
+                color: context.palette.inkSecondary,
+              ),
             ),
           ],
         ),
@@ -74,7 +78,8 @@ class _PeriodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final entry = this.entry;
-    final accent = entry?.categoryColor ?? AppColors.muted;
+    final accent =
+        entry?.categoryColor.inkOn(context) ?? context.palette.inkSecondary;
     final subject = entry == null
         ? 'Free period'
         : _subjectLabel(entry.subjectName);
@@ -131,9 +136,9 @@ class _PeriodCard extends StatelessWidget {
                     detail,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.muted,
+                      color: context.palette.inkSecondary,
                     ),
                   ),
                 ],

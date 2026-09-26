@@ -95,30 +95,30 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.security, color: AppColors.primary, size: 22),
+              Icon(Icons.security, color: context.palette.brandInk, size: 22),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Pre-Exam Secure Release Verification Checklist',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
+                  color: context.palette.ink,
                 ),
               ),
               const Spacer(),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.palette.brand,
+                  foregroundColor: context.palette.onBrand,
                 ),
                 onPressed: () {
                   // TODO: Submit pre-exam readiness check POST /api/v1/examination/conduct/pre-check
@@ -144,15 +144,15 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
                 width: 320,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.canvas,
+                  color: context.palette.canvas,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.palette.border),
                 ),
                 child: Row(
                   children: [
                     Checkbox(
                       value: c['done'],
-                      activeColor: AppColors.primary,
+                      activeColor: context.palette.brandInk,
                       onChanged: (val) => setState(() => c['done'] = val!),
                     ),
                     Expanded(
@@ -168,9 +168,9 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
                           ),
                           Text(
                             'By: ${c['verifiedBy']}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.muted,
+                              color: context.palette.inkSecondary,
                             ),
                           ),
                         ],
@@ -190,16 +190,16 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.how_to_reg, color: AppColors.primary, size: 20),
+              Icon(Icons.how_to_reg, color: context.palette.brandInk, size: 20),
               const SizedBox(width: 8),
               const Text(
                 'Live Hall Attendance & Desk Verification',
@@ -220,8 +220,8 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
           ),
           const SizedBox(height: 12),
           ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: AppColors.primary,
+            leading: CircleAvatar(
+              backgroundColor: context.palette.brand,
               child: Icon(Icons.qr_code_scanner, color: Colors.white, size: 20),
             ),
             title: const Text('Scan Student QR / Hall Ticket'),
@@ -249,9 +249,9 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,7 +295,7 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
                 ),
                 subtitle: Text(
                   '${inc['student']} (${inc['hall']}) • ${inc['action']}',
-                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                 ),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(
@@ -363,7 +363,10 @@ class _ExamConductScreenState extends State<ExamConductScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () {
               // TODO: Log incident POST /api/v1/examination/conduct/incident
               Navigator.pop(context);

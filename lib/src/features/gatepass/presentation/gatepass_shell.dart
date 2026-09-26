@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../../core/theme/app_theme.dart';
 
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/skeleton_loading.dart';
@@ -225,7 +226,7 @@ class _GatepassShellState extends State<GatepassShell> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surfaceRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
       ),
@@ -250,7 +251,7 @@ class _GatepassShellState extends State<GatepassShell> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surfaceRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
       ),

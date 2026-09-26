@@ -84,7 +84,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
             child: const Text('Reject Pass'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            style: FilledButton.styleFrom(backgroundColor: context.palette.brand),
             onPressed: () {
               _repository.reviewOutpass(req.id, true, noteCtrl.text);
               _refreshData();
@@ -109,11 +109,11 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.account_balance_wallet, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text('Top-Up Shop Wallet'),
+            Icon(Icons.account_balance_wallet, color: context.palette.brandInk),
+            const SizedBox(width: 8),
+            const Text('Top-Up Shop Wallet'),
           ],
         ),
         content: Column(
@@ -151,7 +151,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            style: FilledButton.styleFrom(backgroundColor: context.palette.brand),
             onPressed: () {
               final val = double.tryParse(amountCtrl.text) ?? 0;
               if (val > 0) {
@@ -176,7 +176,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: context.adaptive(light: const Color(0xFFF4F6FA), dark: context.palette.canvas),
       appBar: AppBar(
         leading: widget.onExitModule != null
             ? ModuleBackButton(
@@ -212,7 +212,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                     'Ward: ${_ward.name} (${_ward.rollNumber})',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                    style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                   ),
                 ],
               ),
@@ -238,10 +238,10 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
       children: [
         Card(
           elevation: 0,
-          color: Colors.white,
+          color: context.palette.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.grey.shade200),
+            side: BorderSide(color: context.adaptive(light: Colors.grey.shade200, dark: const Color(0xFF2B2C34))),
           ),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -251,13 +251,13 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                   children: [
                     CircleAvatar(
                       radius: 30,
-                      backgroundColor: const Color(0xFFD8F3DC),
+                      backgroundColor: context.adaptive(light: const Color(0xFFD8F3DC), dark: const Color(0x2E2D6A4F)),
                       child: Text(
                         _ward.name.substring(0, 1),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF1B4332),
+                          color: context.adaptive(light: const Color(0xFF1B4332), dark: const Color(0xFF95D5B2)),
                         ),
                       ),
                     ),
@@ -275,16 +275,16 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                           ),
                           Text(
                             '${_ward.department} • ${_ward.semester}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
-                              color: AppColors.muted,
+                              color: context.palette.inkSecondary,
                             ),
                           ),
                           Text(
                             '${_ward.hostelName}, ${_ward.roomNumber}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.muted,
+                              color: context.palette.inkSecondary,
                             ),
                           ),
                         ],
@@ -299,26 +299,26 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE8F5E9),
+                          color: context.adaptive(light: const Color(0xFFE8F5E9), dark: const Color(0x2E2E7D32)),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Campus Location',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.muted,
+                                color: context.palette.inkSecondary,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               _ward.campusStatus,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF2D6A4F),
+                                color: context.adaptive(light: const Color(0xFF2D6A4F), dark: const Color(0xFF95D5B2)),
                               ),
                             ),
                           ],
@@ -330,26 +330,26 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF3E5F5),
+                          color: context.adaptive(light: const Color(0xFFF3E5F5), dark: const Color(0x2E9C27B0)),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Overall Attendance',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.muted,
+                                color: context.palette.inkSecondary,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               '${_ward.overallAttendancePercentage}%',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF6A1B9A),
+                                color: context.adaptive(light: const Color(0xFF6A1B9A), dark: const Color(0xFFCE93D8)),
                               ),
                             ),
                           ],
@@ -380,7 +380,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                 icon: Icons.add_card,
                 title: 'Top-Up Wallet',
                 subtitle: '₹${_ward.canteenBalance.toStringAsFixed(0)} Balance',
-                color: AppColors.primary,
+                color: context.palette.brandInk,
                 onTap: _topupWalletDialog,
               ),
             ),
@@ -391,7 +391,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                 title: 'Review Outpass',
                 subtitle:
                     '${_outpassRequests.where((r) => r.status.contains('Pending')).length} Pending',
-                color: const Color(0xFF1E293B),
+                color: context.adaptive(light: const Color(0xFF1E293B), dark: const Color(0xFFD9DAE0)),
                 onTap: () => setState(() => _currentTab = 1),
               ),
             ),
@@ -410,9 +410,9 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Approve or decline overnight home visits & outings',
-          style: TextStyle(fontSize: 13, color: AppColors.muted),
+          style: TextStyle(fontSize: 13, color: context.palette.inkSecondary),
         ),
         const SizedBox(height: 20),
         ..._outpassRequests.map((req) {
@@ -423,11 +423,11 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
               side: BorderSide(
-                color: isPending ? Colors.amber.shade400 : Colors.grey.shade200,
+                color: isPending ? Colors.amber.shade400 : context.adaptive(light: Colors.grey.shade200, dark: const Color(0xFF2B2C34)),
                 width: isPending ? 1.5 : 1,
               ),
             ),
-            color: Colors.white,
+            color: context.palette.surface,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -442,8 +442,8 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: isPending
-                              ? Colors.amber.shade100
-                              : const Color(0xFFD8F3DC),
+                              ? context.adaptive(light: Colors.amber.shade100, dark: const Color(0x2EFFC107))
+                              : context.adaptive(light: const Color(0xFFD8F3DC), dark: const Color(0x2E2D6A4F)),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -452,17 +452,17 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                             color: isPending
-                                ? Colors.amber.shade900
-                                : const Color(0xFF1B4332),
+                                ? context.adaptive(light: Colors.amber.shade900, dark: Colors.amber.shade200)
+                                : context.adaptive(light: const Color(0xFF1B4332), dark: const Color(0xFF95D5B2)),
                           ),
                         ),
                       ),
                       const Spacer(),
                       Text(
                         '#${req.id}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.muted,
+                          color: context.palette.inkSecondary,
                         ),
                       ),
                     ],
@@ -550,7 +550,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                 ),
                 FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: context.adaptive(light: Colors.white, dark: const Color(0xFFD8F3DC)),
                     foregroundColor: const Color(0xFF1B4332),
                   ),
                   onPressed: _topupWalletDialog,
@@ -572,9 +572,9 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade200),
+              side: BorderSide(color: context.adaptive(light: Colors.grey.shade200, dark: const Color(0xFF2B2C34))),
             ),
-            color: Colors.white,
+            color: context.palette.surface,
             child: ListTile(
               title: Text(
                 fee.title,
@@ -584,11 +584,11 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                 'Due Date: ${fee.dueDate.day}/${fee.dueDate.month}/${fee.dueDate.year}',
               ),
               trailing: fee.isPaid
-                  ? const Chip(
-                      label: Text('Paid'),
-                      backgroundColor: Color(0xFFE8F5E9),
+                  ? Chip(
+                      label: const Text('Paid'),
+                      backgroundColor: context.adaptive(light: const Color(0xFFE8F5E9), dark: const Color(0x2E2E7D32)),
                       labelStyle: TextStyle(
-                        color: Color(0xFF2E7D32),
+                        color: context.adaptive(light: const Color(0xFF2E7D32), dark: const Color(0xFF81C784)),
                         fontWeight: FontWeight.w500,
                       ),
                     )
@@ -624,24 +624,24 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Live attendance logs updated by course faculty',
-          style: TextStyle(fontSize: 13, color: AppColors.muted),
+          style: TextStyle(fontSize: 13, color: context.palette.inkSecondary),
         ),
         const SizedBox(height: 20),
         ..._attendanceList.map((sub) {
           final pct = sub.percentage;
           final pctColor = pct >= 85
-              ? const Color(0xFF2E7D32)
+              ? context.adaptive(light: const Color(0xFF2E7D32), dark: const Color(0xFF81C784))
               : (pct >= 75 ? Colors.orange : Colors.red);
 
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
             elevation: 0,
-            color: Colors.white,
+            color: context.palette.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade200),
+              side: BorderSide(color: context.adaptive(light: Colors.grey.shade200, dark: const Color(0xFF2B2C34))),
             ),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -671,15 +671,15 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Faculty: ${sub.facultyName} • Attended: ${sub.attendedClasses}/${sub.totalClasses} classes',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.muted,
+                      color: context.palette.inkSecondary,
                     ),
                   ),
                   const SizedBox(height: 10),
                   LinearProgressIndicator(
                     value: pct / 100,
-                    backgroundColor: Colors.grey.shade200,
+                    backgroundColor: context.adaptive(light: Colors.grey.shade200, dark: const Color(0xFF2B2C34)),
                     color: pctColor,
                     minHeight: 8,
                     borderRadius: BorderRadius.circular(4),
@@ -717,9 +717,9 @@ class _QuickActionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.palette.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: context.adaptive(light: Colors.grey.shade200, dark: const Color(0xFF2B2C34))),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -736,7 +736,7 @@ class _QuickActionCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: const TextStyle(fontSize: 11, color: AppColors.muted),
+              style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
             ),
           ],
         ),

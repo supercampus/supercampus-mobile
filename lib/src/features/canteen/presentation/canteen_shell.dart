@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/skeleton_loading.dart';
 import '../../../screens/tuition_fee/razorpay_checkout.dart';
 import '../../authentication/data/auth_repository.dart';
@@ -431,7 +432,7 @@ class _CanteenShellState extends State<CanteenShell> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surfaceRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
       ),
@@ -479,7 +480,7 @@ class _CanteenShellState extends State<CanteenShell> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surfaceRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
       ),

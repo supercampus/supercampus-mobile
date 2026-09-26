@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 /// A vertical snap carousel with a single focused card.
 ///
 /// The centred card renders at full scale, opacity and sharpness; neighbours
@@ -299,7 +301,7 @@ class _Dot extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: Color.lerp(
-              const Color(0xFF1C1C1E).withValues(alpha: 0.26),
+              context.palette.ink.withValues(alpha: 0.26),
               color,
               focus,
             ),

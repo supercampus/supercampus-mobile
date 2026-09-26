@@ -1,9 +1,9 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
 import '../media/media_repository.dart';
 import '../media/media_scope.dart';
+import '../theme/app_theme.dart';
 import 'announcement_image_cropper.dart';
 
 class AnnouncementDraft {
@@ -239,16 +239,13 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
                         fontWeight:
                             isSelected ? FontWeight.w600 : FontWeight.w500,
                         color: isSelected
-                            ? Colors.white
-                            : Theme.of(context).colorScheme.primary,
+                            ? context.palette.onBrand
+                            : context.palette.brandInk,
                       ),
                     ),
                     backgroundColor: isSelected
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: 0.08),
+                        ? context.palette.brand
+                        : context.palette.brandInk.withValues(alpha: 0.08),
                     onPressed: () {
                       setState(() => _type.text = tag);
                     },
@@ -299,7 +296,7 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
                       ? Icons.picture_as_pdf_outlined
                       : Icons.attach_file_rounded,
                   color: _attachmentIsPdf
-                      ? const Color(0xFFEF4444)
+                      ? context.palette.danger
                       : null,
                 ),
                 title: Text(
@@ -363,10 +360,10 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444).withValues(alpha: 0.08),
+                    color: context.palette.danger.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFFEF4444).withValues(alpha: 0.25),
+                      color: context.palette.danger.withValues(alpha: 0.25),
                     ),
                   ),
                   child: Row(
@@ -375,12 +372,12 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444).withValues(alpha: 0.16),
+                          color: context.palette.danger.withValues(alpha: 0.16),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.picture_as_pdf_rounded,
-                          color: Color(0xFFEF4444),
+                          color: context.palette.danger,
                           size: 22,
                         ),
                       ),
@@ -399,11 +396,14 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            const Text(
+                            Text(
                               'Official PDF circular ready to publish',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Color(0xFFB91C1C),
+                                color: context.adaptive(
+                                  light: const Color(0xFFB91C1C),
+                                  dark: const Color(0xFFFCA5A5),
+                                ),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -434,9 +434,12 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
                         child: Image.network(
                           _attachmentUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const ColoredBox(
-                            color: Color(0xFFF0EDF8),
-                            child: Center(
+                          errorBuilder: (_, _, _) => ColoredBox(
+                            color: context.adaptive(
+                              light: const Color(0xFFF0EDF8),
+                              dark: const Color(0xFF1C1D23),
+                            ),
+                            child: const Center(
                               child: Icon(Icons.broken_image_outlined),
                             ),
                           ),

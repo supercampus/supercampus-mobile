@@ -34,9 +34,9 @@ class HostelRoomChangeScreen extends StatelessWidget {
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Tell the warden your preference and track every decision.',
-            style: TextStyle(color: AppColors.muted),
+            style: TextStyle(color: context.palette.inkSecondary),
           ),
           const SizedBox(height: 14),
           FilledButton.icon(
@@ -57,18 +57,18 @@ class HostelRoomChangeScreen extends StatelessWidget {
               ),
               Text(
                 '${requests.length}',
-                style: const TextStyle(color: AppColors.muted),
+                style: TextStyle(color: context.palette.inkSecondary),
               ),
             ],
           ),
           const SizedBox(height: 10),
           if (requests.isEmpty)
-            const Card(
+            Card(
               child: Padding(
                 padding: EdgeInsets.all(22),
                 child: Text(
                   'No room-change requests yet.',
-                  style: TextStyle(color: AppColors.muted),
+                  style: TextStyle(color: context.palette.inkSecondary),
                 ),
               ),
             )
@@ -84,7 +84,7 @@ class HostelRoomChangeScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -107,7 +107,7 @@ class HostelRoomChangeScreen extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.purple.shade50,
+                    color: context.adaptive(light: Colors.purple.shade50, dark: Colors.purple.withValues(alpha: 0.18)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -115,7 +115,7 @@ class HostelRoomChangeScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Colors.purple.shade800,
+                      color: context.adaptive(light: Colors.purple.shade800, dark: Colors.purple.shade200),
                     ),
                   ),
                 ),
@@ -128,16 +128,16 @@ class HostelRoomChangeScreen extends StatelessWidget {
             ),
             Text(
               'Preferred Target: ${request.preferredHostel}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
-                color: AppColors.primary,
+                color: context.palette.brandInk,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               'Reason: ${request.reason}',
-              style: const TextStyle(color: AppColors.muted, fontSize: 12),
+              style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
             ),
           ],
         ),

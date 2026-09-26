@@ -514,6 +514,11 @@ class _ServiceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    // Service hues are deep; lift them in dark so the icon stays legible.
+    final tone = context.adaptive(
+      light: item.color,
+      dark: Color.lerp(item.color, Colors.white, 0.45)!,
+    );
     return Material(
       color: colors.surfaceContainerLow,
       shape: RoundedRectangleBorder(
@@ -534,10 +539,10 @@ class _ServiceTile extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: item.color.withValues(alpha: 0.12),
+                    color: tone.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(11),
                   ),
-                  child: Icon(item.icon, color: item.color, size: 19),
+                  child: Icon(item.icon, color: tone, size: 19),
                 ),
                 const SizedBox(height: 8),
                 Text(

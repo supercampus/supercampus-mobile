@@ -76,16 +76,16 @@ class _RevaluationScreenState extends State<RevaluationScreen> {
   Widget _buildHeaderBanner(bool isMobile) {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.palette.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: Padding(
         padding: EdgeInsets.all(isMobile ? 12 : 16),
         child: Row(
           children: [
-            const Icon(Icons.find_in_page, color: AppColors.primary, size: 28),
+            Icon(Icons.find_in_page, color: context.palette.brandInk, size: 28),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -96,9 +96,9 @@ class _RevaluationScreenState extends State<RevaluationScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     'Student-initiated review of answer scripts assigned to independent evaluators.',
-                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                    style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                   ),
                 ],
               ),
@@ -113,9 +113,15 @@ class _RevaluationScreenState extends State<RevaluationScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: context.adaptive(
+          light: Colors.blue.shade50,
+          dark: const Color(0x2E2196F3),
+        ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade200),
+        border: Border.all(color: context.adaptive(
+            light: Colors.blue.shade200,
+            dark: const Color(0x662196F3),
+          )),
       ),
       child: const Row(
         children: [
@@ -139,9 +145,9 @@ class _RevaluationScreenState extends State<RevaluationScreen> {
   Widget _buildRevaluationContent(bool isMobile) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,7 +197,7 @@ class _RevaluationScreenState extends State<RevaluationScreen> {
                             child: Text(
                               r['status'],
                               style: TextStyle(
-                                color: isUpdated ? Colors.green : AppColors.ink,
+                                color: isUpdated ? Colors.green : context.palette.ink,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 10,
                               ),
@@ -202,9 +208,9 @@ class _RevaluationScreenState extends State<RevaluationScreen> {
                       const SizedBox(height: 2),
                       Text(
                         '${r['student']} (${r['roll']}) • ${r['subject']}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.muted,
+                          color: context.palette.inkSecondary,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -256,7 +262,7 @@ class _RevaluationScreenState extends State<RevaluationScreen> {
                           '${r['revaluedMarks']} / 100',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isUpdated ? Colors.green : AppColors.ink,
+                            color: isUpdated ? Colors.green : context.palette.ink,
                           ),
                         ),
                       ),
@@ -280,7 +286,7 @@ class _RevaluationScreenState extends State<RevaluationScreen> {
                           child: Text(
                             r['status'],
                             style: TextStyle(
-                              color: isUpdated ? Colors.green : AppColors.ink,
+                              color: isUpdated ? Colors.green : context.palette.ink,
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
                             ),
@@ -302,9 +308,9 @@ class _RevaluationScreenState extends State<RevaluationScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,7 +365,10 @@ class _RevaluationScreenState extends State<RevaluationScreen> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+              style: FilledButton.styleFrom(
+                backgroundColor: context.palette.brand,
+                foregroundColor: context.palette.onBrand,
+              ),
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(

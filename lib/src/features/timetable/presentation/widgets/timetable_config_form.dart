@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../data/timetable_models.dart';
+import '../timetable_tones.dart';
 
 class TimetableConfigForm extends StatefulWidget {
   const TimetableConfigForm({
@@ -18,6 +19,8 @@ class TimetableConfigForm extends StatefulWidget {
 }
 
 class _TimetableConfigFormState extends State<TimetableConfigForm> {
+  AppPalette get _p => context.palette;
+
   late final TextEditingController _acadYearCtrl;
   late final TextEditingController _semesterCtrl;
   late final TextEditingController _batchCtrl;
@@ -109,9 +112,9 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
 
     widget.onSaveConfig(updated);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text('Class Timetable configuration saved successfully!'),
-        backgroundColor: AppColors.primary,
+        backgroundColor: _p.brand,
       ),
     );
   }
@@ -122,10 +125,10 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
 
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: _p.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade300),
+        side: BorderSide(color: context.grey(300)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -137,13 +140,10 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: _p.brandInk.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(
-                    Icons.tune_outlined,
-                    color: AppColors.primary,
-                  ),
+                  child: Icon(Icons.tune_outlined, color: _p.brandInk),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -155,11 +155,11 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                      const Text(
+                      Text(
                         'Configure working days, period durations, and break positions for the class schedule',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, color: AppColors.muted),
+                        style: TextStyle(fontSize: 12, color: _p.inkSecondary),
                       ),
                     ],
                   ),
@@ -213,11 +213,7 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
             // Section Header: Time & Structure Controls
             Row(
               children: [
-                const Icon(
-                  Icons.timer_outlined,
-                  size: 18,
-                  color: AppColors.primary,
-                ),
+                Icon(Icons.timer_outlined, size: 18, color: _p.brandInk),
                 const SizedBox(width: 8),
                 Text(
                   'Period & Duration Settings',
@@ -341,9 +337,14 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.amber.shade50.withValues(alpha: 0.5),
+                color: context.adaptive(
+                  light: Colors.amber.shade50.withValues(alpha: 0.5),
+                  dark: const Color(0x1FFFC107),
+                ),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.amber.shade200),
+                border: Border.all(
+                  color: Colors.amber.shade200.tintOn(context, alpha: .45),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,11 +367,11 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Duration',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.muted,
+                                color: _p.inkSecondary,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -409,11 +410,11 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Slot Position',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.muted,
+                                color: _p.inkSecondary,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -454,19 +455,24 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.shade50.withValues(alpha: 0.5),
+                color: context.adaptive(
+                  light: Colors.orange.shade50.withValues(alpha: 0.5),
+                  dark: const Color(0x1FFF9800),
+                ),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange.shade200),
+                border: Border.all(
+                  color: Colors.orange.shade200.tintOn(context, alpha: .45),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     '🍱 Lunch Break Settings',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
-                      color: Colors.deepOrange,
+                      color: Colors.deepOrange.inkOn(context),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -479,11 +485,11 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Duration',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.muted,
+                                color: _p.inkSecondary,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -522,11 +528,11 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Slot Position',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.muted,
+                                color: _p.inkSecondary,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -579,11 +585,11 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                 ChoiceChip(
                   label: const Text('Mon – Fri (5 Days)'),
                   selected: _workingDaysOption == 'Mon-Fri',
-                  selectedColor: AppColors.primary,
+                  selectedColor: _p.brand,
                   labelStyle: TextStyle(
                     color: _workingDaysOption == 'Mon-Fri'
-                        ? Colors.white
-                        : AppColors.ink,
+                        ? _p.onBrand
+                        : _p.ink,
                     fontWeight: _workingDaysOption == 'Mon-Fri'
                         ? FontWeight.bold
                         : FontWeight.normal,
@@ -594,11 +600,11 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                 ChoiceChip(
                   label: const Text('Mon – Sat (6 Days)'),
                   selected: _workingDaysOption == 'Mon-Sat',
-                  selectedColor: AppColors.primary,
+                  selectedColor: _p.brand,
                   labelStyle: TextStyle(
                     color: _workingDaysOption == 'Mon-Sat'
-                        ? Colors.white
-                        : AppColors.ink,
+                        ? _p.onBrand
+                        : _p.ink,
                     fontWeight: _workingDaysOption == 'Mon-Sat'
                         ? FontWeight.bold
                         : FontWeight.normal,
@@ -617,9 +623,9 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
                 return FilterChip(
                   label: Text(day),
                   selected: isSelected,
-                  selectedColor: AppColors.primary,
+                  selectedColor: _p.brand,
                   labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : AppColors.ink,
+                    color: isSelected ? _p.onBrand : _p.ink,
                     fontSize: 12,
                   ),
                   onSelected: (val) {
@@ -643,7 +649,8 @@ class _TimetableConfigFormState extends State<TimetableConfigForm> {
               width: double.infinity,
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: _p.brand,
+                  foregroundColor: _p.onBrand,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 onPressed: _save,

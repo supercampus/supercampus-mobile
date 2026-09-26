@@ -40,6 +40,8 @@ class StudentAcademicsShell extends StatefulWidget {
 }
 
 class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
+  AppPalette get _p => context.palette;
+
   final _attendanceKey = GlobalKey();
   final _marksKey = GlobalKey();
   List<StudentAssessment> _assessments = const [];
@@ -324,10 +326,10 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
   Widget _timetableCard() => Padding(
     padding: EdgeInsets.zero,
     child: Material(
-      color: Colors.white,
+      color: _p.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE5E7EB), width: 1),
+        side: BorderSide(color: context.adaptive(light: const Color(0xFFE5E7EB), dark: _p.border), width: 1),
       ),
       elevation: 0,
       shadowColor: Colors.black.withValues(alpha: 0.04),
@@ -369,38 +371,38 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                   children: [
                     Row(
                       children: [
-                        const Text(
+                        Text(
                           'Class Timetable',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF111827),
+                            color: context.adaptive(light: const Color(0xFF111827), dark: _p.ink),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEEF2FF),
+                            color: context.adaptive(light: const Color(0xFFEEF2FF), dark: const Color(0x2E6366F1)),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Schedule',
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF4F46E5),
+                              color: context.adaptive(light: const Color(0xFF4F46E5), dark: const Color(0xFF818CF8)),
                             ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 2),
-                    const Text(
+                    Text(
                       'View weekly schedule & period timings',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF6B7280),
+                        color: _p.inkSecondary,
                       ),
                     ),
                   ],
@@ -409,13 +411,13 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
               Container(
                 width: 32,
                 height: 32,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF3F4F6),
+                decoration: BoxDecoration(
+                  color: _p.surfaceMuted,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.chevron_right_rounded,
-                  color: Color(0xFF6B7280),
+                  color: _p.inkSecondary,
                   size: 20,
                 ),
               ),
@@ -434,9 +436,9 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
       ),
       const SizedBox(height: 4),
-      const Text(
+      Text(
         'Overall attendance status and weekly schedule',
-        style: TextStyle(color: AppColors.muted, fontSize: 13),
+        style: TextStyle(color: _p.inkSecondary, fontSize: 13),
       ),
       const SizedBox(height: 14),
       if (_loadingAttendance && _attendanceSummary == null)
@@ -483,9 +485,9 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _p.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: context.adaptive(light: const Color(0xFFE5E7EB), dark: _p.border)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -517,26 +519,26 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                       children: [
                         Text(
                           'Week $weekNum',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF111827),
+                            color: context.adaptive(light: const Color(0xFF111827), dark: _p.ink),
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(
+                        Icon(
                           Icons.keyboard_arrow_down_rounded,
                           size: 18,
-                          color: AppColors.muted,
+                          color: _p.inkSecondary,
                         ),
                       ],
                     ),
                     const SizedBox(height: 2),
                     Text(
                       dateRangeStr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.muted,
+                        color: _p.inkSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -563,7 +565,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: _p.surfaceRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -577,7 +579,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: context.adaptive(light: Colors.grey.shade300, dark: const Color(0xFF3A3B44)),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -646,10 +648,10 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                       leading: CircleAvatar(
                         radius: 18,
                         backgroundColor: isSelected
-                            ? AppColors.gateBlue
+                            ? _p.brand
                             : isCurrent
-                            ? AppColors.gateBlue.withValues(alpha: 0.15)
-                            : Colors.grey.shade100,
+                            ? _p.brandInk.withValues(alpha: 0.15)
+                            : context.adaptive(light: Colors.grey.shade100, dark: const Color(0xFF1C1D23)),
                         child: Text(
                           '$weekNum',
                           style: TextStyle(
@@ -658,8 +660,8 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                             color: isSelected
                                 ? Colors.white
                                 : isCurrent
-                                ? AppColors.gateBlue
-                                : const Color(0xFF374151),
+                                ? _p.brandInk
+                                : context.adaptive(light: const Color(0xFF374151), dark: const Color(0xFFD9DAE0)),
                           ),
                         ),
                       ),
@@ -672,8 +674,8 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                                   ? FontWeight.w700
                                   : FontWeight.w500,
                               color: isSelected
-                                  ? AppColors.gateBlue
-                                  : Colors.black87,
+                                  ? _p.brandInk
+                                  : context.adaptive(light: Colors.black87, dark: _p.ink),
                             ),
                           ),
                           if (isCurrent) ...[
@@ -687,12 +689,12 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                                 color: Colors.green.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Current',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.green,
+                                  color: context.adaptive(light: Colors.green, dark: const Color(0xFF81C784)),
                                 ),
                               ),
                             ),
@@ -701,15 +703,15 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                       ),
                       subtitle: Text(
                         label,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.muted,
+                          color: _p.inkSecondary,
                         ),
                       ),
                       trailing: isSelected
-                          ? const Icon(
+                          ? Icon(
                               Icons.check_circle_rounded,
-                              color: AppColors.gateBlue,
+                              color: _p.brandInk,
                             )
                           : null,
                       onTap: () {
@@ -740,12 +742,12 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: AppColors.gateBlue.withValues(alpha: .1),
+                color: _p.brandInk.withValues(alpha: .1),
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.calendar_month_outlined,
-                color: AppColors.gateBlue,
+                color: _p.brandInk,
               ),
             ),
             const SizedBox(width: 13),
@@ -760,15 +762,15 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                   const SizedBox(height: 2),
                   Text(
                     '${_attendanceRecords.length} published records · Calendar view',
-                    style: const TextStyle(
-                      color: AppColors.muted,
+                    style: TextStyle(
+                      color: _p.inkSecondary,
                       fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.muted),
+            Icon(Icons.chevron_right, color: _p.inkSecondary),
           ],
         ),
       ),
@@ -783,7 +785,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: AppColors.muted),
+              Icon(icon, color: _p.inkSecondary),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -796,9 +798,9 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.muted,
+                        color: _p.inkSecondary,
                       ),
                     ),
                   ],
@@ -811,7 +813,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
 
   Widget _overallAttendanceCard() {
     final percentage = _number(_attendanceSummary?['percentage']);
-    final accent = percentage < 75 ? Colors.orange : Colors.green;
+    final accent = percentage < 75 ? context.adaptive(light: Colors.orange, dark: const Color(0xFFFFB74D)) : context.adaptive(light: Colors.green, dark: const Color(0xFF81C784));
     final grid = _weeklyAttendanceGrid();
     return Card(
       elevation: 0,
@@ -839,10 +841,10 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                     width: 20,
                     child: Text(
                       const ['M', 'T', 'W', 'T', 'F'][day],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.muted,
+                        color: _p.inkSecondary,
                       ),
                     ),
                   ),
@@ -868,7 +870,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
             const SizedBox(height: 2),
             Text(
               '${_count('presentClasses')} present  •  ${_count('absences')} absent  •  ${_count('onDutyClasses')} OD  •  ${_count('leaveClasses')} leave',
-              style: const TextStyle(fontSize: 11, color: AppColors.muted),
+              style: TextStyle(fontSize: 11, color: _p.inkSecondary),
             ),
           ],
         ),
@@ -926,7 +928,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       _WeeklyAttendanceStatus.present => const Color(0xFF1DCF00),
       _WeeklyAttendanceStatus.absent => const Color(0xFFFF1723),
       _WeeklyAttendanceStatus.onDuty => const Color(0xFFFFD600),
-      null => const Color(0xFFE4E1EA),
+      null => context.adaptive(light: const Color(0xFFE4E1EA), dark: const Color(0xFF2B2C34)),
     };
     final label = switch (status) {
       _WeeklyAttendanceStatus.present => 'present',
@@ -970,9 +972,9 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Choose a date to see every published subject attendance record.',
-          style: TextStyle(color: AppColors.muted),
+          style: TextStyle(color: _p.inkSecondary),
         ),
         const SizedBox(height: 14),
         Card(
@@ -1011,12 +1013,12 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
               ),
               calendarStyle: CalendarStyle(
                 todayDecoration: BoxDecoration(
-                  color: AppColors.gateBlue.withValues(alpha: .18),
+                  color: _p.brandInk.withValues(alpha: .18),
                   shape: BoxShape.circle,
                 ),
-                todayTextStyle: const TextStyle(color: AppColors.gateBlue),
-                selectedDecoration: const BoxDecoration(
-                  color: AppColors.gateBlue,
+                todayTextStyle: TextStyle(color: _p.brandInk),
+                selectedDecoration: BoxDecoration(
+                  color: _p.brand,
                   shape: BoxShape.circle,
                 ),
                 markerDecoration: const BoxDecoration(
@@ -1107,16 +1109,16 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                     if (code.isNotEmpty)
                       Text(
                         code,
-                        style: const TextStyle(
-                          color: AppColors.muted,
+                        style: TextStyle(
+                          color: _p.inkSecondary,
                           fontSize: 11,
                         ),
                       ),
                     const SizedBox(height: 4),
                     Text(
                       time.isEmpty ? period : '$period  •  $time',
-                      style: const TextStyle(
-                        color: AppColors.muted,
+                      style: TextStyle(
+                        color: _p.inkSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -1139,7 +1141,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                 ),
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_right, color: AppColors.muted),
+              Icon(Icons.chevron_right, color: _p.inkSecondary),
             ],
           ),
         ),
@@ -1259,13 +1261,13 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 21, color: AppColors.gateBlue),
+            Icon(icon, size: 21, color: _p.brandInk),
             const SizedBox(width: 12),
             SizedBox(
               width: 72,
               child: Text(
                 label,
-                style: const TextStyle(color: AppColors.muted),
+                style: TextStyle(color: _p.inkSecondary),
               ),
             ),
             Expanded(
@@ -1319,11 +1321,11 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       };
 
   Color _attendanceStatusColor(String status) => switch (status.toLowerCase()) {
-    'present' => Colors.green,
-    'absent' => Colors.red,
-    'od' || 'on_duty' => const Color(0xFFB57900),
-    'leave' => Colors.orange,
-    _ => AppColors.muted,
+    'present' => context.adaptive(light: Colors.green, dark: const Color(0xFF81C784)),
+    'absent' => context.adaptive(light: Colors.red, dark: const Color(0xFFE57373)),
+    'od' || 'on_duty' => context.adaptive(light: const Color(0xFFB57900), dark: _p.warning),
+    'leave' => context.adaptive(light: Colors.orange, dark: const Color(0xFFFFB74D)),
+    _ => _p.inkSecondary,
   };
 
   Widget _marksResultsLink() => Card(
@@ -1343,9 +1345,9 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                 color: Colors.deepPurple.withValues(alpha: .1),
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.assessment_outlined,
-                color: Colors.deepPurple,
+                color: context.adaptive(light: Colors.deepPurple, dark: const Color(0xFFB39DDB)),
               ),
             ),
             const SizedBox(width: 13),
@@ -1362,8 +1364,8 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                     _assessments.isEmpty
                         ? 'Semester, internal and other tests updated by your class advisor'
                         : '${_assessments.length} results · Semester, internal and other tests',
-                    style: const TextStyle(
-                      color: AppColors.muted,
+                    style: TextStyle(
+                      color: _p.inkSecondary,
                       fontSize: 12,
                       height: 1.3,
                     ),
@@ -1371,7 +1373,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.muted),
+            Icon(Icons.chevron_right, color: _p.inkSecondary),
           ],
         ),
       ),
@@ -1386,9 +1388,9 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
         style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500),
       ),
       const SizedBox(height: 6),
-      const Text(
+      Text(
         'Results are grouped by examination and listed subject-wise.',
-        style: TextStyle(color: AppColors.muted),
+        style: TextStyle(color: _p.inkSecondary),
       ),
       const SizedBox(height: 18),
       if (_loadingAssessments && _assessments.isEmpty)
@@ -1428,9 +1430,9 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
   );
 
   Color _assessmentColor(StudentAssessmentKind kind) => switch (kind) {
-    StudentAssessmentKind.semester => const Color(0xFF4A4E9C),
-    StudentAssessmentKind.internal => Colors.green,
-    StudentAssessmentKind.test => Colors.deepPurple,
+    StudentAssessmentKind.semester => context.adaptive(light: const Color(0xFF4A4E9C), dark: const Color(0xFFA5B4FC)),
+    StudentAssessmentKind.internal => context.adaptive(light: Colors.green, dark: const Color(0xFF81C784)),
+    StudentAssessmentKind.test => context.adaptive(light: Colors.deepPurple, dark: const Color(0xFFB39DDB)),
   };
 
   IconData _assessmentIcon(StudentAssessmentKind kind) => switch (kind) {
@@ -1475,8 +1477,8 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                 ),
                 Text(
                   '${assessments.length} ${assessments.length == 1 ? 'subject' : 'subjects'}',
-                  style: const TextStyle(
-                    color: AppColors.muted,
+                  style: TextStyle(
+                    color: _p.inkSecondary,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1528,9 +1530,9 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                     ),
                     Text(
                       detail,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.muted,
+                        color: _p.inkSecondary,
                       ),
                     ),
                   ],
@@ -1571,7 +1573,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
             const SizedBox(height: 6),
             Text(
               assessment.notes!,
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              style: TextStyle(fontSize: 12, color: _p.inkSecondary),
             ),
           ],
         ],
@@ -1591,14 +1593,14 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          Icon(icon, color: const Color(0xFF4A4E9C), size: 34),
+          Icon(icon, color: context.adaptive(light: const Color(0xFF4A4E9C), dark: const Color(0xFFA5B4FC)), size: 34),
           const SizedBox(height: 10),
           Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            style: TextStyle(fontSize: 12, color: _p.inkSecondary),
           ),
           const SizedBox(height: 8),
           TextButton(onPressed: onAction, child: Text(actionLabel)),

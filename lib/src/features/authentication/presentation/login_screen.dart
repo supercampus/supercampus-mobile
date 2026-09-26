@@ -117,7 +117,13 @@ class _LoginScreenState extends State<LoginScreen> {
       showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          icon: const Icon(Icons.devices_rounded, color: Color(0xFF5B21FF)),
+          icon: Icon(
+            Icons.devices_rounded,
+            color: context.adaptive(
+              light: const Color(0xFF5B21FF),
+              dark: const Color(0xFFA29BFF),
+            ),
+          ),
           title: const Text('Signed out on this device'),
           content: Text(message, textAlign: TextAlign.center),
           actionsAlignment: MainAxisAlignment.center,
@@ -273,7 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Theme(
       data: AppTheme.light,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppPalette.light.surface,
         body: Stack(
           children: [
             SafeArea(
@@ -679,25 +685,25 @@ class _SignInView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 36),
-              const Text(
+              Text(
                 'SuperCampus',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Brittany',
                   fontSize: 34,
-                  color: Color(0xFF18181B),
+                  color: context._authInk,
                   height: 1.1,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'login to your account issued by your instituition',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 13.5,
                   fontWeight: FontWeight.w400,
-                  color: Color(0xFF71717A),
+                  color: context._authMuted,
                 ),
               ),
               const SizedBox(height: 40),
@@ -708,56 +714,56 @@ class _SignInView extends StatelessWidget {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.username],
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 14.5,
                     fontWeight: FontWeight.w400,
-                    color: Color(0xFF18181B),
+                    color: context._authInk,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Enter your email',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
-                      color: Color(0xFFA1A1AA),
+                      color: context._authHint,
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.mail_outline_rounded,
-                      color: Color(0xFF71717A),
+                      color: context._authMuted,
                       size: 20,
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: context.palette.surface,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 16,
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFE4E4E7),
+                      borderSide: BorderSide(
+                        color: context._authLine,
                         width: 1.2,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF6366F1),
+                      borderSide: BorderSide(
+                        color: context._authFocus,
                         width: 1.8,
                       ),
                     ),
                     errorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFEF4444),
+                      borderSide: BorderSide(
+                        color: context.palette.danger,
                         width: 1.2,
                       ),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFEF4444),
+                      borderSide: BorderSide(
+                        color: context.palette.danger,
                         width: 1.8,
                       ),
                     ),
@@ -775,23 +781,23 @@ class _SignInView extends StatelessWidget {
                   obscureText: obscurePassword,
                   textInputAction: TextInputAction.done,
                   autofillHints: const [AutofillHints.password],
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 14.5,
                     fontWeight: FontWeight.w400,
-                    color: Color(0xFF18181B),
+                    color: context._authInk,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Enter your password',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
-                      color: Color(0xFFA1A1AA),
+                      color: context._authHint,
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.lock_outline_rounded,
-                      color: Color(0xFF71717A),
+                      color: context._authMuted,
                       size: 20,
                     ),
                     suffixIcon: IconButton(
@@ -803,41 +809,41 @@ class _SignInView extends StatelessWidget {
                         obscurePassword
                             ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
-                        color: const Color(0xFF71717A),
+                        color: context._authMuted,
                         size: 20,
                       ),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: context.palette.surface,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 16,
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFE4E4E7),
+                      borderSide: BorderSide(
+                        color: context._authLine,
                         width: 1.2,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF6366F1),
+                      borderSide: BorderSide(
+                        color: context._authFocus,
                         width: 1.8,
                       ),
                     ),
                     errorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFEF4444),
+                      borderSide: BorderSide(
+                        color: context.palette.danger,
                         width: 1.2,
                       ),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFEF4444),
+                      borderSide: BorderSide(
+                        color: context.palette.danger,
                         width: 1.8,
                       ),
                     ),
@@ -854,7 +860,7 @@ class _SignInView extends StatelessWidget {
                 child: TextButton(
                   onPressed: isSubmitting ? null : onForgotPassword,
                   style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF4F46E5),
+                    foregroundColor: context._authLink,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 4,
                       vertical: 6,
@@ -862,13 +868,13 @@ class _SignInView extends StatelessWidget {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text(
+                  child: Text(
                     'Forgot password?',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF4F46E5),
+                      color: context._authLink,
                     ),
                   ),
                 ),
@@ -888,10 +894,10 @@ class _SignInView extends StatelessWidget {
                 FilledButton(
                   onPressed: _isLocked ? null : onSubmit,
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF18181B),
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFFE4E4E7),
-                    disabledForegroundColor: const Color(0xFF71717A),
+                    backgroundColor: context._authButtonFill,
+                    foregroundColor: context._authOnButton,
+                    disabledBackgroundColor: context._authLine,
+                    disabledForegroundColor: context._authMuted,
                     minimumSize: const Size.fromHeight(52),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -911,12 +917,12 @@ class _SignInView extends StatelessWidget {
                   ),
                 ),
               const SizedBox(height: 22),
-              const Text(
+              Text(
                 'Your access and campus services are managed by your institution administrator.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Poppins',
-                  color: Color(0xFF71717A),
+                  color: context._authMuted,
                   fontSize: 12,
                   fontWeight: FontWeight.w400,
                   height: 1.45,
@@ -968,8 +974,8 @@ class _ResetPasswordView extends StatelessWidget {
                 child: Container(
                   width: 44,
                   height: 44,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFD9D9D9),
+                  decoration: BoxDecoration(
+                    color: context._authBackFill,
                     shape: BoxShape.circle,
                   ),
                   child: const Center(
@@ -983,24 +989,24 @@ class _ResetPasswordView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 36),
-            const Text(
+            Text(
               'Reset your password',
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF18181B),
+                color: context._authInk,
                 height: 1.2,
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Enter your registered email address. We will send instructions to regain access.',
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
-                color: Color(0xFF71717A),
+                color: context._authMuted,
                 height: 1.5,
               ),
             ),
@@ -1012,56 +1018,56 @@ class _ResetPasswordView extends StatelessWidget {
                 autofocus: true,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.done,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 14.5,
                   fontWeight: FontWeight.w400,
-                  color: Color(0xFF18181B),
+                  color: context._authInk,
                 ),
                 decoration: InputDecoration(
                   hintText: 'name@college.edu',
-                  hintStyle: const TextStyle(
+                  hintStyle: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
-                    color: Color(0xFFA1A1AA),
+                    color: context._authHint,
                   ),
-                  prefixIcon: const Icon(
+                  prefixIcon: Icon(
                     Icons.mail_outline_rounded,
-                    color: Color(0xFF71717A),
+                    color: context._authMuted,
                     size: 20,
                   ),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: context.palette.surface,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 16,
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFE4E4E7),
+                    borderSide: BorderSide(
+                      color: context._authLine,
                       width: 1.2,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF6366F1),
+                    borderSide: BorderSide(
+                      color: context._authFocus,
                       width: 1.8,
                     ),
                   ),
                   errorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFEF4444),
+                    borderSide: BorderSide(
+                      color: context.palette.danger,
                       width: 1.2,
                     ),
                   ),
                   focusedErrorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Color(0xFFEF4444),
+                    borderSide: BorderSide(
+                      color: context.palette.danger,
                       width: 1.8,
                     ),
                   ),
@@ -1087,21 +1093,21 @@ class _ResetPasswordView extends StatelessWidget {
               FilledButton(
                 onPressed: onSubmit,
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF18181B),
-                  foregroundColor: Colors.white,
+                  backgroundColor: context._authButtonFill,
+                  foregroundColor: context._authOnButton,
                   minimumSize: const Size.fromHeight(52),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
+                child: Text(
                   'Send reset link',
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: context._authOnButton,
                   ),
                 ),
               ),
@@ -1208,7 +1214,7 @@ class _PasswordResetCompletionScreenState
     return Theme(
       data: AppTheme.light,
       child: Scaffold(
-        backgroundColor: AppColors.canvas,
+        backgroundColor: AppPalette.light.canvas,
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) => SingleChildScrollView(
@@ -1228,9 +1234,9 @@ class _PasswordResetCompletionScreenState
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.palette.surface,
                             borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: context.palette.border),
                             boxShadow: const [
                               BoxShadow(
                                 color: Color(0x120E00B8),
@@ -1261,22 +1267,22 @@ class _PasswordResetCompletionScreenState
                                   ),
                                 ),
                                 const SizedBox(height: 22),
-                                const Text(
+                                Text(
                                   'Create new password',
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
-                                    color: Color(0xFF18181B),
+                                    color: context._authInk,
                                     fontSize: 26,
                                     fontWeight: FontWeight.w700,
                                     height: 1.15,
                                   ),
                                 ),
                                 const SizedBox(height: 9),
-                                const Text(
+                                Text(
                                   'Choose a secure password for your SuperCampus account.',
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
-                                    color: Color(0xFF71717A),
+                                    color: context._authMuted,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w400,
                                     height: 1.5,
@@ -1292,24 +1298,24 @@ class _PasswordResetCompletionScreenState
                                       AutofillHints.newPassword,
                                     ],
                                     textInputAction: TextInputAction.next,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.w400,
-                                      color: Color(0xFF18181B),
+                                      color: context._authInk,
                                     ),
                                     validator: _validatePassword,
                                     decoration: InputDecoration(
                                       hintText: 'At least 8 characters',
-                                      hintStyle: const TextStyle(
+                                      hintStyle: TextStyle(
                                         fontFamily: 'Poppins',
                                         fontSize: 14,
                                         fontWeight: FontWeight.w400,
-                                        color: Color(0xFFA1A1AA),
+                                        color: context._authHint,
                                       ),
-                                      prefixIcon: const Icon(
+                                      prefixIcon: Icon(
                                         Icons.lock_outline_rounded,
-                                        color: Color(0xFF71717A),
+                                        color: context._authMuted,
                                         size: 20,
                                       ),
                                       suffixIcon: IconButton(
@@ -1324,12 +1330,12 @@ class _PasswordResetCompletionScreenState
                                           _obscurePassword
                                               ? Icons.visibility_outlined
                                               : Icons.visibility_off_outlined,
-                                          color: const Color(0xFF71717A),
+                                          color: context._authMuted,
                                           size: 20,
                                         ),
                                       ),
                                       filled: true,
-                                      fillColor: Colors.white,
+                                      fillColor: context.palette.surface,
                                       contentPadding:
                                           const EdgeInsets.symmetric(
                                             horizontal: 16,
@@ -1337,29 +1343,29 @@ class _PasswordResetCompletionScreenState
                                           ),
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFFE4E4E7),
+                                        borderSide: BorderSide(
+                                          color: context._authLine,
                                           width: 1.2,
                                         ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFF6366F1),
+                                        borderSide: BorderSide(
+                                          color: context._authFocus,
                                           width: 1.8,
                                         ),
                                       ),
                                       errorBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFFEF4444),
+                                        borderSide: BorderSide(
+                                          color: context.palette.danger,
                                           width: 1.2,
                                         ),
                                       ),
                                       focusedErrorBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFFEF4444),
+                                        borderSide: BorderSide(
+                                          color: context.palette.danger,
                                           width: 1.8,
                                         ),
                                       ),
@@ -1376,25 +1382,25 @@ class _PasswordResetCompletionScreenState
                                       AutofillHints.newPassword,
                                     ],
                                     textInputAction: TextInputAction.done,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.w400,
-                                      color: Color(0xFF18181B),
+                                      color: context._authInk,
                                     ),
                                     validator: _validateConfirmation,
                                     onFieldSubmitted: (_) => _submit(),
                                     decoration: InputDecoration(
                                       hintText: 'Enter it again',
-                                      hintStyle: const TextStyle(
+                                      hintStyle: TextStyle(
                                         fontFamily: 'Poppins',
                                         fontSize: 14,
                                         fontWeight: FontWeight.w400,
-                                        color: Color(0xFFA1A1AA),
+                                        color: context._authHint,
                                       ),
-                                      prefixIcon: const Icon(
+                                      prefixIcon: Icon(
                                         Icons.verified_user_outlined,
-                                        color: Color(0xFF71717A),
+                                        color: context._authMuted,
                                         size: 20,
                                       ),
                                       suffixIcon: IconButton(
@@ -1409,12 +1415,12 @@ class _PasswordResetCompletionScreenState
                                           _obscureConfirmation
                                               ? Icons.visibility_outlined
                                               : Icons.visibility_off_outlined,
-                                          color: const Color(0xFF71717A),
+                                          color: context._authMuted,
                                           size: 20,
                                         ),
                                       ),
                                       filled: true,
-                                      fillColor: Colors.white,
+                                      fillColor: context.palette.surface,
                                       contentPadding:
                                           const EdgeInsets.symmetric(
                                             horizontal: 16,
@@ -1422,29 +1428,29 @@ class _PasswordResetCompletionScreenState
                                           ),
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFFE4E4E7),
+                                        borderSide: BorderSide(
+                                          color: context._authLine,
                                           width: 1.2,
                                         ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFF6366F1),
+                                        borderSide: BorderSide(
+                                          color: context._authFocus,
                                           width: 1.8,
                                         ),
                                       ),
                                       errorBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFFEF4444),
+                                        borderSide: BorderSide(
+                                          color: context.palette.danger,
                                           width: 1.2,
                                         ),
                                       ),
                                       focusedErrorBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFFEF4444),
+                                        borderSide: BorderSide(
+                                          color: context.palette.danger,
                                           width: 1.8,
                                         ),
                                       ),
@@ -1463,8 +1469,8 @@ class _PasswordResetCompletionScreenState
                                   onPressed:
                                       _isSubmitting || missingToken ? null : _submit,
                                   style: FilledButton.styleFrom(
-                                    backgroundColor: const Color(0xFF18181B),
-                                    foregroundColor: Colors.white,
+                                    backgroundColor: context._authButtonFill,
+                                    foregroundColor: context._authOnButton,
                                     minimumSize: const Size.fromHeight(52),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -1472,34 +1478,34 @@ class _PasswordResetCompletionScreenState
                                     elevation: 0,
                                   ),
                                   child: _isSubmitting
-                                      ? const SizedBox(
+                                      ? SizedBox(
                                           width: 22,
                                           height: 22,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2.2,
-                                            color: Colors.white,
+                                            color: context._authOnButton,
                                           ),
                                         )
-                                      : const Text(
+                                      : Text(
                                           'Create password',
                                           style: TextStyle(
                                             fontFamily: 'Poppins',
                                             fontSize: 15,
                                             fontWeight: FontWeight.w600,
-                                            color: Colors.white,
+                                            color: context._authOnButton,
                                           ),
                                         ),
                                 ),
                                 const SizedBox(height: 10),
                                 TextButton(
                                   onPressed: widget.onBackToLogin,
-                                  child: const Text(
+                                  child: Text(
                                     'Back to login',
                                     style: TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500,
-                                      color: Color(0xFF4F46E5),
+                                      color: context._authLink,
                                     ),
                                   ),
                                 ),
@@ -1554,8 +1560,8 @@ class _AuthPage extends StatelessWidget {
                           child: Container(
                             width: 44,
                             height: 44,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFD9D9D9),
+                            decoration: BoxDecoration(
+                              color: context._authBackFill,
                               shape: BoxShape.circle,
                             ),
                             child: const Center(
@@ -1605,14 +1611,14 @@ class _BrandLockup extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 11),
-        const Column(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'SuperCampus',
               style: TextStyle(
                 fontFamily: 'Poppins',
-                color: AppColors.ink,
+                color: context.palette.ink,
                 fontSize: 19,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0,
@@ -1622,7 +1628,7 @@ class _BrandLockup extends StatelessWidget {
               'INTEGRATED CAMPUS SYSTEM',
               style: TextStyle(
                 fontFamily: 'Poppins',
-                color: AppColors.muted,
+                color: context.palette.inkSecondary,
                 fontSize: 8,
                 fontWeight: FontWeight.w500,
                 letterSpacing: 1,
@@ -1648,9 +1654,9 @@ class _FieldLabel extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Poppins',
-            color: Color(0xFF18181B),
+            color: context._authInk,
             fontSize: 13.5,
             fontWeight: FontWeight.w500,
           ),
@@ -1672,25 +1678,39 @@ class _ErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF1F1),
+        color: context.adaptive(
+          light: const Color(0xFFFFF1F1),
+          dark: const Color(0x2EEF4444),
+        ),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFFECACA)),
+        border: Border.all(
+          color: context.adaptive(
+            light: const Color(0xFFFECACA),
+            dark: const Color(0x59F87171),
+          ),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.error_outline_rounded,
-            color: Color(0xFFDC2626),
+            color: context.adaptive(
+              light: const Color(0xFFDC2626),
+              dark: const Color(0xFFF87171),
+            ),
             size: 20,
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Poppins',
-                color: Color(0xFF991B1B),
+                color: context.adaptive(
+                  light: const Color(0xFF991B1B),
+                  dark: const Color(0xFFFCA5A5),
+                ),
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
                 height: 1.45,
@@ -1701,4 +1721,30 @@ class _ErrorBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The auth screens' zinc/indigo set. Light values are the originals; dark
+/// values follow the app's dark palette. The screens are pinned to
+/// [AppTheme.light] today, so these resolve light unless that pin is lifted.
+extension on BuildContext {
+  Color get _authInk =>
+      adaptive(light: const Color(0xFF18181B), dark: const Color(0xFFF2F2F5));
+  Color get _authMuted =>
+      adaptive(light: const Color(0xFF71717A), dark: const Color(0xFFA3A5B0));
+  Color get _authHint =>
+      adaptive(light: const Color(0xFFA1A1AA), dark: const Color(0xFF878995));
+  Color get _authLine =>
+      adaptive(light: const Color(0xFFE4E4E7), dark: const Color(0xFF2B2C34));
+  Color get _authFocus =>
+      adaptive(light: const Color(0xFF6366F1), dark: const Color(0xFFA5B4FC));
+  Color get _authLink =>
+      adaptive(light: const Color(0xFF4F46E5), dark: const Color(0xFFA5B4FC));
+  Color get _authBackFill =>
+      adaptive(light: const Color(0xFFD9D9D9), dark: const Color(0xFF3A3B44));
+
+  /// The near-black sign-in button inverts to a near-white one in dark.
+  Color get _authButtonFill =>
+      adaptive(light: const Color(0xFF18181B), dark: const Color(0xFFF2F2F5));
+  Color get _authOnButton =>
+      adaptive(light: Colors.white, dark: const Color(0xFF0E0F13));
 }

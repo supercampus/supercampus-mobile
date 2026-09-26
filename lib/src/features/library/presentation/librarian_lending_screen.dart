@@ -450,9 +450,9 @@ class _LibrarianLendingScreenState extends State<LibrarianLendingScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.policy_outlined,
-                          color: AppColors.gateBlue,
+                          color: context.palette.brandInk,
                         ),
                         const SizedBox(width: 12),
                         Expanded(

@@ -296,13 +296,18 @@ class _SupercampusAppState extends State<SupercampusApp>
   }
 
   Future<void> _onSignedIn(UserSession session) async {
+    // The saved appearance is local and fast; apply it before the first frame
+    // of the signed-in app instead of after the permissions round-trip, so a
+    // dark-mode user never sees a flash of the light theme.
+    final themeMode = await _loadThemeMode(session);
+    if (!mounted) return;
     setState(() {
       _session = session;
       _permissions = null;
       _openModuleId = null;
       _openModuleAction = null;
       _attendanceClass = null;
-      _themeMode = ThemeMode.light;
+      _themeMode = themeMode;
       _moduleOrder = const [];
       _sessionNotice = null;
     });
@@ -310,14 +315,12 @@ class _SupercampusAppState extends State<SupercampusApp>
 
     final results = await Future.wait<Object?>([
       _permissionsRepository.loadFor(session),
-      _loadThemeMode(session),
       _loadModuleOrder(session),
     ]);
     if (!mounted) return;
     setState(() {
       _permissions = results[0] as EffectivePermissions;
-      _themeMode = results[1] as ThemeMode;
-      _moduleOrder = results[2] as List<String>;
+      _moduleOrder = results[1] as List<String>;
     });
     if (_shouldRefreshSession(session)) {
       unawaited(_refreshPermissions());
@@ -725,50 +728,48 @@ class _SupercampusAppState extends State<SupercampusApp>
   ) {
     final primary = _parseBrandColor(brand?['primary']) ?? AppColors.primary;
     final secondary = _parseBrandColor(brand?['secondary']) ?? AppColors.accent;
-    final scheme = ColorScheme.fromSeed(
-      seedColor: primary,
-      brightness: brightness,
-      primary: primary,
-      secondary: secondary,
-    );
+    final isDark = brightness == Brightness.dark;
+    final palette = isDark ? AppPalette.dark : AppPalette.light;
+    // Dark keeps AppTheme.dark's layered surfaces and swaps in the tenant
+    // colour lifted for legibility, so a dark brand never disappears. Light is
+    // rebuilt from the tenant seed exactly as before.
+    final scheme = isDark
+        ? theme.colorScheme.copyWith(
+            primary: AppPalette.liftForDark(primary),
+            secondary: secondary,
+          )
+        : ColorScheme.fromSeed(
+            seedColor: primary,
+            brightness: brightness,
+            primary: primary,
+            secondary: secondary,
+          );
     return theme.copyWith(
       colorScheme: scheme,
+      extensions: [palette],
       pageTransitionsTheme: AppMotion.pageTransitions,
-      primaryColor: primary,
-      cardColor: brightness == Brightness.dark
+      primaryColor: isDark ? AppPalette.liftForDark(primary) : primary,
+      cardColor: isDark
           ? theme.cardColor
           : (_parseBrandColor(brand?['surface']) ?? theme.cardColor),
-      dividerColor: primary.withValues(
-        alpha: brightness == Brightness.dark ? 0.28 : 0.22,
-      ),
-      scaffoldBackgroundColor: brightness == Brightness.dark
-          ? Color.alphaBlend(
-              primary.withValues(alpha: 0.04),
-              theme.scaffoldBackgroundColor,
-            )
+      dividerColor: isDark ? palette.divider : primary.withValues(alpha: 0.22),
+      scaffoldBackgroundColor: isDark
+          ? palette.canvas
           // The tenant surface can style cards, but the light-mode page canvas
           // stays the shared near-white lavender blush. A green tenant surface
           // previously washed the entire student app mint.
           : AppColors.canvas,
       appBarTheme: theme.appBarTheme.copyWith(
-        backgroundColor: brightness == Brightness.dark
-            ? const Color(0xFF1B1E20)
-            : Colors.white,
-        foregroundColor: brightness == Brightness.dark
-            ? Colors.white
-            : AppColors.ink,
+        backgroundColor: palette.surface,
+        foregroundColor: palette.ink,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        iconTheme: IconThemeData(
-          color: brightness == Brightness.dark ? Colors.white : AppColors.ink,
-        ),
-        actionsIconTheme: IconThemeData(
-          color: brightness == Brightness.dark ? Colors.white : AppColors.ink,
-        ),
+        iconTheme: IconThemeData(color: palette.ink),
+        actionsIconTheme: IconThemeData(color: palette.ink),
         titleTextStyle: TextStyle(
           fontFamily: 'Poppins',
-          color: brightness == Brightness.dark ? Colors.white : AppColors.ink,
+          color: palette.ink,
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),

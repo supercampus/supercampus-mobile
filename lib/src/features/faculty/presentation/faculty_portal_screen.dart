@@ -8,6 +8,12 @@ import '../../authentication/data/auth_repository.dart';
 import '../data/faculty_models.dart';
 import '../data/mock_faculty_repository.dart';
 
+/// Faculty purple used as text or icon colour: exact in light, lifted in dark.
+Color _purpleInk(BuildContext context) => context.adaptive(
+      light: const Color(0xFF6A1B9A),
+      dark: const Color(0xFFCE93D8),
+    );
+
 class FacultyPortalScreen extends StatefulWidget {
   const FacultyPortalScreen({
     super.key,
@@ -98,7 +104,7 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: context.adaptive(light: const Color(0xFFF4F6FA), dark: context.palette.canvas),
       appBar: AppBar(
         leading: widget.onExitModule != null
             ? ModuleBackButton(
@@ -130,7 +136,7 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                     '${widget.session.displayName} • ${widget.session.departmentOrWard ?? "CS Dept"}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                    style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                   ),
                 ],
               ),
@@ -169,9 +175,9 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Swipe cards right/left to mark attendance dynamically',
-          style: TextStyle(fontSize: 13, color: AppColors.muted),
+          style: TextStyle(fontSize: 13, color: context.palette.inkSecondary),
         ),
         const SizedBox(height: 16),
         SizedBox(
@@ -197,12 +203,12 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? const Color(0xFF6A1B9A)
-                          : Colors.white,
+                          : context.palette.surface,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
                             ? const Color(0xFF6A1B9A)
-                            : Colors.grey.shade300,
+                            : context.adaptive(light: Colors.grey.shade300, dark: const Color(0xFF3A3B44)),
                       ),
                     ),
                     child: Column(
@@ -215,7 +221,7 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                             fontWeight: FontWeight.w500,
                             color: isSelected
                                 ? Colors.white70
-                                : AppColors.muted,
+                                : context.palette.inkSecondary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -227,7 +233,7 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: isSelected ? Colors.white : AppColors.ink,
+                            color: isSelected ? Colors.white : context.palette.ink,
                           ),
                         ),
                         const Spacer(),
@@ -237,7 +243,7 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                             fontSize: 11,
                             color: isSelected
                                 ? Colors.white70
-                                : AppColors.muted,
+                                : context.palette.inkSecondary,
                           ),
                         ),
                       ],
@@ -263,16 +269,16 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                 _counterBadge(
                   'Present',
                   '$presentCount',
-                  const Color(0xFF2E7D32),
+                  context.adaptive(light: const Color(0xFF2E7D32), dark: const Color(0xFF81C784)),
                 ),
                 const SizedBox(width: 6),
                 _counterBadge(
                   'Absent',
                   '$absentCount',
-                  const Color(0xFFD9383A),
+                  context.adaptive(light: const Color(0xFFD9383A), dark: const Color(0xFFFCA5A5)),
                 ),
                 const SizedBox(width: 6),
-                _counterBadge('OD', '$odCount', Colors.amber.shade800),
+                _counterBadge('OD', '$odCount', context.adaptive(light: Colors.amber.shade800, dark: Colors.amber.shade300)),
               ],
             ),
           ],
@@ -346,9 +352,9 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Review duty leaves, lab exemptions & symposium passes',
-          style: TextStyle(fontSize: 13, color: AppColors.muted),
+          style: TextStyle(fontSize: 13, color: context.palette.inkSecondary),
         ),
         const SizedBox(height: 20),
         ..._leaveRequests.map((req) {
@@ -359,11 +365,11 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(
-                color: isPending ? Colors.amber.shade400 : Colors.grey.shade200,
+                color: isPending ? Colors.amber.shade400 : context.adaptive(light: Colors.grey.shade200, dark: const Color(0xFF2B2C34)),
                 width: isPending ? 1.5 : 1,
               ),
             ),
-            color: Colors.white,
+            color: context.palette.surface,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -381,23 +387,23 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                       const SizedBox(width: 8),
                       Text(
                         '(${req.rollNumber})',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.muted,
+                          color: context.palette.inkSecondary,
                         ),
                       ),
                       const Spacer(),
                       Chip(
                         label: Text(req.status),
                         backgroundColor: isPending
-                            ? Colors.amber.shade100
-                            : const Color(0xFFE8F5E9),
+                            ? context.adaptive(light: Colors.amber.shade100, dark: const Color(0x2EFFC107))
+                            : context.adaptive(light: const Color(0xFFE8F5E9), dark: const Color(0x2E2E7D32)),
                         labelStyle: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: isPending
-                              ? Colors.amber.shade900
-                              : const Color(0xFF2E7D32),
+                              ? context.adaptive(light: Colors.amber.shade900, dark: Colors.amber.shade200)
+                              : context.adaptive(light: const Color(0xFF2E7D32), dark: const Color(0xFF81C784)),
                         ),
                       ),
                     ],
@@ -405,10 +411,10 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                   const SizedBox(height: 8),
                   Text(
                     req.leaveType,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF6A1B9A),
+                      color: _purpleInk(context),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -467,16 +473,16 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Department Noticeboard',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
                 ),
                 Text(
                   'Announcements broadcast to Student & Parent portals',
-                  style: TextStyle(fontSize: 12, color: AppColors.muted),
+                  style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
                 ),
               ],
             ),
@@ -495,10 +501,10 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
             elevation: 0,
-            color: Colors.white,
+            color: context.palette.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade200),
+              side: BorderSide(color: context.adaptive(light: Colors.grey.shade200, dark: const Color(0xFF2B2C34))),
             ),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -507,9 +513,9 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.campaign,
-                        color: Color(0xFF6A1B9A),
+                        color: _purpleInk(context),
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -530,9 +536,9 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                     '${notice.announcementDate.day.toString().padLeft(2, '0')}/'
                     '${notice.announcementDate.month.toString().padLeft(2, '0')}/'
                     '${notice.announcementDate.year}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF6A1B9A),
+                      color: _purpleInk(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -549,9 +555,9 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                   const SizedBox(height: 12),
                   Text(
                     'Posted by ${notice.author} • Target: ${notice.targetAudience}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.muted,
+                      color: context.palette.inkSecondary,
                     ),
                   ),
                 ],
@@ -572,9 +578,9 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'View enrolled students and academic performance',
-          style: TextStyle(fontSize: 13, color: AppColors.muted),
+          style: TextStyle(fontSize: 13, color: context.palette.inkSecondary),
         ),
         const SizedBox(height: 20),
         TextField(
@@ -582,10 +588,10 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
             hintText: 'Search student by name or roll number...',
             prefixIcon: const Icon(Icons.search),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: context.palette.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
+              borderSide: BorderSide(color: context.adaptive(light: Colors.grey.shade200, dark: const Color(0xFF2B2C34))),
             ),
           ),
         ),
@@ -594,18 +600,18 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
           return Card(
             margin: const EdgeInsets.only(bottom: 8),
             elevation: 0,
-            color: Colors.white,
+            color: context.palette.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade200),
+              side: BorderSide(color: context.adaptive(light: Colors.grey.shade200, dark: const Color(0xFF2B2C34))),
             ),
             child: ListTile(
               leading: CircleAvatar(
-                backgroundColor: const Color(0xFFF3E5F5),
+                backgroundColor: context.adaptive(light: const Color(0xFFF3E5F5), dark: const Color(0x2E9C27B0)),
                 child: Text(
                   st.studentName.substring(0, 1),
-                  style: const TextStyle(
-                    color: Color(0xFF6A1B9A),
+                  style: TextStyle(
+                    color: _purpleInk(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -728,11 +734,11 @@ class _SwipeableStudentCard extends StatelessWidget {
         child: Card(
           elevation: 0,
           margin: EdgeInsets.zero,
-          color: Colors.white,
+          color: context.palette.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
             side: BorderSide(
-              color: _borderColor(item.attendanceStatus),
+              color: _borderColor(context, item.attendanceStatus),
               width: item.attendanceStatus != 'Present' ? 1.5 : 1,
             ),
           ),
@@ -758,12 +764,13 @@ class _SwipeableStudentCard extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         backgroundColor: _statusColor(
+                          context,
                           item.attendanceStatus,
                         ).withValues(alpha: 0.15),
                         child: Text(
                           item.studentName.substring(0, 1),
                           style: TextStyle(
-                            color: _statusColor(item.attendanceStatus),
+                            color: _statusColor(context, item.attendanceStatus),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -782,15 +789,15 @@ class _SwipeableStudentCard extends StatelessWidget {
                             ),
                             Text(
                               item.rollNumber,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.muted,
+                                color: context.palette.inkSecondary,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      _statusPill(item),
+                      _statusPill(context, item),
                     ],
                   ),
                 ],
@@ -802,17 +809,17 @@ class _SwipeableStudentCard extends StatelessWidget {
     );
   }
 
-  Widget _statusPill(StudentAttendanceItem item) {
+  Widget _statusPill(BuildContext context, StudentAttendanceItem item) {
     final (label, color, icon) = switch (item.attendanceStatus) {
       'Present' => (
         'PRESENT',
-        const Color(0xFF2E7D32),
+        context.adaptive(light: const Color(0xFF2E7D32), dark: const Color(0xFF81C784)),
         Icons.check_circle_outline,
       ),
-      'Absent' => ('ABSENT', const Color(0xFFD9383A), Icons.cancel_outlined),
+      'Absent' => ('ABSENT', context.adaptive(light: const Color(0xFFD9383A), dark: const Color(0xFFFCA5A5)), Icons.cancel_outlined),
       _ => (
         item.isODConsented ? 'OD CONSENTED' : 'OD APPROVED',
-        Colors.amber.shade800,
+        context.adaptive(light: Colors.amber.shade800, dark: Colors.amber.shade300),
         Icons.verified_outlined,
       ),
     };
@@ -843,15 +850,19 @@ class _SwipeableStudentCard extends StatelessWidget {
     );
   }
 
-  Color _statusColor(String status) {
-    if (status == 'Present') return const Color(0xFF2E7D32);
-    if (status == 'Absent') return const Color(0xFFD9383A);
-    return Colors.amber.shade800;
+  Color _statusColor(BuildContext context, String status) {
+    if (status == 'Present') return context.adaptive(light: const Color(0xFF2E7D32), dark: const Color(0xFF81C784));
+    if (status == 'Absent') return context.adaptive(light: const Color(0xFFD9383A), dark: const Color(0xFFFCA5A5));
+    return context.adaptive(light: Colors.amber.shade800, dark: Colors.amber.shade300);
   }
 
-  Color _borderColor(String status) {
-    if (status == 'Present') return const Color(0xFFC8E6C9);
-    if (status == 'Absent') return const Color(0xFFFFCDD2);
-    return Colors.amber.shade300;
+  Color _borderColor(BuildContext context, String status) {
+    if (status == 'Present') {
+      return context.adaptive(light: const Color(0xFFC8E6C9), dark: const Color(0x6681C784));
+    }
+    if (status == 'Absent') {
+      return context.adaptive(light: const Color(0xFFFFCDD2), dark: const Color(0x66FCA5A5));
+    }
+    return context.adaptive(light: Colors.amber.shade300, dark: const Color(0x66FFD54F));
   }
 }

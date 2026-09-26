@@ -4,6 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'dart:typed_data';
 
+import '../../../core/theme/app_theme.dart';
+
 class StudentAttendanceHistory extends StatefulWidget {
   final Map<String, dynamic> summary;
   final bool hasWards;
@@ -199,7 +201,7 @@ class _Metric extends StatelessWidget {
     return Column(
       children: [
         Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w500)),
-        Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+        Text(label, style: TextStyle(color: context.adaptive(light: Colors.black54, dark: context.palette.inkSecondary), fontSize: 13)),
       ],
     );
   }

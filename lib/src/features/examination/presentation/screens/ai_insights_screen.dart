@@ -72,16 +72,16 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
   Widget _buildHeaderBanner(bool isMobile) {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.palette.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: Padding(
         padding: EdgeInsets.all(isMobile ? 12 : 16),
         child: Row(
           children: [
-            const Icon(Icons.psychology, color: AppColors.primary, size: 28),
+            Icon(Icons.psychology, color: context.palette.brandInk, size: 28),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -92,9 +92,9 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     'Performance optimization, anomaly detection, and early intervention alerts.',
-                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                    style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                   ),
                 ],
               ),
@@ -194,9 +194,9 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,10 +209,10 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.muted,
+                    color: context.palette.inkSecondary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -231,7 +231,7 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
           ),
           Text(
             sub,
-            style: const TextStyle(fontSize: 10, color: AppColors.muted),
+            style: TextStyle(fontSize: 10, color: context.palette.inkSecondary),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -252,9 +252,9 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,9 +283,9 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
                         ),
                         Text(
                           d['count'] as String,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: AppColors.muted,
+                            color: context.palette.inkSecondary,
                           ),
                         ),
                       ],
@@ -295,8 +295,11 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
                       value: d['percent'] as double,
                       minHeight: 8,
                       borderRadius: BorderRadius.circular(4),
-                      backgroundColor: Colors.grey.shade100,
-                      color: AppColors.primary,
+                      backgroundColor: context.adaptive(
+                        light: Colors.grey.shade100,
+                        dark: const Color(0xFF2B2C34),
+                      ),
+                      color: context.palette.brandInk,
                     ),
                   ],
                 ),
@@ -312,9 +315,9 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,9 +370,9 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,7 +407,7 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
                 ),
                 subtitle: Text(
                   '${r['reason']}\nAction: ${r['recommendedAction']}',
-                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                 ),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(

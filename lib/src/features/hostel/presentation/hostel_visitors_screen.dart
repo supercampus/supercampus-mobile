@@ -34,9 +34,9 @@ class HostelVisitorsScreen extends StatelessWidget {
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Submit visitor details once, then follow the approval here.',
-            style: TextStyle(color: AppColors.muted),
+            style: TextStyle(color: context.palette.inkSecondary),
           ),
           const SizedBox(height: 14),
           FilledButton.icon(
@@ -57,13 +57,13 @@ class HostelVisitorsScreen extends StatelessWidget {
               ),
               Text(
                 '${visitors.length}',
-                style: const TextStyle(color: AppColors.muted),
+                style: TextStyle(color: context.palette.inkSecondary),
               ),
             ],
           ),
           const SizedBox(height: 10),
           if (visitors.isEmpty)
-            _emptyState('No visitor pass requests yet.')
+            _emptyState(context, 'No visitor pass requests yet.')
           else
             ...visitors.map((visitor) => _buildVisitorCard(context, visitor)),
         ],
@@ -71,19 +71,19 @@ class HostelVisitorsScreen extends StatelessWidget {
     );
   }
 
-  Widget _emptyState(String message) => Container(
+  Widget _emptyState(BuildContext context, String message) => Container(
     padding: const EdgeInsets.all(22),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.palette.surface,
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: AppColors.border),
+      border: Border.all(color: context.palette.border),
     ),
     child: Row(
       children: [
-        const Icon(Icons.event_available_outlined, color: AppColors.muted),
+        Icon(Icons.event_available_outlined, color: context.palette.inkSecondary),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(message, style: const TextStyle(color: AppColors.muted)),
+          child: Text(message, style: TextStyle(color: context.palette.inkSecondary)),
         ),
       ],
     ),
@@ -94,7 +94,7 @@ class HostelVisitorsScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -117,7 +117,7 @@ class HostelVisitorsScreen extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: context.adaptive(light: Colors.green.shade50, dark: Colors.green.withValues(alpha: 0.18)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -125,7 +125,7 @@ class HostelVisitorsScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green.shade800,
+                      color: context.adaptive(light: Colors.green.shade800, dark: Colors.green.shade200),
                     ),
                   ),
                 ),
@@ -134,27 +134,27 @@ class HostelVisitorsScreen extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Contact: ${v.visitorContact}',
-              style: const TextStyle(color: AppColors.muted, fontSize: 12),
+              style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
             ),
             Text(
               'Purpose: ${v.purpose}',
-              style: const TextStyle(color: AppColors.muted, fontSize: 12),
+              style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.access_time,
                   size: 14,
-                  color: AppColors.primary,
+                  color: context.palette.brandInk,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   'Valid Today: ${v.validFromTime} – ${v.validUntilTime}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: context.palette.brandInk,
                   ),
                 ),
               ],

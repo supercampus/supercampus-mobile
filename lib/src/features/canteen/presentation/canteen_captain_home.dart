@@ -75,7 +75,7 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
       await widget.onScanOrder!(payload);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Order delivered successfully!'),
             behavior: SnackBarBehavior.floating,
             backgroundColor: AppColors.success,
@@ -89,7 +89,7 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surfaceRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -103,7 +103,7 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: context.adaptive(light: Colors.grey.shade300, dark: const Color(0xFF3A3B44)),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -129,7 +129,7 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
               const SizedBox(height: 4),
               Text(
                 widget.store.user.email,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 14, color: context.adaptive(light: Colors.grey.shade600, dark: const Color(0xFFA3A5B0))),
               ),
               const SizedBox(height: 24),
               const Divider(height: 1),
@@ -228,7 +228,7 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           )
-                        : const Icon(Icons.person, size: 20, color: Colors.grey))
+                        : Icon(Icons.person, size: 20, color: context.adaptive(light: Colors.grey, dark: const Color(0xFF878995))))
                     : null,
               ),
             ),
@@ -316,7 +316,7 @@ class _CaptainQueue extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       '${orders.length} waiting · swipe a card to update it',
-                      style: const TextStyle(color: AppColors.muted),
+                      style: TextStyle(color: context.palette.inkSecondary),
                     ),
                   ],
                 ),
@@ -328,7 +328,7 @@ class _CaptainQueue extends StatelessWidget {
           if (!working)
             _ModeNotice(onSwitchToWork: onSwitchToWork)
           else if (orders.isEmpty)
-            const CanteenSurface(
+            CanteenSurface(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 34),
                 child: Column(
@@ -336,7 +336,7 @@ class _CaptainQueue extends StatelessWidget {
                     Icon(
                       Icons.room_service_outlined,
                       size: 40,
-                      color: AppColors.primary,
+                      color: context.palette.brandInk,
                     ),
                     SizedBox(height: 12),
                     Text('No active food orders.'),
@@ -424,7 +424,7 @@ class _CaptainOrderCard extends StatelessWidget {
           : SwipeAction(
               label: next.$2,
               icon: next.$3,
-              color: nextGradient?.colors.first ?? AppColors.primary,
+              color: nextGradient?.colors.first ?? context.palette.brand,
               gradient: nextGradient,
               foreground: nextForeground,
               onCommit: () => onStatus(order.id, next.$1),
@@ -450,12 +450,12 @@ class _CaptainOrderCard extends StatelessWidget {
                 child: firstItem != null
                     ? MenuItemArt(item: firstItem, size: 48)
                     : Container(
-                        color: const Color(0xFFF1F5F9),
+                        color: context.adaptive(light: const Color(0xFFF1F5F9), dark: const Color(0xFF1C1D23)),
                         alignment: Alignment.center,
-                        child: const Icon(
+                        child: Icon(
                           Icons.restaurant_rounded,
                           size: 24,
-                          color: AppColors.primary,
+                          color: context.palette.brandInk,
                         ),
                       ),
               ),
@@ -470,10 +470,10 @@ class _CaptainOrderCard extends StatelessWidget {
                     order.customerName ?? 'Campus user',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E293B),
+                      color: context.adaptive(light: const Color(0xFF1E293B), dark: const Color(0xFFF2F2F5)),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -482,22 +482,22 @@ class _CaptainOrderCard extends StatelessWidget {
                       children: [
                         for (int i = 0; i < order.lines.length; i++) ...[
                           if (i > 0)
-                            const TextSpan(
+                            TextSpan(
                               text: ', ',
-                              style: TextStyle(color: Color(0xFF64748B)),
+                              style: TextStyle(color: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0))),
                             ),
                           TextSpan(
                             text: '${order.lines[i].quantity}× ',
-                            style: const TextStyle(
-                              color: AppColors.primary,
+                            style: TextStyle(
+                              color: context.palette.brandInk,
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                             ),
                           ),
                           TextSpan(
                             text: order.lines[i].item.name,
-                            style: const TextStyle(
-                              color: Color(0xFF64748B),
+                            style: TextStyle(
+                              color: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0)),
                               fontSize: 13,
                             ),
                           ),
@@ -537,9 +537,9 @@ class _CaptainHistory extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Completed, rejected and cancelled orders',
-            style: TextStyle(color: AppColors.muted),
+            style: TextStyle(color: context.palette.inkSecondary),
           ),
           const SizedBox(height: 18),
           if (orders.isEmpty)
@@ -562,8 +562,8 @@ class _CaptainHistory extends StatelessWidget {
                             ? Icons.check_circle_outline
                             : Icons.cancel_outlined,
                         color: order.status == CanteenOrderStatus.completed
-                            ? AppColors.primary
-                            : const Color(0xFFB42318),
+                            ? context.palette.brandInk
+                            : context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -579,8 +579,8 @@ class _CaptainHistory extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               '#${order.displayId} · ${formatShortDate(order.createdAt)}',
-                              style: const TextStyle(
-                                color: AppColors.muted,
+                              style: TextStyle(
+                                color: context.palette.inkSecondary,
                                 fontSize: 12,
                               ),
                             ),
@@ -615,13 +615,13 @@ class _ModeBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
     decoration: BoxDecoration(
-      color: AppColors.primary.withValues(alpha: .1),
+      color: context.palette.brandInk.withValues(alpha: .1),
       borderRadius: BorderRadius.circular(999),
     ),
     child: Text(
       working ? 'WORK' : 'EAT',
-      style: const TextStyle(
-        color: AppColors.primary,
+      style: TextStyle(
+        color: context.palette.brandInk,
         fontWeight: FontWeight.w700,
         fontSize: 12,
       ),
@@ -639,16 +639,16 @@ class _ModeNotice extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       child: Column(
         children: [
-          const Icon(Icons.restaurant_outlined, size: 39, color: AppColors.primary),
+          Icon(Icons.restaurant_outlined, size: 39, color: context.palette.brandInk),
           const SizedBox(height: 10),
           const Text(
             'You are in eat mode',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 5),
-          const Text(
+          Text(
             'Switch to Work mode to handle orders.',
-            style: TextStyle(color: AppColors.muted),
+            style: TextStyle(color: context.palette.inkSecondary),
           ),
           if (onSwitchToWork != null) ...[
             const SizedBox(height: 14),

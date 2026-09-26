@@ -165,7 +165,7 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
     final historyCount = _historyBookings.length;
 
     return Scaffold(
-      backgroundColor: isDark ? Colors.black : AppColors.canvas,
+      backgroundColor: context.palette.canvas,
       appBar: AppBar(
         leading: ModuleBackButton(
           onPressed: widget.onExitModule,
@@ -194,7 +194,7 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
                     child: FilledButton.icon(
                       onPressed: _openBookSlot,
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.gateBlue,
+                        backgroundColor: context.palette.brand,
                       ),
                       icon: const Icon(Icons.add),
                       label: const Text('Book Slot'),
@@ -308,7 +308,7 @@ class _BookingHistoryScreen extends StatelessWidget {
         .toList();
 
     return Scaffold(
-      backgroundColor: isDark ? Colors.black : AppColors.canvas,
+      backgroundColor: context.palette.canvas,
       appBar: AppBar(
         leading: ModuleBackButton(
           onPressed: () => Navigator.of(context).pop(),
@@ -438,12 +438,14 @@ class _HistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF171717) : Colors.white;
-    final textColor = isDark ? Colors.white : AppColors.ink;
-    final mutedColor = isDark ? Colors.white54 : AppColors.muted;
-    final borderColor = isDark
-        ? const Color(0xFF2A2A2A)
-        : const Color(0xFFE1E5E3);
+    final p = context.palette;
+    final cardColor = p.surface;
+    final textColor = p.ink;
+    final mutedColor = p.inkSecondary;
+    final borderColor = context.adaptive(
+      light: const Color(0xFFE1E5E3),
+      dark: const Color(0xFF2B2C34),
+    );
     final badgeColor = isDark
         ? pass.status.badgeColorDark
         : pass.status.badgeColor;
@@ -579,18 +581,28 @@ class _BookingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF171717) : Colors.white;
-    final textColor = isDark ? Colors.white : AppColors.ink;
-    final mutedColor = isDark ? Colors.white54 : AppColors.muted;
-    final borderColor = isDark
-        ? const Color(0xFF2A2A2A)
-        : const Color(0xFFE1E5E3);
+    final p = context.palette;
+    final cardColor = p.surface;
+    final textColor = p.ink;
+    final mutedColor = p.inkSecondary;
+    final borderColor = context.adaptive(
+      light: const Color(0xFFE1E5E3),
+      dark: const Color(0xFF2B2C34),
+    );
     final badgeColor = isDark
         ? pass.status.badgeColorDark
         : pass.status.badgeColor;
     final badgeBg = isDark
         ? pass.status.badgeBackgroundDark
         : pass.status.badgeBackground;
+    final accentInk = context.adaptive(
+      light: const Color(0xFF6D357F),
+      dark: const Color(0xFFD8A5E8),
+    );
+    final dangerInk = context.adaptive(
+      light: const Color(0xFFB71C1C),
+      dark: const Color(0xFFFCA5A5),
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -602,7 +614,7 @@ class _BookingCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isExpanded
-                ? const Color(0xFF6D357F).withValues(alpha: 0.4)
+                ? accentInk.withValues(alpha: 0.4)
                 : borderColor,
           ),
           boxShadow: isDark
@@ -630,25 +642,25 @@ class _BookingCard extends StatelessWidget {
                       width: 50,
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6D357F).withValues(alpha: 0.08),
+                        color: accentInk.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Column(
                         children: [
                           Text(
                             DateFormat('dd').format(pass.date),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF6D357F),
+                              color: accentInk,
                             ),
                           ),
                           Text(
                             DateFormat('MMM').format(pass.date).toUpperCase(),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF6D357F),
+                              color: accentInk,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -805,9 +817,9 @@ class _BookingCard extends StatelessWidget {
                               child: OutlinedButton.icon(
                                 onPressed: onCancel,
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFFB71C1C),
-                                  side: const BorderSide(
-                                    color: Color(0xFFB71C1C),
+                                  foregroundColor: dangerInk,
+                                  side: BorderSide(
+                                    color: dangerInk,
                                   ),
                                   minimumSize: const Size(0, 42),
                                 ),

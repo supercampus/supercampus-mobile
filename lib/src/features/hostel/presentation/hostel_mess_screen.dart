@@ -178,7 +178,10 @@ class _AccessSummary extends StatelessWidget {
                   enabled
                       ? 'Room ${room ?? '—'} · covered until ${_date(validUntil!)}'
                       : 'Access follows residency, paid coverage and campus settings.',
-                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                  style: TextStyle(
+                    color: context.palette.inkSecondary,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -198,6 +201,7 @@ class _MealCard extends StatelessWidget {
     final used = token.status == MealTokenStatus.used;
     final expired = token.status == MealTokenStatus.expired;
     final enabled = !used && !expired;
+    final p = context.palette;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -206,8 +210,8 @@ class _MealCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: enabled
-              ? AppColors.primary.withValues(alpha: .45)
-              : AppColors.border,
+              ? p.brandInk.withValues(alpha: .45)
+              : p.border,
         ),
       ),
       child: Row(
@@ -217,13 +221,13 @@ class _MealCard extends StatelessWidget {
             height: 44,
             decoration: BoxDecoration(
               color: enabled
-                  ? AppColors.primary.withValues(alpha: .1)
-                  : AppColors.moduleSoft,
+                  ? p.brandInk.withValues(alpha: .1)
+                  : p.brandSoft,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               used ? Icons.check_rounded : Icons.restaurant_rounded,
-              color: enabled ? AppColors.primary : AppColors.muted,
+              color: enabled ? p.brandInk : p.inkSecondary,
             ),
           ),
           const SizedBox(width: 12),
@@ -240,13 +244,19 @@ class _MealCard extends StatelessWidget {
                 ),
                 Text(
                   token.mealType.timeWindow,
-                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                  style: TextStyle(
+                    color: context.palette.inkSecondary,
+                    fontSize: 12,
+                  ),
                 ),
                 if (used && token.redeemedAt != null)
                   Text(
                     'Used at ${_time(token.redeemedAt!)}',
                     style: TextStyle(
-                      color: Colors.green.shade700,
+                      color: context.adaptive(
+                        light: Colors.green.shade700,
+                        dark: const Color(0xFF6EE7B7),
+                      ),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -263,8 +273,8 @@ class _MealCard extends StatelessWidget {
           else
             Text(
               used ? 'USED' : 'EXPIRED',
-              style: const TextStyle(
-                color: AppColors.muted,
+              style: TextStyle(
+                color: p.inkSecondary,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -292,7 +302,7 @@ class _MealCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'Valid ${token.mealType.timeWindow}',
-            style: const TextStyle(color: AppColors.muted),
+            style: TextStyle(color: context.palette.inkSecondary),
           ),
           const SizedBox(height: 20),
           Container(
@@ -304,10 +314,10 @@ class _MealCard extends StatelessWidget {
             child: QrImageView(data: token.qrCode, size: 220),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Present this pass to the authorised mess scanner. It can be redeemed once.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.muted),
+            style: TextStyle(color: context.palette.inkSecondary),
           ),
         ],
       ),
@@ -332,7 +342,7 @@ class _SectionTitle extends StatelessWidget {
       const SizedBox(height: 2),
       Text(
         subtitle,
-        style: const TextStyle(color: AppColors.muted, fontSize: 13),
+        style: TextStyle(color: context.palette.inkSecondary, fontSize: 13),
       ),
     ],
   );
@@ -355,12 +365,12 @@ class _InfoCard extends StatelessWidget {
     decoration: BoxDecoration(
       color: Theme.of(context).cardColor,
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: AppColors.border),
+      border: Border.all(color: context.palette.border),
     ),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: AppColors.primary),
+        Icon(icon, color: context.palette.brandInk),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -370,14 +380,17 @@ class _InfoCard extends StatelessWidget {
               const SizedBox(height: 3),
               Text(
                 subtitle,
-                style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                style: TextStyle(
+                  color: context.palette.inkSecondary,
+                  fontSize: 12,
+                ),
               ),
               if (actionLabel != null) ...[
                 const SizedBox(height: 8),
                 Text(
                   actionLabel!,
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: context.palette.brandInk,
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
                   ),

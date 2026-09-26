@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
+
 class DashboardNavBar extends StatelessWidget {
   const DashboardNavBar({
     super.key,
@@ -12,6 +14,7 @@ class DashboardNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return SafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -21,10 +24,13 @@ class DashboardNavBar extends StatelessWidget {
             child: Container(
               height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xFFFFFFFF),
+                color: p.surface,
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
-                  color: const Color(0xFFE5E7EB),
+                  color: context.adaptive(
+                    light: const Color(0xFFE5E7EB),
+                    dark: p.border,
+                  ),
                   width: 1,
                 ),
                 boxShadow: [
@@ -105,7 +111,10 @@ class _NavItem extends StatelessWidget {
         padding: const EdgeInsets.all(6),
         decoration: isSelected
             ? BoxDecoration(
-                color: const Color(0xFF1400FF).withValues(alpha: 0.1),
+                color: context.adaptive(
+                  light: const Color(0xFF1400FF).withValues(alpha: 0.1),
+                  dark: context.palette.brandSoft,
+                ),
                 borderRadius: BorderRadius.circular(12),
               )
             : null,
@@ -113,8 +122,11 @@ class _NavItem extends StatelessWidget {
           icon,
           size: 22,
           color: isSelected
-              ? const Color(0xFF1400FF)
-              : const Color(0xFF8E8E93),
+              ? context.palette.brandInk
+              : context.adaptive(
+                  light: const Color(0xFF8E8E93),
+                  dark: const Color(0xFF878995),
+                ),
         ),
       ),
     );

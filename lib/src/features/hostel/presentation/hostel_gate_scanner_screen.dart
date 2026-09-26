@@ -43,7 +43,7 @@ class _HostelGateScannerScreenState extends State<HostelGateScannerScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF070907),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.primary, width: 2),
+                border: Border.all(color: context.palette.brandInk, width: 2),
               ),
               child: Stack(
                 alignment: Alignment.center,
@@ -153,17 +153,17 @@ class _HostelGateScannerScreenState extends State<HostelGateScannerScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _isSuccess ? Colors.green.shade50 : Colors.red.shade50,
+                  color: _isSuccess ? context.adaptive(light: Colors.green.shade50, dark: Colors.green.withValues(alpha: 0.18)) : context.adaptive(light: Colors.red.shade50, dark: Colors.red.withValues(alpha: 0.18)),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _isSuccess ? Colors.green.shade300 : Colors.red.shade300,
+                    color: _isSuccess ? context.adaptive(light: Colors.green.shade300, dark: Colors.green.withValues(alpha: 0.45)) : context.adaptive(light: Colors.red.shade300, dark: Colors.red.withValues(alpha: 0.45)),
                   ),
                 ),
                 child: Column(
                   children: [
                     Icon(
                       _isSuccess ? Icons.check_circle : Icons.cancel,
-                      color: _isSuccess ? Colors.green.shade800 : Colors.red.shade800,
+                      color: _isSuccess ? context.adaptive(light: Colors.green.shade800, dark: Colors.green.shade200) : context.adaptive(light: Colors.red.shade800, dark: Colors.red.shade200),
                       size: 40,
                     ),
                     const SizedBox(height: 8),
@@ -173,7 +173,7 @@ class _HostelGateScannerScreenState extends State<HostelGateScannerScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: _isSuccess ? Colors.green.shade900 : Colors.red.shade900,
+                        color: _isSuccess ? context.adaptive(light: Colors.green.shade900, dark: Colors.green.shade200) : context.adaptive(light: Colors.red.shade900, dark: Colors.red.shade200),
                       ),
                     ),
                   ],

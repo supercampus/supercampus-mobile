@@ -7,6 +7,7 @@ import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
 import '../../../core/motion/app_motion.dart';
 import '../../../core/motion/app_springs.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/skeleton_loading.dart';
 
@@ -1271,17 +1272,26 @@ class _AttendanceShellState extends State<AttendanceShell> {
                     _AttendanceCountChip(
                       label: 'Present',
                       value: _count(session['presentCount']),
-                      color: const Color(0xFF16845B),
+                      color: context.adaptive(
+                        light: const Color(0xFF16845B),
+                        dark: const Color(0xFF6EE7B7),
+                      ),
                     ),
                     _AttendanceCountChip(
                       label: 'Absent',
                       value: _count(session['absentCount']),
-                      color: const Color(0xFFC63C35),
+                      color: context.adaptive(
+                        light: const Color(0xFFC63C35),
+                        dark: const Color(0xFFFCA5A5),
+                      ),
                     ),
                     _AttendanceCountChip(
                       label: 'OD',
                       value: _count(session['onDutyCount']),
-                      color: const Color(0xFF8A6500),
+                      color: context.adaptive(
+                        light: const Color(0xFF8A6500),
+                        dark: const Color(0xFFFBBF24),
+                      ),
                     ),
                   ],
                 ),
@@ -1534,7 +1544,7 @@ class _AttendanceShellState extends State<AttendanceShell> {
                                   ?.toString();
                               final status =
                                   student['status']?.toString() ?? 'absent';
-                              final color = _attendanceStatusColor(status);
+                              final color = _attendanceStatusColor(context, status);
                               return Container(
                                 decoration: BoxDecoration(
                                   color: Theme.of(context).colorScheme.surface,
@@ -1778,12 +1788,25 @@ class _AttendanceCountChip extends StatelessWidget {
   );
 }
 
-Color _attendanceStatusColor(String status) => switch (status) {
-  'present' => const Color(0xFF16845B),
-  'od' => const Color(0xFF8A6500),
-  'leave' => const Color(0xFF5F5A70),
-  _ => const Color(0xFFC63C35),
-};
+Color _attendanceStatusColor(BuildContext context, String status) =>
+    switch (status) {
+      'present' => context.adaptive(
+        light: const Color(0xFF16845B),
+        dark: const Color(0xFF6EE7B7),
+      ),
+      'od' => context.adaptive(
+        light: const Color(0xFF8A6500),
+        dark: const Color(0xFFFBBF24),
+      ),
+      'leave' => context.adaptive(
+        light: const Color(0xFF5F5A70),
+        dark: context.palette.inkSecondary,
+      ),
+      _ => context.adaptive(
+        light: const Color(0xFFC63C35),
+        dark: const Color(0xFFFCA5A5),
+      ),
+    };
 
 class _StudentAttendanceAvatar extends StatelessWidget {
   const _StudentAttendanceAvatar({
@@ -1806,7 +1829,7 @@ class _StudentAttendanceAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final url = photoUrl?.trim() ?? '';
     final colors = Theme.of(context).colorScheme;
-    final statusColor = _attendanceStatusColor(status);
+    final statusColor = _attendanceStatusColor(context, status);
     final fallback = Container(
       color: colors.surfaceContainerHighest,
       alignment: Alignment.center,
@@ -1852,10 +1875,10 @@ class _EntryAttendanceStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      'present' => ('PRESENT', const Color(0xFF16845B)),
-      'od' => ('OD', const Color(0xFF8A6500)),
-      'leave' => ('LEAVE', const Color(0xFF5F5A70)),
-      _ => ('ABSENT', const Color(0xFFC63C35)),
+      'present' => ('PRESENT', _attendanceStatusColor(context, status)),
+      'od' => ('OD', _attendanceStatusColor(context, status)),
+      'leave' => ('LEAVE', _attendanceStatusColor(context, status)),
+      _ => ('ABSENT', _attendanceStatusColor(context, status)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),

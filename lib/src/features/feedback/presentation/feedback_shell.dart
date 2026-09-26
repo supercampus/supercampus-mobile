@@ -59,7 +59,7 @@ class _FeedbackShellState extends State<FeedbackShell> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surfaceRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
@@ -203,16 +203,16 @@ class _AnonymousNotice extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.08),
+        color: context.palette.brandInk.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
+        border: Border.all(color: context.palette.brandInk.withValues(alpha: 0.18)),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.visibility_off_outlined, color: AppColors.primary),
-          SizedBox(width: 12),
-          Expanded(
+          Icon(Icons.visibility_off_outlined, color: context.palette.brandInk),
+          const SizedBox(width: 12),
+          const Expanded(
             child: Text(
               'Anonymous submission is mandatory. Your identity is hidden from the owner and retained only in the secure audit log.',
             ),
@@ -402,16 +402,16 @@ class _LockedAnonymousField extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.canvas,
+        color: context.palette.canvas,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.lock_outline, color: AppColors.primary),
-          SizedBox(width: 10),
-          Expanded(child: Text('Anonymous is mandatory and always enabled')),
-          Icon(Icons.check_circle, color: AppColors.success),
+          Icon(Icons.lock_outline, color: context.palette.brandInk),
+          const SizedBox(width: 10),
+          const Expanded(child: Text('Anonymous is mandatory and always enabled')),
+          Icon(Icons.check_circle, color: context.palette.success),
         ],
       ),
     );
@@ -430,8 +430,8 @@ class _HistoryTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: AppColors.border),
+          color: context.palette.surface,
+          border: Border.all(color: context.palette.border),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -441,7 +441,7 @@ class _HistoryTile extends StatelessWidget {
               children: [
                 Icon(
                   _categoryIcon(ticket.category),
-                  color: _categoryColor(ticket.category),
+                  color: _categoryColor(context, ticket.category),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -491,15 +491,15 @@ class _EmptyHistory extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(Icons.history, color: AppColors.muted),
-          SizedBox(height: 10),
-          Text('No feedback submitted yet.'),
+          Icon(Icons.history, color: context.palette.inkSecondary),
+          const SizedBox(height: 10),
+          const Text('No feedback submitted yet.'),
         ],
       ),
     );
@@ -514,14 +514,14 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = switch (status) {
-      FeedbackStatus.closed => AppColors.success,
+      FeedbackStatus.closed => context.palette.success,
       FeedbackStatus.escalated ||
-      FeedbackStatus.reopened => const Color(0xFFB42318),
+      FeedbackStatus.reopened => context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)),
       FeedbackStatus.inProgress ||
-      FeedbackStatus.acknowledged => AppColors.primary,
+      FeedbackStatus.acknowledged => context.palette.brandInk,
       FeedbackStatus.logged ||
       FeedbackStatus.open ||
-      FeedbackStatus.resolved => AppColors.muted,
+      FeedbackStatus.resolved => context.palette.inkSecondary,
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -551,7 +551,7 @@ class _InfoPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.canvas,
+        color: context.palette.canvas,
         borderRadius: BorderRadius.circular(99),
       ),
       child: Text(text, style: const TextStyle(fontSize: 12)),
@@ -567,10 +567,12 @@ IconData _categoryIcon(FeedbackCategory category) => switch (category) {
   FeedbackCategory.institutional => Icons.lightbulb_outline,
 };
 
-Color _categoryColor(FeedbackCategory category) => switch (category) {
+Color _categoryColor(BuildContext context, FeedbackCategory category) =>
+    switch (category) {
   FeedbackCategory.service => AppColors.amber,
-  FeedbackCategory.generalGrievance => AppColors.primary,
+  FeedbackCategory.generalGrievance => context.palette.brandInk,
   FeedbackCategory.academicGrievance => AppColors.gateLavender,
-  FeedbackCategory.statutory => const Color(0xFFB42318),
-  FeedbackCategory.institutional => const Color(0xFF087A4B),
+  FeedbackCategory.statutory => context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)),
+  FeedbackCategory.institutional =>
+    context.adaptive(light: const Color(0xFF087A4B), dark: const Color(0xFF6EE7B7)),
 };

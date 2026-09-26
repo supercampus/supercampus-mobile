@@ -154,12 +154,16 @@ class _StudentReportsAnalyticsScreenState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.cloud_off_rounded, size: 48, color: Colors.grey),
+              Icon(
+                Icons.cloud_off_rounded,
+                size: 48,
+                color: isDark ? const Color(0xFF878995) : Colors.grey,
+              ),
               const SizedBox(height: 12),
               Text(
                 _errorMessage!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: AppColors.muted),
+                style: TextStyle(fontSize: 14, color: context.palette.inkSecondary),
               ),
               const SizedBox(height: 16),
               FilledButton.icon(
@@ -285,7 +289,7 @@ class _StudentReportsAnalyticsScreenState
         color: isDark ? const Color(0xFF222226) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF2C2C30) : AppColors.border,
+          color: isDark ? const Color(0xFF2C2C30) : context.palette.border,
         ),
       ),
       child: Column(
@@ -306,10 +310,10 @@ class _StudentReportsAnalyticsScreenState
             children: [
               Text(
                 item['title'] as String,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.muted,
+                  color: context.palette.inkSecondary,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -326,7 +330,7 @@ class _StudentReportsAnalyticsScreenState
               const SizedBox(height: 2),
               Text(
                 item['sub'] as String,
-                style: const TextStyle(fontSize: 10, color: AppColors.muted),
+                style: TextStyle(fontSize: 10, color: context.palette.inkSecondary),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -360,8 +364,8 @@ class _StudentReportsAnalyticsScreenState
             ),
           ],
         ),
-        labelColor: isDark ? Colors.white : AppColors.ink,
-        unselectedLabelColor: AppColors.muted,
+        labelColor: isDark ? Colors.white : context.palette.ink,
+        unselectedLabelColor: context.palette.inkSecondary,
         labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         tabs: const [
           Tab(text: 'Attendance'),
@@ -420,7 +424,7 @@ class _StudentReportsAnalyticsScreenState
             color: isDark ? const Color(0xFF222226) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? const Color(0xFF2C2C30) : AppColors.border,
+              color: isDark ? const Color(0xFF2C2C30) : context.palette.border,
             ),
           ),
           child: Column(
@@ -448,7 +452,9 @@ class _StudentReportsAnalyticsScreenState
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: pct >= 75 ? Colors.green.shade700 : Colors.orange.shade800,
+                        color: pct >= 75
+                            ? (isDark ? Colors.green.shade300 : Colors.green.shade700)
+                            : (isDark ? Colors.orange.shade300 : Colors.orange.shade800),
                       ),
                     ),
                   ),
@@ -490,7 +496,7 @@ class _StudentReportsAnalyticsScreenState
             color: isDark ? const Color(0xFF222226) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? const Color(0xFF2C2C30) : AppColors.border,
+              color: isDark ? const Color(0xFF2C2C30) : context.palette.border,
             ),
           ),
           child: Column(
@@ -501,9 +507,9 @@ class _StudentReportsAnalyticsScreenState
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Calculated from officially submitted attendance sessions',
-                style: TextStyle(fontSize: 11, color: AppColors.muted),
+                style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
               ),
               const SizedBox(height: 14),
               if (bySubject.isEmpty)
@@ -514,7 +520,7 @@ class _StudentReportsAnalyticsScreenState
                       'No subject attendance recorded yet',
                       style: TextStyle(
                         fontSize: 13,
-                        color: isDark ? Colors.white54 : AppColors.muted,
+                        color: isDark ? Colors.white54 : context.palette.inkSecondary,
                       ),
                     ),
                   ),
@@ -553,8 +559,8 @@ class _StudentReportsAnalyticsScreenState
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: sPct >= 75
-                                    ? Colors.green.shade600
-                                    : Colors.orange.shade700,
+                                    ? (isDark ? Colors.green.shade300 : Colors.green.shade600)
+                                    : (isDark ? Colors.orange.shade300 : Colors.orange.shade700),
                               ),
                             ),
                           ],
@@ -592,7 +598,7 @@ class _StudentReportsAnalyticsScreenState
               color: isDark ? const Color(0xFF222226) : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? const Color(0xFF2C2C30) : AppColors.border,
+                color: isDark ? const Color(0xFF2C2C30) : context.palette.border,
               ),
             ),
             child: Column(
@@ -630,9 +636,9 @@ class _StudentReportsAnalyticsScreenState
                               ),
                               Text(
                                 '${rec['heldOn']} · ${rec['periodLabel'] ?? 'Regular'} · ${rec['facultyName'] ?? 'Faculty'}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10,
-                                  color: AppColors.muted,
+                                  color: context.palette.inkSecondary,
                                 ),
                               ),
                             ],
@@ -748,7 +754,7 @@ class _StudentReportsAnalyticsScreenState
             color: isDark ? const Color(0xFF222226) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? const Color(0xFF2C2C30) : AppColors.border,
+              color: isDark ? const Color(0xFF2C2C30) : context.palette.border,
             ),
           ),
           child: Column(
@@ -760,12 +766,12 @@ class _StudentReportsAnalyticsScreenState
               ),
               const SizedBox(height: 12),
               if (orders.isEmpty)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
                   child: Center(
                     child: Text(
                       'No orders placed yet',
-                      style: TextStyle(fontSize: 13, color: AppColors.muted),
+                      style: TextStyle(fontSize: 13, color: context.palette.inkSecondary),
                     ),
                   ),
                 )
@@ -788,9 +794,9 @@ class _StudentReportsAnalyticsScreenState
                             ),
                             Text(
                               '${order.lines.fold(0, (sum, l) => sum + l.quantity)} items · ${_formatDate(order.createdAt)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.muted,
+                                color: context.palette.inkSecondary,
                               ),
                             ),
                           ],
@@ -845,7 +851,7 @@ class _StudentReportsAnalyticsScreenState
               color: isDark ? const Color(0xFF222226) : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? const Color(0xFF2C2C30) : AppColors.border,
+                color: isDark ? const Color(0xFF2C2C30) : context.palette.border,
               ),
             ),
             child: Column(
@@ -886,9 +892,9 @@ class _StudentReportsAnalyticsScreenState
                                 ),
                                 Text(
                                   _formatDate(tx.createdAt),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 10,
-                                    color: AppColors.muted,
+                                    color: context.palette.inkSecondary,
                                   ),
                                 ),
                               ],
@@ -930,7 +936,7 @@ class _StudentReportsAnalyticsScreenState
             color: isDark ? const Color(0xFF222226) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? const Color(0xFF2C2C30) : AppColors.border,
+              color: isDark ? const Color(0xFF2C2C30) : context.palette.border,
             ),
           ),
           child: Column(
@@ -954,12 +960,12 @@ class _StudentReportsAnalyticsScreenState
               ),
               const SizedBox(height: 12),
               if (passes.isEmpty)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
                   child: Center(
                     child: Text(
                       'No gatepasses generated yet for this student',
-                      style: TextStyle(fontSize: 13, color: AppColors.muted),
+                      style: TextStyle(fontSize: 13, color: context.palette.inkSecondary),
                     ),
                   ),
                 )
@@ -998,9 +1004,9 @@ class _StudentReportsAnalyticsScreenState
                               const SizedBox(height: 2),
                               Text(
                                 'Reason: ${pass.reason} · ${_formatDate(pass.departureAt)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: AppColors.muted,
+                                  color: context.palette.inkSecondary,
                                 ),
                               ),
                             ],
@@ -1047,7 +1053,7 @@ class _StudentReportsAnalyticsScreenState
         color: isDark ? const Color(0xFF222226) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF2C2C30) : AppColors.border,
+          color: isDark ? const Color(0xFF2C2C30) : context.palette.border,
         ),
       ),
       child: Column(
@@ -1058,16 +1064,16 @@ class _StudentReportsAnalyticsScreenState
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Export official student portal activity reports for records and offline review.',
-            style: TextStyle(fontSize: 11, color: AppColors.muted),
+            style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
           ),
           const SizedBox(height: 12),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.fact_check_outlined, color: AppColors.primary),
+            leading: Icon(Icons.fact_check_outlined, color: context.palette.brandInk),
             title: const Text('Attendance Summary Report', style: TextStyle(fontSize: 13)),
-            subtitle: const Text('All class attendance logs and subject totals', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+            subtitle: Text('All class attendance logs and subject totals', style: TextStyle(fontSize: 11, color: context.palette.inkSecondary)),
             trailing: FilledButton.tonalIcon(
               onPressed: () => _exportAttendanceCsv(context),
               icon: const Icon(Icons.download_rounded, size: 14),
@@ -1077,9 +1083,12 @@ class _StudentReportsAnalyticsScreenState
           const Divider(height: 1),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.analytics_outlined, color: Colors.indigo),
+            leading: Icon(
+              Icons.analytics_outlined,
+              color: isDark ? Colors.indigo.shade200 : Colors.indigo,
+            ),
             title: const Text('Overall Services Activity Statement', style: TextStyle(fontSize: 13)),
-            subtitle: const Text('Consolidated statement across attendance, canteen, and passes', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+            subtitle: Text('Consolidated statement across attendance, canteen, and passes', style: TextStyle(fontSize: 11, color: context.palette.inkSecondary)),
             trailing: FilledButton.tonalIcon(
               onPressed: () => _exportOverallServicesSummary(context),
               icon: const Icon(Icons.download_rounded, size: 14),
@@ -1194,7 +1203,7 @@ class _StudentReportsAnalyticsScreenState
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 10, color: AppColors.muted),
+          style: TextStyle(fontSize: 10, color: context.palette.inkSecondary),
         ),
         const SizedBox(height: 2),
         Text(
@@ -1202,7 +1211,7 @@ class _StudentReportsAnalyticsScreenState
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
-            color: color ?? (isDark ? Colors.white : AppColors.ink),
+            color: color ?? (isDark ? Colors.white : context.palette.ink),
           ),
         ),
       ],

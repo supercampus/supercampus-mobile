@@ -44,23 +44,24 @@ class StatusLifecycleWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final currentIndex = ExamCanonicalStatus.values.indexOf(currentStatus);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: p.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.account_tree_outlined,
-                color: AppColors.primary,
+                color: p.brandInk,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -93,7 +94,7 @@ class StatusLifecycleWidget extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             currentStatus.description,
-            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            style: TextStyle(fontSize: 12, color: p.inkSecondary),
           ),
           const SizedBox(height: 16),
           SingleChildScrollView(
@@ -124,12 +125,20 @@ class StatusLifecycleWidget extends StatelessWidget {
                           ? status.color
                           : isPassed
                           ? status.color.withValues(alpha: 0.12)
-                          : Colors.grey.shade100,
+                          : context.adaptive(
+                              light: Colors.grey.shade100,
+                              dark: const Color(0xFF1C1D23),
+                            ),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isCurrent
                             ? status.color
-                            : (isPassed ? status.color : Colors.grey.shade300),
+                            : (isPassed
+                                  ? status.color
+                                  : context.adaptive(
+                                      light: Colors.grey.shade300,
+                                      dark: const Color(0xFF3A3B44),
+                                    )),
                         width: isCurrent ? 2 : 1,
                       ),
                     ),
@@ -147,7 +156,10 @@ class StatusLifecycleWidget extends StatelessWidget {
                               ? Colors.white
                               : isPassed
                               ? status.color
-                              : Colors.grey,
+                              : context.adaptive(
+                                  light: Colors.grey,
+                                  dark: const Color(0xFF878995),
+                                ),
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -160,8 +172,8 @@ class StatusLifecycleWidget extends StatelessWidget {
                             color: isCurrent
                                 ? Colors.white
                                 : isPassed
-                                ? AppColors.ink
-                                : AppColors.muted,
+                                ? p.ink
+                                : p.inkSecondary,
                           ),
                         ),
                       ],

@@ -109,7 +109,10 @@ class _ExaminationShellState extends State<ExaminationShell> {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Scaffold(
-          backgroundColor: const Color(0xFFF4F6FA),
+          backgroundColor: context.adaptive(
+            light: const Color(0xFFF4F6FA),
+            dark: const Color(0xFF0E0F13),
+          ),
           appBar: AppBar(
             leading: _activeFeatureIndex != null
                 ? ModuleBackButton(
@@ -152,9 +155,9 @@ class _ExaminationShellState extends State<ExaminationShell> {
                         '${widget.session.displayName} • ${widget.session.role.label}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.muted,
+                          color: context.palette.inkSecondary,
                         ),
                       ),
                     ],

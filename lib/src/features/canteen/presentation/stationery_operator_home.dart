@@ -166,7 +166,7 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
-                color: shopOpen ? const Color(0xFF087A53) : const Color(0xFFB42318),
+                color: shopOpen ? context.adaptive(light: const Color(0xFF087A53), dark: const Color(0xFF6EE7B7)) : context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)),
               ),
             ),
           ],
@@ -178,17 +178,17 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
             onPressed: () => _openSettings(context),
             icon: CircleAvatar(
               radius: 17,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+              backgroundColor: context.palette.brandInk.withValues(alpha: 0.12),
               backgroundImage: (widget.photoUrl != null && widget.photoUrl!.isNotEmpty)
                   ? NetworkImage(widget.photoUrl!)
                   : null,
               child: (widget.photoUrl == null || widget.photoUrl!.isEmpty)
                   ? Text(
                       _userInitials,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                        color: context.palette.brandInk,
                       ),
                     )
                   : null,
@@ -317,7 +317,7 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: AppColors.muted.withValues(alpha: 0.35),
+                          color: context.palette.inkSecondary.withValues(alpha: 0.35),
                           borderRadius: BorderRadius.circular(99),
                         ),
                       ),
@@ -423,8 +423,8 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                                 height: 36,
                                 decoration: BoxDecoration(
                                   color: shopOpen
-                                      ? const Color(0xFF087A53).withValues(alpha: 0.12)
-                                      : const Color(0xFFB42318).withValues(alpha: 0.12),
+                                      ? context.adaptive(light: const Color(0xFF087A53), dark: const Color(0xFF6EE7B7)).withValues(alpha: 0.12)
+                                      : context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)).withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
@@ -432,8 +432,8 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                                       ? Icons.storefront_outlined
                                       : Icons.store_mall_directory_outlined,
                                   color: shopOpen
-                                      ? const Color(0xFF087A53)
-                                      : const Color(0xFFB42318),
+                                      ? context.adaptive(light: const Color(0xFF087A53), dark: const Color(0xFF6EE7B7))
+                                      : context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)),
                                   size: 20,
                                 ),
                               ),
@@ -456,8 +456,8 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: shopOpen
-                                            ? const Color(0xFF087A53)
-                                            : const Color(0xFFB42318),
+                                            ? context.adaptive(light: const Color(0xFF087A53), dark: const Color(0xFF6EE7B7))
+                                            : context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)),
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -487,9 +487,9 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                             shopOpen
                                 ? 'Students can view items and place stationery orders.'
                                 : 'Incoming orders are paused. Students will see the shop as closed.',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.muted,
+                              color: context.palette.inkSecondary,
                             ),
                           ),
                         ],
@@ -509,14 +509,14 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                                 width: 36,
                                 height: 36,
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  color: context.palette.brandInk.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
                                   mode == CanteenStaffMode.work
                                       ? Icons.work_outline_rounded
                                       : Icons.restaurant_outlined,
-                                  color: AppColors.primary,
+                                  color: context.palette.brandInk,
                                   size: 20,
                                 ),
                               ),
@@ -536,9 +536,9 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                                       mode == CanteenStaffMode.work
                                           ? 'Work mode active'
                                           : 'Eat mode active',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.primary,
+                                        color: context.palette.brandInk,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -576,9 +576,9 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                             mode == CanteenStaffMode.work
                                 ? 'Work mode lets you manage stationery inventory and incoming orders.'
                                 : 'Eat mode switches to customer view to browse campus items and order food or supplies.',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.muted,
+                              color: context.palette.inkSecondary,
                             ),
                           ),
                         ],
@@ -591,9 +591,9 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                       ListTile(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: AppColors.border),
+                          side: BorderSide(color: context.palette.border),
                         ),
-                        leading: const Icon(Icons.settings_outlined, color: AppColors.primary),
+                        leading: Icon(Icons.settings_outlined, color: context.palette.brandInk),
                         title: const Text('All App Settings', style: TextStyle(fontWeight: FontWeight.w600)),
                         subtitle: const Text('Account, theme, notifications, and security'),
                         trailing: const Icon(Icons.chevron_right_rounded),
@@ -610,8 +610,8 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFB42318),
-                          side: const BorderSide(color: Color(0xFFFECDCA)),
+                          foregroundColor: context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)),
+                          side: BorderSide(color: context.adaptive(light: const Color(0xFFFECDCA), dark: const Color(0x66B42318))),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -720,7 +720,7 @@ class _InventoryPage extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       '$totalItems items · ${categories.length} categories',
-                      style: const TextStyle(color: AppColors.muted),
+                      style: TextStyle(color: context.palette.inkSecondary),
                     ),
                   ],
                 ),
@@ -747,13 +747,13 @@ class _InventoryPage extends StatelessWidget {
                   vertical: 7,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE7F7EF),
+                  color: context.palette.successSoft,
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Text(
+                child: Text(
                   'LIVE CATALOG',
                   style: TextStyle(
-                    color: Color(0xFF087A53),
+                    color: context.adaptive(light: const Color(0xFF087A53), dark: const Color(0xFF6EE7B7)),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -805,10 +805,10 @@ class _InventoryPage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 32),
                 child: Column(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.inventory_2_outlined,
                       size: 38,
-                      color: AppColors.primary,
+                      color: context.palette.brandInk,
                     ),
                     const SizedBox(height: 10),
                     const Text('No stationery items match this filter.'),
@@ -856,8 +856,8 @@ class _InventoryPage extends StatelessWidget {
                                   item.category,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: AppColors.muted,
+                                  style: TextStyle(
+                                    color: context.palette.inkSecondary,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -870,8 +870,8 @@ class _InventoryPage extends StatelessWidget {
                             children: [
                               Text(
                                 formatCurrency(item.price),
-                                style: const TextStyle(
-                                  color: AppColors.primary,
+                                style: TextStyle(
+                                  color: context.palette.brandInk,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -881,8 +881,8 @@ class _InventoryPage extends StatelessWidget {
                                 item.isAvailable ? 'Available' : 'Unavailable',
                                 style: TextStyle(
                                   color: item.isAvailable
-                                      ? const Color(0xFF087A53)
-                                      : const Color(0xFFB42318),
+                                      ? context.adaptive(light: const Color(0xFF087A53), dark: const Color(0xFF6EE7B7))
+                                      : context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)),
                                   fontSize: 11,
                                 ),
                               ),
@@ -1001,7 +1001,7 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
                   width: 42,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.muted.withValues(alpha: 0.35),
+                    color: context.palette.inkSecondary.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
@@ -1016,7 +1016,7 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
                 isNew
                     ? 'Publish a new stationery item to the student catalog.'
                     : 'Changes update the live student catalogue.',
-                style: const TextStyle(color: AppColors.muted),
+                style: TextStyle(color: context.palette.inkSecondary),
               ),
               const SizedBox(height: 18),
               _imageEditor(),
@@ -1167,9 +1167,9 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
           width: 92,
           height: 92,
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
+            color: context.adaptive(light: const Color(0xFFF8FAFC), dark: const Color(0xFF1C1D23)),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.palette.border),
           ),
           child: _imageBytes != null
               ? Image.memory(_imageBytes!, fit: BoxFit.contain)
@@ -1199,9 +1199,9 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
     ],
   );
 
-  Widget _imagePlaceholder() => const ColoredBox(
-    color: Color(0xFFE5ECFA),
-    child: Icon(Icons.inventory_2_outlined, color: AppColors.primary, size: 34),
+  Widget _imagePlaceholder() => ColoredBox(
+    color: context.adaptive(light: const Color(0xFFE5ECFA), dark: const Color(0x2E1400FF)),
+    child: Icon(Icons.inventory_2_outlined, color: context.palette.brandInk, size: 34),
   );
 
   String? _required(String? value) =>
@@ -1317,9 +1317,9 @@ class _OrdersPage extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Pack and hand over orders from this shop only',
-            style: TextStyle(color: AppColors.muted),
+            style: TextStyle(color: context.palette.inkSecondary),
           ),
           const SizedBox(height: 14),
           SegmentedButton<bool>(
@@ -1348,10 +1348,10 @@ class _OrdersPage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 32),
                 child: Column(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.receipt_long_outlined,
                       size: 38,
-                      color: AppColors.primary,
+                      color: context.palette.brandInk,
                     ),
                     const SizedBox(height: 10),
                     Text(
@@ -1445,7 +1445,7 @@ class _LiveOrderCard extends StatelessWidget {
           : SwipeAction(
               label: next.$2,
               icon: next.$3,
-              color: nextGradient?.colors.first ?? AppColors.primary,
+              color: nextGradient?.colors.first ?? context.palette.brand,
               gradient: nextGradient,
               foreground: nextForeground,
               onCommit: () => onStatus(order.id, next.$1),
@@ -1471,12 +1471,12 @@ class _LiveOrderCard extends StatelessWidget {
                 child: firstItem != null
                     ? MenuItemArt(item: firstItem, size: 48)
                     : Container(
-                        color: const Color(0xFFF1F5F9),
+                        color: context.adaptive(light: const Color(0xFFF1F5F9), dark: const Color(0xFF1C1D23)),
                         alignment: Alignment.center,
-                        child: const Icon(
+                        child: Icon(
                           Icons.storefront_outlined,
                           size: 24,
-                          color: AppColors.primary,
+                          color: context.palette.brandInk,
                         ),
                       ),
               ),
@@ -1491,10 +1491,10 @@ class _LiveOrderCard extends StatelessWidget {
                     order.customerName ?? 'Campus user',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E293B),
+                      color: context.adaptive(light: const Color(0xFF1E293B), dark: const Color(0xFFF2F2F5)),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1503,22 +1503,22 @@ class _LiveOrderCard extends StatelessWidget {
                       children: [
                         for (int i = 0; i < order.lines.length; i++) ...[
                           if (i > 0)
-                            const TextSpan(
+                            TextSpan(
                               text: ', ',
-                              style: TextStyle(color: Color(0xFF64748B)),
+                              style: TextStyle(color: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0))),
                             ),
                           TextSpan(
                             text: '${order.lines[i].quantity}× ',
-                            style: const TextStyle(
-                              color: AppColors.primary,
+                            style: TextStyle(
+                              color: context.palette.brandInk,
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                             ),
                           ),
                           TextSpan(
                             text: order.lines[i].item.name,
-                            style: const TextStyle(
-                              color: Color(0xFF64748B),
+                            style: TextStyle(
+                              color: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0)),
                               fontSize: 13,
                             ),
                           ),
@@ -1554,8 +1554,8 @@ class _HistoryOrderCard extends StatelessWidget {
               ? Icons.check_circle_outline
               : Icons.cancel_outlined,
           color: order.status == CanteenOrderStatus.completed
-              ? const Color(0xFF087A53)
-              : const Color(0xFFB42318),
+              ? context.adaptive(light: const Color(0xFF087A53), dark: const Color(0xFF6EE7B7))
+              : context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -1568,7 +1568,7 @@ class _HistoryOrderCard extends StatelessWidget {
               ),
               Text(
                 '#${order.displayId} · ${order.status.label} · ${formatShortDate(order.createdAt)}',
-                style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
               ),
             ],
           ),
@@ -1586,12 +1586,12 @@ class _CounterPausedNotice extends StatelessWidget {
   const _CounterPausedNotice();
 
   @override
-  Widget build(BuildContext context) => const CanteenSurface(
+  Widget build(BuildContext context) => CanteenSurface(
     child: Padding(
       padding: EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          Icon(Icons.pause_circle_outline, size: 38, color: AppColors.primary),
+          Icon(Icons.pause_circle_outline, size: 38, color: context.palette.brandInk),
           SizedBox(height: 10),
           Text(
             'The stationery counter is paused',
@@ -1600,7 +1600,7 @@ class _CounterPausedNotice extends StatelessWidget {
           SizedBox(height: 5),
           Text(
             'Open it from Settings at the top right to process incoming orders.',
-            style: TextStyle(color: AppColors.muted),
+            style: TextStyle(color: context.palette.inkSecondary),
           ),
         ],
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../data/timetable_models.dart';
+import '../timetable_tones.dart';
 
 class ConflictResolutionCard extends StatelessWidget {
   const ConflictResolutionCard({
@@ -20,11 +21,13 @@ class ConflictResolutionCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
-      color: isResolved ? Colors.grey.shade50 : Colors.white,
+      color: isResolved ? context.grey(50) : context.palette.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(
-          color: isResolved ? Colors.grey.shade300 : Colors.red.shade300,
+          color: isResolved
+              ? context.grey(300)
+              : Colors.red.shade300.tintOn(context, alpha: .45),
           width: isResolved ? 1 : 1.5,
         ),
       ),
@@ -37,7 +40,9 @@ class ConflictResolutionCard extends StatelessWidget {
               children: [
                 Icon(
                   isResolved ? Icons.check_circle : Icons.warning_amber_rounded,
-                  color: isResolved ? const Color(0xFF2E7D32) : Colors.red,
+                  color: isResolved
+                      ? const Color(0xFF2E7D32).inkOn(context)
+                      : Colors.red.inkOn(context),
                   size: 22,
                 ),
                 const SizedBox(width: 8),
@@ -49,7 +54,9 @@ class ConflictResolutionCard extends StatelessWidget {
                       decoration: isResolved
                           ? TextDecoration.lineThrough
                           : null,
-                      color: isResolved ? AppColors.muted : AppColors.ink,
+                      color: isResolved
+                          ? context.palette.inkSecondary
+                          : context.palette.ink,
                     ),
                   ),
                 ),
@@ -60,13 +67,13 @@ class ConflictResolutionCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isResolved
-                        ? Colors.green.shade50
-                        : Colors.red.shade50,
+                        ? Colors.green.shade50.tintOn(context)
+                        : Colors.red.shade50.tintOn(context),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: isResolved
-                          ? Colors.green.shade200
-                          : Colors.red.shade200,
+                          ? Colors.green.shade200.tintOn(context, alpha: .45)
+                          : Colors.red.shade200.tintOn(context, alpha: .45),
                     ),
                   ),
                   child: Text(
@@ -75,8 +82,8 @@ class ConflictResolutionCard extends StatelessWidget {
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: isResolved
-                          ? const Color(0xFF2E7D32)
-                          : Colors.red.shade800,
+                          ? const Color(0xFF2E7D32).inkOn(context)
+                          : Colors.red.shade800.inkOn(context),
                     ),
                   ),
                 ),
@@ -87,7 +94,12 @@ class ConflictResolutionCard extends StatelessWidget {
               conflict.description,
               style: TextStyle(
                 fontSize: 13,
-                color: isResolved ? AppColors.muted : Colors.black87,
+                color: isResolved
+                    ? context.palette.inkSecondary
+                    : context.adaptive(
+                        light: Colors.black87,
+                        dark: const Color(0xFFD9DAE0),
+                      ),
               ),
             ),
             const SizedBox(height: 12),
@@ -96,12 +108,16 @@ class ConflictResolutionCard extends StatelessWidget {
               children: [
                 Text(
                   'Conflict Type: ${conflict.type.label}',
-                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: context.palette.inkSecondary,
+                  ),
                 ),
                 if (!isResolved)
                   FilledButton.icon(
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: context.palette.brand,
+                      foregroundColor: context.palette.onBrand,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 8,
@@ -112,15 +128,19 @@ class ConflictResolutionCard extends StatelessWidget {
                     label: const Text('Resolve Conflict'),
                   )
                 else
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.done_all, size: 16, color: Color(0xFF2E7D32)),
+                      Icon(
+                        Icons.done_all,
+                        size: 16,
+                        color: const Color(0xFF2E7D32).inkOn(context),
+                      ),
                       SizedBox(width: 4),
                       Text(
                         'Marked Resolved',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF2E7D32),
+                          color: const Color(0xFF2E7D32).inkOn(context),
                           fontWeight: FontWeight.w500,
                         ),
                       ),

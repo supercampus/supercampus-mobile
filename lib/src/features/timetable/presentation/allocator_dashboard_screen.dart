@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/mock_timetable_repository.dart';
 import '../data/timetable_models.dart';
+import 'timetable_tones.dart';
 import 'widgets/substitution_modal.dart';
 import 'widgets/timetable_config_form.dart';
 
@@ -23,6 +24,8 @@ class AllocatorDashboardScreen extends StatefulWidget {
 }
 
 class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
+  AppPalette get _p => context.palette;
+
   int _currentNavIndex = 0;
   String _selectedClass = 'CS-3A';
   final String _selectedDay = 'Monday';
@@ -34,7 +37,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     final isDesktop = MediaQuery.of(context).size.width >= 768;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: context.timetableCanvas,
       body: isDesktop
           ? Row(
               children: [
@@ -61,7 +64,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
     return Container(
       width: 240,
-      color: Colors.white,
+      color: _p.surface,
       child: Column(
         children: [
           Container(
@@ -72,17 +75,13 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
+                    color: _p.brandInk.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(
-                    Icons.table_chart,
-                    color: AppColors.primary,
-                    size: 24,
-                  ),
+                  child: Icon(Icons.table_chart, color: _p.brandInk, size: 24),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -97,7 +96,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                       Text(
                         'SuperCampus Operations',
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 11, color: AppColors.muted),
+                        style: TextStyle(fontSize: 11, color: _p.inkSecondary),
                       ),
                     ],
                   ),
@@ -167,7 +166,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: isSelected
-            ? AppColors.primary.withValues(alpha: 0.1)
+            ? _p.brandInk.withValues(alpha: 0.1)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
@@ -175,7 +174,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         leading: Icon(
           isSelected ? activeIcon : icon,
-          color: isSelected ? AppColors.primary : AppColors.ink,
+          color: isSelected ? _p.brandInk : _p.ink,
         ),
         title: Text(
           label,
@@ -183,13 +182,13 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected ? AppColors.primary : AppColors.ink,
+            color: isSelected ? _p.brandInk : _p.ink,
           ),
         ),
         subtitle: Text(
           subtitle,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 10, color: AppColors.muted),
+          style: TextStyle(fontSize: 10, color: _p.inkSecondary),
         ),
         trailing: badgeCount > 0
             ? Container(
@@ -235,7 +234,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     ];
 
     return Material(
-      color: Colors.white,
+      color: _p.surface,
       child: SizedBox(
         height: 58,
         child: ListView.separated(
@@ -316,7 +315,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 ),
                 Text(
                   'Live operational monitoring for $_selectedDay',
-                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  style: TextStyle(fontSize: 12, color: _p.inkSecondary),
                 ),
               ],
             ),
@@ -330,9 +329,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _p.surface,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(color: context.grey(300)),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
@@ -343,9 +342,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               value: c,
                               child: Text(
                                 c,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
+                                  color: _p.brandInk,
                                 ),
                               ),
                             ),
@@ -447,7 +446,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   title: 'Today\'s Total Periods',
                   value: '${todayEntries.length} Slots',
                   icon: Icons.calendar_today,
-                  color: AppColors.primary,
+                  color: _p.brandInk,
                   width: constraints.maxWidth > 600
                       ? (constraints.maxWidth - 36) / 4
                       : (constraints.maxWidth - 12) / 2,
@@ -490,10 +489,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
         Card(
           elevation: 0,
-          color: Colors.white,
+          color: _p.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.grey.shade300),
+            side: BorderSide(color: context.grey(300)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(18),
@@ -514,9 +513,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     ),
                     Chip(
                       label: Text(_selectedDay),
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                      labelStyle: const TextStyle(
-                        color: AppColors.primary,
+                      backgroundColor: _p.brand.withValues(alpha: 0.1),
+                      labelStyle: TextStyle(
+                        color: _p.brandInk,
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
                       ),
@@ -528,9 +527,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   Container(
                     padding: const EdgeInsets.all(24),
                     alignment: Alignment.center,
-                    child: const Text(
+                    child: Text(
                       'No classes scheduled for today.',
-                      style: TextStyle(color: AppColors.muted),
+                      style: TextStyle(color: _p.inkSecondary),
                     ),
                   )
                 else
@@ -561,17 +560,20 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: isCompromised
-                            ? Colors.red.shade50
+                            ? Colors.red.shade50.tintOn(context)
                             : (sub.id.isNotEmpty
-                                  ? Colors.amber.shade50
-                                  : Colors.grey.shade50),
+                                  ? Colors.amber.shade50.tintOn(context)
+                                  : context.grey(50)),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isCompromised
-                              ? Colors.red.shade300
+                              ? Colors.red.shade300.tintOn(context, alpha: .45)
                               : (sub.id.isNotEmpty
-                                    ? Colors.amber.shade300
-                                    : Colors.grey.shade200),
+                                    ? Colors.amber.shade300.tintOn(
+                                        context,
+                                        alpha: .45,
+                                      )
+                                    : context.grey(200)),
                         ),
                       ),
                       child: Column(
@@ -604,7 +606,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
-                                        color: entry.categoryColor,
+                                        color: entry.categoryColor.inkOn(
+                                          context,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -615,7 +619,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.purple.shade50,
+                                        color: Colors.purple.shade50.tintOn(
+                                          context,
+                                        ),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
@@ -623,7 +629,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.purple.shade800,
+                                          color: Colors.purple.shade800.inkOn(
+                                            context,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -680,10 +688,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.person_outline,
                                 size: 16,
-                                color: AppColors.muted,
+                                color: _p.inkSecondary,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -699,8 +707,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                         ? FontWeight.bold
                                         : FontWeight.normal,
                                     color: sub.id.isNotEmpty
-                                        ? AppColors.primary
-                                        : AppColors.muted,
+                                        ? _p.brandInk
+                                        : _p.inkSecondary,
                                   ),
                                 ),
                               ),
@@ -729,16 +737,16 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
       width: width,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _p.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: context.grey(300)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: color),
+              Icon(icon, size: 18, color: color.inkOn(context)),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -746,7 +754,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   maxLines: 2,
                   softWrap: true,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  style: TextStyle(fontSize: 11, color: _p.inkSecondary),
                 ),
               ),
             ],
@@ -759,7 +767,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
-              color: color,
+              color: color.inkOn(context),
             ),
           ),
         ],
@@ -795,7 +803,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 ),
                 Text(
                   'Weekly calendar matrix for class scheduling (No Room fields)',
-                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  style: TextStyle(fontSize: 12, color: _p.inkSecondary),
                 ),
               ],
             ),
@@ -807,6 +815,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 FilledButton.icon(
                   style: FilledButton.styleFrom(
                     backgroundColor: Colors.purple.shade700,
+                    foregroundColor: Colors.white,
                   ),
                   onPressed: () => _onGenerateTimetablePressed(context),
                   icon: const Icon(Icons.auto_awesome),
@@ -814,7 +823,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 ),
                 FilledButton.icon(
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: _p.brand,
+                    foregroundColor: _p.onBrand,
                   ),
                   onPressed: () => _showManualEntryDialog(context, null),
                   icon: const Icon(Icons.add),
@@ -829,10 +839,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
         Card(
           elevation: 0,
-          color: Colors.white,
+          color: _p.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
-            side: BorderSide(color: Colors.grey.shade300),
+            side: BorderSide(color: context.grey(300)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(12),
@@ -854,9 +864,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                           child: ChoiceChip(
                             label: Text('Class $cls'),
                             selected: isSelected,
-                            selectedColor: AppColors.primary,
+                            selectedColor: _p.brand,
                             labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : AppColors.ink,
+                              color: isSelected ? _p.onBrand : _p.ink,
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -880,9 +890,11 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.purple.shade50,
+              color: Colors.purple.shade50.tintOn(context),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.purple.shade300),
+              border: Border.all(
+                color: Colors.purple.shade300.tintOn(context, alpha: .45),
+              ),
             ),
             child: Wrap(
               spacing: 12,
@@ -890,11 +902,11 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               alignment: WrapAlignment.spaceBetween,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                const Text(
+                Text(
                   'AI Candidate Timetable Preview Ready',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.purple,
+                    color: Colors.purple.inkOn(context),
                   ),
                 ),
                 Wrap(
@@ -909,6 +921,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     FilledButton(
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF2E7D32),
+                        foregroundColor: Colors.white,
                       ),
                       onPressed: () {
                         widget.repository.replaceClassSchedule(
@@ -950,10 +963,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: _p.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade300),
+        side: BorderSide(color: context.grey(300)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -961,7 +974,12 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           scrollDirection: Axis.horizontal,
           child: DataTable(
             columnSpacing: 16,
-            headingRowColor: WidgetStateProperty.all(const Color(0xFFF0F4F8)),
+            headingRowColor: WidgetStateProperty.all(
+              context.adaptive(
+                light: const Color(0xFFF0F4F8),
+                dark: _p.surfaceSunken,
+              ),
+            ),
             columns: [
               const DataColumn(
                 label: Text(
@@ -979,9 +997,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                       fontSize: 11,
                       color: slot.isBreak
                           ? (slot.breakType == 'lunch'
-                                ? Colors.deepOrange
-                                : Colors.amber.shade900)
-                          : Colors.black,
+                                ? Colors.deepOrange.inkOn(context)
+                                : Colors.amber.shade900.inkOn(context))
+                          : context.adaptive(light: Colors.black, dark: _p.ink),
                     ),
                   ),
                 );
@@ -993,9 +1011,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   DataCell(
                     Text(
                       day,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: _p.brandInk,
                       ),
                     ),
                   ),
@@ -1006,8 +1024,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                           width: 120,
                           height: 54,
                           color: slot.breakType == 'lunch'
-                              ? Colors.orange.shade50
-                              : Colors.amber.shade50,
+                              ? Colors.orange.shade50.tintOn(context)
+                              : Colors.amber.shade50.tintOn(context),
                           alignment: Alignment.center,
                           child: Text(
                             slot.breakType == 'lunch'
@@ -1017,8 +1035,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                               color: slot.breakType == 'lunch'
-                                  ? Colors.deepOrange
-                                  : Colors.amber.shade900,
+                                  ? Colors.deepOrange.inkOn(context)
+                                  : Colors.amber.shade900.inkOn(context),
                             ),
                           ),
                         ),
@@ -1048,24 +1066,24 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                             height: 54,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
+                              color: context.grey(50),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: Colors.grey.shade200),
+                              border: Border.all(color: context.grey(200)),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
                                   Icons.add,
                                   size: 14,
-                                  color: AppColors.muted,
+                                  color: _p.inkSecondary,
                                 ),
                                 SizedBox(width: 2),
                                 Text(
                                   'Assign',
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: AppColors.muted,
+                                    color: _p.inkSecondary,
                                   ),
                                 ),
                               ],
@@ -1104,7 +1122,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  color: entry.categoryColor,
+                                  color: entry.categoryColor.inkOn(context),
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -1112,10 +1130,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                 'Staff: ${entry.facultyName}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: AppColors.ink,
-                                ),
+                                style: TextStyle(fontSize: 10, color: _p.ink),
                               ),
                             ],
                           ),
@@ -1157,14 +1172,17 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                const Text(
+                Text(
                   'Manage absent staff and auto-suggested replacements',
-                  style: TextStyle(fontSize: 12, color: AppColors.muted),
+                  style: TextStyle(fontSize: 12, color: _p.inkSecondary),
                 ),
               ],
             ),
             FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+              style: FilledButton.styleFrom(
+                backgroundColor: _p.brand,
+                foregroundColor: _p.onBrand,
+              ),
               onPressed: () {
                 showDialog(
                   context: context,
@@ -1175,9 +1193,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                         widget.repository.requestSubstitution(sub);
                       });
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(
                           content: Text('Custom substitution created!'),
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: _p.brand,
                         ),
                       );
                     },
@@ -1202,13 +1220,16 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: _p.surface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: context.grey(200)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.check_circle, color: Color(0xFF2E7D32)),
+                Icon(
+                  Icons.check_circle,
+                  color: const Color(0xFF2E7D32).inkOn(context),
+                ),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -1224,7 +1245,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               elevation: 0,
-              color: Colors.white,
+              color: _p.surface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
                 side: BorderSide(color: Colors.orange.shade400, width: 1.5),
@@ -1239,12 +1260,12 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
+                            color: Colors.orange.shade50.tintOn(context),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
                             Icons.person_off_outlined,
-                            color: Colors.orange.shade900,
+                            color: Colors.orange.shade900.inkOn(context),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -1265,9 +1286,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                 'Affected Class: ${disruption.className} • ${disruption.subjectName} (${disruption.subjectCode}) at ${disruption.timeSlot}',
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.muted,
+                                  color: _p.inkSecondary,
                                 ),
                               ),
                             ],
@@ -1289,13 +1310,15 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                       runSpacing: 8,
                       children: disruption.suggestedSubstitutes.map((subName) {
                         return ActionChip(
-                          avatar: const Icon(
+                          avatar: Icon(
                             Icons.person_add,
                             size: 16,
-                            color: AppColors.primary,
+                            color: _p.brandInk,
                           ),
                           label: Text('Approve $subName'),
-                          backgroundColor: const Color(0xFFE0F2F1),
+                          backgroundColor: const Color(
+                            0xFFE0F2F1,
+                          ).tintOn(context),
                           onPressed: () {
                             setState(() {
                               widget.repository.resolveDisruptionAlert(
@@ -1308,7 +1331,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                 content: Text(
                                   'Approved $subName for ${disruption.className} ${disruption.subjectCode}! Live schedule updated.',
                                 ),
-                                backgroundColor: AppColors.primary,
+                                backgroundColor: _p.brand,
                               ),
                             );
                           },
@@ -1334,10 +1357,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           return Card(
             margin: const EdgeInsets.only(bottom: 10),
             elevation: 0,
-            color: Colors.white,
+            color: _p.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade300),
+              side: BorderSide(color: context.grey(300)),
             ),
             child: Padding(
               padding: const EdgeInsets.all(14),
@@ -1358,14 +1381,14 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                       Chip(
                         label: Text(sub.status),
                         backgroundColor: isPending
-                            ? Colors.amber.shade100
-                            : Colors.green.shade50,
+                            ? Colors.amber.shade100.tintOn(context)
+                            : Colors.green.shade50.tintOn(context),
                         labelStyle: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: isPending
-                              ? Colors.amber.shade900
-                              : const Color(0xFF2E7D32),
+                              ? Colors.amber.shade900.inkOn(context)
+                              : const Color(0xFF2E7D32).inkOn(context),
                         ),
                       ),
                     ],
@@ -1375,10 +1398,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     '${sub.dayOfWeek} (${sub.timeSlot}) • Absent: ${sub.originalFaculty} ➔ Substitute: ${sub.substituteFaculty}',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.muted,
-                    ),
+                    style: TextStyle(fontSize: 12, color: _p.inkSecondary),
                   ),
                   if (isPending) ...[
                     const SizedBox(height: 10),
@@ -1397,7 +1417,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                         ),
                         FilledButton(
                           style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: _p.brand,
+                            foregroundColor: _p.onBrand,
                           ),
                           onPressed: () {
                             setState(() {
@@ -1434,9 +1455,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
             context,
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
-        const Text(
+        Text(
           'Global institutional settings and staff/subject mappings',
-          style: TextStyle(fontSize: 12, color: AppColors.muted),
+          style: TextStyle(fontSize: 12, color: _p.inkSecondary),
         ),
         const SizedBox(height: 20),
 
@@ -1454,10 +1475,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
         Card(
           elevation: 0,
-          color: Colors.white,
+          color: _p.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.grey.shade300),
+            side: BorderSide(color: context.grey(300)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(18),
@@ -1478,7 +1499,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     ),
                     Chip(
                       label: Text('${facultyList.length} Teachers'),
-                      backgroundColor: Colors.blue.shade50,
+                      backgroundColor: Colors.blue.shade50.tintOn(context),
                     ),
                   ],
                 ),
@@ -1489,26 +1510,26 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: fac.onLeave
-                          ? Colors.orange.shade50
-                          : Colors.grey.shade50,
+                          ? Colors.orange.shade50.tintOn(context)
+                          : context.grey(50),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: fac.onLeave
-                            ? Colors.orange.shade200
-                            : Colors.grey.shade200,
+                            ? Colors.orange.shade200.tintOn(context, alpha: .45)
+                            : context.grey(200),
                       ),
                     ),
                     child: Row(
                       children: [
                         CircleAvatar(
                           backgroundColor: fac.onLeave
-                              ? Colors.orange.shade100
-                              : AppColors.primary.withValues(alpha: 0.1),
+                              ? Colors.orange.shade100.tintOn(context)
+                              : _p.brandInk.withValues(alpha: 0.1),
                           child: Icon(
                             fac.onLeave ? Icons.person_off : Icons.person,
                             color: fac.onLeave
-                                ? Colors.orange.shade900
-                                : AppColors.primary,
+                                ? Colors.orange.shade900.inkOn(context)
+                                : _p.brandInk,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -1529,9 +1550,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                 'Dept: ${fac.department} • Subjects: ${fac.subjectsHandled.join(", ")}',
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: AppColors.muted,
+                                  color: _p.inkSecondary,
                                 ),
                               ),
                             ],
@@ -1545,8 +1566,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: fac.onLeave
-                                ? Colors.orange.shade100
-                                : Colors.green.shade50,
+                                ? Colors.orange.shade100.tintOn(context)
+                                : Colors.green.shade50.tintOn(context),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -1555,8 +1576,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                               color: fac.onLeave
-                                  ? Colors.orange.shade900
-                                  : const Color(0xFF2E7D32),
+                                  ? Colors.orange.shade900.inkOn(context)
+                                  : const Color(0xFF2E7D32).inkOn(context),
                             ),
                           ),
                         ),
@@ -1573,10 +1594,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
 
         Card(
           elevation: 0,
-          color: Colors.white,
+          color: _p.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.grey.shade300),
+            side: BorderSide(color: context.grey(300)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(18),
@@ -1597,11 +1618,11 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
-                        const Text(
+                        Text(
                           'Minimum required weekly period metrics per faculty member (used for AI schedule generation)',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.muted,
+                            color: _p.inkSecondary,
                           ),
                         ),
                       ],
@@ -1617,7 +1638,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                         ),
                         FilledButton.icon(
                           style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: _p.brand,
+                            foregroundColor: _p.onBrand,
                           ),
                           onPressed: () => _showAddQuotaDialog(context),
                           icon: const Icon(Icons.add),
@@ -1633,23 +1655,21 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: context.grey(50),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(color: context.grey(200)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(
-                              0xFF1400FF,
-                            ).withValues(alpha: 0.1),
+                            color: _p.brandInk.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.school,
-                            color: AppColors.primary,
+                            color: _p.brandInk,
                             size: 20,
                           ),
                         ),
@@ -1671,9 +1691,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                 '${quota.subjectName} (${quota.department}) ${quota.isLab ? "• LAB" : ""}',
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: AppColors.muted,
+                                  color: _p.inkSecondary,
                                 ),
                               ),
                             ],
@@ -1681,21 +1701,23 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                         ),
                         Chip(
                           label: Text('${quota.minWeeklyPeriods} Pds/Wk'),
-                          backgroundColor: const Color(0xFFE0F2F1),
-                          labelStyle: const TextStyle(
+                          backgroundColor: const Color(
+                            0xFFE0F2F1,
+                          ).tintOn(context),
+                          labelStyle: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                            color: _p.brandInk,
                           ),
                         ),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.edit_outlined,
                                 size: 20,
-                                color: AppColors.primary,
+                                color: _p.brandInk,
                               ),
                               onPressed: () =>
                                   _showEditQuotaDialog(context, quota),
@@ -1762,7 +1784,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               children: [
                 Icon(
                   isEdit ? Icons.edit : Icons.add_circle_outline,
-                  color: AppColors.primary,
+                  color: _p.brandInk,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -1886,7 +1908,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: _p.brand,
+                  foregroundColor: _p.onBrand,
                 ),
                 onPressed: () {
                   final newEntry = TimetableEntry(
@@ -1921,7 +1944,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                             ? 'Period slot updated.'
                             : 'New period slot added to $_selectedClass.',
                       ),
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: _p.brand,
                     ),
                   );
                 },
@@ -1965,7 +1988,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               child: const Text('Cancel'),
             ),
             FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+              style: FilledButton.styleFrom(
+                backgroundColor: _p.brand,
+                foregroundColor: _p.onBrand,
+              ),
               onPressed: () {
                 Navigator.pop(ctx);
                 setState(() => _currentNavIndex = 3);
@@ -1982,9 +2008,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.auto_awesome, color: Colors.purple),
+            Icon(Icons.auto_awesome, color: Colors.purple.inkOn(context)),
             SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -2009,9 +2035,11 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.purple.shade50,
+                    color: Colors.purple.shade50.tintOn(context),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.purple.shade200),
+                    border: Border.all(
+                      color: Colors.purple.shade200.tintOn(context, alpha: .45),
+                    ),
                   ),
                   child: Column(
                     children: quotas.map((q) {
@@ -2036,7 +2064,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.purple.shade100,
+                                color: Colors.purple.shade100.tintOn(context),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -2044,7 +2072,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.purple.shade900,
+                                  color: Colors.purple.shade900.inkOn(context),
                                 ),
                               ),
                             ),
@@ -2055,14 +2083,14 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.lock_outline, size: 14, color: AppColors.muted),
+                    Icon(Icons.lock_outline, size: 14, color: _p.inkSecondary),
                     SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         'Note: Manually assigned/pinned periods will be preserved during matrix generation.',
-                        style: TextStyle(fontSize: 11, color: AppColors.muted),
+                        style: TextStyle(fontSize: 11, color: _p.inkSecondary),
                       ),
                     ),
                   ],
@@ -2079,6 +2107,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           FilledButton.icon(
             style: FilledButton.styleFrom(
               backgroundColor: Colors.purple.shade700,
+              foregroundColor: Colors.white,
             ),
             onPressed: () {
               Navigator.pop(ctx);
@@ -2112,9 +2141,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDlgState) {
           return AlertDialog(
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.upload_file, color: AppColors.primary),
+                Icon(Icons.upload_file, color: _p.brandInk),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -2131,27 +2160,27 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Upload Curriculum Matrix (PDF, CSV, Doc, or Scanned Image) to auto-extract Faculty, Subjects, and Weekly Period Quotas.',
-                      style: TextStyle(fontSize: 12, color: AppColors.muted),
+                      style: TextStyle(fontSize: 12, color: _p.inkSecondary),
                     ),
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.05),
+                        color: _p.brandInk.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.3),
+                          color: _p.brandInk.withValues(alpha: 0.3),
                           style: BorderStyle.solid,
                         ),
                       ),
                       child: Column(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.cloud_upload_outlined,
                             size: 40,
-                            color: AppColors.primary,
+                            color: _p.brandInk,
                           ),
                           const SizedBox(height: 8),
                           const Text(
@@ -2196,7 +2225,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               ),
               FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: _p.brand,
+                  foregroundColor: _p.onBrand,
                 ),
                 onPressed: () {
                   final extracted = [
@@ -2221,11 +2251,11 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   setState(() {});
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text(
                         'Successfully extracted & imported 2 Faculty Quotas from document!',
                       ),
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: _p.brand,
                     ),
                   );
                 },
@@ -2252,9 +2282,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDlgState) {
           return AlertDialog(
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.add_circle_outline, color: AppColors.primary),
+                Icon(Icons.add_circle_outline, color: _p.brandInk),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -2331,7 +2361,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: _p.brand,
+                  foregroundColor: _p.onBrand,
                 ),
                 onPressed: () {
                   final newQuota = FacultySubjectQuota(
@@ -2348,9 +2379,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   });
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text('Faculty workload quota added!'),
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: _p.brand,
                     ),
                   );
                 },
@@ -2378,9 +2409,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDlgState) {
           return AlertDialog(
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.edit_outlined, color: AppColors.primary),
+                Icon(Icons.edit_outlined, color: _p.brandInk),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -2457,7 +2488,8 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: _p.brand,
+                  foregroundColor: _p.onBrand,
                 ),
                 onPressed: () {
                   final updatedQuota = FacultySubjectQuota(
@@ -2474,9 +2506,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   });
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text('Faculty workload quota updated!'),
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: _p.brand,
                     ),
                   );
                 },
@@ -2513,7 +2545,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
         'subtitle': 'Auto-validated schedule matrix: 0 conflicts detected',
         'time': '2 hours ago',
         'icon': Icons.verified_user_outlined,
-        'color': AppColors.primary,
+        'color': _p.brandInk,
       },
       {
         'title': 'Master Matrix Published',
@@ -2551,9 +2583,9 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                const Text(
+                Text(
                   'Real-time audit log of schedule adjustments and proxy approvals',
-                  style: TextStyle(fontSize: 12, color: AppColors.muted),
+                  style: TextStyle(fontSize: 12, color: _p.inkSecondary),
                 ),
               ],
             ),
@@ -2573,7 +2605,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 ),
                 child: Icon(
                   log['icon'] as IconData,
-                  color: log['color'] as Color,
+                  color: (log['color'] as Color).inkOn(context),
                   size: 22,
                 ),
               ),
@@ -2586,11 +2618,11 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               ),
               subtitle: Text(
                 log['subtitle'] as String,
-                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                style: TextStyle(fontSize: 12, color: _p.inkSecondary),
               ),
               trailing: Text(
                 log['time'] as String,
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                style: TextStyle(fontSize: 11, color: context.grey(500)),
               ),
             ),
           ),

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/notifications/exam_alert_service.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/timetable_models.dart';
+import '../timetable_tones.dart';
 
 /// Lets a student put a reminder on an exam, at a stock offset before it or at
 /// a time of their own choosing.
@@ -28,6 +30,8 @@ const _presets = <(String, Duration)>[
 ];
 
 class _ExamAlertSectionState extends State<ExamAlertSection> {
+  AppPalette get _p => context.palette;
+
   final _service = ExamAlertService.instance;
 
   /// The moment the student has picked but not yet confirmed.
@@ -52,13 +56,19 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: existing != null
-                ? const Color(0xFFF0FDF4)
-                : const Color(0xFFF8F9FE),
+                ? context.adaptive(
+                    light: const Color(0xFFF0FDF4),
+                    dark: const Color(0x2E22C55E),
+                  )
+                : context.examCard,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: existing != null
-                  ? const Color(0xFFBBF7D0)
-                  : const Color(0xFFC7D2FE),
+                  ? context.adaptive(
+                      light: const Color(0xFFBBF7D0),
+                      dark: const Color(0x5922C55E),
+                    )
+                  : context.examLine,
             ),
           ),
           child: Column(
@@ -71,10 +81,13 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
                 const SizedBox(height: 10),
                 Text(
                   _error!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFFB91C1C),
+                    color: context.adaptive(
+                      light: const Color(0xFFB91C1C),
+                      dark: const Color(0xFFFCA5A5),
+                    ),
                   ),
                 ),
               ],
@@ -95,7 +108,7 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
               ? Icons.notifications_active_rounded
               : Icons.notifications_none_rounded,
           size: 18,
-          color: on ? const Color(0xFF15803D) : const Color(0xFF3730A3),
+          color: on ? context.examAlertGreen : context.examInk,
         ),
         const SizedBox(width: 8),
         Flexible(
@@ -106,7 +119,7 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: on ? const Color(0xFF15803D) : const Color(0xFF3730A3),
+              color: on ? context.examAlertGreen : context.examInk,
             ),
           ),
         ),
@@ -119,16 +132,25 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
   List<Widget> _setState(DateTime existing) => [
     Text(
       _fullFormat(existing),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w700,
-        color: Color(0xFF14532D),
+        color: context.adaptive(
+          light: const Color(0xFF14532D),
+          dark: const Color(0xFFBBF7D0),
+        ),
       ),
     ),
     const SizedBox(height: 2),
     Text(
       _relativeToExam(existing),
-      style: const TextStyle(fontSize: 12, color: Color(0xFF166534)),
+      style: TextStyle(
+        fontSize: 12,
+        color: context.adaptive(
+          light: const Color(0xFF166534),
+          dark: const Color(0xFF86EFAC),
+        ),
+      ),
     ),
     const SizedBox(height: 12),
     Row(
@@ -137,8 +159,16 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
           child: OutlinedButton(
             onPressed: _busy ? null : _remove,
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFB91C1C),
-              side: const BorderSide(color: Color(0xFFFECACA)),
+              foregroundColor: context.adaptive(
+                light: const Color(0xFFB91C1C),
+                dark: const Color(0xFFFCA5A5),
+              ),
+              side: BorderSide(
+                color: context.adaptive(
+                  light: const Color(0xFFFECACA),
+                  dark: const Color(0x59EF4444),
+                ),
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -156,6 +186,7 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
             onPressed: _busy ? null : _pickCustom,
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF15803D),
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -206,10 +237,10 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
         const SizedBox(height: 12),
         Text(
           'Notifies you on ${_fullFormat(pending)}',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1E1B4B),
+            color: context.examHeading,
           ),
         ),
       ],
@@ -220,7 +251,11 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
           onPressed: pending == null || _busy ? null : _confirm,
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFF3730A3),
-            disabledBackgroundColor: const Color(0xFFC7D2FE),
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: context.adaptive(
+              light: const Color(0xFFC7D2FE),
+              dark: _p.surfaceMuted,
+            ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -247,10 +282,10 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF3730A3) : Colors.white,
+          color: selected ? const Color(0xFF3730A3) : _p.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? const Color(0xFF3730A3) : const Color(0xFFC7D2FE),
+            color: selected ? const Color(0xFF3730A3) : context.examLine,
           ),
         ),
         child: Text(
@@ -261,8 +296,11 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
             color: selected
                 ? Colors.white
                 : enabled
-                ? const Color(0xFF3730A3)
-                : const Color(0xFFA5B4FC),
+                ? context.examInk
+                : context.adaptive(
+                    light: const Color(0xFFA5B4FC),
+                    dark: _p.inkDisabled,
+                  ),
           ),
         ),
       ),

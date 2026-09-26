@@ -58,6 +58,7 @@ class _OwnerCaptainSalesAnalyticsState
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final filtered = _filteredOrders;
     final byCaptain = _ordersByCaptain;
     final totalRevenue = filtered.fold<double>(
@@ -113,9 +114,9 @@ class _OwnerCaptainSalesAnalyticsState
                           ),
                     ),
                     const SizedBox(height: 2),
-                    const Text(
+                    Text(
                       'Real-time revenue, cost & profit tracking',
-                      style: TextStyle(fontSize: 12, color: AppColors.muted),
+                      style: TextStyle(fontSize: 12, color: p.inkSecondary),
                     ),
                   ],
                 ),
@@ -157,7 +158,7 @@ class _OwnerCaptainSalesAnalyticsState
                   value: formatCurrency(totalRevenue),
                   subtitle: '$totalOrders orders',
                   icon: Icons.payments_rounded,
-                  color: const Color(0xFF2563EB),
+                  color: context.palette.info,
                 ),
               ),
               const SizedBox(width: 10),
@@ -202,7 +203,7 @@ class _OwnerCaptainSalesAnalyticsState
           // Section Title: Performance by Captain
           Row(
             children: [
-              const Icon(Icons.badge_outlined, size: 20, color: AppColors.primary),
+              Icon(Icons.badge_outlined, size: 20, color: p.brandInk),
               const SizedBox(width: 8),
               Text(
                 'Performance by Captain',
@@ -272,12 +273,12 @@ class _OwnerCaptainSalesAnalyticsState
                             CircleAvatar(
                               radius: 20,
                               backgroundColor:
-                                  AppColors.primary.withValues(alpha: 0.12),
-                              foregroundColor: AppColors.primary,
+                                  p.brandInk.withValues(alpha: 0.12),
+                              foregroundColor: p.brandInk,
                               child: Text(
                                 captainName
                                     .split(' ')
-                                    .map((p) => p.isNotEmpty ? p[0] : '')
+                                    .map((w) => w.isNotEmpty ? w[0] : '')
                                     .take(2)
                                     .join(),
                                 style: const TextStyle(fontWeight: FontWeight.w700),
@@ -298,9 +299,9 @@ class _OwnerCaptainSalesAnalyticsState
                                   const SizedBox(height: 2),
                                   Text(
                                     '${captainOrders.length} orders · $completed delivered · $active active',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      color: AppColors.muted,
+                                      color: p.inkSecondary,
                                     ),
                                   ),
                                 ],
@@ -311,10 +312,13 @@ class _OwnerCaptainSalesAnalyticsState
                               children: [
                                 Text(
                                   formatCurrency(captainRevenue),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 16,
-                                    color: Color(0xFF0F766E),
+                                    color: context.adaptive(
+                                      light: const Color(0xFF0F766E),
+                                      dark: const Color(0xFF5EEAD4),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -326,10 +330,13 @@ class _OwnerCaptainSalesAnalyticsState
                                   ),
                                   child: Text(
                                     'Profit: ${formatCurrency(captainProfit)}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
-                                      color: Color(0xFF047857),
+                                      color: context.adaptive(
+                                        light: const Color(0xFF047857),
+                                        dark: const Color(0xFF6EE7B7),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -344,7 +351,10 @@ class _OwnerCaptainSalesAnalyticsState
                           child: LinearProgressIndicator(
                             value: revenueRatio.clamp(0.0, 1.0),
                             minHeight: 6,
-                            backgroundColor: Colors.grey.shade200,
+                            backgroundColor: context.adaptive(
+                              light: Colors.grey.shade200,
+                              dark: const Color(0xFF2B2C34),
+                            ),
                             valueColor: const AlwaysStoppedAnimation<Color>(
                               Color(0xFF0F766E),
                             ),
@@ -369,10 +379,10 @@ class _OwnerCaptainSalesAnalyticsState
                             const Spacer(),
                             Text(
                               isSelected ? 'Hide orders ▲' : 'View orders ▼',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
+                                color: p.brandInk,
                               ),
                             ),
                           ],
@@ -403,9 +413,9 @@ class _OwnerCaptainSalesAnalyticsState
                                   Expanded(
                                     child: Text(
                                       order.customerName ?? 'User',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.muted,
+                                        color: p.inkSecondary,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -431,10 +441,13 @@ class _OwnerCaptainSalesAnalyticsState
                                       ),
                                       Text(
                                         'Profit: +${formatCurrency(order.totalProfit)}',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 10,
-                                          color: Color(0xFF047857),
+                                          color: context.adaptive(
+                                            light: const Color(0xFF047857),
+                                            dark: const Color(0xFF6EE7B7),
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -497,9 +510,9 @@ class _KpiCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.muted,
+                    color: context.palette.inkSecondary,
                     fontWeight: FontWeight.w600,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -520,9 +533,9 @@ class _KpiCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             subtitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10.5,
-              color: AppColors.muted,
+              color: context.palette.inkSecondary,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

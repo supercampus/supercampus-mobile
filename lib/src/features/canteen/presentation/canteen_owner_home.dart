@@ -210,13 +210,13 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
               onTap: widget.onProfileTap ?? _openCounterControls,
               child: CircleAvatar(
                 radius: 17,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                backgroundColor: context.palette.brandInk.withValues(alpha: 0.12),
                 backgroundImage: (widget.photoUrl != null &&
                         widget.photoUrl!.isNotEmpty)
                     ? NetworkImage(widget.photoUrl!)
                     : null,
                 child: (widget.photoUrl == null || widget.photoUrl!.isEmpty)
-                    ? const Icon(Icons.person, size: 20, color: AppColors.primary)
+                    ? Icon(Icons.person, size: 20, color: context.palette.brandInk)
                     : null,
               ),
             ),
@@ -396,7 +396,7 @@ class _OwnerControlBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final open = state.shopOpen ?? true;
     return Material(
-      color: Colors.white,
+      color: context.palette.surface,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
         child: Row(
@@ -573,8 +573,8 @@ class _SettledSection extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   '${orders.length}',
-                  style: const TextStyle(
-                    color: AppColors.muted,
+                  style: TextStyle(
+                    color: context.palette.inkSecondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -583,9 +583,9 @@ class _SettledSection extends StatelessWidget {
                   AnimatedRotation(
                     turns: expanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 180),
-                    child: const Icon(
+                    child: Icon(
                       Icons.expand_more,
-                      color: AppColors.muted,
+                      color: context.palette.inkSecondary,
                     ),
                   ),
               ],
@@ -593,11 +593,11 @@ class _SettledSection extends StatelessWidget {
           ),
         ),
         if (orders.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
               'Nothing settled yet today.',
-              style: TextStyle(color: AppColors.muted),
+              style: TextStyle(color: context.palette.inkSecondary),
             ),
           )
         else if (expanded) ...[
@@ -631,7 +631,7 @@ class _SettledOrderRow extends StatelessWidget {
           Icon(
             rejected ? Icons.close_rounded : Icons.check_rounded,
             size: 18,
-            color: rejected ? const Color(0xFFB42318) : AppColors.success,
+            color: rejected ? context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)) : context.palette.success,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -659,7 +659,7 @@ class _SettledOrderRow extends StatelessWidget {
                   '#${order.displayId} · ${order.customerName ?? 'Campus user'} · ${order.status.label}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                  style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
                 ),
               ],
             ),
@@ -689,7 +689,7 @@ class _Metric extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 19, color: AppColors.primary),
+          Icon(icon, size: 19, color: context.palette.brandInk),
           const SizedBox(height: 9),
           Text(value, maxLines: 1, overflow: TextOverflow.ellipsis),
           Text(label, style: Theme.of(context).textTheme.bodySmall),
@@ -774,7 +774,7 @@ class _OwnerOrderCard extends StatelessWidget {
           : SwipeAction(
               label: advance.$2,
               icon: advance.$3,
-              color: advanceGradient?.colors.first ?? AppColors.primary,
+              color: advanceGradient?.colors.first ?? context.palette.brand,
               gradient: advanceGradient,
               foreground: advanceForeground,
               onCommit: () => onStatus(order.id, advance.$1),
@@ -800,12 +800,12 @@ class _OwnerOrderCard extends StatelessWidget {
                 child: firstItem != null
                     ? MenuItemArt(item: firstItem, size: 48)
                     : Container(
-                        color: const Color(0xFFF1F5F9),
+                        color: context.adaptive(light: const Color(0xFFF1F5F9), dark: const Color(0xFF1C1D23)),
                         alignment: Alignment.center,
-                        child: const Icon(
+                        child: Icon(
                           Icons.restaurant_rounded,
                           size: 24,
-                          color: AppColors.primary,
+                          color: context.palette.brandInk,
                         ),
                       ),
               ),
@@ -820,10 +820,10 @@ class _OwnerOrderCard extends StatelessWidget {
                     order.customerName ?? 'Campus user',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1E293B),
+                      color: context.adaptive(light: const Color(0xFF1E293B), dark: const Color(0xFFF2F2F5)),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -832,22 +832,22 @@ class _OwnerOrderCard extends StatelessWidget {
                       children: [
                         for (int i = 0; i < order.lines.length; i++) ...[
                           if (i > 0)
-                            const TextSpan(
+                            TextSpan(
                               text: ', ',
-                              style: TextStyle(color: Color(0xFF64748B)),
+                              style: TextStyle(color: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0))),
                             ),
                           TextSpan(
                             text: '${order.lines[i].quantity}× ',
-                            style: const TextStyle(
-                              color: AppColors.primary,
+                            style: TextStyle(
+                              color: context.palette.brandInk,
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                             ),
                           ),
                           TextSpan(
                             text: order.lines[i].item.name,
-                            style: const TextStyle(
-                              color: Color(0xFF64748B),
+                            style: TextStyle(
+                              color: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0)),
                               fontSize: 13,
                             ),
                           ),
@@ -926,7 +926,7 @@ class _OwnerMenuState extends State<_OwnerMenu> {
               query.isEmpty
                   ? '${widget.items.length} items'
                   : '${filtered.length} of ${widget.items.length} items',
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
             ),
           ],
         ),
@@ -948,7 +948,7 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                   )
                 : null,
             filled: true,
-            fillColor: const Color(0xFFF1F5F9),
+            fillColor: context.adaptive(light: const Color(0xFFF1F5F9), dark: const Color(0xFF1C1D23)),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             border: OutlineInputBorder(
@@ -959,12 +959,12 @@ class _OwnerMenuState extends State<_OwnerMenu> {
         ),
         const SizedBox(height: 14),
         if (filtered.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 36),
             child: Center(
               child: Text(
                 'No menu items found',
-                style: TextStyle(color: AppColors.muted, fontSize: 14),
+                style: TextStyle(color: context.palette.inkSecondary, fontSize: 14),
               ),
             ),
           ),
@@ -1002,7 +1002,7 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.amber.shade100,
+                                  color: context.adaptive(light: Colors.amber.shade100, dark: const Color(0x2EFFC107)),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -1010,7 +1010,7 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w700,
-                                    color: Colors.amber.shade900,
+                                    color: context.adaptive(light: Colors.amber.shade900, dark: const Color(0xFFFCD34D)),
                                   ),
                                 ),
                               ),
@@ -1021,18 +1021,18 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                           children: [
                             Text(
                               'Sell: ${formatCurrency(item.price)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12.5,
-                                color: Color(0xFF1E293B),
+                                color: context.adaptive(light: const Color(0xFF1E293B), dark: const Color(0xFFF2F2F5)),
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'Cost: ${formatCurrency(item.effectiveCost)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.muted,
+                                color: context.palette.inkSecondary,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -1057,8 +1057,8 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   color: item.profit >= 0
-                                      ? const Color(0xFF047857)
-                                      : const Color(0xFFB91C1C),
+                                      ? context.adaptive(light: const Color(0xFF047857), dark: const Color(0xFF6EE7B7))
+                                      : context.adaptive(light: const Color(0xFFB91C1C), dark: const Color(0xFFFCA5A5)),
                                 ),
                               ),
                             ),
@@ -1070,8 +1070,8 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                           style: TextStyle(
                             fontSize: 11,
                             color: item.isAvailable
-                                ? const Color(0xFF087A53)
-                                : const Color(0xFFB42318),
+                                ? context.adaptive(light: const Color(0xFF087A53), dark: const Color(0xFF6EE7B7))
+                                : context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)),
                           ),
                         ),
                       ],

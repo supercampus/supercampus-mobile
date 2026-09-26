@@ -5,6 +5,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/access/academic_presentation.dart';
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
+import '../../../core/theme/app_theme.dart';
 import 'today_glance.dart';
 
 /// One glass frame that every granted module scrolls through, a single card at
@@ -448,9 +449,10 @@ class _ModuleCardState extends State<_ModuleCard> {
 
     final accentColor = module.color;
     final badgeText = subtitle;
+    final p = context.palette;
 
     return Material(
-      color: Colors.white,
+      color: p.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: widget.onTap,
@@ -459,7 +461,12 @@ class _ModuleCardState extends State<_ModuleCard> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color: context.adaptive(
+                light: const Color(0xFFE2E8F0),
+                dark: p.border,
+              ),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.02),
@@ -493,10 +500,13 @@ class _ModuleCardState extends State<_ModuleCard> {
                             Expanded(
                               child: Text(
                                 module.title,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF1E293B),
+                                  color: context.adaptive(
+                                    light: const Color(0xFF1E293B),
+                                    dark: const Color(0xFFF2F2F5),
+                                  ),
                                   letterSpacing: -0.2,
                                 ),
                               ),
@@ -521,9 +531,12 @@ class _ModuleCardState extends State<_ModuleCard> {
                         const SizedBox(height: 3),
                         Text(
                           module.tagline,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF64748B),
+                            color: context.adaptive(
+                              light: const Color(0xFF64748B),
+                              dark: const Color(0xFFA3A5B0),
+                            ),
                             height: 1.3,
                           ),
                         ),
@@ -531,9 +544,12 @@ class _ModuleCardState extends State<_ModuleCard> {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
-                    color: Color(0xFFCBD5E1),
+                    color: context.adaptive(
+                      light: const Color(0xFFCBD5E1),
+                      dark: const Color(0xFF5C5E68),
+                    ),
                     size: 20,
                   ),
                 ],
@@ -546,7 +562,10 @@ class _ModuleCardState extends State<_ModuleCard> {
                   children: [
                     for (final action in actions)
                       Material(
-                        color: const Color(0xFFF1F5F9),
+                        color: context.adaptive(
+                          light: const Color(0xFFF1F5F9),
+                          dark: p.surfaceMuted,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                         child: InkWell(
                           onTap: _run(action),
@@ -558,17 +577,23 @@ class _ModuleCardState extends State<_ModuleCard> {
                               children: [
                                 Text(
                                   action.label,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF334155),
+                                    color: context.adaptive(
+                                      light: const Color(0xFF334155),
+                                      dark: const Color(0xFFD9DAE0),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 3),
-                                const Icon(
+                                Icon(
                                   Icons.arrow_forward_rounded,
                                   size: 11,
-                                  color: Color(0xFF64748B),
+                                  color: context.adaptive(
+                                    light: const Color(0xFF64748B),
+                                    dark: const Color(0xFFA3A5B0),
+                                  ),
                                 ),
                               ],
                             ),

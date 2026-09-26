@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 /// Single item descriptor for custom role-specific navigation tabs in [CampusNavBar].
 class CampusNavItem {
   const CampusNavItem({
@@ -309,10 +311,16 @@ class _CampusNavBarState extends State<CampusNavBar>
                   }
                 }
 
+                final p = context.palette;
                 return DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
+                    // Raised above the dark canvas, with a hairline edge so
+                    // the pill still reads where the shadow cannot.
+                    color: p.surfaceRaised,
                     borderRadius: BorderRadius.circular(h / 2),
+                    border: context.isDarkTheme
+                        ? Border.all(color: p.border)
+                        : null,
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.16),
@@ -352,9 +360,16 @@ class _CampusNavBarState extends State<CampusNavBar>
     final width = customWidth ?? (_tabWidth * w);
     final glyph = _glyphSize * h;
     final selected = widget.selectedId == id;
-    final inactiveColor = Theme.of(
-      context,
-    ).colorScheme.onSurfaceVariant.withValues(alpha: .58);
+    final inactiveColor = context.adaptive(
+      light: Theme.of(context).colorScheme.onSurfaceVariant.withValues(
+        alpha: .58,
+      ),
+      dark: context.palette.inkSecondary,
+    );
+    final activeColor = context.adaptive(
+      light: _iconPurple,
+      dark: context.palette.brandInk,
+    );
     final displayIcon = (selected && selectedIcon != null) ? selectedIcon : icon;
 
     return Positioned(
@@ -376,7 +391,7 @@ class _CampusNavBarState extends State<CampusNavBar>
               height: glyph,
               child: IconTheme(
                 data: IconThemeData(
-                  color: selected ? _iconPurple : inactiveColor,
+                  color: selected ? activeColor : inactiveColor,
                   size: glyph,
                 ),
                 child: Center(child: displayIcon),
@@ -423,7 +438,8 @@ class CampusNavCubeGlyph extends StatelessWidget {
       size: Size.square(size),
       painter: _CubePainter(
         color: theme.color ?? _iconPurple,
-        seam: Theme.of(context).colorScheme.surface,
+        // Matches the bar fill so the seams read as cut-outs.
+        seam: context.palette.surfaceRaised,
         filled: filled,
       ),
     );

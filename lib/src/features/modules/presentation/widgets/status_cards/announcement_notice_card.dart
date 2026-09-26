@@ -35,12 +35,12 @@ class AnnouncementNoticeCard extends StatelessWidget {
       NoticeUrgency.important => (
         'IMPORTANT',
         isDark ? const Color(0xFF451A03) : const Color(0xFFFEF3C7),
-        const Color(0xFFD97706),
+        isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
       ),
       NoticeUrgency.urgent => (
         'URGENT',
         isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2),
-        const Color(0xFFEF4444),
+        isDark ? const Color(0xFFFCA5A5) : const Color(0xFFEF4444),
       ),
     };
 

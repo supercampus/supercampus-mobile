@@ -30,22 +30,22 @@ class LaundryTagCard extends StatelessWidget {
       LaundryTagStatus.received => (
         'RECEIVED',
         isDark ? const Color(0xFF1E3A8A) : const Color(0xFFDBEAFE),
-        const Color(0xFF2563EB),
+        isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB),
       ),
       LaundryTagStatus.washing => (
         'IN WASH CYCLE',
-        isDark ? const Color(0xFF14532D) : const Color(0xFFE0F2FE),
-        const Color(0xFF0284C7),
+        isDark ? const Color(0xFF0C4A6E) : const Color(0xFFE0F2FE),
+        isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0284C7),
       ),
       LaundryTagStatus.ready => (
         'READY FOR PICKUP',
         isDark ? const Color(0xFF14532D) : const Color(0xFFDCFCE7),
-        const Color(0xFF16A34A),
+        isDark ? const Color(0xFF86EFAC) : const Color(0xFF16A34A),
       ),
       LaundryTagStatus.collected => (
         'COLLECTED',
         isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6),
-        const Color(0xFF6B7280),
+        isDark ? const Color(0xFFD1D5DB) : const Color(0xFF6B7280),
       ),
     };
 

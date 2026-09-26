@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 /// A reusable wheel-picker styled as a segmented pill box that adapts to
 /// the app's light / dark theme automatically.
 class LibraryWheelPicker extends StatefulWidget {
@@ -44,11 +46,13 @@ class _LibraryWheelPickerState extends State<LibraryWheelPicker> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fillColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final borderColor = isDark
-        ? const Color(0xFF3A3A3A)
-        : const Color(0xFFE1E5E3);
-    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final p = context.palette;
+    final fillColor = context.adaptive(light: Colors.white, dark: p.surfaceSunken);
+    final borderColor = context.adaptive(
+      light: const Color(0xFFE1E5E3),
+      dark: p.border,
+    );
+    final textColor = p.ink;
     final fadedTextColor = isDark
         ? Colors.white38
         : const Color(0xFF1C1C1E).withValues(alpha: 0.3);
@@ -168,13 +172,16 @@ class SegmentedPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fillColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final p = context.palette;
+    final fillColor = context.adaptive(light: Colors.white, dark: p.surfaceSunken);
     final borderColor = isActive
-        ? const Color(0xFF6D357F)
-        : (isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE1E5E3));
-    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
-    final labelColor = isDark ? Colors.white54 : const Color(0xFF6B7280);
+        ? context.adaptive(
+            light: const Color(0xFF6D357F),
+            dark: const Color(0xFFD8A5E8),
+          )
+        : context.adaptive(light: const Color(0xFFE1E5E3), dark: p.border);
+    final textColor = p.ink;
+    final labelColor = p.inkSecondary;
 
     return GestureDetector(
       onTap: onTap,

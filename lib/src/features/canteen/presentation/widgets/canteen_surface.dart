@@ -32,26 +32,27 @@ class CanteenSurface extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(16),
-    this.color = Colors.white,
+    this.color,
     this.onTap,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
-  final Color color;
+  /// Fill colour; null (or white) renders the themed card surface with a border.
+  final Color? color;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final plain = color == null || color == Colors.white;
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(8),
-      side: color == Colors.white
-          ? const BorderSide(color: AppColors.border)
-          : BorderSide.none,
+      side: plain ? BorderSide(color: p.border) : BorderSide.none,
     );
 
     return Material(
-      color: color,
+      color: plain ? p.surface : color,
       shape: shape,
       child: onTap == null
           ? Padding(padding: padding, child: child)
@@ -124,14 +125,17 @@ class StudentAvatar extends StatelessWidget {
       height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: AppColors.amberSoft,
+        color: context.adaptive(
+          light: AppColors.amberSoft,
+          dark: const Color(0x2EF5A623),
+        ),
         shape: BoxShape.circle,
         border: Border.all(color: AppColors.amber),
       ),
       child: Text(
         initials,
         style: TextStyle(
-          color: AppColors.ink,
+          color: context.palette.ink,
           fontSize: size * 0.34,
           fontWeight: FontWeight.w500,
         ),

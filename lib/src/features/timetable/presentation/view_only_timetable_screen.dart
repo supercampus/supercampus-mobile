@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/timetable_models.dart';
 import '../data/timetable_repository.dart';
+import 'timetable_tones.dart';
 import 'widgets/daily_period_strip.dart';
 import 'widgets/weekly_date_strip.dart';
 import 'widgets/month_calendar_dialog.dart';
@@ -32,6 +33,8 @@ class ViewOnlyTimetableScreen extends StatefulWidget {
 }
 
 class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
+  AppPalette get _p => context.palette;
+
   DateTime _selectedDate = DateTime.now();
   late String _targetClass;
   int _viewMode = 0; // 0: Daily Classes, 1: Exam Schedule
@@ -81,7 +84,7 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                   isAllocator
                       ? 'View and acknowledge the active schedule'
                       : '$_targetClass • Semester View',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 12, color: context.grey(600)),
                 ),
               ],
             ),
@@ -112,7 +115,7 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
+              color: context.grey(200),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -124,16 +127,12 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
-                        color: _viewMode == 0
-                            ? AppColors.primary
-                            : Colors.transparent,
+                        color: _viewMode == 0 ? _p.brand : Colors.transparent,
                         borderRadius: BorderRadius.circular(9),
                         boxShadow: _viewMode == 0
                             ? [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(
-                                    alpha: 0.25,
-                                  ),
+                                  color: _p.brandInk.withValues(alpha: 0.25),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -149,7 +148,7 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                             size: 16,
                             color: _viewMode == 0
                                 ? Colors.white
-                                : Colors.grey.shade700,
+                                : context.grey(700),
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -159,7 +158,7 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                               fontWeight: FontWeight.bold,
                               color: _viewMode == 0
                                   ? Colors.white
-                                  : Colors.grey.shade700,
+                                  : context.grey(700),
                             ),
                           ),
                         ],
@@ -199,7 +198,7 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                             size: 16,
                             color: _viewMode == 1
                                 ? Colors.white
-                                : Colors.grey.shade700,
+                                : context.grey(700),
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -209,7 +208,7 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                               fontWeight: FontWeight.bold,
                               color: _viewMode == 1
                                   ? Colors.white
-                                  : Colors.grey.shade700,
+                                  : context.grey(700),
                             ),
                           ),
                         ],
@@ -272,19 +271,19 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _p.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFC7D2FE)),
+            border: Border.all(color: context.examLine),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(
                     Icons.filter_alt_outlined,
                     size: 18,
-                    color: Color(0xFF3730A3),
+                    color: context.examInk,
                   ),
                   SizedBox(width: 6),
                   Text(
@@ -292,7 +291,7 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E1B4B),
+                      color: context.examHeading,
                     ),
                   ),
                 ],
@@ -306,15 +305,15 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                     value: _selectedExamFilter,
                     isExpanded: true,
                     alignment: AlignmentDirectional.centerEnd,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.keyboard_arrow_down_rounded,
                       size: 20,
-                      color: Color(0xFF3730A3),
+                      color: context.examInk,
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF3730A3),
+                      color: context.examInk,
                     ),
                     items: const [
                       DropdownMenuItem(
@@ -358,16 +357,16 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: _p.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: context.grey(200)),
             ),
             child: Column(
               children: [
                 Icon(
                   Icons.assignment_outlined,
                   size: 56,
-                  color: Colors.grey.shade400,
+                  color: context.grey(400),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -381,7 +380,7 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                 Text(
                   'There are currently no examination entries matching "$_selectedExamFilter" for $_targetClass.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  style: TextStyle(color: context.grey(600), fontSize: 13),
                 ),
               ],
             ),
@@ -410,27 +409,23 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (alerted) ...[
-              const Icon(
+              Icon(
                 Icons.notifications_active_rounded,
                 size: 15,
-                color: Color(0xFF15803D),
+                color: context.examAlertGreen,
               ),
               const SizedBox(width: 6),
             ],
-            const Text(
+            Text(
               'View Details',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF3730A3),
+                color: context.examInk,
               ),
             ),
             const SizedBox(width: 2),
-            const Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: Color(0xFF3730A3),
-            ),
+            Icon(Icons.chevron_right_rounded, size: 18, color: context.examInk),
           ],
         );
       },
@@ -456,10 +451,10 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
       elevation: 0,
-      color: const Color(0xFFF8F9FE),
+      color: context.examCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFC7D2FE), width: 1.5),
+        side: BorderSide(color: context.examLine, width: 1.5),
       ),
       child: InkWell(
         onTap: () => showExamDetailModal(context, exam),
@@ -480,15 +475,15 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE0E7FF),
+                        color: context.examSoft,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         examCategory.toUpperCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF3730A3),
+                          color: context.examInk,
                           letterSpacing: 0.4,
                         ),
                       ),
@@ -501,10 +496,10 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                 // 2. Subject & Code
                 Text(
                   '${exam.subjectCode} - ${exam.subjectName}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E1B4B),
+                    color: context.examHeading,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -516,10 +511,10 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                     Expanded(
                       child: Text(
                         '${exam.subjectCode} - ${exam.subjectName}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E1B4B),
+                          color: context.examHeading,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -535,18 +530,18 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
               // 3. Date of Exam
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.event_note_rounded,
                     size: 15,
-                    color: Color(0xFF3730A3),
+                    color: context.examInk,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     dateStr,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF3730A3),
+                      color: context.examInk,
                     ),
                   ),
                 ],
@@ -557,19 +552,19 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
               // 4. Duration / Time Slot
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.access_time_rounded,
                     size: 15,
-                    color: Color(0xFF4F46E5),
+                    color: context.examAccent,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       '${exam.timeSlot} ($spanText)$durationStr',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1E1B4B),
+                        color: context.examHeading,
                       ),
                     ),
                   ),

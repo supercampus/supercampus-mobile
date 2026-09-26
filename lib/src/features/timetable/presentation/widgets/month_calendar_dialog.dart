@@ -31,10 +31,10 @@ class _MonthCalendarDialogState extends State<MonthCalendarDialog> {
     return Container(
       margin: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary : Colors.transparent,
+        color: isSelected ? context.palette.brand : Colors.transparent,
         shape: BoxShape.circle,
         border: isToday && !isSelected
-            ? Border.all(color: AppColors.primary, width: 1.5)
+            ? Border.all(color: context.palette.brandInk, width: 1.5)
             : null,
       ),
       alignment: Alignment.center,
@@ -43,7 +43,7 @@ class _MonthCalendarDialogState extends State<MonthCalendarDialog> {
         style: TextStyle(
           color: isSelected
               ? Colors.white
-              : (isToday ? AppColors.primary : AppColors.ink),
+              : (isToday ? context.palette.brandInk : context.palette.ink),
           fontWeight: isSelected || isToday ? FontWeight.bold : FontWeight.w500,
         ),
       ),

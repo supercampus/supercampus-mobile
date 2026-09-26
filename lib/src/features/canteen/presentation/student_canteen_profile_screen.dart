@@ -54,7 +54,10 @@ class _StudentCanteenProfileScreenState
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: AppColors.ink,
+              color: context.adaptive(
+                light: AppColors.ink,
+                dark: context.palette.surfaceRaised,
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -96,7 +99,7 @@ class _StudentCanteenProfileScreenState
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: context.palette.brand,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
@@ -147,7 +150,7 @@ class _StudentCanteenProfileScreenState
                         height: 38,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE7F0FC),
+                          color: context.adaptive(light: const Color(0xFFE7F0FC), dark: const Color(0x2E2563A9)),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -155,7 +158,7 @@ class _StudentCanteenProfileScreenState
                               ? Icons.storefront_outlined
                               : Icons.restaurant_outlined,
                           size: 20,
-                          color: const Color(0xFF2563A9),
+                          color: context.adaptive(light: const Color(0xFF2563A9), dark: const Color(0xFF93C5FD)),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -259,10 +262,10 @@ class _StudentCanteenProfileScreenState
                       height: 42,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE7F0FC),
+                        color: context.adaptive(light: const Color(0xFFE7F0FC), dark: const Color(0x2E2563A9)),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(setting.$1, color: const Color(0xFF2563A9)),
+                      child: Icon(setting.$1, color: context.adaptive(light: const Color(0xFF2563A9), dark: const Color(0xFF93C5FD))),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -281,7 +284,7 @@ class _StudentCanteenProfileScreenState
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right, color: AppColors.muted),
+                    Icon(Icons.chevron_right, color: context.palette.inkSecondary),
                   ],
                 ),
               ),
@@ -320,7 +323,7 @@ class _StatTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.muted),
+          Icon(icon, color: context.palette.inkSecondary),
           const SizedBox(height: 10),
           Text(label, style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 3),

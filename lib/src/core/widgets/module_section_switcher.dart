@@ -34,7 +34,10 @@ class ModuleSectionSwitcher extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
-            color: const Color(0xFFE9ECEF),
+            color: context.adaptive(
+              light: const Color(0xFFE9ECEF),
+              dark: context.palette.surfaceSunken,
+            ),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -68,6 +71,7 @@ class _SectionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Semantics(
       selected: selected,
       button: true,
@@ -80,7 +84,7 @@ class _SectionButton extends StatelessWidget {
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
           decoration: BoxDecoration(
-            color: selected ? Colors.white : Colors.transparent,
+            color: selected ? p.surfaceRaised : Colors.transparent,
             borderRadius: BorderRadius.circular(13),
             boxShadow: selected
                 ? [
@@ -98,7 +102,7 @@ class _SectionButton extends StatelessWidget {
               Icon(
                 section.icon,
                 size: 17,
-                color: selected ? AppColors.brandBlue : AppColors.muted,
+                color: selected ? p.brandInk : p.inkSecondary,
               ),
               const SizedBox(width: 5),
               Flexible(
@@ -107,7 +111,7 @@ class _SectionButton extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: selected ? AppColors.ink : AppColors.muted,
+                    color: selected ? p.ink : p.inkSecondary,
                     fontSize: 11,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   ),

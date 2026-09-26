@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../data/canteen_models.dart';
 import 'widgets/order_delivered_view.dart';
@@ -228,6 +229,46 @@ class OrderPlacedTheme {
     ),
   ];
 
+  /// The theme as drawn under the app's current brightness. Light presets
+  /// (white page) keep their accent but move onto the dark raised surface in
+  /// dark mode, and the pure-black preset lifts to the dark canvas; coloured
+  /// "pop" presets and the other dark presets are unchanged.
+  OrderPlacedTheme resolve(BuildContext context) {
+    if (!context.isDarkTheme) return this;
+    final p = context.palette;
+    if (backgroundColor == Colors.white) {
+      return OrderPlacedTheme(
+        name: name,
+        backgroundColor: p.surfaceRaised,
+        qrColor: qrColor,
+        accentColor: accentColor,
+        textColor: p.ink,
+        subtextColor: p.inkSecondary,
+        cardBackgroundColor: accentColor.withValues(alpha: 0.12),
+        cardBorderColor: accentColor.withValues(alpha: 0.24),
+        buttonColor: buttonColor,
+        buttonTextColor: buttonTextColor,
+        isDark: true,
+      );
+    }
+    if (backgroundColor == const Color(0xFF000000)) {
+      return OrderPlacedTheme(
+        name: name,
+        backgroundColor: p.canvas,
+        qrColor: qrColor,
+        accentColor: accentColor,
+        textColor: textColor,
+        subtextColor: subtextColor,
+        cardBackgroundColor: cardBackgroundColor,
+        cardBorderColor: cardBorderColor,
+        buttonColor: buttonColor,
+        buttonTextColor: buttonTextColor,
+        isDark: isDark,
+      );
+    }
+    return this;
+  }
+
   static OrderPlacedTheme random({String? seed}) {
     if (seed != null && seed.isNotEmpty) {
       final index = seed.hashCode.abs() % palette.length;
@@ -328,10 +369,11 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = _theme.resolve(context);
     if (_order.status == CanteenOrderStatus.completed) {
       return SafeArea(
         child: Container(
-          color: _theme.backgroundColor,
+          color: theme.backgroundColor,
           child: OrderDeliveredView(
             order: _order,
             onDone: () => Navigator.of(context).pop(),
@@ -342,7 +384,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
     }
 
     return Container(
-      color: _theme.backgroundColor,
+      color: theme.backgroundColor,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
@@ -358,7 +400,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                     icon: Icon(
                       Icons.close_rounded,
                       size: 20,
-                      color: _theme.subtextColor,
+                      color: theme.subtextColor,
                     ),
                   ),
                   Expanded(
@@ -368,7 +410,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: _theme.subtextColor,
+                        color: theme.subtextColor,
                       ),
                     ),
                   ),
@@ -378,7 +420,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                     icon: Icon(
                       Icons.palette_outlined,
                       size: 20,
-                      color: _theme.subtextColor,
+                      color: theme.subtextColor,
                     ),
                   ),
                 ],
@@ -401,11 +443,11 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                             padding: EdgeInsets.zero,
                             eyeStyle: QrEyeStyle(
                               eyeShape: QrEyeShape.circle,
-                              color: _theme.qrColor,
+                              color: theme.qrColor,
                             ),
                             dataModuleStyle: QrDataModuleStyle(
                               dataModuleShape: QrDataModuleShape.circle,
-                              color: _theme.qrColor,
+                              color: theme.qrColor,
                             ),
                           ),
                         ),
@@ -416,7 +458,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                           _formattedToken,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: _theme.accentColor,
+                            color: theme.accentColor,
                             fontSize: 42,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.2,
@@ -429,7 +471,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                           _formattedOrderId,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: _theme.subtextColor,
+                            color: theme.subtextColor,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -438,7 +480,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
 
                         // Collapsible "ordered items" card
                         Material(
-                          color: _theme.cardBackgroundColor,
+                          color: theme.cardBackgroundColor,
                           borderRadius: BorderRadius.circular(16),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
@@ -455,7 +497,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(16),
                                 border:
-                                    Border.all(color: _theme.cardBorderColor),
+                                    Border.all(color: theme.cardBorderColor),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -469,14 +511,14 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
-                                          color: _theme.textColor,
+                                          color: theme.textColor,
                                         ),
                                       ),
                                       Icon(
                                         _isItemsExpanded
                                             ? Icons.keyboard_arrow_up_rounded
                                             : Icons.keyboard_arrow_down_rounded,
-                                        color: _theme.subtextColor,
+                                        color: theme.subtextColor,
                                         size: 20,
                                       ),
                                     ],
@@ -496,7 +538,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                                               'Canteen order',
                                               style: TextStyle(
                                                 fontSize: 14,
-                                                color: _theme.textColor,
+                                                color: theme.textColor,
                                               ),
                                             ),
                                             Text(
@@ -504,7 +546,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                                               style: TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w500,
-                                                color: _theme.textColor,
+                                                color: theme.textColor,
                                               ),
                                             ),
                                           ],
@@ -526,7 +568,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                                                     : line.item.name,
                                                 style: TextStyle(
                                                   fontSize: 14,
-                                                  color: _theme.textColor,
+                                                  color: theme.textColor,
                                                 ),
                                               ),
                                               Text(
@@ -534,14 +576,14 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                                                 style: TextStyle(
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w500,
-                                                  color: _theme.textColor,
+                                                  color: theme.textColor,
                                                 ),
                                               ),
                                             ],
                                           ),
                                         ),
                                     Divider(
-                                      color: _theme.cardBorderColor,
+                                      color: theme.cardBorderColor,
                                       height: 24,
                                     ),
                                     Row(
@@ -553,7 +595,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                                           style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.w700,
-                                            color: _theme.textColor,
+                                            color: theme.textColor,
                                           ),
                                         ),
                                         Text(
@@ -561,7 +603,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                                           style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.w700,
-                                            color: _theme.textColor,
+                                            color: theme.textColor,
                                           ),
                                         ),
                                       ],
@@ -585,8 +627,8 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                 height: 56,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: _theme.buttonColor,
-                    foregroundColor: _theme.buttonTextColor,
+                    backgroundColor: theme.buttonColor,
+                    foregroundColor: theme.buttonTextColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),
                     ),

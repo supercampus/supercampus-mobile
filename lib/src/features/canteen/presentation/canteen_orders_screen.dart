@@ -86,7 +86,7 @@ class _CanteenOrdersScreenState extends State<CanteenOrdersScreen> {
         ),
         const SizedBox(height: 16),
         if (_visibleOrders.isEmpty)
-          const CanteenSurface(
+          CanteenSurface(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 34),
               child: Column(
@@ -94,7 +94,7 @@ class _CanteenOrdersScreenState extends State<CanteenOrdersScreen> {
                   Icon(
                     Icons.receipt_long_outlined,
                     size: 38,
-                    color: AppColors.muted,
+                    color: context.palette.inkSecondary,
                   ),
                   SizedBox(height: 12),
                   Text('No active orders right now.'),
@@ -155,7 +155,7 @@ class _OrderCard extends StatelessWidget {
                 children: [
                   Text(
                     '${line.quantity}×',
-                    style: const TextStyle(color: AppColors.primary),
+                    style: TextStyle(color: context.palette.brandInk),
                   ),
                   const SizedBox(width: 8),
                   Expanded(child: Text(line.item.name)),
@@ -171,18 +171,18 @@ class _OrderCard extends StatelessWidget {
                     ? Icons.table_restaurant_outlined
                     : Icons.shopping_bag_outlined,
                 size: 19,
-                color: AppColors.muted,
+                color: context.palette.inkSecondary,
               ),
               const SizedBox(width: 7),
               Text(order.fulfilmentMode.label),
               if (active && order.tokenNumber != null) ...[
                 const SizedBox(width: 12),
-                Container(width: 1, height: 18, color: AppColors.border),
+                Container(width: 1, height: 18, color: context.palette.border),
                 const SizedBox(width: 12),
                 Text(
                   'Token ${order.tokenNumber}',
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: context.palette.brandInk,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -201,23 +201,23 @@ class _OrderCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: context.palette.brandInk.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.qr_code_2_rounded,
                   size: 18,
-                  color: AppColors.primary,
+                  color: context.palette.brandInk,
                 ),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Tap to view pickup QR code in full screen',
                     style: TextStyle(
-                      color: AppColors.primary,
+                      color: context.palette.brandInk,
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
                     ),
@@ -226,7 +226,7 @@ class _OrderCard extends StatelessWidget {
                 Icon(
                   Icons.chevron_right_rounded,
                   size: 18,
-                  color: AppColors.primary,
+                  color: context.palette.brandInk,
                 ),
               ],
             ),

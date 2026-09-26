@@ -8,6 +8,12 @@ import '../data/mock_vendor_repository.dart';
 import '../data/vendor_models.dart';
 import '../data/vendor_repository.dart';
 
+/// Vendor brown used as an icon or text colour: exact in light, lifted in dark.
+Color _brownInk(BuildContext context) => context.adaptive(
+      light: const Color(0xFF8A4B20),
+      dark: const Color(0xFFF0B389),
+    );
+
 class VendorManagementShell extends StatefulWidget {
   const VendorManagementShell({
     super.key,
@@ -232,7 +238,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                   backgroundColor: const Color(0xFF8A4B20).withValues(alpha: 0.15),
                   child: Icon(
                     _categoryIcon(shop.category),
-                    color: const Color(0xFF8A4B20),
+                    color: _brownInk(context),
                     size: 26,
                   ),
                 ),
@@ -251,8 +257,8 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                       const SizedBox(height: 2),
                       Text(
                         shop.category,
-                        style: const TextStyle(
-                          color: AppColors.muted,
+                        style: TextStyle(
+                          color: context.palette.inkSecondary,
                           fontSize: 13,
                         ),
                       ),
@@ -262,11 +268,11 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                 Chip(
                   label: Text(shop.isActive ? 'Active' : 'Disabled'),
                   labelStyle: TextStyle(
-                    color: shop.isActive ? AppColors.success : Colors.grey,
+                    color: shop.isActive ? context.palette.success : Colors.grey,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
-                  backgroundColor: (shop.isActive ? AppColors.success : Colors.grey)
+                  backgroundColor: (shop.isActive ? context.palette.success : Colors.grey)
                       .withValues(alpha: 0.12),
                   side: BorderSide.none,
                 ),
@@ -554,7 +560,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundColor: const Color(0xFF8A4B20).withValues(alpha: 0.1),
-                  child: const Icon(Icons.shopping_bag_outlined, color: Color(0xFF8A4B20)),
+                  child: Icon(Icons.shopping_bag_outlined, color: _brownInk(context)),
                 ),
                 title: Text(
                   '${order.orderNumber.isNotEmpty ? order.orderNumber : order.id} · ${order.customerName}',
@@ -571,7 +577,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: order.status == 'completed' ? const Color(0xFF10B981) : const Color(0xFFD97706),
+                        color: order.status == 'completed' ? const Color(0xFF10B981) : context.palette.warning,
                       ),
                     ),
                   ],
@@ -705,9 +711,11 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFECFDF5),
+                        color: context.adaptive(light: const Color(0xFFECFDF5), dark: const Color(0x2E10B981)),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFA7F3D0)),
+                        border: Border.all(
+                          color: context.adaptive(light: const Color(0xFFA7F3D0), dark: const Color(0x5210B981)),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -721,10 +729,10 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                             ),
                           ),
                           const SizedBox(width: 5),
-                          const Text(
+                          Text(
                             'Live',
                             style: TextStyle(
-                              color: Color(0xFF065F46),
+                              color: context.adaptive(light: const Color(0xFF065F46), dark: const Color(0xFF6EE7B7)),
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                             ),
@@ -757,12 +765,12 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
               children: [
                 _buildKpiCard(
                   title: 'PLATFORM ORDERS',
-                  iconWidget: const Icon(
+                  iconWidget: Icon(
                     Icons.shopping_bag_outlined,
-                    color: Color(0xFF4F46E5),
+                    color: context.adaptive(light: const Color(0xFF4F46E5), dark: const Color(0xFFA5B4FC)),
                     size: 18,
                   ),
-                  iconBg: const Color(0xFFEEF2FF),
+                  iconBg: context.adaptive(light: const Color(0xFFEEF2FF), dark: const Color(0x2E4F46E5)),
                   value: _formatIndianNumber(kpi.platformOrders),
                   trendText: kpi.ordersTodayTrend,
                   trendColor: const Color(0xFF10B981),
@@ -770,15 +778,15 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                 const SizedBox(width: 12),
                 _buildKpiCard(
                   title: 'REVENUE',
-                  iconWidget: const Text(
+                  iconWidget: Text(
                     '₹',
                     style: TextStyle(
-                      color: Color(0xFF059669),
+                      color: context.adaptive(light: const Color(0xFF059669), dark: const Color(0xFF6EE7B7)),
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  iconBg: const Color(0xFFECFDF5),
+                  iconBg: context.adaptive(light: const Color(0xFFECFDF5), dark: const Color(0x2E059669)),
                   value: '₹${_formatIndianNumber(kpi.revenue)}',
                   trendText: kpi.revenueTodayTrend,
                   trendColor: const Color(0xFF10B981),
@@ -786,12 +794,12 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                 const SizedBox(width: 12),
                 _buildKpiCard(
                   title: 'MONTHLY REVENUE',
-                  iconWidget: const Icon(
+                  iconWidget: Icon(
                     Icons.bar_chart_rounded,
-                    color: Color(0xFF0891B2),
+                    color: context.adaptive(light: const Color(0xFF0891B2), dark: const Color(0xFF67E8F9)),
                     size: 18,
                   ),
-                  iconBg: const Color(0xFFECFEFF),
+                  iconBg: context.adaptive(light: const Color(0xFFECFEFF), dark: const Color(0x2E0891B2)),
                   value: '₹${_formatIndianNumber(kpi.monthlyRevenue)}',
                   trendText: kpi.weeklyRevenueTrend,
                   trendColor: const Color(0xFF10B981),
@@ -799,30 +807,30 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                 const SizedBox(width: 12),
                 _buildKpiCard(
                   title: 'TODAY ONLINE PAYMENTS',
-                  iconWidget: const Icon(
+                  iconWidget: Icon(
                     Icons.credit_card_rounded,
-                    color: Color(0xFF9333EA),
+                    color: context.adaptive(light: const Color(0xFF9333EA), dark: const Color(0xFFD8B4FE)),
                     size: 18,
                   ),
-                  iconBg: const Color(0xFFFAF5FF),
+                  iconBg: context.adaptive(light: const Color(0xFFFAF5FF), dark: const Color(0x2E9333EA)),
                   value: '₹${_formatIndianNumber(kpi.todayOnlinePayments)}',
                   trendText: kpi.onlinePaymentsTrend,
-                  trendColor: const Color(0xFF64748B),
+                  trendColor: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0)),
                 ),
                 const SizedBox(width: 12),
                 _buildKpiCard(
                   title: 'PENDING ACTIONS',
-                  iconWidget: const Icon(
+                  iconWidget: Icon(
                     Icons.error_outline_rounded,
-                    color: Color(0xFFD97706),
+                    color: context.palette.warning,
                     size: 18,
                   ),
-                  iconBg: const Color(0xFFFFFBEB),
+                  iconBg: context.adaptive(light: const Color(0xFFFFFBEB), dark: const Color(0x2ED97706)),
                   value: '${kpi.pendingActions}',
                   trendText: kpi.pendingActionsTrend.startsWith('↘')
                       ? kpi.pendingActionsTrend
                       : '↘ ${kpi.pendingActionsTrend}',
-                  trendColor: const Color(0xFFDC2626),
+                  trendColor: context.adaptive(light: const Color(0xFFDC2626), dark: const Color(0xFFFCA5A5)),
                 ),
               ],
             ),
@@ -855,7 +863,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                       ),
                     ),
                     selected: _selectedPeriod == period,
-                    selectedColor: const Color(0xFF8A4B20).withValues(alpha: 0.15),
+                    selectedColor: const Color(0xFF8A4B20).withValues(alpha: context.isDarkTheme ? 0.35 : 0.15),
                     onSelected: (val) {
                       if (val) setState(() => _selectedPeriod = period);
                     },
@@ -886,7 +894,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.show_chart_rounded, size: 18, color: Color(0xFF059669)),
+                      Icon(Icons.show_chart_rounded, size: 18, color: context.adaptive(light: const Color(0xFF059669), dark: const Color(0xFF6EE7B7))),
                       const SizedBox(width: 8),
                       const Text(
                         'Revenue Over Time',
@@ -896,15 +904,15 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFECFDF5),
+                          color: context.adaptive(light: const Color(0xFFECFDF5), dark: const Color(0x2E059669)),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           _selectedPeriod,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF059669),
+                            color: context.adaptive(light: const Color(0xFF059669), dark: const Color(0xFF6EE7B7)),
                           ),
                         ),
                       ),
@@ -1010,7 +1018,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.pie_chart_outline_rounded, size: 18, color: Color(0xFF0284C7)),
+                      Icon(Icons.pie_chart_outline_rounded, size: 18, color: context.adaptive(light: const Color(0xFF0284C7), dark: const Color(0xFF7DD3FC))),
                       const SizedBox(width: 8),
                       const Text(
                         'Order Status Distribution',
@@ -1145,7 +1153,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                       backgroundColor: const Color(0xFF8A4B20).withValues(alpha: 0.12),
                       child: Icon(
                         _categoryIcon(shop.category),
-                        color: const Color(0xFF8A4B20),
+                        color: _brownInk(context),
                         size: 20,
                       ),
                     ),
@@ -1176,16 +1184,18 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFFBEB),
+                          color: context.adaptive(light: const Color(0xFFFFFBEB), dark: const Color(0x2ED97706)),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFFDE68A)),
+                          border: Border.all(
+                            color: context.adaptive(light: const Color(0xFFFDE68A), dark: const Color(0x52D97706)),
+                          ),
                         ),
                         child: Text(
                           '${shop.activeOrders} active',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFFD97706),
+                            color: context.palette.warning,
                           ),
                         ),
                       )
@@ -1193,15 +1203,15 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFECFDF5),
+                          color: context.adaptive(light: const Color(0xFFECFDF5), dark: const Color(0x2E059669)),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Active',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF059669),
+                            color: context.adaptive(light: const Color(0xFF059669), dark: const Color(0xFF6EE7B7)),
                           ),
                         ),
                       ),
@@ -1223,13 +1233,17 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
     required String trendText,
     required Color trendColor,
   }) {
+    final p = context.palette;
     return Container(
       width: 220,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        border: Border.all(
+          color: context.adaptive(light: const Color(0xFFE2E8F0), dark: p.border),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -1250,8 +1264,8 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF64748B),
+                  style: TextStyle(
+                    color: context.adaptive(light: const Color(0xFF64748B), dark: p.inkSecondary),
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
@@ -1270,10 +1284,10 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
+              color: context.adaptive(light: const Color(0xFF0F172A), dark: p.ink),
               letterSpacing: -0.4,
             ),
           ),
@@ -1306,9 +1320,9 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 16, color: AppColors.muted),
+            Icon(icon, size: 16, color: context.palette.inkSecondary),
             const SizedBox(width: 8),
-            Text('$label: ', style: const TextStyle(fontSize: 13, color: AppColors.muted)),
+            Text('$label: ', style: TextStyle(fontSize: 13, color: context.palette.inkSecondary)),
             Expanded(
               child: Text(
                 value,
@@ -1354,7 +1368,7 @@ class _VendorShopCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = shop.isActive ? AppColors.success : Colors.grey;
+    final color = shop.isActive ? context.palette.success : Colors.grey;
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -1377,7 +1391,7 @@ class _VendorShopCard extends StatelessWidget {
                     backgroundColor: const Color(0xFF8A4B20).withValues(alpha: 0.1),
                     child: Icon(
                       _VendorManagementShellState._categoryIcon(shop.category),
-                      color: const Color(0xFF8A4B20),
+                      color: _brownInk(context),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1395,8 +1409,8 @@ class _VendorShopCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           '${shop.category} • ${shop.shopKey}',
-                          style: const TextStyle(
-                            color: AppColors.muted,
+                          style: TextStyle(
+                            color: context.palette.inkSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -1447,7 +1461,7 @@ class _VendorShopCard extends StatelessWidget {
                   shop.description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: AppColors.muted, fontSize: 13),
+                  style: TextStyle(color: context.palette.inkSecondary, fontSize: 13),
                 ),
               ],
               const SizedBox(height: 10),
@@ -1465,7 +1479,7 @@ class _VendorShopCard extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  const Text('Active status: ', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                  Text('Active status: ', style: TextStyle(fontSize: 12, color: context.palette.inkSecondary)),
                   if (isToggling)
                     const SizedBox.square(
                       dimension: 16,
@@ -1803,7 +1817,7 @@ class _Summary extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.verified_outlined, color: Color(0xFF8A4B20)),
+            Icon(Icons.verified_outlined, color: _brownInk(context)),
             const SizedBox(width: 10),
             Text(
               'Active vendors: $count of $total',
@@ -1826,14 +1840,14 @@ class _VendorTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = vendor.status == VendorStatus.active
-        ? AppColors.success
-        : const Color(0xFFB77500);
+        ? context.palette.success
+        : context.adaptive(light: const Color(0xFFB77500), dark: const Color(0xFFFCD34D));
     return Card(
       elevation: 0,
       child: ListTile(
-        leading: const Icon(
+        leading: Icon(
           Icons.storefront_outlined,
-          color: Color(0xFF8A4B20),
+          color: _brownInk(context),
         ),
         title: Text(vendor.name),
         subtitle: Text('${vendor.category}\n${vendor.contact}'),
@@ -1866,9 +1880,9 @@ class _RecordTile extends StatelessWidget {
   Widget build(BuildContext context) => Card(
         elevation: 0,
         child: ListTile(
-          leading: const Icon(
+          leading: Icon(
             Icons.receipt_long_outlined,
-            color: Color(0xFF8A4B20),
+            color: _brownInk(context),
           ),
           title: Text(title),
           subtitle: Text(subtitle),
@@ -1882,7 +1896,7 @@ class _RecordTile extends StatelessWidget {
               ),
               Text(
                 status,
-                style: const TextStyle(color: AppColors.muted, fontSize: 11),
+                style: TextStyle(color: context.palette.inkSecondary, fontSize: 11),
               ),
             ],
           ),
@@ -1905,12 +1919,12 @@ class _WorkTile extends StatelessWidget {
   Widget build(BuildContext context) => Card(
         elevation: 0,
         child: ListTile(
-          leading: const Icon(Icons.build_outlined, color: Color(0xFF8A4B20)),
+          leading: Icon(Icons.build_outlined, color: _brownInk(context)),
           title: Text(title),
           subtitle: Text(subtitle),
           trailing: Text(
             status,
-            style: const TextStyle(fontSize: 11, color: AppColors.muted),
+            style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
           ),
         ),
       );

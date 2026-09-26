@@ -80,10 +80,10 @@ class _AdminAccessControlScreenState extends State<AdminAccessControlScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text(
+          Text(
             'APP ACCESS CONTROL',
             style: TextStyle(
-              color: AppColors.muted,
+              color: context.palette.inkSecondary,
               letterSpacing: 1.2,
               fontSize: 11,
             ),
@@ -173,15 +173,15 @@ class _AdminAccessControlScreenState extends State<AdminAccessControlScreen> {
               ),
               Text(
                 email.isEmpty ? 'No user' : email,
-                style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
               ),
             ],
           ),
           const SizedBox(height: 10),
           if (assignments.isEmpty)
-            const Text(
+            Text(
               'No app permissions assigned yet.',
-              style: TextStyle(color: AppColors.muted),
+              style: TextStyle(color: context.palette.inkSecondary),
             )
           else
             for (final assignment in assignments)

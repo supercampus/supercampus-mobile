@@ -106,18 +106,18 @@ class _ExamConfigurationScreenState extends State<ExamConfigurationScreen> {
   Widget _buildHeader(bool isMobile) {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.palette.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: Padding(
         padding: EdgeInsets.all(isMobile ? 12 : 16),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.settings_suggest,
-              color: AppColors.primary,
+              color: context.palette.brandInk,
               size: 28,
             ),
             const SizedBox(width: 12),
@@ -125,18 +125,18 @@ class _ExamConfigurationScreenState extends State<ExamConfigurationScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Examination Configuration',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.ink,
+                      color: context.palette.ink,
                     ),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     'Define academic hierarchy, assessment weightages, credit mapping, and passing rules.',
-                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                    style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                   ),
                 ],
               ),
@@ -151,19 +151,19 @@ class _ExamConfigurationScreenState extends State<ExamConfigurationScreen> {
     return Container(
       padding: EdgeInsets.all(isMobile ? 14 : 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Academic & Exam Hierarchy',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
-              color: AppColors.ink,
+              color: context.palette.ink,
             ),
           ),
           const SizedBox(height: 14),
@@ -221,12 +221,12 @@ class _ExamConfigurationScreenState extends State<ExamConfigurationScreen> {
           const SizedBox(height: 16),
           const Divider(),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             'Assessment Weightage Split (%)',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.ink,
+              color: context.palette.ink,
             ),
           ),
           const SizedBox(height: 10),
@@ -243,7 +243,7 @@ class _ExamConfigurationScreenState extends State<ExamConfigurationScreen> {
                   min: 0,
                   max: 100,
                   divisions: 20,
-                  activeColor: AppColors.primary,
+                  activeColor: context.palette.brandInk,
                   onChanged: (val) {
                     setState(() {
                       _iaWeightage = val;
@@ -287,7 +287,7 @@ class _ExamConfigurationScreenState extends State<ExamConfigurationScreen> {
                         min: 0,
                         max: 100,
                         divisions: 20,
-                        activeColor: AppColors.primary,
+                        activeColor: context.palette.brandInk,
                         onChanged: (val) {
                           setState(() {
                             _iaWeightage = val;
@@ -348,7 +348,10 @@ class _ExamConfigurationScreenState extends State<ExamConfigurationScreen> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+              style: FilledButton.styleFrom(
+                backgroundColor: context.palette.brand,
+                foregroundColor: context.palette.onBrand,
+              ),
               onPressed: () {
                 // TODO: Save configuration payload to POST /api/v1/examination/config
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -375,23 +378,23 @@ class _ExamConfigurationScreenState extends State<ExamConfigurationScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.checklist, color: AppColors.primary, size: 20),
+              Icon(Icons.checklist, color: context.palette.brandInk, size: 20),
               SizedBox(width: 8),
               Text(
                 'Configuration Readiness',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
+                  color: context.palette.ink,
                 ),
               ),
             ],
@@ -422,7 +425,7 @@ class _ExamConfigurationScreenState extends State<ExamConfigurationScreen> {
                 ),
                 subtitle: Text(
                   item['role']!,
-                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                 ),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(

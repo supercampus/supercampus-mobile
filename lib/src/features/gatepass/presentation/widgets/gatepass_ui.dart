@@ -20,9 +20,14 @@ class GatepassSurface extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE8E8EC)),
+        border: Border.all(
+          color: context.adaptive(
+            light: const Color(0xFFE8E8EC),
+            dark: context.palette.border,
+          ),
+        ),
       ),
       child: child,
     );
@@ -36,21 +41,37 @@ class ApprovalPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final (color, background) = switch (status) {
       ApprovalStatus.approved => (
-        const Color(0xFF087A4B),
-        const Color(0xFFE7F7EF),
+        context.adaptive(
+          light: const Color(0xFF087A4B),
+          dark: const Color(0xFF6EE7B7),
+        ),
+        p.successSoft,
       ),
       ApprovalStatus.pending => (
-        const Color(0xFF8A5A00),
-        const Color(0xFFFFF4D6),
+        context.adaptive(
+          light: const Color(0xFF8A5A00),
+          dark: const Color(0xFFFCD34D),
+        ),
+        p.warningSoft,
       ),
       ApprovalStatus.rejected => (
-        const Color(0xFFB42318),
-        const Color(0xFFFFE9E7),
+        context.adaptive(
+          light: const Color(0xFFB42318),
+          dark: const Color(0xFFFCA5A5),
+        ),
+        p.dangerSoft,
       ),
-      ApprovalStatus.completed => (AppColors.gateBlue, const Color(0xFFECEAFF)),
-      ApprovalStatus.cancelled => (AppColors.muted, const Color(0xFFF0F1F3)),
+      ApprovalStatus.completed => (
+        p.brandInk,
+        context.adaptive(light: const Color(0xFFECEAFF), dark: p.brandSoft),
+      ),
+      ApprovalStatus.cancelled => (
+        p.inkSecondary,
+        context.adaptive(light: const Color(0xFFF0F1F3), dark: p.surfaceMuted),
+      ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),

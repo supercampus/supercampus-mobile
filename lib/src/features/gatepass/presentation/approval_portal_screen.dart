@@ -159,7 +159,7 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
   }
 
   void _showGatepassDetail(ApprovalRequest request) {
-    final status = _ApprovalCard._status(request.state);
+    final status = _ApprovalCard._status(context, request.state);
     final isActionable = request.canDecide(widget.viewerKind);
     showModalBottomSheet<void>(
       context: context,
@@ -231,11 +231,18 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
               Center(
                 child: Column(
                   children: [
-                    QrImageView(data: request.qrPayload!, size: 160),
+                    QrImageView(
+                      data: request.qrPayload!,
+                      size: 160,
+                      backgroundColor: Colors.white,
+                    ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Gatepass QR Verification Code',
-                      style: TextStyle(fontSize: 12, color: AppColors.muted),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.palette.inkSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -248,8 +255,16 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFC62828),
-                        side: const BorderSide(color: Color(0xFFC62828)),
+                        foregroundColor: context.adaptive(
+                          light: const Color(0xFFC62828),
+                          dark: const Color(0xFFFCA5A5),
+                        ),
+                        side: BorderSide(
+                          color: context.adaptive(
+                            light: const Color(0xFFC62828),
+                            dark: const Color(0xFFFCA5A5),
+                          ),
+                        ),
                       ),
                       onPressed: () {
                         Navigator.pop(sheetContext);
@@ -287,9 +302,12 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: AppColors.muted),
+        Icon(icon, size: 16, color: context.palette.inkSecondary),
         const SizedBox(width: 8),
-        Text('$label: ', style: const TextStyle(fontSize: 13, color: AppColors.muted)),
+        Text(
+          '$label: ',
+          style: TextStyle(fontSize: 13, color: context.palette.inkSecondary),
+        ),
         Expanded(
           child: Text(
             value,
@@ -303,7 +321,10 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F8F4),
+      backgroundColor: context.adaptive(
+        light: const Color(0xFFF1F8F4),
+        dark: context.palette.canvas,
+      ),
       appBar: AppBar(
         title: Text(_portalTitle),
       ),
@@ -383,7 +404,7 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
               'Give final approval to advisor-approved college-hours leave passes.',
             _ =>
               'Review leave passes for students in your assigned department.',
-          }, style: const TextStyle(color: AppColors.muted)),
+          }, style: TextStyle(color: context.palette.inkSecondary)),
           const SizedBox(height: 14),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -497,12 +518,22 @@ class _ChildCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final green = context.adaptive(
+      light: const Color(0xFF167447),
+      dark: const Color(0xFF6EE7B7),
+    );
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: p.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: Color(0xFFD8E9DF)),
+        side: BorderSide(
+          color: context.adaptive(
+            light: const Color(0xFFD8E9DF),
+            dark: p.border,
+          ),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -510,15 +541,18 @@ class _ChildCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 34,
-              backgroundColor: const Color(0xFFDDF3E6),
+              backgroundColor: context.adaptive(
+                light: const Color(0xFFDDF3E6),
+                dark: const Color(0x2E34D399),
+              ),
               backgroundImage: child.photoUrl == null
                   ? null
                   : NetworkImage(child.photoUrl!),
               child: child.photoUrl == null
                   ? Text(
                       child.name.isEmpty ? 'S' : child.name[0].toUpperCase(),
-                      style: const TextStyle(
-                        color: Color(0xFF167447),
+                      style: TextStyle(
+                        color: green,
                         fontSize: 25,
                         fontWeight: FontWeight.w600,
                       ),
@@ -530,14 +564,14 @@ class _ChildCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.verified, color: Color(0xFF167447), size: 17),
-                      SizedBox(width: 5),
+                      Icon(Icons.verified, color: green, size: 17),
+                      const SizedBox(width: 5),
                       Text(
                         'Your verified child',
                         style: TextStyle(
-                          color: Color(0xFF167447),
+                          color: green,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -556,7 +590,7 @@ class _ChildCard extends StatelessWidget {
                   if (child.hostel.isNotEmpty)
                     Text(
                       '${child.hostel}${child.room.isEmpty ? '' : ' • ${child.room}'}',
-                      style: const TextStyle(color: AppColors.muted),
+                      style: TextStyle(color: p.inkSecondary),
                     ),
                 ],
               ),
@@ -587,14 +621,19 @@ class _ApprovalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = _status(request.state);
+    final status = _status(context, request.state);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
-      color: Colors.white,
+      color: context.palette.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFD8E9DF)),
+        side: BorderSide(
+          color: context.adaptive(
+            light: const Color(0xFFD8E9DF),
+            dark: context.palette.border,
+          ),
+        ),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -627,7 +666,7 @@ class _ApprovalCard extends StatelessWidget {
             ),
             Text(
               request.reason,
-              style: const TextStyle(color: AppColors.muted),
+              style: TextStyle(color: context.palette.inkSecondary),
             ),
             const SizedBox(height: 10),
             Text('Out: ${_stamp(request.departureAt)}'),
@@ -644,7 +683,11 @@ class _ApprovalCard extends StatelessWidget {
               Center(
                 child: Column(
                   children: [
-                    QrImageView(data: request.qrPayload!, size: 150),
+                    QrImageView(
+                      data: request.qrPayload!,
+                      size: 150,
+                      backgroundColor: Colors.white,
+                    ),
                     const Text('Approved gatepass QR'),
                   ],
                 ),
@@ -689,14 +732,33 @@ class _ApprovalCard extends StatelessWidget {
     return '${value.day}/${value.month}/${value.year}  ${value.hour}:$minute';
   }
 
-  static (String, Color) _status(String state) => switch (state) {
-    'pending_parent' => ('Parent review', const Color(0xFFE38B00)),
-    'pending_warden' => ('Warden review', const Color(0xFF3558D4)),
-    'approved' => ('Approved ✓', const Color(0xFF167447)),
-    'rejected' => ('Rejected', const Color(0xFFC62828)),
-    'cancelled' => ('Cancelled', Colors.grey),
-    _ => (state.replaceAll('_', ' '), Colors.grey),
-  };
+  static (String, Color) _status(BuildContext context, String state) {
+    Color tone(Color light, Color dark) =>
+        context.adaptive(light: light, dark: dark);
+    return switch (state) {
+      'pending_parent' => (
+        'Parent review',
+        tone(const Color(0xFFE38B00), const Color(0xFFFCD34D)),
+      ),
+      'pending_warden' => (
+        'Warden review',
+        tone(const Color(0xFF3558D4), const Color(0xFFA5B4FC)),
+      ),
+      'approved' => (
+        'Approved ✓',
+        tone(const Color(0xFF167447), const Color(0xFF6EE7B7)),
+      ),
+      'rejected' => (
+        'Rejected',
+        tone(const Color(0xFFC62828), const Color(0xFFFCA5A5)),
+      ),
+      'cancelled' => ('Cancelled', tone(Colors.grey, const Color(0xFF878995))),
+      _ => (
+        state.replaceAll('_', ' '),
+        tone(Colors.grey, const Color(0xFF878995)),
+      ),
+    };
+  }
 }
 
 class _PassTypePill extends StatelessWidget {
@@ -707,12 +769,15 @@ class _PassTypePill extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
-      color: const Color(0xFFECEAFF),
+      color: context.adaptive(
+        light: const Color(0xFFECEAFF),
+        dark: context.palette.brandSoft,
+      ),
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(
       passType == 'leave_pass' ? 'Leave pass' : 'Outpass',
-      style: const TextStyle(fontSize: 11, color: AppColors.gateBlue),
+      style: TextStyle(fontSize: 11, color: context.palette.brandInk),
     ),
   );
 }
@@ -758,13 +823,25 @@ class _EmptyCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.palette.surface,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFD8E9DF)),
+      border: Border.all(
+        color: context.adaptive(
+          light: const Color(0xFFD8E9DF),
+          dark: context.palette.border,
+        ),
+      ),
     ),
     child: Column(
       children: [
-        Icon(icon, color: const Color(0xFF167447), size: 32),
+        Icon(
+          icon,
+          color: context.adaptive(
+            light: const Color(0xFF167447),
+            dark: const Color(0xFF6EE7B7),
+          ),
+          size: 32,
+        ),
         const SizedBox(height: 8),
         Text(text, textAlign: TextAlign.center),
       ],

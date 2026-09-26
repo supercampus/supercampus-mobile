@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/campus_nav_bar.dart';
 import '../../advisor/data/advisor_students_repository.dart';
 import '../../advisor/presentation/advisor_students_section.dart';
@@ -76,6 +77,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return const Color(0xFF475569);
   }
 
+  /// Accent hue used as text or icon: exact in light, lifted in dark so it
+  /// stays legible on the dark card fill.
+  Color _accentInk(Color color) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? Color.lerp(color, Colors.white, 0.35)!
+          : color;
+
   IconData _roleIcon() {
     if (session.isAdmin) return Icons.admin_panel_settings_rounded;
     if (session.isCanteenOwner) return Icons.storefront_rounded;
@@ -108,7 +116,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF0E0F13) : const Color(0xFFF8FAFC),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -324,10 +332,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF111827) : Colors.white,
+        color: isDark ? const Color(0xFF131419) : Colors.white,
         border: Border(
           bottom: BorderSide(
-            color: isDark ? const Color(0xFF1F2937) : const Color(0xFFE2E8F0),
+            color: isDark ? const Color(0xFF202128) : const Color(0xFFE2E8F0),
             width: 1,
           ),
         ),
@@ -393,7 +401,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   session.email.isNotEmpty ? session.email : session.roleDisplayTitle,
                   style: TextStyle(
                     fontSize: 11.5,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: isDark ? const Color(0xFFA3A5B0) : const Color(0xFF64748B),
                     fontWeight: FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -418,8 +426,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     child: Container(
                       width: 8,
                       height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFEF4444),
+                      decoration: BoxDecoration(
+                        color: context.palette.danger,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -435,7 +443,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               child: CircleAvatar(
                 radius: 17,
                 backgroundColor: isDark
-                    ? const Color(0xFF1E293B)
+                    ? const Color(0xFF17181D)
                     : const Color(0xFFE2E8F0),
                 backgroundImage: session.photoUrl != null &&
                         session.photoUrl!.isNotEmpty
@@ -620,7 +628,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      color: isDark ? const Color(0xFF17181D) : Colors.white,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: onTap,
@@ -630,13 +638,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              color: isDark ? const Color(0xFF2B2C34) : const Color(0xFFE2E8F0),
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: color),
+              Icon(icon, size: 16, color: _accentInk(color)),
               const SizedBox(width: 7),
               Text(
                 label,
@@ -835,7 +843,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildSalesHeroCard(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      color: isDark ? const Color(0xFF17181D) : Colors.white,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'dashboard'),
@@ -845,7 +853,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              color: isDark ? const Color(0xFF2B2C34) : const Color(0xFFE2E8F0),
             ),
             boxShadow: [
               BoxShadow(
@@ -864,9 +872,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   color: const Color(0xFF059669).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.storefront_rounded,
-                  color: Color(0xFF059669),
+                  color: _accentInk(const Color(0xFF059669)),
                   size: 24,
                 ),
               ),
@@ -893,12 +901,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             color: const Color(0xFF059669).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Counters Active',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF059669),
+                              color: _accentInk(const Color(0xFF059669)),
                             ),
                           ),
                         ),
@@ -910,16 +918,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        color: isDark ? const Color(0xFFA3A5B0) : const Color(0xFF64748B),
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 14,
-                color: Color(0xFF94A3B8),
+                color: context.palette.inkTertiary,
               ),
             ],
           ),
@@ -939,7 +947,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
-      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      color: isDark ? const Color(0xFF17181D) : Colors.white,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -949,7 +957,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              color: isDark ? const Color(0xFF2B2C34) : const Color(0xFFE2E8F0),
             ),
           ),
           child: Column(
@@ -964,7 +972,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(icon, color: color, size: 18),
+                    child: Icon(icon, color: _accentInk(color), size: 18),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -977,7 +985,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       style: TextStyle(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w700,
-                        color: color,
+                        color: _accentInk(color),
                       ),
                     ),
                   ),
@@ -1001,7 +1009,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  color: isDark ? const Color(0xFFA3A5B0) : const Color(0xFF64748B),
                 ),
               ),
             ],
@@ -1052,7 +1060,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       color: isSelected
           ? const Color(0xFF4F46E5)
           : isDark
-              ? const Color(0xFF1E293B)
+              ? const Color(0xFF17181D)
               : Colors.white,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
@@ -1066,7 +1074,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               color: isSelected
                   ? const Color(0xFF4F46E5)
                   : isDark
-                      ? const Color(0xFF334155)
+                      ? const Color(0xFF2B2C34)
                       : const Color(0xFFE2E8F0),
             ),
           ),
@@ -1312,7 +1320,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
-      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      color: isDark ? const Color(0xFF17181D) : Colors.white,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -1322,7 +1330,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              color: isDark ? const Color(0xFF2B2C34) : const Color(0xFFE2E8F0),
             ),
             boxShadow: [
               BoxShadow(
@@ -1346,12 +1354,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       color: color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(icon, color: color, size: 20),
+                    child: Icon(icon, color: _accentInk(color), size: 20),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.arrow_forward_rounded,
                     size: 14,
-                    color: Color(0xFF94A3B8),
+                    color: context.palette.inkTertiary,
                   ),
                 ],
               ),
@@ -1375,7 +1383,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: color,
+                      color: _accentInk(color),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1405,7 +1413,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, size: 16, color: color),
+          child: Icon(icon, size: 16, color: _accentInk(color)),
         ),
         const SizedBox(width: 8),
         Column(
@@ -1424,7 +1432,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               subtitle,
               style: TextStyle(
                 fontSize: 11,
-                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark ? const Color(0xFFA3A5B0) : const Color(0xFF64748B),
               ),
             ),
           ],

@@ -6,6 +6,7 @@ import '../../../core/widgets/campus_nav_bar.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/timetable_repository.dart';
 import '../data/timetable_models.dart';
+import 'timetable_tones.dart';
 import 'widgets/daily_period_strip.dart';
 import 'widgets/month_calendar_dialog.dart';
 import 'widgets/weekly_date_strip.dart';
@@ -28,6 +29,8 @@ class FacultyDashboardScreen extends StatefulWidget {
 
 class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
     with SingleTickerProviderStateMixin {
+  AppPalette get _p => context.palette;
+
   DateTime _selectedDate = DateTime.now();
   late int _bottomNavIndex; // 0: Schedule, 1: Substitutions Hub
   late TabController _subTabController;
@@ -48,7 +51,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: context.timetableCanvas,
       // Sections of this page, at the top of it. The bottom of the screen
       // belongs to the one nav bar the module host floats there.
       body: Column(
@@ -99,7 +102,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
         ),
         child: FloatingActionButton(
           shape: const CircleBorder(),
-          backgroundColor: AppColors.primary,
+          backgroundColor: _p.brand,
           onPressed: () => _showRequestSubstitutionModal(context),
           tooltip: 'Request Substitution',
           child: const Icon(Icons.swap_calls, color: Colors.white, size: 26),
@@ -143,7 +146,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                 ),
                 Text(
                   '${widget.session.displayName} • Operational View',
-                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  style: TextStyle(fontSize: 12, color: _p.inkSecondary),
                 ),
               ],
             ),
@@ -194,10 +197,10 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
       return Card(
         margin: const EdgeInsets.only(bottom: 12),
         elevation: 0,
-        color: Colors.grey.shade50,
+        color: context.grey(50),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: Colors.grey.shade300, width: 1),
+          side: BorderSide(color: context.grey(300), width: 1),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -213,7 +216,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
+                      color: context.grey(200),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -221,7 +224,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
+                        color: context.grey(700),
                       ),
                     ),
                   ),
@@ -231,7 +234,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade600,
+                      color: context.grey(600),
                     ),
                   ),
                 ],
@@ -242,15 +245,15 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: context.grey(200),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
+                child: Text(
                   'Free Period',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey,
+                    color: context.grey(500),
                   ),
                 ),
               ),
@@ -271,8 +274,11 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
       margin: const EdgeInsets.only(bottom: 14),
       elevation: 0,
       color: isSubstitutedIn
-          ? Colors.amber.shade50.withValues(alpha: 0.3)
-          : Colors.white,
+          ? context.adaptive(
+              light: Colors.amber.shade50.withValues(alpha: 0.3),
+              dark: const Color(0x14FFC107),
+            )
+          : _p.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(
@@ -280,7 +286,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
               ? Colors.amber.shade400
               : isSubstitutedIn
               ? Colors.amber.shade600
-              : AppColors.primary.withValues(alpha: 0.3),
+              : _p.brandInk.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -293,7 +299,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                   ? Colors.amber.shade700
                   : isSubstitutedIn
                   ? Colors.amber.shade800
-                  : AppColors.primary,
+                  : _p.brandInk,
               width: 5,
             ),
           ),
@@ -314,15 +320,15 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: _p.brandInk.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           'Period $periodIndex • $timeSlot',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+                            color: _p.brandInk,
                           ),
                         ),
                       ),
@@ -334,13 +340,16 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                           ),
                           decoration: BoxDecoration(
                             color: subOut.status == 'Approved'
-                                ? Colors.amber.shade100
-                                : Colors.blue.shade50,
+                                ? Colors.amber.shade100.tintOn(context)
+                                : Colors.blue.shade50.tintOn(context),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: subOut.status == 'Approved'
                                   ? Colors.amber.shade400
-                                  : Colors.blue.shade300,
+                                  : Colors.blue.shade300.tintOn(
+                                      context,
+                                      alpha: .45,
+                                    ),
                             ),
                           ),
                           child: Text(
@@ -351,8 +360,8 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               color: subOut.status == 'Approved'
-                                  ? Colors.amber.shade900
-                                  : Colors.blue.shade800,
+                                  ? Colors.amber.shade900.inkOn(context)
+                                  : Colors.blue.shade800.inkOn(context),
                             ),
                           ),
                         )
@@ -363,7 +372,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.amber.shade100,
+                            color: Colors.amber.shade100.tintOn(context),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.amber.shade600),
                           ),
@@ -372,7 +381,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: Colors.amber.shade900,
+                              color: Colors.amber.shade900.inkOn(context),
                             ),
                           ),
                         )
@@ -383,16 +392,21 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.green.shade50,
+                            color: Colors.green.shade50.tintOn(context),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.green.shade200),
+                            border: Border.all(
+                              color: Colors.green.shade200.tintOn(
+                                context,
+                                alpha: .45,
+                              ),
+                            ),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Scheduled',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: Colors.green,
+                              color: Colors.green.inkOn(context),
                             ),
                           ),
                         ),
@@ -403,10 +417,10 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                   // PRIMARY TITLE FOCUS: CLASS / SECTION
                   Text(
                     'Class $targetClass',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.ink,
+                      color: _p.ink,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -414,9 +428,9 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                     padding: const EdgeInsets.only(right: 36),
                     child: Text(
                       subjectName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.muted,
+                        color: _p.inkSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -428,9 +442,14 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
+                        color: Colors.amber.shade50.tintOn(context),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.amber.shade200),
+                        border: Border.all(
+                          color: Colors.amber.shade200.tintOn(
+                            context,
+                            alpha: .45,
+                          ),
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -447,23 +466,23 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                               children: [
                                 Text(
                                   widget.session.displayName,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.red,
+                                    color: Colors.red.inkOn(context),
                                     decoration: TextDecoration.lineThrough,
                                   ),
                                 ),
-                                const Icon(
+                                Icon(
                                   Icons.arrow_right_alt,
                                   size: 14,
-                                  color: AppColors.muted,
+                                  color: _p.inkSecondary,
                                 ),
                                 Text(
                                   subOut.substituteFaculty,
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.amber.shade900,
+                                    color: Colors.amber.shade900.inkOn(context),
                                   ),
                                 ),
                               ],
@@ -476,9 +495,14 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
+                        color: Colors.amber.shade50.tintOn(context),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.amber.shade300),
+                        border: Border.all(
+                          color: Colors.amber.shade300.tintOn(
+                            context,
+                            alpha: .45,
+                          ),
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -495,23 +519,23 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                               children: [
                                 Text(
                                   subIn.originalFaculty,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.red,
+                                    color: Colors.red.inkOn(context),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                const Icon(
+                                Icon(
                                   Icons.arrow_right_alt,
                                   size: 14,
-                                  color: AppColors.muted,
+                                  color: _p.inkSecondary,
                                 ),
                                 Text(
                                   '${widget.session.displayName} (Proxy)',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.amber.shade900,
+                                    color: Colors.amber.shade900.inkOn(context),
                                   ),
                                 ),
                               ],
@@ -531,7 +555,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                 child: Tooltip(
                   message: 'Request Substitution',
                   child: Material(
-                    color: AppColors.primary.withValues(alpha: 0.12),
+                    color: _p.brandInk.withValues(alpha: 0.12),
                     shape: const CircleBorder(),
                     clipBehavior: Clip.antiAlias,
                     child: InkWell(
@@ -540,12 +564,12 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                         entry: entry,
                         timeSlot: timeSlot,
                       ),
-                      child: const Padding(
+                      child: Padding(
                         padding: EdgeInsets.all(10),
                         child: Icon(
                           Icons.swap_calls,
                           size: 20,
-                          color: AppColors.primary,
+                          color: _p.brandInk,
                         ),
                       ),
                     ),
@@ -565,12 +589,12 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
     return Column(
       children: [
         Container(
-          color: Colors.white,
+          color: _p.surface,
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -580,16 +604,16 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                   SizedBox(height: 4),
                   Text(
                     'Manage coverage requests, peer invites, and active proxies.',
-                    style: TextStyle(fontSize: 12, color: AppColors.muted),
+                    style: TextStyle(fontSize: 12, color: _p.inkSecondary),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               TabBar(
                 controller: _subTabController,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.muted,
-                indicatorColor: AppColors.primary,
+                labelColor: _p.brandInk,
+                unselectedLabelColor: _p.inkSecondary,
+                indicatorColor: _p.brandInk,
                 tabs: const [
                   Tab(text: 'My Requests'),
                   Tab(text: 'Incoming Invites'),
@@ -629,11 +653,11 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.outbox_outlined, size: 48, color: Colors.grey.shade400),
+            Icon(Icons.outbox_outlined, size: 48, color: context.grey(400)),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'No outgoing substitution requests.',
-              style: TextStyle(color: AppColors.muted),
+              style: TextStyle(color: _p.inkSecondary),
             ),
           ],
         ),
@@ -677,21 +701,27 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                       ),
                       decoration: BoxDecoration(
                         color: isApproved
-                            ? Colors.green.shade50
+                            ? Colors.green.shade50.tintOn(context)
                             : isRejected
-                            ? Colors.red.shade50
+                            ? Colors.red.shade50.tintOn(context)
                             : isCancelled
-                            ? Colors.grey.shade200
-                            : Colors.amber.shade50,
+                            ? context.grey(200)
+                            : Colors.amber.shade50.tintOn(context),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: isApproved
-                              ? Colors.green.shade300
+                              ? Colors.green.shade300.tintOn(
+                                  context,
+                                  alpha: .45,
+                                )
                               : isRejected
-                              ? Colors.red.shade300
+                              ? Colors.red.shade300.tintOn(context, alpha: .45)
                               : isCancelled
-                              ? Colors.grey.shade400
-                              : Colors.amber.shade300,
+                              ? context.grey(400)
+                              : Colors.amber.shade300.tintOn(
+                                  context,
+                                  alpha: .45,
+                                ),
                         ),
                       ),
                       child: Text(
@@ -700,12 +730,12 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: isApproved
-                              ? Colors.green.shade800
+                              ? Colors.green.shade800.inkOn(context)
                               : isRejected
-                              ? Colors.red.shade800
+                              ? Colors.red.shade800.inkOn(context)
                               : isCancelled
-                              ? Colors.grey.shade700
-                              : Colors.amber.shade900,
+                              ? context.grey(700)
+                              : Colors.amber.shade900.inkOn(context),
                         ),
                       ),
                     ),
@@ -723,15 +753,21 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                         color:
                             item.triggerType ==
                                 SubstitutionTriggerType.facultyInitiated
-                            ? Colors.purple.shade50
-                            : Colors.orange.shade50,
+                            ? Colors.purple.shade50.tintOn(context)
+                            : Colors.orange.shade50.tintOn(context),
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color:
                               item.triggerType ==
                                   SubstitutionTriggerType.facultyInitiated
-                              ? Colors.purple.shade200
-                              : Colors.orange.shade200,
+                              ? Colors.purple.shade200.tintOn(
+                                  context,
+                                  alpha: .45,
+                                )
+                              : Colors.orange.shade200.tintOn(
+                                  context,
+                                  alpha: .45,
+                                ),
                         ),
                       ),
                       child: Text(
@@ -742,8 +778,8 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                           color:
                               item.triggerType ==
                                   SubstitutionTriggerType.facultyInitiated
-                              ? Colors.purple.shade800
-                              : Colors.orange.shade900,
+                              ? Colors.purple.shade800.inkOn(context)
+                              : Colors.orange.shade900.inkOn(context),
                         ),
                       ),
                     ),
@@ -755,16 +791,21 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
+                          color: Colors.blue.shade50.tintOn(context),
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.blue.shade200),
+                          border: Border.all(
+                            color: Colors.blue.shade200.tintOn(
+                              context,
+                              alpha: .45,
+                            ),
+                          ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Pool Broadcast',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: Colors.blue,
+                            color: Colors.blue.inkOn(context),
                           ),
                         ),
                       ),
@@ -780,25 +821,22 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                   'Proxy Assignee: ${item.substituteFaculty}',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.amber.shade900,
+                    color: Colors.amber.shade900.inkOn(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 if (item.reason.isNotEmpty)
                   Text(
                     'Reason: ${item.reason}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.muted,
-                    ),
+                    style: TextStyle(fontSize: 11, color: _p.inkSecondary),
                   ),
                 if (item.note.isNotEmpty)
                   Text(
                     'Note: "${item.note}"',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontStyle: FontStyle.italic,
-                      color: Colors.grey,
+                      color: context.grey(500),
                     ),
                   ),
 
@@ -858,11 +896,11 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 48, color: Colors.grey.shade400),
+            Icon(Icons.inbox_outlined, size: 48, color: context.grey(400)),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'No incoming substitution invites.',
-              style: TextStyle(color: AppColors.muted),
+              style: TextStyle(color: _p.inkSecondary),
             ),
           ],
         ),
@@ -900,7 +938,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade100,
+                        color: Colors.amber.shade100.tintOn(context),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -908,7 +946,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: Colors.amber.shade900,
+                          color: Colors.amber.shade900.inkOn(context),
                         ),
                       ),
                     ),
@@ -926,15 +964,21 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                         color:
                             item.triggerType ==
                                 SubstitutionTriggerType.facultyInitiated
-                            ? Colors.purple.shade50
-                            : Colors.orange.shade50,
+                            ? Colors.purple.shade50.tintOn(context)
+                            : Colors.orange.shade50.tintOn(context),
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color:
                               item.triggerType ==
                                   SubstitutionTriggerType.facultyInitiated
-                              ? Colors.purple.shade200
-                              : Colors.orange.shade200,
+                              ? Colors.purple.shade200.tintOn(
+                                  context,
+                                  alpha: .45,
+                                )
+                              : Colors.orange.shade200.tintOn(
+                                  context,
+                                  alpha: .45,
+                                ),
                         ),
                       ),
                       child: Text(
@@ -945,8 +989,8 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                           color:
                               item.triggerType ==
                                   SubstitutionTriggerType.facultyInitiated
-                              ? Colors.purple.shade800
-                              : Colors.orange.shade900,
+                              ? Colors.purple.shade800.inkOn(context)
+                              : Colors.orange.shade900.inkOn(context),
                         ),
                       ),
                     ),
@@ -955,15 +999,15 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                 const SizedBox(height: 8),
                 Text(
                   'Original Faculty: ${item.originalFaculty}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Colors.red,
+                    color: Colors.red.inkOn(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   '${item.subjectCode} - ${item.subjectName}',
-                  style: const TextStyle(fontSize: 13, color: AppColors.muted),
+                  style: TextStyle(fontSize: 13, color: _p.inkSecondary),
                 ),
                 Text(
                   '${item.dayOfWeek} • ${item.timeSlot}',
@@ -975,18 +1019,15 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                 if (item.reason.isNotEmpty)
                   Text(
                     'Metadata: ${item.reason}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.muted,
-                    ),
+                    style: TextStyle(fontSize: 11, color: _p.inkSecondary),
                   ),
                 if (item.note.isNotEmpty)
                   Text(
                     'Note: "${item.note}"',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontStyle: FontStyle.italic,
-                      color: Colors.grey,
+                      color: context.grey(500),
                     ),
                   ),
                 const SizedBox(height: 12),
@@ -1012,7 +1053,8 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                     const SizedBox(width: 8),
                     FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: _p.brand,
+                        foregroundColor: _p.onBrand,
                       ),
                       onPressed: () {
                         setState(() {
@@ -1062,11 +1104,11 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.shield_outlined, size: 48, color: Colors.grey.shade400),
+            Icon(Icons.shield_outlined, size: 48, color: context.grey(400)),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'No active proxy duties for this week.',
-              style: TextStyle(color: AppColors.muted),
+              style: TextStyle(color: _p.inkSecondary),
             ),
           ],
         ),
@@ -1091,11 +1133,13 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
             contentPadding: const EdgeInsets.all(14),
             leading: CircleAvatar(
               backgroundColor: isProxyDuty
-                  ? Colors.amber.shade100
-                  : Colors.red.shade50,
+                  ? Colors.amber.shade100.tintOn(context)
+                  : Colors.red.shade50.tintOn(context),
               child: Icon(
                 isProxyDuty ? Icons.shield : Icons.swap_horiz,
-                color: isProxyDuty ? Colors.amber.shade900 : Colors.red,
+                color: isProxyDuty
+                    ? Colors.amber.shade900.inkOn(context)
+                    : Colors.red.inkOn(context),
               ),
             ),
             title: Text(
@@ -1110,7 +1154,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.purple.shade50,
+                color: Colors.purple.shade50.tintOn(context),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -1118,7 +1162,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                 style: TextStyle(
                   fontSize: 9,
                   fontWeight: FontWeight.bold,
-                  color: Colors.purple.shade800,
+                  color: Colors.purple.shade800.inkOn(context),
                 ),
               ),
             ),
@@ -1220,15 +1264,15 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.purple.shade50,
+                              color: Colors.purple.shade50.tintOn(context),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
+                            child: Text(
                               'FACULTY_INITIATED',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.purple,
+                                color: Colors.purple.inkOn(context),
                               ),
                             ),
                           ),
@@ -1392,14 +1436,14 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
+                        color: Colors.blue.shade50.tintOn(context),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.info_outline,
-                            color: Colors.blue,
+                            color: Colors.blue.inkOn(context),
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -1408,7 +1452,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                               'Pre-filled for Class ${entry.className} (${entry.subjectCode}) • ${DateFormat('EEEE').format(modalSelectedDate)}, $selectedSlot',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.blue.shade900,
+                                color: Colors.blue.shade900.inkOn(context),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -1468,9 +1512,9 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                   const SizedBox(height: 10),
 
                   if (!isPoolBroadcast) ...[
-                    const Text(
+                    Text(
                       'Select Target Peer Faculty',
-                      style: TextStyle(fontSize: 12, color: AppColors.muted),
+                      style: TextStyle(fontSize: 12, color: _p.inkSecondary),
                     ),
                     const SizedBox(height: 4),
                     DropdownButtonFormField<String>(
@@ -1494,11 +1538,16 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
+                        color: Colors.amber.shade50.tintOn(context),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.amber.shade300),
+                        border: Border.all(
+                          color: Colors.amber.shade300.tintOn(
+                            context,
+                            alpha: .45,
+                          ),
+                        ),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
                           Icon(Icons.campaign, color: Colors.amber, size: 20),
                           SizedBox(width: 8),
@@ -1507,7 +1556,10 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                               'Request will be broadcasted to all available department faculty for this slot.',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Colors.black87,
+                                color: context.adaptive(
+                                  light: Colors.black87,
+                                  dark: const Color(0xFFD9DAE0),
+                                ),
                               ),
                             ),
                           ),
@@ -1538,7 +1590,8 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                     width: double.infinity,
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: _p.brand,
+                        foregroundColor: _p.onBrand,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       onPressed: () {
@@ -1578,7 +1631,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen>
                             content: Text(
                               'Substitution request sent! (${isPoolBroadcast ? "Broadcast to Pool" : "Notified $selectedFaculty"} & Allocator Alerted)',
                             ),
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: _p.brand,
                           ),
                         );
                       },

@@ -260,10 +260,10 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.account_balance_wallet_outlined,
                                 size: 19,
-                                color: AppColors.primary,
+                                color: context.palette.brandInk,
                               ),
                               const SizedBox(width: 8),
                               Text(
@@ -345,8 +345,8 @@ class _CartLineRow extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   formatCurrency(line.item.price),
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: context.palette.brandInk,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -403,10 +403,10 @@ class _EmptyCart extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.shopping_bag_outlined,
               size: 52,
-              color: AppColors.muted,
+              color: context.palette.inkSecondary,
             ),
             const SizedBox(height: 15),
             Text(

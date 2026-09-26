@@ -133,16 +133,16 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
   Widget _buildTopBanner(bool isMobile) {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.palette.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: Padding(
         padding: EdgeInsets.all(isMobile ? 12 : 16),
         child: Row(
           children: [
-            const Icon(Icons.functions, color: AppColors.primary, size: 28),
+            Icon(Icons.functions, color: context.palette.brandInk, size: 28),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -153,9 +153,9 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     'Automated letter grade mapping and credit weightage product.',
-                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                    style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                   ),
                 ],
               ),
@@ -224,9 +224,9 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
                       ),
                       Text(
                         'Earned Credits: $credits • Points: $points',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.muted,
+                          color: context.palette.inkSecondary,
                         ),
                       ),
                     ],
@@ -310,9 +310,9 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
   Widget _buildStudentBreakdownContent(bool isMobile) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,9 +349,9 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
                             ),
                             Text(
                               'Credits: ${r['credits']} • Marks: ${r['marks']}%',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.muted,
+                                color: context.palette.inkSecondary,
                               ),
                             ),
                           ],
@@ -444,9 +444,9 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -475,14 +475,14 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
                 ),
                 subtitle: Text(
                   'Range: ${g['range']}',
-                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                 ),
                 trailing: Text(
                   'GP: ${g['gp']}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
-                    color: AppColors.primary,
+                    color: context.palette.brandInk,
                   ),
                 ),
               );

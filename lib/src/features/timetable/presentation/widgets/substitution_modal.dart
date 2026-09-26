@@ -62,9 +62,9 @@ class _SubstitutionModalState extends State<SubstitutionModal> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.swap_horiz, color: AppColors.primary),
+          Icon(Icons.swap_horiz, color: context.palette.brandInk),
           SizedBox(width: 8),
           Expanded(child: Text('Request Faculty Substitution', softWrap: true)),
         ],
@@ -172,7 +172,10 @@ class _SubstitutionModalState extends State<SubstitutionModal> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+          style: FilledButton.styleFrom(
+            backgroundColor: context.palette.brand,
+            foregroundColor: context.palette.onBrand,
+          ),
           onPressed: _submit,
           child: const Text('Submit Request'),
         ),

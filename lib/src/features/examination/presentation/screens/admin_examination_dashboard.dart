@@ -28,18 +28,18 @@ class AdminExaminationDashboard extends StatelessWidget {
             children: [
               _buildAdminHeaderCard(context, isMobile),
               SizedBox(height: isMobile ? 16 : 24),
-              const Text(
+              Text(
                 'Examination Cell Control Portal',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
+                  color: context.palette.ink,
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Access consolidated modules for exam management, student eligibility, marks processing, and institution analytics.',
-                style: TextStyle(fontSize: 12, color: AppColors.muted),
+                style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
               ),
               const SizedBox(height: 16),
               GridView.count(
@@ -55,7 +55,7 @@ class AdminExaminationDashboard extends StatelessWidget {
                     title: 'Exam Management',
                     subtitle: 'Config, Schedule & Conduct',
                     icon: Icons.calendar_month_outlined,
-                    color: AppColors.primary,
+                    color: context.palette.brandInk,
                     badgeText: '14 Active',
                     onTap: () => onNavigateToFeature(0),
                   ),
@@ -64,7 +64,10 @@ class AdminExaminationDashboard extends StatelessWidget {
                     title: 'Student Management',
                     subtitle: 'Eligibility, Fees & Tickets',
                     icon: Icons.school_outlined,
-                    color: const Color(0xFF1565C0),
+                    color: context.adaptive(
+                      light: const Color(0xFF1565C0),
+                      dark: const Color(0xFF90CAF9),
+                    ),
                     badgeText: '1,420 Checked',
                     onTap: () => onNavigateToFeature(1),
                   ),
@@ -73,7 +76,10 @@ class AdminExaminationDashboard extends StatelessWidget {
                     title: 'Marks & Results',
                     subtitle: 'Entry, Moderation & GPA',
                     icon: Icons.edit_note_outlined,
-                    color: const Color(0xFF6A1B9A),
+                    color: context.adaptive(
+                      light: const Color(0xFF6A1B9A),
+                      dark: const Color(0xFFCE93D8),
+                    ),
                     badgeText: '08 Pending',
                     onTap: () => onNavigateToFeature(2),
                   ),
@@ -82,7 +88,10 @@ class AdminExaminationDashboard extends StatelessWidget {
                     title: 'Reports & Analytics',
                     subtitle: 'Pass Rates & AI Insights',
                     icon: Icons.assessment_outlined,
-                    color: const Color(0xFFC62828),
+                    color: context.adaptive(
+                      light: const Color(0xFFC62828),
+                      dark: const Color(0xFFEF9A9A),
+                    ),
                     badgeText: 'Export Ready',
                     onTap: () => onNavigateToFeature(3),
                   ),
@@ -187,10 +196,10 @@ class AdminExaminationDashboard extends StatelessWidget {
   }) {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.palette.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: InkWell(
         onTap: onTap,
@@ -237,10 +246,10 @@ class AdminExaminationDashboard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.ink,
+                      color: context.palette.ink,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -248,9 +257,9 @@ class AdminExaminationDashboard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.muted,
+                      color: context.palette.inkSecondary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

@@ -133,7 +133,12 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              QrImageView(data: charge.qrPayload!, size: 220),
+              QrImageView(
+                data: charge.qrPayload!,
+                size: 220,
+                // Payment QR stays dark-on-white in both themes.
+                backgroundColor: Colors.white,
+              ),
               const SizedBox(height: 12),
               Text(
                 charge.name,
@@ -194,7 +199,7 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 130),
         children: [
           CanteenSurface(
-            color: const Color(0xFFEFE9FF),
+            color: context.adaptive(light: const Color(0xFFEFE9FF), dark: const Color(0x2E5B22FF)),
             child: Row(
               children: [
                 const CircleAvatar(
@@ -206,9 +211,9 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Wash rate',
-                        style: TextStyle(color: AppColors.muted),
+                        style: TextStyle(color: context.palette.inkSecondary),
                       ),
                       Text(
                         widget.store.laundryPricePerKg > 0
@@ -345,9 +350,9 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
             style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 3),
-          const Text(
+          Text(
             'Saved QR charges and their latest payment status',
-            style: TextStyle(color: AppColors.muted, fontSize: 13),
+            style: TextStyle(color: context.palette.inkSecondary, fontSize: 13),
           ),
           const SizedBox(height: 10),
           if (widget.store.laundryCharges.isEmpty)
@@ -370,7 +375,7 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
                         charge.serviceType == LaundryServiceType.wash
                             ? Icons.local_laundry_service_outlined
                             : Icons.iron_outlined,
-                        color: AppColors.primary,
+                        color: context.palette.brandInk,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -385,13 +390,13 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
                             ),
                             Text(
                               '${charge.quantity.toStringAsFixed(charge.unitLabel == 'kg' ? 1 : 0)} ${charge.unitLabel} · ${charge.status.name}',
-                              style: const TextStyle(color: AppColors.muted),
+                              style: TextStyle(color: context.palette.inkSecondary),
                             ),
                             const SizedBox(height: 3),
                             Text(
                               _historyTimestamp(charge.createdAt),
-                              style: const TextStyle(
-                                color: AppColors.muted,
+                              style: TextStyle(
+                                color: context.palette.inkSecondary,
                                 fontSize: 12,
                               ),
                             ),

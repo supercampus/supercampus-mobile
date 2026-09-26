@@ -83,16 +83,16 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
       return Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.palette.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.palette.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.school, color: AppColors.primary, size: 24),
+                Icon(Icons.school, color: context.palette.brandInk, size: 24),
                 SizedBox(width: 8),
                 Text(
                   'Degree Audit Gatekeeper',
@@ -118,15 +118,15 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Row(
         children: [
-          const Icon(Icons.school, color: AppColors.primary, size: 28),
+          Icon(Icons.school, color: context.palette.brandInk, size: 28),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -136,7 +136,7 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
                 ),
                 Text(
                   'Verify academic progress, mandatory/elective credits, CGPA threshold, and clearance holds.',
-                  style: TextStyle(fontSize: 12, color: AppColors.muted),
+                  style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
                 ),
               ],
             ),
@@ -162,9 +162,15 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
     return Container(
       padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
+        color: context.adaptive(
+          light: Colors.green.shade50,
+          dark: const Color(0x2E4CAF50),
+        ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.shade300),
+        border: Border.all(color: context.adaptive(
+            light: Colors.green.shade300,
+            dark: const Color(0x664CAF50),
+          )),
       ),
       child: Row(
         children: [
@@ -184,7 +190,7 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
                 ),
                 Text(
                   '${_auditResult['name']} ($_searchRoll)',
-                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                 ),
               ],
             ),
@@ -231,9 +237,9 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
     return Container(
       padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,7 +273,7 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
                 ),
                 subtitle: Text(
                   c['desc'] as String,
-                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                 ),
               );
             },
@@ -286,9 +292,9 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
     return Container(
       padding: EdgeInsets.all(isMobile ? 14 : 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -308,9 +314,12 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
                   child: CircularProgressIndicator(
                     value: progress,
                     strokeWidth: 10,
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.primary,
+                    backgroundColor: context.adaptive(
+                      light: Colors.grey.shade200,
+                      dark: const Color(0xFF2B2C34),
+                    ),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      context.palette.brandInk,
                     ),
                   ),
                 ),
@@ -324,9 +333,9 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const Text(
+                    Text(
                       'Credits',
-                      style: TextStyle(fontSize: 11, color: AppColors.muted),
+                      style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                     ),
                   ],
                 ),
@@ -341,14 +350,17 @@ class _DegreeAuditScreenState extends State<DegreeAuditScreen> {
           const SizedBox(height: 4),
           LinearProgressIndicator(
             value: (_auditResult['cgpa'] as double) / 10.0,
-            backgroundColor: Colors.grey.shade200,
+            backgroundColor: context.adaptive(
+              light: Colors.grey.shade200,
+              dark: const Color(0xFF2B2C34),
+            ),
             color: Colors.green,
             minHeight: 8,
           ),
           const SizedBox(height: 4),
           Text(
             'CGPA: ${_auditResult['cgpa']} / 10.00',
-            style: const TextStyle(fontSize: 11, color: AppColors.muted),
+            style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
           ),
         ],
       ),

@@ -36,7 +36,7 @@ class _HostelInventoryScreenState extends State<HostelInventoryScreen> {
         children: [
           // Hostel Selector Header
           Container(
-            color: Colors.white,
+            color: context.palette.surface,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
@@ -49,9 +49,9 @@ class _HostelInventoryScreenState extends State<HostelInventoryScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.canvas,
+                      color: context.palette.canvas,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: context.palette.border),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<HostelBuilding>(
@@ -101,7 +101,7 @@ class _HostelInventoryScreenState extends State<HostelInventoryScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -113,10 +113,10 @@ class _HostelInventoryScreenState extends State<HostelInventoryScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: context.palette.brandInk.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.location_city, color: AppColors.primary),
+                  child: Icon(Icons.location_city, color: context.palette.brandInk),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -139,10 +139,10 @@ class _HostelInventoryScreenState extends State<HostelInventoryScreen> {
                 children: [
                   Text(
                     'Floor ${floor.floorNumber}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
-                      color: AppColors.muted,
+                      color: context.palette.inkSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -221,7 +221,7 @@ class _HostelInventoryScreenState extends State<HostelInventoryScreen> {
                 margin: const EdgeInsets.only(bottom: 4),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isOcc ? Colors.grey.shade200 : Colors.green.shade50,
+                  color: isOcc ? context.adaptive(light: Colors.grey.shade200, dark: const Color(0xFF2B2C34)) : context.adaptive(light: Colors.green.shade50, dark: Colors.green.withValues(alpha: 0.18)),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Row(
@@ -229,7 +229,7 @@ class _HostelInventoryScreenState extends State<HostelInventoryScreen> {
                     Icon(
                       Icons.bed_outlined,
                       size: 12,
-                      color: isOcc ? Colors.grey.shade700 : Colors.green.shade800,
+                      color: isOcc ? context.adaptive(light: Colors.grey.shade700, dark: const Color(0xFFA3A5B0)) : context.adaptive(light: Colors.green.shade800, dark: Colors.green.shade200),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -238,7 +238,7 @@ class _HostelInventoryScreenState extends State<HostelInventoryScreen> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: isOcc ? FontWeight.normal : FontWeight.bold,
-                          color: isOcc ? Colors.grey.shade800 : Colors.green.shade800,
+                          color: isOcc ? context.adaptive(light: Colors.grey.shade800, dark: const Color(0xFFE0E1E6)) : context.adaptive(light: Colors.green.shade800, dark: Colors.green.shade200),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

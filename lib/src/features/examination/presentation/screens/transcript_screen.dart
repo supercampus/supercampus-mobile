@@ -38,18 +38,18 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
       return Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.palette.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.palette.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
                 Icon(
                   Icons.description_outlined,
-                  color: AppColors.primary,
+                  color: context.palette.brandInk,
                   size: 24,
                 ),
                 SizedBox(width: 8),
@@ -64,8 +64,8 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.palette.brand,
+                  foregroundColor: context.palette.onBrand,
                 ),
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -89,19 +89,19 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.description_outlined,
-            color: AppColors.primary,
+            color: context.palette.brandInk,
             size: 28,
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -111,15 +111,15 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
                 ),
                 Text(
                   'Generate digitally signed official transcripts with cryptographic QR verification.',
-                  style: TextStyle(fontSize: 12, color: AppColors.muted),
+                  style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
                 ),
               ],
             ),
           ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: context.palette.brand,
+              foregroundColor: context.palette.onBrand,
             ),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -140,9 +140,9 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
     return Container(
       padding: EdgeInsets.all(isMobile ? 14 : 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -159,27 +159,27 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'SUPERCAMPUS UNIVERSITY',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.0,
-                    color: AppColors.primary,
+                    color: context.palette.brandInk,
                   ),
                 ),
-                const Text(
+                Text(
                   'Office of the Controller of Examinations',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
+                    color: context.palette.ink,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Transcript ID: SC-TR-2026-9041 • Date: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
-                  style: const TextStyle(fontSize: 10, color: AppColors.muted),
+                  style: TextStyle(fontSize: 10, color: context.palette.inkSecondary),
                 ),
               ],
             ),
@@ -187,7 +187,7 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -196,7 +196,7 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
-                        color: AppColors.primary,
+                        color: context.palette.brandInk,
                       ),
                     ),
                     Text(
@@ -204,12 +204,12 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.ink,
+                        color: context.palette.ink,
                       ),
                     ),
                     Text(
                       'Official Academic Record & Transcript of Marks',
-                      style: TextStyle(fontSize: 11, color: AppColors.muted),
+                      style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                     ),
                   ],
                 ),
@@ -225,9 +225,9 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
                     ),
                     Text(
                       'Issue Date: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.muted,
+                        color: context.palette.inkSecondary,
                       ),
                     ),
                   ],
@@ -241,7 +241,7 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.canvas,
+              color: context.palette.canvas,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Column(
@@ -278,10 +278,10 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
             scrollDirection: Axis.horizontal,
             child: Table(
               defaultColumnWidth: const IntrinsicColumnWidth(),
-              border: TableBorder.all(color: AppColors.border, width: 1),
-              children: const [
+              border: TableBorder.all(color: context.palette.border, width: 1),
+              children: [
                 TableRow(
-                  decoration: BoxDecoration(color: AppColors.canvas),
+                  decoration: BoxDecoration(color: context.palette.canvas),
                   children: [
                     Padding(
                       padding: EdgeInsets.all(6),
@@ -424,9 +424,10 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
                 data: 'VERIFY-TRANSCRIPT-SC-TR-2026-9041-HASH-e9f3b2a0',
                 version: QrVersions.auto,
                 size: isMobile ? 65.0 : 80.0,
+                backgroundColor: Colors.white,
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -439,11 +440,11 @@ class _TranscriptScreenState extends State<TranscriptScreen> {
                     ),
                     Text(
                       'SHA-256 Hash Verified',
-                      style: TextStyle(fontSize: 10, color: AppColors.muted),
+                      style: TextStyle(fontSize: 10, color: context.palette.inkSecondary),
                     ),
                     Text(
                       'https://supercampus.edu/verify',
-                      style: TextStyle(fontSize: 10, color: AppColors.primary),
+                      style: TextStyle(fontSize: 10, color: context.palette.brandInk),
                     ),
                   ],
                 ),

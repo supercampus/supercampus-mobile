@@ -90,18 +90,18 @@ class _NotificationsAlertsScreenState extends State<NotificationsAlertsScreen> {
   Widget _buildHeaderBanner() {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.palette.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
-      child: const Padding(
+      child: Padding(
         padding: EdgeInsets.all(16),
         child: Row(
           children: [
             Icon(
               Icons.notifications_active_outlined,
-              color: AppColors.primary,
+              color: context.palette.brandInk,
               size: 28,
             ),
             SizedBox(width: 12),
@@ -115,7 +115,7 @@ class _NotificationsAlertsScreenState extends State<NotificationsAlertsScreen> {
                   ),
                   Text(
                     'Automated alerts dispatched across Portal, Mobile Push, and Email channels.',
-                    style: TextStyle(fontSize: 12, color: AppColors.muted),
+                    style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
                   ),
                 ],
               ),
@@ -130,9 +130,9 @@ class _NotificationsAlertsScreenState extends State<NotificationsAlertsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,11 +160,11 @@ class _NotificationsAlertsScreenState extends State<NotificationsAlertsScreen> {
                 ),
                 subtitle: Text(
                   'Recipients: ${ev['recipients']}\nChannels: ${ev['channels']}',
-                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                 ),
                 trailing: Switch(
                   value: ev['active'],
-                  activeTrackColor: AppColors.primary,
+                  activeTrackColor: context.palette.brandInk,
                   onChanged: (val) {
                     setState(() => ev['active'] = val);
                     // TODO: Toggle notification rule POST /api/v1/examination/notifications/rule
@@ -182,9 +182,9 @@ class _NotificationsAlertsScreenState extends State<NotificationsAlertsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,11 +217,11 @@ class _NotificationsAlertsScreenState extends State<NotificationsAlertsScreen> {
                 ),
                 subtitle: Text(
                   '${log['recipient']} • ${log['channel']}',
-                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                 ),
                 trailing: Text(
                   log['time'],
-                  style: const TextStyle(fontSize: 10, color: AppColors.muted),
+                  style: TextStyle(fontSize: 10, color: context.palette.inkSecondary),
                 ),
               );
             },

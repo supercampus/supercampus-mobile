@@ -25,7 +25,7 @@ Future<T?> showHomeSheet<T>({
       ),
       child: Material(
         key: const ValueKey('home-sheet-surface'),
-        color: Theme.of(context).colorScheme.surface,
+        color: context.palette.surfaceRaised,
         surfaceTintColor: Colors.transparent,
         clipBehavior: Clip.antiAlias,
         shape: const RoundedRectangleBorder(
@@ -287,7 +287,7 @@ class _ModuleListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = available ? module.color : AppColors.muted;
+    final color = available ? module.color : context.palette.inkSecondary;
     return Material(
       color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(14),
@@ -344,8 +344,8 @@ class _ModuleListCard extends StatelessWidget {
               Icon(
                 available ? Icons.chevron_right : Icons.lock_outline,
                 color: available
-                    ? AppColors.muted
-                    : AppColors.muted.withValues(alpha: .75),
+                    ? context.palette.inkSecondary
+                    : context.palette.inkSecondary.withValues(alpha: .75),
                 size: 21,
               ),
             ],
@@ -383,7 +383,7 @@ class InsightListSheet extends StatelessWidget {
       separatorBuilder: (context, index) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
         final insight = insights[i];
-        final accent = toneColor(insight.tone);
+        final accent = toneColor(insight.tone, dark: context.isDarkTheme);
 
         return Container(
           padding: const EdgeInsets.all(14),
@@ -431,11 +431,12 @@ class InsightListSheet extends StatelessWidget {
   }
 }
 
-Color toneColor(InsightTone tone) => switch (tone) {
-  InsightTone.positive => AppColors.success,
-  InsightTone.caution => const Color(0xFFB77500),
-  InsightTone.urgent => const Color(0xFFC62828),
-  InsightTone.neutral => AppColors.violet,
+Color toneColor(InsightTone tone, {bool dark = false}) => switch (tone) {
+  InsightTone.positive => dark ? AppPalette.dark.success : AppColors.success,
+  InsightTone.caution =>
+    dark ? const Color(0xFFF0B84D) : const Color(0xFFB77500),
+  InsightTone.urgent => dark ? const Color(0xFFFCA5A5) : const Color(0xFFC62828),
+  InsightTone.neutral => dark ? AppPalette.dark.brandInk : AppColors.violet,
 };
 
 /// The first profile level: identity card, Details, and Settings only.
@@ -1274,10 +1275,10 @@ class _HelpdeskSheetState extends State<_HelpdeskSheet> {
         label: const Text('Create support ticket'),
       ),
       const SizedBox(height: 18),
-      const Text(
+      Text(
         'MY TICKETS',
         style: TextStyle(
-          color: AppColors.muted,
+          color: context.palette.inkSecondary,
           letterSpacing: 1.2,
           fontSize: 11,
         ),
@@ -1298,12 +1299,15 @@ class _SupportTicketCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = ticket.status == 'Resolved'
-        ? AppColors.success
-        : const Color(0xFFB77500);
+        ? context.palette.success
+        : context.adaptive(
+            light: const Color(0xFFB77500),
+            dark: const Color(0xFFF0B84D),
+          );
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -1504,10 +1508,10 @@ class _StudentLeaveSheetState extends State<_StudentLeaveSheet> {
         label: const Text('Apply for leave'),
       ),
       const SizedBox(height: 18),
-      const Text(
+      Text(
         'REQUEST HISTORY',
         style: TextStyle(
-          color: AppColors.muted,
+          color: context.palette.inkSecondary,
           letterSpacing: 1.2,
           fontSize: 11,
         ),
@@ -1528,12 +1532,15 @@ class _LeaveRequestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = request.status == 'Approved'
-        ? AppColors.success
-        : const Color(0xFFB77500);
+        ? context.palette.success
+        : context.adaptive(
+            light: const Color(0xFFB77500),
+            dark: const Color(0xFFF0B84D),
+          );
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(

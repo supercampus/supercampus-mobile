@@ -29,9 +29,9 @@ class StudentExamScheduleScreen extends StatelessWidget {
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Published by Campus Timetable Management',
-          style: TextStyle(color: AppColors.muted),
+          style: TextStyle(color: context.palette.inkSecondary),
         ),
         const SizedBox(height: 18),
         for (final entry in entries) _ExamScheduleCard(entry: entry),
@@ -71,18 +71,20 @@ class _ExamScheduleCard extends StatelessWidget {
                 ),
                 Text(
                   entry.subjectCode,
-                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                  style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            _detail(Icons.event_outlined, dateLabel),
-            _detail(Icons.schedule_outlined, entry.timeSlot),
+            _detail(context, Icons.event_outlined, dateLabel),
+            _detail(context, Icons.schedule_outlined, entry.timeSlot),
             _detail(
+              context,
               Icons.room_outlined,
               '${entry.hallNumber ?? 'Venue pending'} · Seat ${entry.seatNumber ?? 'pending'}',
             ),
             _detail(
+              context,
               Icons.assignment_outlined,
               entry.examTitle ?? 'Published examination',
             ),
@@ -92,11 +94,11 @@ class _ExamScheduleCard extends StatelessWidget {
     );
   }
 
-  Widget _detail(IconData icon, String text) => Padding(
+  Widget _detail(BuildContext context, IconData icon, String text) => Padding(
     padding: const EdgeInsets.only(bottom: 7),
     child: Row(
       children: [
-        Icon(icon, size: 17, color: AppColors.primary),
+        Icon(icon, size: 17, color: context.palette.brandInk),
         const SizedBox(width: 8),
         Expanded(child: Text(text, style: const TextStyle(fontSize: 12))),
       ],

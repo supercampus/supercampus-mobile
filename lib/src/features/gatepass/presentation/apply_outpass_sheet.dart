@@ -71,8 +71,11 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: Theme.of(context).colorScheme.copyWith(
-            primary: AppColors.primary,
-            onPrimary: Colors.white,
+            primary: context.palette.brandInk,
+            onPrimary: context.adaptive(
+              light: Colors.white,
+              dark: context.palette.inkInverse,
+            ),
           ),
         ),
         child: child!,
@@ -85,8 +88,11 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: Theme.of(context).colorScheme.copyWith(
-            primary: AppColors.primary,
-            onPrimary: Colors.white,
+            primary: context.palette.brandInk,
+            onPrimary: context.adaptive(
+              light: Colors.white,
+              dark: context.palette.inkInverse,
+            ),
           ),
         ),
         child: child!,
@@ -155,8 +161,8 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.ink,
+        backgroundColor: context.palette.surface,
+        foregroundColor: context.palette.ink,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         title: Row(
@@ -179,7 +185,10 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1B2E),
+                color: context.adaptive(
+                  light: const Color(0xFF1E1B2E),
+                  dark: context.palette.surfaceRaised,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               textStyle: const TextStyle(
@@ -323,7 +332,7 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
                   FilledButton(
                     onPressed: _submitting ? null : _submit,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.gateBlue,
+                      backgroundColor: context.palette.brand,
                     ),
                     child: _submitting
                         ? const SizedBox.square(

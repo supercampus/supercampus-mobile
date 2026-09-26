@@ -162,9 +162,9 @@ class _SetupPinSheetState extends State<SetupPinSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _dragHandle(),
+            _dragHandle(context),
             const SizedBox(height: 20),
-            const Icon(Icons.lock_outline, color: AppColors.primary, size: 32),
+            Icon(Icons.lock_outline, color: context.palette.brandInk, size: 32),
             const SizedBox(height: 12),
             Text(
               _isConfirming ? 'Confirm your PIN' : 'Create your PIN',
@@ -175,7 +175,7 @@ class _SetupPinSheetState extends State<SetupPinSheet> {
               _isConfirming
                   ? 'Re-enter the same 4-digit PIN'
                   : 'Choose a 4-digit PIN for wallet payments',
-              style: const TextStyle(color: AppColors.muted, fontSize: 13),
+              style: TextStyle(color: context.palette.inkSecondary, fontSize: 13),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -201,7 +201,7 @@ class _SetupPinSheetState extends State<SetupPinSheet> {
               const SizedBox(height: 8),
               Text(
                 _error!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
+                style: TextStyle(color: context.adaptive(light: Colors.red, dark: const Color(0xFFF87171)), fontSize: 13),
               ),
             ],
             const SizedBox(height: 14),
@@ -362,16 +362,16 @@ class _ChangePinSheetState extends State<ChangePinSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _dragHandle(),
+            _dragHandle(context),
             const SizedBox(height: 20),
             const Text(
               'Change wallet PIN',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Choose how to verify your identity',
-              style: TextStyle(color: AppColors.muted, fontSize: 13),
+              style: TextStyle(color: context.palette.inkSecondary, fontSize: 13),
             ),
             const SizedBox(height: 20),
             _methodTile(
@@ -412,7 +412,7 @@ class _ChangePinSheetState extends State<ChangePinSheet> {
   }) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: AppColors.primary),
+      leading: Icon(icon, color: context.palette.brandInk),
       title: Text(label),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
@@ -426,7 +426,7 @@ class _ChangePinSheetState extends State<ChangePinSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _dragHandle(),
+            _dragHandle(context),
             const SizedBox(height: 20),
             const Text(
               'Enter current PIN',
@@ -436,7 +436,7 @@ class _ChangePinSheetState extends State<ChangePinSheet> {
             _PinDots(filledCount: _verifyPin.length),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              Text(_error!, style: TextStyle(color: context.adaptive(light: Colors.red, dark: const Color(0xFFF87171)), fontSize: 13)),
             ],
             const SizedBox(height: 14),
             _Numpad(onDigit: _enterVerifyDigit, onDelete: _deleteVerifyDigit),
@@ -460,7 +460,7 @@ class _ChangePinSheetState extends State<ChangePinSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _dragHandle(),
+            _dragHandle(context),
             const SizedBox(height: 20),
             Text(
               isHint ? 'Enter your hint word' : 'Enter account password',
@@ -491,7 +491,7 @@ class _ChangePinSheetState extends State<ChangePinSheet> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              Text(_error!, style: TextStyle(color: context.adaptive(light: Colors.red, dark: const Color(0xFFF87171)), fontSize: 13)),
             ],
             const SizedBox(height: 20),
             SizedBox(
@@ -527,7 +527,7 @@ class _ChangePinSheetState extends State<ChangePinSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _dragHandle(),
+            _dragHandle(context),
             const SizedBox(height: 20),
             Text(
               isConfirm ? 'Confirm new PIN' : 'Enter new PIN',
@@ -537,7 +537,7 @@ class _ChangePinSheetState extends State<ChangePinSheet> {
             _PinDots(filledCount: currentPin.length),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              Text(_error!, style: TextStyle(color: context.adaptive(light: Colors.red, dark: const Color(0xFFF87171)), fontSize: 13)),
             ],
             const SizedBox(height: 14),
             _Numpad(onDigit: _enterNewDigit, onDelete: _deleteNewDigit),
@@ -578,7 +578,7 @@ Future<String?> showVerifyPinSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surfaceRaised,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
     ),
@@ -595,7 +595,7 @@ Future<({String pinHash, String? hint})?> showSetupPinSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surfaceRaised,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
     ),
@@ -620,7 +620,7 @@ Future<({
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: Colors.white,
+    backgroundColor: context.palette.surfaceRaised,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
     ),
@@ -667,12 +667,12 @@ class _PinScaffold extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _dragHandle(),
+            _dragHandle(context),
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.lock_outline, color: AppColors.primary),
+                Icon(Icons.lock_outline, color: context.palette.brandInk),
                 const SizedBox(width: 10),
                 Text(
                   title,
@@ -689,9 +689,9 @@ class _PinScaffold extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.canvas,
+                  color: context.palette.canvas,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.palette.border),
                 ),
                 child: Column(
                   children: [
@@ -716,7 +716,7 @@ class _PinScaffold extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 error!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
+                style: TextStyle(color: context.adaptive(light: Colors.red, dark: const Color(0xFFF87171)), fontSize: 13),
               ),
             ],
             const SizedBox(height: 14),
@@ -742,10 +742,10 @@ class _PinDots extends StatelessWidget {
           height: 48,
           margin: const EdgeInsets.symmetric(horizontal: 7),
           decoration: BoxDecoration(
-            color: index < filledCount ? AppColors.primary : Colors.white,
+            color: index < filledCount ? context.palette.brandInk : context.palette.surface,
             shape: BoxShape.circle,
             border: Border.all(
-              color: index < filledCount ? AppColors.primary : AppColors.border,
+              color: index < filledCount ? context.palette.brandInk : context.palette.border,
               width: 2,
             ),
           ),
@@ -817,8 +817,8 @@ class _PinKey extends StatelessWidget {
         onPressed: onTap,
         child: Text(
           label,
-          style: const TextStyle(
-            color: AppColors.ink,
+          style: TextStyle(
+            color: context.palette.ink,
             fontSize: 26,
             fontWeight: FontWeight.w500,
           ),
@@ -828,11 +828,11 @@ class _PinKey extends StatelessWidget {
   }
 }
 
-Widget _dragHandle() => Container(
+Widget _dragHandle(BuildContext context) => Container(
       width: 42,
       height: 4,
       decoration: BoxDecoration(
-        color: AppColors.border,
+        color: context.palette.border,
         borderRadius: BorderRadius.circular(2),
       ),
     );

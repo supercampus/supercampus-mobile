@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../timetable_tones.dart';
 
 class WeeklyDateStrip extends StatefulWidget {
   const WeeklyDateStrip({
@@ -17,6 +18,8 @@ class WeeklyDateStrip extends StatefulWidget {
 }
 
 class _WeeklyDateStripState extends State<WeeklyDateStrip> {
+  AppPalette get _p => context.palette;
+
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -99,18 +102,14 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Row(
             children: [
-              const Icon(
-                Icons.calendar_month_rounded,
-                size: 18,
-                color: AppColors.primary,
-              ),
+              Icon(Icons.calendar_month_rounded, size: 18, color: _p.brandInk),
               const SizedBox(width: 8),
               Text(
                 monthYearLabel,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
+                  color: _p.ink,
                   letterSpacing: 0.2,
                 ),
               ),
@@ -118,15 +117,15 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: _p.brandInk.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '$daysInMonth Days',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                    color: _p.brandInk,
                   ),
                 ),
               ),
@@ -152,10 +151,10 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
                     horizontal: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _p.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.3),
+                      color: _p.brandInk.withValues(alpha: 0.3),
                       width: 1.2,
                     ),
                     boxShadow: [
@@ -166,14 +165,14 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
                       ),
                     ],
                   ),
-                  child: const Column(
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.chevron_left_rounded,
                         size: 20,
-                        color: AppColors.primary,
+                        color: _p.brandInk,
                       ),
                       SizedBox(height: 4),
                       Text(
@@ -182,7 +181,7 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: _p.brandInk,
                           height: 1.1,
                         ),
                       ),
@@ -218,18 +217,16 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
                         horizontal: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary : Colors.white,
+                        color: isSelected ? _p.brand : _p.surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isSelected
-                              ? AppColors.primary
-                              : Colors.grey.shade200,
+                          color: isSelected ? _p.brandInk : context.grey(200),
                           width: isSelected ? 1.5 : 1.0,
                         ),
                         boxShadow: [
                           BoxShadow(
                             color: isSelected
-                                ? AppColors.primary.withValues(alpha: 0.35)
+                                ? _p.brandInk.withValues(alpha: 0.35)
                                 : Colors.black.withValues(alpha: 0.04),
                             blurRadius: isSelected ? 10 : 4,
                             offset: Offset(0, isSelected ? 5 : 2),
@@ -246,7 +243,7 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
                               fontWeight: FontWeight.w600,
                               color: isSelected
                                   ? Colors.white.withValues(alpha: 0.8)
-                                  : AppColors.muted,
+                                  : _p.inkSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -255,7 +252,7 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.white : AppColors.ink,
+                              color: isSelected ? Colors.white : _p.ink,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -266,7 +263,7 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
                               fontWeight: FontWeight.w500,
                               color: isSelected
                                   ? Colors.white.withValues(alpha: 0.75)
-                                  : AppColors.muted,
+                                  : _p.inkSecondary,
                             ),
                           ),
                         ],
@@ -287,10 +284,10 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
                     horizontal: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: _p.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.3),
+                      color: _p.brandInk.withValues(alpha: 0.3),
                       width: 1.2,
                     ),
                     boxShadow: [
@@ -301,14 +298,14 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
                       ),
                     ],
                   ),
-                  child: const Column(
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.chevron_right_rounded,
                         size: 20,
-                        color: AppColors.primary,
+                        color: _p.brandInk,
                       ),
                       SizedBox(height: 4),
                       Text(
@@ -317,7 +314,7 @@ class _WeeklyDateStripState extends State<WeeklyDateStrip> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: _p.brandInk,
                           height: 1.1,
                         ),
                       ),

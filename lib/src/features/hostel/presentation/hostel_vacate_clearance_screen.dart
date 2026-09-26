@@ -77,17 +77,17 @@ class _HostelVacateClearanceScreenState
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isCompleted ? Colors.grey.shade100 : Colors.blue.shade50,
+                color: isCompleted ? context.adaptive(light: Colors.grey.shade100, dark: const Color(0xFF1C1D23)) : context.adaptive(light: Colors.blue.shade50, dark: Colors.blue.withValues(alpha: 0.18)),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isCompleted ? Colors.grey.shade300 : Colors.blue.shade300,
+                  color: isCompleted ? context.adaptive(light: Colors.grey.shade300, dark: const Color(0xFF3A3B44)) : context.adaptive(light: Colors.blue.shade300, dark: Colors.blue.withValues(alpha: 0.45)),
                 ),
               ),
               child: Row(
                 children: [
                   Icon(
                     isCompleted ? Icons.check_circle : Icons.assignment_turned_in,
-                    color: isCompleted ? Colors.grey.shade700 : Colors.blue.shade800,
+                    color: isCompleted ? context.adaptive(light: Colors.grey.shade700, dark: const Color(0xFFA3A5B0)) : context.adaptive(light: Colors.blue.shade800, dark: Colors.blue.shade200),
                     size: 32,
                   ),
                   const SizedBox(width: 12),
@@ -102,8 +102,8 @@ class _HostelVacateClearanceScreenState
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: isCompleted
-                                ? Colors.grey.shade900
-                                : Colors.blue.shade900,
+                                ? context.adaptive(light: Colors.grey.shade900, dark: const Color(0xFFE0E1E6))
+                                : context.adaptive(light: Colors.blue.shade900, dark: Colors.blue.shade200),
                           ),
                         ),
                         Text(
@@ -138,9 +138,9 @@ class _HostelVacateClearanceScreenState
                   ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Every item must be verified before final check-out can be recorded.',
-              style: TextStyle(color: AppColors.muted, fontSize: 12),
+              style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
             ),
             const SizedBox(height: 12),
             _buildChecklistTile('1. Room Cleared & Cleaned', roomCleared, (v) {
@@ -200,8 +200,8 @@ class _HostelVacateClearanceScreenState
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red.shade700,
-                    side: BorderSide(color: Colors.red.shade300),
+                    foregroundColor: context.adaptive(light: Colors.red.shade700, dark: Colors.red.shade200),
+                    side: BorderSide(color: context.adaptive(light: Colors.red.shade300, dark: Colors.red.withValues(alpha: 0.45))),
                   ),
                   onPressed: () async {
                     final messenger = ScaffoldMessenger.of(context);
@@ -239,15 +239,15 @@ class _HostelVacateClearanceScreenState
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Table(
-        border: TableBorder.symmetric(inside: const BorderSide(color: AppColors.border)),
+        border: TableBorder.symmetric(inside: BorderSide(color: context.palette.border)),
         children: [
-          const TableRow(
-            decoration: BoxDecoration(color: AppColors.canvas),
+          TableRow(
+            decoration: BoxDecoration(color: context.palette.canvas),
             children: [
               Padding(padding: EdgeInsets.all(8), child: Text('Asset Item', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
               Padding(padding: EdgeInsets.all(8), child: Text('Check-In', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
@@ -265,7 +265,14 @@ class _HostelVacateClearanceScreenState
                   padding: const EdgeInsets.all(8),
                   child: Text(
                     item['status']!,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: context.adaptive(
+                        light: Colors.green,
+                        dark: Colors.green.shade300,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -280,10 +287,10 @@ class _HostelVacateClearanceScreenState
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        color: value ? Colors.green.shade50 : Colors.white,
+        color: value ? context.adaptive(light: Colors.green.shade50, dark: Colors.green.withValues(alpha: 0.18)) : context.palette.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: value ? Colors.green.shade300 : AppColors.border,
+          color: value ? context.adaptive(light: Colors.green.shade300, dark: Colors.green.withValues(alpha: 0.45)) : context.palette.border,
         ),
       ),
       child: CheckboxListTile(
@@ -294,7 +301,7 @@ class _HostelVacateClearanceScreenState
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: value ? Colors.green.shade900 : AppColors.ink,
+            color: value ? context.adaptive(light: Colors.green.shade900, dark: Colors.green.shade200) : context.palette.ink,
           ),
         ),
         activeColor: Colors.green.shade700,

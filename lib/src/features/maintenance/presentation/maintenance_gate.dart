@@ -64,7 +64,7 @@ class _MaintenanceGateState extends State<MaintenanceGate> {
     if (!window.active || _administratorAccess) return widget.loginBuilder();
     final end = window.endsAt;
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: context.palette.canvas,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(28),
@@ -75,13 +75,16 @@ class _MaintenanceGateState extends State<MaintenanceGate> {
                 width: 104,
                 height: 104,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEDE7FF),
+                  color: context.adaptive(
+                    light: const Color(0xFFEDE7FF),
+                    dark: const Color(0xFF231F4A),
+                  ),
                   borderRadius: BorderRadius.circular(34),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.construction_rounded,
                   size: 52,
-                  color: AppColors.primary,
+                  color: context.palette.brandInk,
                 ),
               ),
               const SizedBox(height: 30),
@@ -99,7 +102,7 @@ class _MaintenanceGateState extends State<MaintenanceGate> {
                     ? 'We are making a few improvements. Please check back shortly.'
                     : window.message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.muted, height: 1.5),
+                style: TextStyle(color: context.palette.inkSecondary, height: 1.5),
               ),
               if (end != null) ...[
                 const SizedBox(height: 22),
@@ -109,9 +112,14 @@ class _MaintenanceGateState extends State<MaintenanceGate> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.palette.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE5DDF8)),
+                    border: Border.all(
+                      color: context.adaptive(
+                        light: const Color(0xFFE5DDF8),
+                        dark: context.palette.border,
+                      ),
+                    ),
                   ),
                   child: Text(
                     'Expected back by ${_format(end)}',

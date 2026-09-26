@@ -21,10 +21,15 @@ class LibraryQrScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF171717) : Colors.white;
-    final surfaceColor = isDark ? Colors.black : AppColors.canvas;
-    final textColor = isDark ? Colors.white : AppColors.ink;
-    final mutedColor = isDark ? Colors.white54 : AppColors.muted;
+    final p = context.palette;
+    final cardColor = p.surface;
+    final surfaceColor = p.canvas;
+    final textColor = p.ink;
+    final mutedColor = p.inkSecondary;
+    final dangerInk = context.adaptive(
+      light: const Color(0xFFB71C1C),
+      dark: const Color(0xFFFCA5A5),
+    );
     final badgeColor = isDark
         ? pass.status.badgeColorDark
         : pass.status.badgeColor;
@@ -53,9 +58,12 @@ class LibraryQrScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.local_library_outlined,
-                              color: Color(0xFF6D357F),
+                              color: context.adaptive(
+                                light: const Color(0xFF6D357F),
+                                dark: const Color(0xFFD8A5E8),
+                              ),
                               size: 22,
                             ),
                             const SizedBox(width: 8),
@@ -253,8 +261,8 @@ class LibraryQrScreen extends StatelessWidget {
                               Navigator.of(context).pop('cancelled');
                             },
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFB71C1C),
-                              side: const BorderSide(color: Color(0xFFB71C1C)),
+                              foregroundColor: dangerInk,
+                              side: BorderSide(color: dangerInk),
                               minimumSize: const Size(0, 50),
                             ),
                             icon: const Icon(Icons.close, size: 18),

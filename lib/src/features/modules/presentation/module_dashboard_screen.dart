@@ -466,7 +466,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surfaceRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -481,7 +481,10 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: ctx.adaptive(
+                    light: Colors.grey.shade300,
+                    dark: const Color(0xFF3A3B44),
+                  ),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -494,7 +497,14 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                     ? NetworkImage(widget.session.photoUrl!)
                     : null,
                 child: widget.session.photoUrl == null
-                    ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                    ? Icon(
+                        Icons.person,
+                        size: 40,
+                        color: ctx.adaptive(
+                          light: Colors.grey,
+                          dark: const Color(0xFF878995),
+                        ),
+                      )
                     : null,
               ),
               const SizedBox(height: 14),
@@ -512,7 +522,10 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                 widget.session.email,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade600,
+                  color: ctx.adaptive(
+                    light: Colors.grey.shade600,
+                    dark: const Color(0xFFA3A5B0),
+                  ),
                 ),
               ),
               if (widget.session.idNumber != null) ...[
@@ -521,7 +534,10 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                   widget.session.idNumber!,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade500,
+                    color: ctx.adaptive(
+                      light: Colors.grey.shade500,
+                      dark: const Color(0xFF878995),
+                    ),
                   ),
                 ),
               ],
@@ -530,9 +546,17 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF4F6F9),
+                    color: ctx.adaptive(
+                      light: const Color(0xFFF4F6F9),
+                      dark: ctx.palette.surfaceSunken,
+                    ),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    border: Border.all(
+                      color: ctx.adaptive(
+                        light: const Color(0xFFE5E7EB),
+                        dark: ctx.palette.border,
+                      ),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -544,7 +568,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                                 ? Icons.storefront_outlined
                                 : Icons.restaurant_outlined,
                             size: 18,
-                            color: AppColors.primary,
+                            color: ctx.palette.brandInk,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -567,7 +591,10 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                             : 'Eat mode (student menu & ordering)',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: ctx.adaptive(
+                            light: Colors.grey.shade600,
+                            dark: const Color(0xFFA3A5B0),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -874,9 +901,14 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
                 child: Image.network(
                   item.attachmentUrl!,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const ColoredBox(
-                    color: Color(0xFFF0EDF8),
-                    child: Center(child: Icon(Icons.broken_image_outlined)),
+                  errorBuilder: (_, _, _) => ColoredBox(
+                    color: context.adaptive(
+                      light: const Color(0xFFF0EDF8),
+                      dark: const Color(0x2E776CF5),
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.broken_image_outlined),
+                    ),
                   ),
                 ),
               ),
@@ -1378,8 +1410,8 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
       child: Text(
         text.toUpperCase(),
-        style: const TextStyle(
-          color: AppColors.muted,
+        style: TextStyle(
+          color: context.palette.inkSecondary,
           fontSize: 11,
           fontWeight: FontWeight.w500,
           letterSpacing: 1.2,
@@ -1407,7 +1439,7 @@ class _PlannedTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(module.icon, color: AppColors.muted, size: 22),
+          Icon(module.icon, color: context.palette.inkSecondary, size: 22),
           const Spacer(),
           Text(
             module.displayName,
@@ -1438,7 +1470,11 @@ class _NoAccessState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.lock_outline, size: 40, color: AppColors.muted),
+            Icon(
+              Icons.lock_outline,
+              size: 40,
+              color: context.palette.inkSecondary,
+            ),
             const SizedBox(height: 14),
             Text(
               'No modules assigned',

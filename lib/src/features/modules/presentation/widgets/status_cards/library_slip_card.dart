@@ -32,9 +32,9 @@ class LibrarySlipCard extends StatelessWidget {
 
     final (badgeText, badgeColor, badgeBg) = switch (data.status) {
       LibrarySlipStatus.borrowed => ('BORROWED', inkGreen, isDark ? const Color(0xFF14532D) : const Color(0xFFDCFCE7)),
-      LibrarySlipStatus.dueSoon => ('DUE SOON', const Color(0xFFD97706), isDark ? const Color(0xFF451A03) : const Color(0xFFFEF3C7)),
-      LibrarySlipStatus.overdue => ('OVERDUE', const Color(0xFFDC2626), isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2)),
-      LibrarySlipStatus.returned => ('RETURNED', const Color(0xFF6B7280), isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6)),
+      LibrarySlipStatus.dueSoon => ('DUE SOON', isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706), isDark ? const Color(0xFF451A03) : const Color(0xFFFEF3C7)),
+      LibrarySlipStatus.overdue => ('OVERDUE', isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626), isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2)),
+      LibrarySlipStatus.returned => ('RETURNED', isDark ? const Color(0xFFD1D5DB) : const Color(0xFF6B7280), isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6)),
     };
 
     return Material(

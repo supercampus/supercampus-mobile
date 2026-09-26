@@ -299,7 +299,7 @@ class _LibraryLendingScreenState extends State<LibraryLendingScreen> {
                                           '${book.shelfCode.isEmpty ? '' : ' · Shelf ${book.shelfCode}'}',
                                           style: TextStyle(
                                             color: book.isAvailable
-                                                ? AppColors.success
+                                                ? context.palette.success
                                                 : colors.error,
                                             fontWeight: FontWeight.w600,
                                           ),

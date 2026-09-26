@@ -105,17 +105,17 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Exam Scheduling & Allocation',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.ink,
+              color: context.palette.ink,
             ),
           ),
-          const Text(
+          Text(
             'Assign date, time slot, venue, and invigilation.',
-            style: TextStyle(fontSize: 12, color: AppColors.muted),
+            style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
           ),
           const SizedBox(height: 12),
           Row(
@@ -142,7 +142,8 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
               Expanded(
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: context.palette.brand,
+                    foregroundColor: context.palette.onBrand,
                   ),
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -166,7 +167,7 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
 
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -175,12 +176,12 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
+                  color: context.palette.ink,
                 ),
               ),
               Text(
                 'Assign date, time slot, venue, and invigilation with automated zero-conflict validation.',
-                style: TextStyle(fontSize: 12, color: AppColors.muted),
+                style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
               ),
             ],
           ),
@@ -200,7 +201,10 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
         ),
         const SizedBox(width: 10),
         FilledButton.icon(
-          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+          style: FilledButton.styleFrom(
+            backgroundColor: context.palette.brand,
+            foregroundColor: context.palette.onBrand,
+          ),
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -221,9 +225,15 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: context.adaptive(
+          light: Colors.blue.shade50,
+          dark: const Color(0x2E2196F3),
+        ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade200),
+        border: Border.all(color: context.adaptive(
+            light: Colors.blue.shade200,
+            dark: const Color(0x662196F3),
+          )),
       ),
       child: const Row(
         children: [
@@ -247,25 +257,25 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
   Widget _buildTimetableSection(bool isMobile) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(14),
             child: Row(
               children: [
-                Icon(Icons.calendar_month, color: AppColors.primary, size: 20),
+                Icon(Icons.calendar_month, color: context.palette.brandInk, size: 20),
                 SizedBox(width: 8),
                 Text(
                   'Scheduled Examinations Timetable',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.ink,
+                    color: context.palette.ink,
                   ),
                 ),
               ],
@@ -327,17 +337,17 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.event,
                             size: 14,
-                            color: AppColors.muted,
+                            color: context.palette.inkSecondary,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             '${row['date']} • ${row['slot']}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.muted,
+                              color: context.palette.inkSecondary,
                             ),
                           ),
                         ],
@@ -345,18 +355,18 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.room_outlined,
                             size: 14,
-                            color: AppColors.muted,
+                            color: context.palette.inkSecondary,
                           ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               row['hall']!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.muted,
+                                color: context.palette.inkSecondary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -399,9 +409,9 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
                             ),
                             Text(
                               row['subject']!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.muted,
+                                color: context.palette.inkSecondary,
                               ),
                             ),
                           ],
@@ -447,14 +457,14 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.report_problem_outlined,
@@ -467,7 +477,7 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
+                  color: context.palette.ink,
                 ),
               ),
             ],
@@ -492,7 +502,7 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
                 ),
                 subtitle: Text(
                   '${c['desc']}\nResolution: ${c['action']}',
-                  style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                  style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                 ),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(

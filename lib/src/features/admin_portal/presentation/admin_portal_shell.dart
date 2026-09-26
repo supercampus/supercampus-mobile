@@ -330,11 +330,11 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                           value: _selectedYear,
                           isExpanded: true,
                           icon: const Icon(Icons.arrow_drop_down_rounded),
-                          hint: const Row(
+                          hint: Row(
                             children: [
-                              Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.muted),
-                              SizedBox(width: 6),
-                              Expanded(
+                              Icon(Icons.calendar_today_outlined, size: 14, color: context.palette.inkSecondary),
+                              const SizedBox(width: 6),
+                              const Expanded(
                                 child: Text(
                                   'All Years',
                                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
@@ -380,11 +380,11 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                           value: _selectedDepartment,
                           isExpanded: true,
                           icon: const Icon(Icons.arrow_drop_down_rounded),
-                          hint: const Row(
+                          hint: Row(
                             children: [
-                              Icon(Icons.apartment_outlined, size: 14, color: AppColors.muted),
-                              SizedBox(width: 6),
-                              Expanded(
+                              Icon(Icons.apartment_outlined, size: 14, color: context.palette.inkSecondary),
+                              const SizedBox(width: 6),
+                              const Expanded(
                                 child: Text(
                                   'All Depts',
                                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
@@ -468,11 +468,11 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
               ),
             ),
           ],
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
               'Select Year and Department dropdowns to filter. Tap dropdown sections to expand/collapse.',
-              style: TextStyle(color: AppColors.muted, fontSize: 12),
+              style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
             ),
           ),
           Expanded(
@@ -491,7 +491,7 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.people_outline_rounded, size: 48, color: AppColors.muted),
+                        Icon(Icons.people_outline_rounded, size: 48, color: context.palette.inkSecondary),
                         const SizedBox(height: 12),
                         const Text(
                           'No students match your filter',
@@ -567,7 +567,7 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                               subtitle: Text(
                                 '${yearGroup.students.where((s) => s.residency == ManagedStudentResidency.dayScholar).length} Day Scholars · '
                                 '${yearGroup.students.where((s) => s.residency == ManagedStudentResidency.hosteller).length} Hostellers',
-                                style: const TextStyle(color: AppColors.muted, fontSize: 11),
+                                style: TextStyle(color: context.palette.inkSecondary, fontSize: 11),
                               ),
                               childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
                               children: [
@@ -591,10 +591,10 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                                             'year_${yearGroup.year}_dept_${deptGroup.department}',
                                           ),
                                           initiallyExpanded: true,
-                                          leading: const Icon(
+                                          leading: Icon(
                                             Icons.apartment_outlined,
                                             size: 18,
-                                            color: AppColors.primary,
+                                            color: context.palette.brandInk,
                                           ),
                                           title: Text(
                                             deptGroup.label,
@@ -693,8 +693,8 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                         const SizedBox(height: 2),
                         Text(
                           '${student.rollNumber} • ${student.department}',
-                          style: const TextStyle(
-                            color: AppColors.muted,
+                          style: TextStyle(
+                            color: context.palette.inkSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -719,8 +719,8 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                   ].join(' • '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.muted,
+                  style: TextStyle(
+                    color: context.palette.inkSecondary,
                     fontSize: 12,
                   ),
                 ),
@@ -751,8 +751,8 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                           size: 13,
                           color: student.residency ==
                                   ManagedStudentResidency.dayScholar
-                              ? Colors.teal
-                              : Colors.indigo,
+                              ? context.adaptive(light: Colors.teal, dark: Colors.teal.shade200)
+                              : context.adaptive(light: Colors.indigo, dark: Colors.indigo.shade200),
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -762,8 +762,8 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                             fontWeight: FontWeight.w600,
                             color: student.residency ==
                                     ManagedStudentResidency.dayScholar
-                                ? Colors.teal
-                                : Colors.indigo,
+                                ? context.adaptive(light: Colors.teal, dark: Colors.teal.shade200)
+                                : context.adaptive(light: Colors.indigo, dark: Colors.indigo.shade200),
                           ),
                         ),
                       ],
@@ -990,7 +990,7 @@ class _StudentProfileSheet extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'Year ${student.yearOfStudy}${student.section != null && student.section!.isNotEmpty ? ' • Section ${student.section}' : ''}',
-                      style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                      style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -1005,14 +1005,14 @@ class _StudentProfileSheet extends StatelessWidget {
             style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
-          _detailRow(Icons.pin_outlined, 'Roll number', student.rollNumber),
-          _detailRow(Icons.school_outlined, 'Programme', parsedDept.programme),
-          _detailRow(Icons.domain_outlined, 'Department (Course)', parsedDept.course),
-          _detailRow(Icons.calendar_today_outlined, 'Year of study', 'Year ${student.yearOfStudy}'),
+          _detailRow(context, Icons.pin_outlined, 'Roll number', student.rollNumber),
+          _detailRow(context, Icons.school_outlined, 'Programme', parsedDept.programme),
+          _detailRow(context, Icons.domain_outlined, 'Department (Course)', parsedDept.course),
+          _detailRow(context, Icons.calendar_today_outlined, 'Year of study', 'Year ${student.yearOfStudy}'),
           if (student.section != null && student.section!.isNotEmpty)
-            _detailRow(Icons.class_outlined, 'Section', student.section!),
-          _detailRow(Icons.email_outlined, 'Email', student.email.isEmpty ? 'Not registered' : student.email),
-          _detailRow(Icons.phone_outlined, 'Phone', student.mobileNumber.isEmpty ? 'Not provided' : student.mobileNumber),
+            _detailRow(context, Icons.class_outlined, 'Section', student.section!),
+          _detailRow(context, Icons.email_outlined, 'Email', student.email.isEmpty ? 'Not registered' : student.email),
+          _detailRow(context, Icons.phone_outlined, 'Phone', student.mobileNumber.isEmpty ? 'Not provided' : student.mobileNumber),
           const SizedBox(height: 14),
           Text(
             'Residency Status',
@@ -1043,8 +1043,8 @@ class _StudentProfileSheet extends StatelessWidget {
               style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
-            _detailRow(Icons.family_restroom_outlined, 'Guardian', '${student.guardianName} (${student.guardianRelationship.isEmpty ? 'Guardian' : student.guardianRelationship})'),
-            _detailRow(Icons.chat_outlined, 'WhatsApp Phone', student.guardianPhone.isEmpty ? 'Not provided' : student.guardianPhone),
+            _detailRow(context, Icons.family_restroom_outlined, 'Guardian', '${student.guardianName} (${student.guardianRelationship.isEmpty ? 'Guardian' : student.guardianRelationship})'),
+            _detailRow(context, Icons.chat_outlined, 'WhatsApp Phone', student.guardianPhone.isEmpty ? 'Not provided' : student.guardianPhone),
           ],
           const SizedBox(height: 22),
           Row(
@@ -1071,13 +1071,13 @@ class _StudentProfileSheet extends StatelessWidget {
     );
   }
 
-  Widget _detailRow(IconData icon, String label, String value) => Padding(
+  Widget _detailRow(BuildContext context, IconData icon, String label, String value) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 4),
     child: Row(
       children: [
-        Icon(icon, size: 16, color: AppColors.muted),
+        Icon(icon, size: 16, color: context.palette.inkSecondary),
         const SizedBox(width: 8),
-        Text('$label: ', style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+        Text('$label: ', style: TextStyle(fontSize: 12, color: context.palette.inkSecondary)),
         Expanded(
           child: Text(
             value,
@@ -1354,15 +1354,15 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.muted),
+                    Icon(Icons.info_outline_rounded, size: 16, color: context.palette.inkSecondary),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Saved as: ${formatDepartment(programme: _selectedProgramme, course: _selectedCourse)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
+                          color: context.palette.brandInk,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1671,12 +1671,12 @@ class _AdminAnnouncementsPageState extends State<_AdminAnnouncementsPage> {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                            color: context.palette.danger.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.picture_as_pdf_rounded,
-                            color: Color(0xFFEF4444),
+                            color: context.palette.danger,
                             size: 24,
                           ),
                         )
@@ -1709,7 +1709,7 @@ class _AdminAnnouncementsPageState extends State<_AdminAnnouncementsPage> {
                             hasPdf
                                 ? Icons.picture_as_pdf_outlined
                                 : Icons.open_in_new,
-                            color: hasPdf ? const Color(0xFFEF4444) : null,
+                            color: hasPdf ? context.palette.danger : null,
                           ),
                           onPressed: () => _openAttachment(item.attachmentUrl!),
                         )
@@ -1873,8 +1873,8 @@ class _AdminMaintenancePageState extends State<_AdminMaintenancePage> {
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: _enabled
-                        ? const Color(0xFFFFECEC)
-                        : const Color(0xFFF0ECFF),
+                        ? context.adaptive(light: const Color(0xFFFFECEC), dark: const Color(0x2EE53935))
+                        : context.adaptive(light: const Color(0xFFF0ECFF), dark: const Color(0x2E776CF5)),
                     borderRadius: BorderRadius.circular(22),
                   ),
                   child: SwitchListTile.adaptive(
@@ -1895,7 +1895,9 @@ class _AdminMaintenancePageState extends State<_AdminMaintenancePage> {
                     ),
                     secondary: Icon(
                       Icons.construction_rounded,
-                      color: _enabled ? Colors.red.shade700 : AppColors.primary,
+                      color: _enabled
+                          ? context.adaptive(light: Colors.red.shade700, dark: Colors.red.shade300)
+                          : context.palette.brandInk,
                     ),
                   ),
                 ),
@@ -1929,14 +1931,14 @@ class _AdminMaintenancePageState extends State<_AdminMaintenancePage> {
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 8),
-                  Text(_error!, style: TextStyle(color: Colors.red.shade700)),
+                  Text(_error!, style: TextStyle(color: context.adaptive(light: Colors.red.shade700, dark: Colors.red.shade300))),
                 ],
                 const SizedBox(height: 18),
                 FilledButton.icon(
                   style: FilledButton.styleFrom(
                     backgroundColor: _enabled
                         ? Colors.red.shade700
-                        : AppColors.primary,
+                        : context.palette.brand,
                     minimumSize: const Size.fromHeight(52),
                   ),
                   onPressed: _saving ? null : _save,
@@ -1976,15 +1978,18 @@ class _TimeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Material(
-      color: Colors.white,
+      color: p.surface,
       borderRadius: BorderRadius.circular(16),
       child: ListTile(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFE5DDF8)),
+          side: BorderSide(
+            color: context.adaptive(light: const Color(0xFFE5DDF8), dark: p.border),
+          ),
         ),
-        leading: const Icon(Icons.event_outlined, color: AppColors.primary),
+        leading: Icon(Icons.event_outlined, color: p.brandInk),
         title: Text(label),
         subtitle: Text(
           value,

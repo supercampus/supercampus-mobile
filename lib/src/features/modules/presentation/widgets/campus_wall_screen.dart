@@ -475,7 +475,7 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _categoryColor(notice.category).withValues(alpha: 0.12),
+                      color: _categoryColor(notice.category, dark: isDark).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -483,14 +483,19 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: _categoryColor(notice.category),
+                        color: _categoryColor(notice.category, dark: isDark),
                       ),
                     ),
                   ),
                   const Spacer(),
                   Text(
                     _formatDate(notice.date),
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? const Color(0xFF878995)
+                          : Colors.grey.shade500,
+                    ),
                   ),
                 ],
               ),
@@ -507,14 +512,19 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
               Row(
                 children: [
                   Icon(Icons.person_pin_circle_outlined,
-                      size: 16, color: Colors.grey.shade500),
+                      size: 16,
+                      color: isDark
+                          ? const Color(0xFF878995)
+                          : Colors.grey.shade500),
                   const SizedBox(width: 6),
                   Text(
                     'Issued by: ${notice.author}',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade600,
+                      color: isDark
+                          ? const Color(0xFFA3A5B0)
+                          : Colors.grey.shade600,
                     ),
                   ),
                 ],
@@ -578,7 +588,9 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
                               'Official attachment document',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey.shade500,
+                                color: isDark
+                                    ? const Color(0xFF878995)
+                                    : Colors.grey.shade500,
                               ),
                             ),
                           ],
@@ -623,20 +635,32 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
     );
   }
 
-  static Color _categoryColor(String category) {
+  static Color _categoryColor(String category, {bool dark = false}) {
     switch (category.toLowerCase()) {
       case 'circulars':
-        return const Color(0xFF2563EB); // Blue
+        return dark
+            ? const Color(0xFF60A5FA)
+            : const Color(0xFF2563EB); // Blue
       case 'announcements':
-        return const Color(0xFF7C3AED); // Purple
+        return dark
+            ? const Color(0xFFC4B5FD)
+            : const Color(0xFF7C3AED); // Purple
       case 'examinations':
-        return const Color(0xFFDC2626); // Red
+        return dark
+            ? const Color(0xFFFCA5A5)
+            : const Color(0xFFDC2626); // Red
       case 'events':
-        return const Color(0xFFD97706); // Amber
+        return dark
+            ? const Color(0xFFFBBF24)
+            : const Color(0xFFD97706); // Amber
       case 'academics':
-        return const Color(0xFF059669); // Emerald
+        return dark
+            ? const Color(0xFF6EE7B7)
+            : const Color(0xFF059669); // Emerald
       default:
-        return const Color(0xFF4F46E5); // Indigo
+        return dark
+            ? const Color(0xFFA5B4FC)
+            : const Color(0xFF4F46E5); // Indigo
     }
   }
 
@@ -667,7 +691,7 @@ class _NoticeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final catColor = _CampusWallScreenState._categoryColor(notice.category);
+    final catColor = _CampusWallScreenState._categoryColor(notice.category, dark: isDark);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -813,7 +837,9 @@ class _NoticeCard extends StatelessWidget {
                               size: 14,
                               color: isPdf
                                   ? const Color(0xFFEF4444)
-                                  : const Color(0xFF6B7280),
+                                  : (isDark
+                                      ? const Color(0xFFA3A5B0)
+                                      : const Color(0xFF6B7280)),
                             ),
                             const SizedBox(width: 6),
                             Flexible(
@@ -826,7 +852,9 @@ class _NoticeCard extends StatelessWidget {
                                   fontWeight: FontWeight.w500,
                                   color: isPdf
                                       ? (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C))
-                                      : const Color(0xFF4B5563),
+                                      : (isDark
+                                          ? const Color(0xFFD9DAE0)
+                                          : const Color(0xFF4B5563)),
                                 ),
                               ),
                             ),

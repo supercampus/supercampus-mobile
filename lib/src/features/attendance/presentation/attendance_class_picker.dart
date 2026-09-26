@@ -252,7 +252,10 @@ class RollTally extends StatelessWidget {
                 _Count(
                   value: absent,
                   label: 'absent',
-                  color: const Color(0xFFB42318),
+                  color: context.adaptive(
+                    light: const Color(0xFFB42318),
+                    dark: context.palette.danger,
+                  ),
                 ),
               if (onDuty > 0)
                 _Count(value: onDuty, label: 'on duty', color: AppColors.amber),

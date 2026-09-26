@@ -23,7 +23,9 @@ class FeesReceiptCard extends StatelessWidget {
     final cardBg = isDark ? const Color(0xFF1E1B2E) : const Color(0xFFFAF8FF);
     final borderColor = isDark ? const Color(0xFF3B2D54) : const Color(0xFFDDD6FE);
     final purpleAccent = isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED);
-    final statusColor = data.isOverdue ? const Color(0xFFEF4444) : purpleAccent;
+    final statusColor = data.isOverdue
+        ? (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFEF4444))
+        : purpleAccent;
     final statusBg = data.isOverdue
         ? (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2))
         : (isDark ? const Color(0xFF2E1065) : const Color(0xFFEDE9FE));

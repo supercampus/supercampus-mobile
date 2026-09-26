@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../data/canteen_models.dart';
 
 /// The square thumbnail on a menu row.
@@ -26,7 +27,10 @@ class MenuItemArt extends StatelessWidget {
       child: Container(
         width: size,
         height: size,
-        color: const Color(0xFFF8FAFC),
+        color: context.adaptive(
+          light: const Color(0xFFF8FAFC),
+          dark: const Color(0xFF1C1D23),
+        ),
         child: image == null || image.isEmpty
             ? _Fallback(store: item.store, size: size)
             : Image.network(
@@ -89,9 +93,12 @@ class _Fallback extends StatelessWidget {
       MenuStore.stationery => Icons.storefront_outlined,
     };
     return Container(
-      color: const Color(0xFFDDE7FB),
+      color: context.adaptive(
+        light: const Color(0xFFDDE7FB),
+        dark: const Color(0x2E2563EB),
+      ),
       alignment: Alignment.center,
-      child: Icon(icon, size: size * 0.42, color: const Color(0xFF2563EB)),
+      child: Icon(icon, size: size * 0.42, color: context.palette.info),
     );
   }
 }

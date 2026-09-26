@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 /// A 1-second animated brand logo reveal shown over the first rendered frame.
 ///
 /// Features a pure white canvas, animated hero logo reveal in the center,
@@ -63,7 +65,7 @@ class _LaunchBrandIntroState extends State<LaunchBrandIntro>
           child: Opacity(
             opacity: totalOpacity,
             child: ColoredBox(
-              color: Colors.white,
+              color: context.palette.surface,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -90,13 +92,16 @@ class _LaunchBrandIntroState extends State<LaunchBrandIntro>
                     right: 0,
                     child: Opacity(
                       opacity: textOpacity,
-                      child: const Text(
+                      child: Text(
                         'SuperCampus',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Brittany',
                           fontSize: 26,
-                          color: Color(0xFF18181B),
+                          color: context.adaptive(
+                            light: const Color(0xFF18181B),
+                            dark: const Color(0xFFF2F2F5),
+                          ),
                           height: 1.1,
                         ),
                       ),

@@ -309,8 +309,14 @@ class _MarkBadge extends StatelessWidget {
             fontSize: size * .36 < 8 ? 8 : size * .36,
             fontWeight: FontWeight.w700,
             color: mark == AttendanceMark.onDuty
-                ? const Color(0xFF7A5A00)
-                : mark.color,
+                ? context.adaptive(
+                    light: const Color(0xFF7A5A00),
+                    dark: const Color(0xFFFFE066),
+                  )
+                : context.adaptive(
+                    light: mark.color,
+                    dark: Color.lerp(mark.color, Colors.white, .45)!,
+                  ),
             letterSpacing: .35,
           ),
         ),

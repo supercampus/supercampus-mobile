@@ -24,8 +24,12 @@ class AcademicsReportCard extends StatelessWidget {
     final cardBg = isDark ? const Color(0xFF1F2937) : const Color(0xFFFDFBF7);
     final isCritical = data.percentage < data.requiredThreshold;
 
-    final accentColor = isCritical ? const Color(0xFFEA580C) : const Color(0xFF16A34A);
-    final accentBg = isCritical ? const Color(0xFFFFEDD5) : const Color(0xFFDCFCE7);
+    final accentColor = isCritical
+        ? (isDark ? const Color(0xFFFDBA74) : const Color(0xFFEA580C))
+        : (isDark ? const Color(0xFF86EFAC) : const Color(0xFF16A34A));
+    final accentBg = isCritical
+        ? (isDark ? const Color(0x2EEA580C) : const Color(0xFFFFEDD5))
+        : (isDark ? const Color(0x2E16A34A) : const Color(0xFFDCFCE7));
     final textColor = isDark ? Colors.white : const Color(0xFF1C1917);
     final subColor = isDark ? const Color(0xFF9CA3AF) : const Color(0xFF57534E);
 

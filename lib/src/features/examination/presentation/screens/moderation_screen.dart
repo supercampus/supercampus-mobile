@@ -75,16 +75,16 @@ class _ModerationScreenState extends State<ModerationScreen> {
   Widget _buildModerationHeader(bool isMobile) {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.palette.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: Padding(
         padding: EdgeInsets.all(isMobile ? 12 : 16),
         child: Row(
           children: [
-            const Icon(Icons.tune, color: AppColors.primary, size: 28),
+            Icon(Icons.tune, color: context.palette.brandInk, size: 28),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -95,9 +95,9 @@ class _ModerationScreenState extends State<ModerationScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     'Ensure academic fairness through grace marks, scaling, and L1-L4 sign-offs.',
-                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                    style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                   ),
                 ],
               ),
@@ -112,9 +112,9 @@ class _ModerationScreenState extends State<ModerationScreen> {
     return Container(
       padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,30 +129,30 @@ class _ModerationScreenState extends State<ModerationScreen> {
             child: Row(
               children: [
                 _buildLevelBadge('L1 — Faculty', 'Self Entry', Colors.blue),
-                const Icon(
+                Icon(
                   Icons.arrow_forward,
                   size: 14,
-                  color: AppColors.muted,
+                  color: context.palette.inkSecondary,
                 ),
                 _buildLevelBadge(
                   'L2 — Department',
                   'HoD Review',
-                  Colors.indigo,
+                  context.adaptive(light: Colors.indigo, dark: Colors.indigo.shade200),
                 ),
-                const Icon(
+                Icon(
                   Icons.arrow_forward,
                   size: 14,
-                  color: AppColors.muted,
+                  color: context.palette.inkSecondary,
                 ),
                 _buildLevelBadge(
                   'L3 — Exam Office',
                   'Compliance',
                   Colors.purple,
                 ),
-                const Icon(
+                Icon(
                   Icons.arrow_forward,
                   size: 14,
-                  color: AppColors.muted,
+                  color: context.palette.inkSecondary,
                 ),
                 _buildLevelBadge('L4 — Controller', 'Final Lock', Colors.green),
               ],
@@ -184,7 +184,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
           ),
           Text(
             desc,
-            style: const TextStyle(fontSize: 10, color: AppColors.muted),
+            style: TextStyle(fontSize: 10, color: context.palette.inkSecondary),
           ),
         ],
       ),
@@ -195,9 +195,9 @@ class _ModerationScreenState extends State<ModerationScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,7 +216,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
             min: 0,
             max: 10,
             divisions: 10,
-            activeColor: AppColors.primary,
+            activeColor: context.palette.brandInk,
             onChanged: (val) => setState(() => _graceMarksLimit = val),
           ),
           const SizedBox(height: 8),
@@ -235,8 +235,8 @@ class _ModerationScreenState extends State<ModerationScreen> {
           const SizedBox(height: 12),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: context.palette.brand,
+              foregroundColor: context.palette.onBrand,
             ),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -260,10 +260,14 @@ class _ModerationScreenState extends State<ModerationScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _isLocked ? Colors.red.shade50 : Colors.green.shade50,
+        color: _isLocked
+            ? context.adaptive(light: Colors.red.shade50, dark: const Color(0x2EF44336))
+            : context.adaptive(light: Colors.green.shade50, dark: const Color(0x2E4CAF50)),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _isLocked ? Colors.red.shade200 : Colors.green.shade200,
+          color: _isLocked
+              ? context.adaptive(light: Colors.red.shade200, dark: const Color(0x66F44336))
+              : context.adaptive(light: Colors.green.shade200, dark: const Color(0x664CAF50)),
         ),
       ),
       child: Column(
@@ -296,7 +300,9 @@ class _ModerationScreenState extends State<ModerationScreen> {
                 : 'Lock marks to freeze evaluation and trigger GPA Engine.',
             style: TextStyle(
               fontSize: 11,
-              color: _isLocked ? Colors.red.shade900 : Colors.green.shade900,
+              color: _isLocked
+                ? context.adaptive(light: Colors.red.shade900, dark: Colors.red.shade200)
+                : context.adaptive(light: Colors.green.shade900, dark: Colors.green.shade200),
             ),
           ),
           const SizedBox(height: 12),
@@ -336,9 +342,9 @@ class _ModerationScreenState extends State<ModerationScreen> {
   Widget _buildVerificationQueueContent(bool isMobile) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -389,18 +395,18 @@ class _ModerationScreenState extends State<ModerationScreen> {
                       ),
                       Text(
                         'Evaluator: ${q['evaluator']}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.muted,
+                          color: context.palette.inkSecondary,
                         ),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         'Status: ${q['l4Status']}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
+                          color: context.palette.brandInk,
                         ),
                       ),
                     ],
@@ -440,7 +446,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
                       DataCell(
                         Text(
                           q['l2Status'],
-                          style: const TextStyle(color: Colors.indigo),
+                          style: TextStyle(color: context.adaptive(light: Colors.indigo, dark: Colors.indigo.shade200)),
                         ),
                       ),
                       DataCell(Text(q['l3Status'])),

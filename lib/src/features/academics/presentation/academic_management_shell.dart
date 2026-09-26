@@ -147,13 +147,13 @@ class _AcademicCard extends StatelessWidget {
     child: ListTile(
       leading: CircleAvatar(
         backgroundColor: AppColors.gateLavender.withValues(alpha: .12),
-        child: Icon(icon, color: AppColors.gateBlue),
+        child: Icon(icon, color: context.palette.brandInk),
       ),
       title: Text(title),
       subtitle: Text(subtitle),
       trailing: Text(
         status,
-        style: const TextStyle(fontSize: 11, color: AppColors.muted),
+        style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
       ),
     ),
   );

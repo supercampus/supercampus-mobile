@@ -266,8 +266,8 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
                     ),
                     trailing: Text(
                       _money(_number(row.data['amountPerStudent'])),
-                      style: const TextStyle(
-                        color: AppColors.brandBlue,
+                      style: TextStyle(
+                        color: context.palette.brandInk,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -334,7 +334,7 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
         ),
-        Text('$count', style: const TextStyle(color: AppColors.muted)),
+        Text('$count', style: TextStyle(color: context.palette.inkSecondary)),
       ],
     ),
   );
@@ -343,7 +343,7 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
     child: Padding(
       padding: const EdgeInsets.all(22),
       child: Center(
-        child: Text(message, style: const TextStyle(color: AppColors.muted)),
+        child: Text(message, style: TextStyle(color: context.palette.inkSecondary)),
       ),
     ),
   );
@@ -377,7 +377,7 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
                     width: 42,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppColors.muted.withValues(alpha: .5),
+                      color: context.palette.inkSecondary.withValues(alpha: .5),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -517,9 +517,9 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Creates three one-use meal QRs per day only inside this paid coverage period.',
-                  style: TextStyle(color: AppColors.muted),
+                  style: TextStyle(color: context.palette.inkSecondary),
                 ),
                 const SizedBox(height: 18),
                 DropdownButtonFormField<FeeStudent>(
@@ -668,9 +668,9 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Choose which food experiences hostellers can access.',
-                style: TextStyle(color: AppColors.muted),
+                style: TextStyle(color: context.palette.inkSecondary),
               ),
               const SizedBox(height: 14),
               SwitchListTile.adaptive(
@@ -1045,7 +1045,7 @@ class _FeeAccountState extends State<_FeeAccount> {
     child: Padding(
       padding: const EdgeInsets.all(22),
       child: Center(
-        child: Text(value, style: const TextStyle(color: AppColors.muted)),
+        child: Text(value, style: TextStyle(color: context.palette.inkSecondary)),
       ),
     ),
   );
@@ -1062,7 +1062,12 @@ class _FeeAccountState extends State<_FeeAccount> {
         _money(amount),
         style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: danger ? Colors.red : AppColors.brandBlue,
+          color: danger
+              ? context.adaptive(
+                  light: Colors.red,
+                  dark: context.palette.danger,
+                )
+              : context.palette.brandInk,
         ),
       ),
     ),
@@ -1085,10 +1090,10 @@ class _FeeAccountState extends State<_FeeAccount> {
                 CircleAvatar(
                   backgroundColor: verified
                       ? Colors.green.withValues(alpha: .12)
-                      : AppColors.moduleSoft,
+                      : context.palette.brandSoft,
                   child: Icon(
                     verified ? Icons.verified_rounded : Icons.receipt_long,
-                    color: verified ? Colors.green.shade700 : AppColors.muted,
+                    color: verified ? _verifiedInk(context) : context.palette.inkSecondary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1110,8 +1115,8 @@ class _FeeAccountState extends State<_FeeAccount> {
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.muted,
+                        style: TextStyle(
+                          color: context.palette.inkSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -1132,8 +1137,8 @@ class _FeeAccountState extends State<_FeeAccount> {
                 Expanded(
                   child: Text(
                     '${_text(row.data['method'])} · ${_friendlyDate(row.data['paymentDate'])}',
-                    style: const TextStyle(
-                      color: AppColors.muted,
+                    style: TextStyle(
+                      color: context.palette.inkSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -1141,7 +1146,7 @@ class _FeeAccountState extends State<_FeeAccount> {
                 Text(
                   verified ? 'Verified' : _text(row.data['status']),
                   style: TextStyle(
-                    color: verified ? Colors.green.shade700 : AppColors.muted,
+                    color: verified ? _verifiedInk(context) : context.palette.inkSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1181,7 +1186,7 @@ class _FeeLoading extends StatelessWidget {
           height: height,
           margin: const EdgeInsets.only(bottom: 13),
           decoration: BoxDecoration(
-            color: AppColors.moduleSoft,
+            color: context.palette.brandSoft,
             borderRadius: BorderRadius.circular(20),
           ),
         ),
@@ -1200,7 +1205,14 @@ class _FeeError extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 38),
+          Icon(
+            Icons.error_outline,
+            color: context.adaptive(
+              light: Colors.red,
+              dark: context.palette.danger,
+            ),
+            size: 38,
+          ),
           const SizedBox(height: 12),
           Text(message, textAlign: TextAlign.center),
           const SizedBox(height: 16),
@@ -1214,6 +1226,12 @@ class _FeeError extends StatelessWidget {
     ),
   );
 }
+
+/// Verified-payment green: the original shade on light, lifted on dark.
+Color _verifiedInk(BuildContext context) => context.adaptive(
+  light: Colors.green.shade700,
+  dark: const Color(0xFF6EE7B7),
+);
 
 String _money(double value) => '₹${value.toStringAsFixed(0)}';
 double _number(Object? value) =>

@@ -75,7 +75,10 @@ class GatepassDashboardScreen extends StatelessWidget {
                     child: _QuickAction(
                       icon: Icons.person_add_alt_1_outlined,
                       label: 'Invite visitor',
-                      color: AppColors.gateMagenta,
+                      color: context.adaptive(
+                        light: AppColors.gateMagenta,
+                        dark: const Color(0xFFD58CFF),
+                      ),
                       onTap: onInviteVisitor,
                     ),
                   ),
@@ -84,7 +87,10 @@ class GatepassDashboardScreen extends StatelessWidget {
                     child: _QuickAction(
                       icon: Icons.history,
                       label: 'Pass history',
-                      color: AppColors.gateLavender,
+                      color: context.adaptive(
+                        light: AppColors.gateLavender,
+                        dark: const Color(0xFFA29BFF),
+                      ),
                       onTap: onOpenRequests,
                     ),
                   ),
@@ -123,12 +129,14 @@ class GatepassDashboardScreen extends StatelessWidget {
                           .take(2)
                           .map((movement) => _MovementRow(movement: movement)),
                     ] else
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 18),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 18),
                         child: Center(
                           child: Text(
                             'No recent movement recorded.',
-                            style: TextStyle(color: AppColors.muted),
+                            style: TextStyle(
+                              color: context.palette.inkSecondary,
+                            ),
                           ),
                         ),
                       ),
@@ -182,7 +190,13 @@ class _CampusStatusCard extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         trailing: inside
-            ? const Icon(Icons.verified_rounded, color: Color(0xFF168A5B))
+            ? Icon(
+                Icons.verified_rounded,
+                color: context.adaptive(
+                  light: const Color(0xFF168A5B),
+                  dark: const Color(0xFF6EE7B7),
+                ),
+              )
             : failed
             ? IconButton(
                 tooltip: 'Retry location check',
@@ -239,8 +253,11 @@ class _LocationStatusIconState extends State<_LocationStatusIcon>
   @override
   Widget build(BuildContext context) {
     final color = widget.isInside
-        ? const Color(0xFF168A5B)
-        : AppColors.gateBlue;
+        ? context.adaptive(
+            light: const Color(0xFF168A5B),
+            dark: const Color(0xFF6EE7B7),
+          )
+        : context.palette.brandInk;
     return SizedBox(
       width: 46,
       height: 46,
@@ -319,8 +336,14 @@ class _PassActions extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: onApplyLeavePass,
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFEAEAEA),
-                      foregroundColor: const Color(0xFF18171D),
+                      backgroundColor: context.adaptive(
+                        light: const Color(0xFFEAEAEA),
+                        dark: context.palette.surfaceRaised,
+                      ),
+                      foregroundColor: context.adaptive(
+                        light: const Color(0xFF18171D),
+                        dark: context.palette.ink,
+                      ),
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(18),
@@ -344,7 +367,7 @@ class _PassActions extends StatelessWidget {
                     child: FilledButton(
                       onPressed: onApplyOutpass,
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.gateBlue,
+                        backgroundColor: context.palette.brand,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -366,7 +389,13 @@ class _PassActions extends StatelessWidget {
           AspectRatio(
             aspectRatio: 1,
             child: Material(
-              color: const Color(0xFFEAEAEA),
+              // The QR keeps dark modules on a white quiet zone in dark mode.
+              color: context.adaptive(
+                light: const Color(0xFFEAEAEA),
+                dark: payload.isEmpty
+                    ? context.palette.surfaceRaised
+                    : Colors.white,
+              ),
               borderRadius: BorderRadius.circular(18),
               clipBehavior: Clip.antiAlias,
               child: InkWell(
@@ -593,10 +622,18 @@ class _ActiveRequestCard extends StatelessWidget {
         workflow.transition(request.workflowState, 'verify') ??
         workflow.transition(request.workflowState, 'complete');
     return Material(
-      color: const Color(0xFFF7F3FF),
+      color: context.adaptive(
+        light: const Color(0xFFF7F3FF),
+        dark: context.palette.brandSoft,
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: Color(0xFFE2D9F3)),
+        side: BorderSide(
+          color: context.adaptive(
+            light: const Color(0xFFE2D9F3),
+            dark: const Color(0xFF3A3470),
+          ),
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -606,7 +643,7 @@ class _ActiveRequestCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              const Icon(Icons.schedule_outlined, color: AppColors.gateBlue),
+              Icon(Icons.schedule_outlined, color: context.palette.brandInk),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -696,7 +733,15 @@ class _MovementRow extends StatelessWidget {
         children: [
           Icon(
             isEntry ? Icons.login : Icons.logout,
-            color: isEntry ? const Color(0xFF087A4B) : AppColors.gateMagenta,
+            color: isEntry
+                ? context.adaptive(
+                    light: const Color(0xFF087A4B),
+                    dark: const Color(0xFF6EE7B7),
+                  )
+                : context.adaptive(
+                    light: AppColors.gateMagenta,
+                    dark: const Color(0xFFD58CFF),
+                  ),
           ),
           const SizedBox(width: 12),
           Expanded(

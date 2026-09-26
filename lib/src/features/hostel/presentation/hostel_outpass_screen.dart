@@ -35,9 +35,9 @@ class HostelOutpassScreen extends StatelessWidget {
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Submit the destination and return time. Approval and QR status stay together.',
-            style: TextStyle(color: AppColors.muted),
+            style: TextStyle(color: context.palette.inkSecondary),
           ),
           const SizedBox(height: 14),
           FilledButton.icon(
@@ -58,18 +58,18 @@ class HostelOutpassScreen extends StatelessWidget {
               ),
               Text(
                 '${outpasses.length}',
-                style: const TextStyle(color: AppColors.muted),
+                style: TextStyle(color: context.palette.inkSecondary),
               ),
             ],
           ),
           const SizedBox(height: 10),
           if (outpasses.isEmpty)
-            const Card(
+            Card(
               child: Padding(
                 padding: EdgeInsets.all(22),
                 child: Text(
                   'No outpass requests yet.',
-                  style: TextStyle(color: AppColors.muted),
+                  style: TextStyle(color: context.palette.inkSecondary),
                 ),
               ),
             )
@@ -89,7 +89,7 @@ class HostelOutpassScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -105,15 +105,15 @@ class HostelOutpassScreen extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: context.palette.brandInk.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     outpass.id,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
-                      color: AppColors.primary,
+                      color: context.palette.brandInk,
                     ),
                   ),
                 ),
@@ -124,8 +124,8 @@ class HostelOutpassScreen extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isApproved
-                        ? Colors.green.shade50
-                        : Colors.orange.shade50,
+                        ? context.adaptive(light: Colors.green.shade50, dark: Colors.green.withValues(alpha: 0.18))
+                        : context.adaptive(light: Colors.orange.shade50, dark: Colors.orange.withValues(alpha: 0.18)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -134,8 +134,8 @@ class HostelOutpassScreen extends StatelessWidget {
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: isApproved
-                          ? Colors.green.shade800
-                          : Colors.orange.shade800,
+                          ? context.adaptive(light: Colors.green.shade800, dark: Colors.green.shade200)
+                          : context.adaptive(light: Colors.orange.shade800, dark: Colors.orange.shade200),
                     ),
                   ),
                 ),
@@ -149,25 +149,27 @@ class HostelOutpassScreen extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Reason: ${outpass.reason}',
-              style: const TextStyle(color: AppColors.muted, fontSize: 13),
+              style: TextStyle(color: context.palette.inkSecondary, fontSize: 13),
             ),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: _buildTimeTile(
+                    context,
                     'Leaving Time',
                     _formatTime(outpass.leavingAt),
                     Icons.north_east,
-                    Colors.orange.shade700,
+                    context.adaptive(light: Colors.orange.shade700, dark: Colors.orange.shade200),
                   ),
                 ),
                 Expanded(
                   child: _buildTimeTile(
+                    context,
                     'Expected Return',
                     _formatTime(outpass.expectedReturnAt),
                     Icons.south_west,
-                    Colors.green.shade700,
+                    context.adaptive(light: Colors.green.shade700, dark: Colors.green.shade200),
                   ),
                 ),
               ],
@@ -192,6 +194,7 @@ class HostelOutpassScreen extends StatelessWidget {
   }
 
   Widget _buildTimeTile(
+    BuildContext context,
     String title,
     String timeStr,
     IconData icon,
@@ -206,7 +209,7 @@ class HostelOutpassScreen extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 10, color: AppColors.muted),
+              style: TextStyle(fontSize: 10, color: context.palette.inkSecondary),
             ),
             Text(
               timeStr,
@@ -314,7 +317,7 @@ class HostelOutpassScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade400, width: 2),
+                  border: Border.all(color: context.adaptive(light: Colors.grey.shade400, dark: const Color(0xFF878995)), width: 2),
                   boxShadow: const [
                     BoxShadow(blurRadius: 8, color: Colors.black12),
                   ],
@@ -328,7 +331,7 @@ class HostelOutpassScreen extends StatelessWidget {
               ),
               Text(
                 '${outpass.studentName} (${outpass.studentCode})',
-                style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
               ),
               const SizedBox(height: 8),
               Container(
@@ -337,7 +340,7 @@ class HostelOutpassScreen extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: context.adaptive(light: Colors.blue.shade50, dark: Colors.blue.withValues(alpha: 0.18)),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -345,15 +348,15 @@ class HostelOutpassScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade800,
+                    color: context.adaptive(light: Colors.blue.shade800, dark: Colors.blue.shade200),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Security scans this code for exit and return. The student cannot change its state.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.muted, fontSize: 12),
+                style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
               ),
             ],
           ),

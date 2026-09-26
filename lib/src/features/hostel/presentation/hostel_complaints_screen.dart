@@ -34,9 +34,9 @@ class HostelComplaintsScreen extends StatelessWidget {
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Report an issue with the right category so it reaches the correct team.',
-            style: TextStyle(color: AppColors.muted),
+            style: TextStyle(color: context.palette.inkSecondary),
           ),
           const SizedBox(height: 14),
           FilledButton.icon(
@@ -57,18 +57,18 @@ class HostelComplaintsScreen extends StatelessWidget {
               ),
               Text(
                 '${complaints.length}',
-                style: const TextStyle(color: AppColors.muted),
+                style: TextStyle(color: context.palette.inkSecondary),
               ),
             ],
           ),
           const SizedBox(height: 10),
           if (complaints.isEmpty)
-            const Card(
+            Card(
               child: Padding(
                 padding: EdgeInsets.all(22),
                 child: Text(
                   'No maintenance tickets. Your room is all clear.',
-                  style: TextStyle(color: AppColors.muted),
+                  style: TextStyle(color: context.palette.inkSecondary),
                 ),
               ),
             )
@@ -86,7 +86,7 @@ class HostelComplaintsScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -109,7 +109,7 @@ class HostelComplaintsScreen extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
+                    color: context.adaptive(light: Colors.orange.shade50, dark: Colors.orange.withValues(alpha: 0.18)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -117,7 +117,7 @@ class HostelComplaintsScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade800,
+                      color: context.adaptive(light: Colors.orange.shade800, dark: Colors.orange.shade200),
                     ),
                   ),
                 ),
@@ -131,23 +131,23 @@ class HostelComplaintsScreen extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               complaint.description,
-              style: const TextStyle(color: AppColors.muted, fontSize: 13),
+              style: TextStyle(color: context.palette.inkSecondary, fontSize: 13),
             ),
             if (complaint.assignedTo != null) ...[
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.person_outline,
                     size: 14,
-                    color: AppColors.muted,
+                    color: context.palette.inkSecondary,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     'Assigned to: ${complaint.assignedTo}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.muted,
+                      color: context.palette.inkSecondary,
                     ),
                   ),
                 ],

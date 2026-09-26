@@ -300,26 +300,26 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                                 padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
                                 child: Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.apartment_outlined,
                                       size: 14,
-                                      color: AppColors.muted,
+                                      color: context.palette.inkSecondary,
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
                                       deptGroup.label,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.muted,
+                                        color: context.palette.inkSecondary,
                                       ),
                                     ),
                                     const Spacer(),
                                     Text(
                                       '${deptGroup.students.length}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
-                                        color: AppColors.muted,
+                                        color: context.palette.inkSecondary,
                                       ),
                                     ),
                                   ],
@@ -597,9 +597,9 @@ class _UserProfileSheet extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
-                const Icon(Icons.fingerprint_outlined, size: 16, color: AppColors.muted),
+                Icon(Icons.fingerprint_outlined, size: 16, color: context.palette.inkSecondary),
                 const SizedBox(width: 8),
-                const Text('User ID: ', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                Text('User ID: ', style: TextStyle(fontSize: 12, color: context.palette.inkSecondary)),
                 Expanded(
                   child: Text(
                     user.id,
@@ -686,13 +686,13 @@ class _RoleChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
     decoration: BoxDecoration(
-      color: AppColors.primary.withValues(alpha: 0.09),
+      color: context.palette.brandInk.withValues(alpha: 0.09),
       borderRadius: BorderRadius.circular(99),
     ),
     child: Text(
       label,
-      style: const TextStyle(
-        color: AppColors.primary,
+      style: TextStyle(
+        color: context.palette.brandInk,
         fontSize: 10,
         fontWeight: FontWeight.w600,
       ),

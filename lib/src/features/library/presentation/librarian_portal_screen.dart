@@ -320,7 +320,7 @@ class _LibrarianPortalScreenState extends State<LibrarianPortalScreen> {
   Widget build(BuildContext context) {
     final pages = [_home(), _logs(), _profile(), _scanPage()];
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: context.palette.canvas,
       appBar: AppBar(
         title: Text(
           const [
@@ -384,9 +384,9 @@ class _LibrarianPortalScreenState extends State<LibrarianPortalScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.groups_outlined,
-                        color: AppColors.gateBlue,
+                        color: context.palette.brandInk,
                       ),
                       const SizedBox(width: 8),
                       const Expanded(
@@ -408,10 +408,10 @@ class _LibrarianPortalScreenState extends State<LibrarianPortalScreen> {
                   const SizedBox(height: 10),
                   Text(
                     '${settings.available}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.gateBlue,
+                      color: context.palette.brandInk,
                     ),
                   ),
                   Text(
@@ -506,7 +506,7 @@ class _LibrarianPortalScreenState extends State<LibrarianPortalScreen> {
       const SizedBox(height: 6),
       Text(
         '${_requests.length} auditable request records · CSV, JSON, HTML or Markdown',
-        style: const TextStyle(color: AppColors.muted),
+        style: TextStyle(color: context.palette.inkSecondary),
       ),
       const SizedBox(height: 16),
       if (_requests.isEmpty)
@@ -530,14 +530,17 @@ class _LibrarianPortalScreenState extends State<LibrarianPortalScreen> {
             children: [
               CircleAvatar(
                 radius: 38,
-                backgroundColor: const Color(0xFFECEAFF),
+                backgroundColor: context.adaptive(
+                  light: const Color(0xFFECEAFF),
+                  dark: context.palette.brandSoft,
+                ),
                 child: Text(
                   widget.session.displayName.isEmpty
                       ? 'L'
                       : widget.session.displayName[0],
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 28,
-                    color: AppColors.gateBlue,
+                    color: context.palette.brandInk,
                   ),
                 ),
               ),
@@ -551,9 +554,9 @@ class _LibrarianPortalScreenState extends State<LibrarianPortalScreen> {
               ),
               Text(widget.session.email),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Library · Librarian',
-                style: TextStyle(color: AppColors.muted),
+                style: TextStyle(color: context.palette.inkSecondary),
               ),
             ],
           ),
@@ -574,10 +577,10 @@ class _LibrarianPortalScreenState extends State<LibrarianPortalScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.qr_code_scanner,
             size: 82,
-            color: AppColors.gateBlue,
+            color: context.palette.brandInk,
           ),
           const SizedBox(height: 18),
           Text(

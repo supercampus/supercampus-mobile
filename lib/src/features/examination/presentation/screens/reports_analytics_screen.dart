@@ -96,18 +96,18 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
   Widget _buildHeaderBanner(bool isMobile) {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.palette.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: Padding(
         padding: EdgeInsets.all(isMobile ? 12 : 16),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.assessment_outlined,
-              color: AppColors.primary,
+              color: context.palette.brandInk,
               size: 28,
             ),
             const SizedBox(width: 12),
@@ -120,9 +120,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     'Extract institutional compliance reports, marks grids, and degree analytics.',
-                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                    style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                   ),
                 ],
               ),
@@ -137,15 +137,15 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.filter_alt_outlined,
-            color: AppColors.muted,
+            color: context.palette.inkSecondary,
             size: 18,
           ),
           const SizedBox(width: 8),
@@ -171,8 +171,8 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
   Widget _buildDropdownChip(String label) {
     return Chip(
       label: Text(label),
-      backgroundColor: AppColors.canvas,
-      side: const BorderSide(color: AppColors.border),
+      backgroundColor: context.palette.canvas,
+      side: BorderSide(color: context.palette.border),
       labelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
     );
   }
@@ -181,9 +181,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,7 +205,10 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                 dense: true,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 6),
                 selected: isSelected,
-                selectedTileColor: AppColors.primary.withValues(alpha: 0.1),
+                selectedTileColor: context.adaptive(
+                  light: AppColors.primary.withValues(alpha: 0.1),
+                  dark: context.palette.brandSoft,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -214,14 +217,14 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                   style: TextStyle(
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                     fontSize: 12.5,
-                    color: isSelected ? AppColors.primary : AppColors.ink,
+                    color: isSelected ? context.palette.brandInk : context.palette.ink,
                   ),
                 ),
                 subtitle: Text(
                   r['desc']!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10.5,
-                    color: AppColors.muted,
+                    color: context.palette.inkSecondary,
                   ),
                 ),
                 onTap: () => setState(() => _selectedReport = r['name']!),
@@ -237,9 +240,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,7 +278,8 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
               const SizedBox(width: 6),
               FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: context.palette.brand,
+                  foregroundColor: context.palette.onBrand,
                 ),
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -292,14 +296,14 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
             height: isMobile ? 220 : 300,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppColors.canvas,
+              color: context.palette.canvas,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.palette.border),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.table_rows, size: 40, color: AppColors.muted),
+                Icon(Icons.table_rows, size: 40, color: context.palette.inkSecondary),
                 const SizedBox(height: 10),
                 Text(
                   'Data Ready for $_selectedReport',
@@ -309,9 +313,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                   ),
                 ),
                 const SizedBox(height: 2),
-                const Text(
+                Text(
                   '65 Records Loaded • Autumn Semester 2026',
-                  style: TextStyle(fontSize: 11, color: AppColors.muted),
+                  style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                 ),
               ],
             ),

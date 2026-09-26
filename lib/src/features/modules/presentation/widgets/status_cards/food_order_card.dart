@@ -172,6 +172,7 @@ class _FoodPlateArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const size = 76.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       width: size,
@@ -180,7 +181,7 @@ class _FoodPlateArt extends StatelessWidget {
         shape: BoxShape.circle,
         color: const Color(0xFFFFFBEB),
         border: Border.all(
-          color: const Color(0xFFE2E8F0),
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
           width: 2.5,
         ),
         boxShadow: [

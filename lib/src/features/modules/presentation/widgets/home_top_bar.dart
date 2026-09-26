@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
+
 class HomeTopBar extends StatelessWidget {
   const HomeTopBar({
     super.key,
@@ -32,7 +34,14 @@ class HomeTopBar extends StatelessWidget {
               backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
               child: photoUrl == null
-                  ? const Icon(Icons.person, size: 24, color: Colors.grey)
+                  ? Icon(
+                      Icons.person,
+                      size: 24,
+                      color: context.adaptive(
+                        light: Colors.grey,
+                        dark: const Color(0xFF878995),
+                      ),
+                    )
                   : null,
             ),
           ),

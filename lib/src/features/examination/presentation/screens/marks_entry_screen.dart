@@ -462,9 +462,9 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.upload_file_rounded, color: AppColors.primary),
+            Icon(Icons.upload_file_rounded, color: context.palette.brandInk),
             SizedBox(width: 9),
             Expanded(
               child: Text(
@@ -538,9 +538,9 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 5),
-        const Text(
+        Text(
           'Use the official template so student, subject, marks and maximum marks validation remains reliable.',
-          style: TextStyle(color: AppColors.muted, height: 1.4),
+          style: TextStyle(color: context.palette.inkSecondary, height: 1.4),
         ),
         const SizedBox(height: 14),
         Wrap(
@@ -676,7 +676,7 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
           else
             Text(
               _message(_stage),
-              style: const TextStyle(color: AppColors.muted),
+              style: TextStyle(color: context.palette.inkSecondary),
             ),
         ],
       ),
@@ -702,9 +702,9 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Every action is timestamped, scoped and retained in the audit history.',
-            style: TextStyle(color: AppColors.muted, fontSize: 12),
+            style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
           ),
           const SizedBox(height: 14),
           for (var index = 0; index < steps.length; index++) ...[
@@ -730,9 +730,12 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
         CircleAvatar(
           radius: 15,
           backgroundColor: complete || active
-              ? AppColors.primary
-              : const Color(0xFFE8E9EE),
-          foregroundColor: complete || active ? Colors.white : AppColors.muted,
+              ? context.palette.brand
+              : context.adaptive(
+                  light: const Color(0xFFE8E9EE),
+                  dark: const Color(0xFF2B2C34),
+                ),
+          foregroundColor: complete || active ? Colors.white : context.palette.inkSecondary,
           child: complete
               ? const Icon(Icons.check, size: 17)
               : Text('$number', style: const TextStyle(fontSize: 12)),
@@ -746,7 +749,7 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
               ),
             ],
           ),
@@ -796,9 +799,9 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
   Widget _panel({required Widget child}) => Container(
     padding: const EdgeInsets.all(15),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.palette.surface,
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: AppColors.border),
+      border: Border.all(color: context.palette.border),
     ),
     child: child,
   );
@@ -806,13 +809,16 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
   Widget _chip(String label) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
     decoration: BoxDecoration(
-      color: AppColors.primary.withValues(alpha: .09),
+      color: context.adaptive(
+        light: AppColors.primary.withValues(alpha: .09),
+        dark: context.palette.brandSoft,
+      ),
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(
       label,
-      style: const TextStyle(
-        color: AppColors.primary,
+      style: TextStyle(
+        color: context.palette.brandInk,
         fontSize: 10,
         fontWeight: FontWeight.w600,
       ),

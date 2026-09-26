@@ -30,17 +30,17 @@ class StationeryParcelCard extends StatelessWidget {
       StationeryParcelStatus.processing => (
         'PACKING',
         isDark ? const Color(0xFF451A03) : const Color(0xFFFEF3C7),
-        const Color(0xFFD97706),
+        isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
       ),
       StationeryParcelStatus.readyForPickup => (
         'READY FOR PICKUP',
         isDark ? const Color(0xFF14532D) : const Color(0xFFDCFCE7),
-        const Color(0xFF16A34A),
+        isDark ? const Color(0xFF86EFAC) : const Color(0xFF16A34A),
       ),
       StationeryParcelStatus.collected => (
         'COLLECTED',
         isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6),
-        const Color(0xFF6B7280),
+        isDark ? const Color(0xFFD1D5DB) : const Color(0xFF6B7280),
       ),
     };
 
@@ -159,10 +159,12 @@ class StationeryParcelCard extends StatelessWidget {
                         width: 1,
                       ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.markunread_mailbox_rounded,
                       size: 24,
-                      color: Color(0xFF92400E),
+                      color: isDark
+                          ? const Color(0xFFF0B389)
+                          : const Color(0xFF92400E),
                     ),
                   ),
                 ],

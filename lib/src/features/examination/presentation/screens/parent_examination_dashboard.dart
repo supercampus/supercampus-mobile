@@ -28,18 +28,18 @@ class ParentExaminationDashboard extends StatelessWidget {
             children: [
               _buildParentHeaderCard(context, isMobile),
               SizedBox(height: isMobile ? 16 : 24),
-              const Text(
+              Text(
                 "Child's Academic & Examination Portal",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
+                  color: context.palette.ink,
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Select a section below to view your child\'s timetable, semester results, and performance progress.',
-                style: TextStyle(fontSize: 12, color: AppColors.muted),
+                style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
               ),
               const SizedBox(height: 16),
               GridView.count(
@@ -55,7 +55,10 @@ class ParentExaminationDashboard extends StatelessWidget {
                     title: "Child's Exam Schedule",
                     subtitle: 'Timetable, Venue & Seats',
                     icon: Icons.calendar_month_outlined,
-                    color: const Color(0xFF1976D2),
+                    color: context.adaptive(
+                      light: const Color(0xFF1976D2),
+                      dark: const Color(0xFF64B5F6),
+                    ),
                     badgeText: 'Autumn 2026',
                     onTap: () => onNavigateToFeature(0),
                   ),
@@ -64,7 +67,10 @@ class ParentExaminationDashboard extends StatelessWidget {
                     title: "Child's Results",
                     subtitle: 'Semester Grades & GPA',
                     icon: Icons.grade_outlined,
-                    color: const Color(0xFF7B1FA2),
+                    color: context.adaptive(
+                      light: const Color(0xFF7B1FA2),
+                      dark: const Color(0xFFCE93D8),
+                    ),
                     badgeText: 'Published',
                     onTap: () => onNavigateToFeature(1),
                   ),
@@ -73,7 +79,10 @@ class ParentExaminationDashboard extends StatelessWidget {
                     title: "Child's Reports",
                     subtitle: 'Performance & Trends',
                     icon: Icons.assessment_outlined,
-                    color: const Color(0xFF0097A7),
+                    color: context.adaptive(
+                      light: const Color(0xFF0097A7),
+                      dark: const Color(0xFF4DD0E1),
+                    ),
                     badgeText: 'Progress PDF',
                     onTap: () => onNavigateToFeature(2),
                   ),
@@ -181,10 +190,10 @@ class ParentExaminationDashboard extends StatelessWidget {
   }) {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.palette.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: InkWell(
         onTap: onTap,
@@ -231,10 +240,10 @@ class ParentExaminationDashboard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.ink,
+                      color: context.palette.ink,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -242,9 +251,9 @@ class ParentExaminationDashboard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.muted,
+                      color: context.palette.inkSecondary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

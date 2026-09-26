@@ -88,7 +88,7 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
             )
             .fold<double>(0, (sum, item) => sum + item.amount);
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F7F5),
+      backgroundColor: context.adaptive(light: const Color(0xFFF3F7F5), dark: const Color(0xFF0E0F13)),
       appBar: AppBar(
         title: const Text('Accounts'),
       ),
@@ -104,17 +104,17 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Manage student balances, payments and recharge rules.',
-              style: TextStyle(color: Color(0xFF66736C)),
+              style: TextStyle(color: context.adaptive(light: const Color(0xFF66736C), dark: const Color(0xFFA3A5B0))),
             ),
             const SizedBox(height: 18),
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.palette.surface,
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color(0xFFDDE9E2)),
+                border: Border.all(color: context.adaptive(light: const Color(0xFFDDE9E2), dark: const Color(0xFF2B2C34))),
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x100B5136),
@@ -132,16 +132,16 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE2F5E9),
+                          color: context.adaptive(light: const Color(0xFFE2F5E9), dark: const Color(0x2E147745)),
                           borderRadius: BorderRadius.circular(13),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.account_balance_wallet_rounded,
-                          color: Color(0xFF147745),
+                          color: context.adaptive(light: const Color(0xFF147745), dark: const Color(0xFF6EE7B7)),
                         ),
                       ),
                       const SizedBox(width: 11),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -155,16 +155,16 @@ class _AccountantWalletScreenState extends State<AccountantWalletScreen> {
                             Text(
                               'Live account summary',
                               style: TextStyle(
-                                color: Color(0xFF718078),
+                                color: context.adaptive(light: const Color(0xFF718078), dark: const Color(0xFFA3A5B0)),
                                 fontSize: 12,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.insights_rounded,
-                        color: Color(0xFF147745),
+                        color: context.adaptive(light: const Color(0xFF147745), dark: const Color(0xFF6EE7B7)),
                       ),
                     ],
                   ),
@@ -355,7 +355,10 @@ class _AccountantModuleCard extends StatelessWidget {
   final _AccountantModuleSpec spec;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
+  Widget build(BuildContext context) {
+    final dark = context.isDarkTheme;
+    final hueInk = dark ? Color.lerp(spec.to, Colors.white, 0.55)! : spec.to;
+    return SizedBox(
     height: 94,
     child: Material(
       key: spec.key,
@@ -366,7 +369,7 @@ class _AccountantModuleCard extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: spec.from,
+            color: dark ? spec.to.withValues(alpha: 0.18) : spec.from,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: spec.to.withValues(alpha: 0.16)),
             boxShadow: [
@@ -398,8 +401,8 @@ class _AccountantModuleCard extends StatelessWidget {
                       spec.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF202722),
+                      style: TextStyle(
+                        color: context.adaptive(light: const Color(0xFF202722), dark: const Color(0xFFF2F2F5)),
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                       ),
@@ -410,7 +413,7 @@ class _AccountantModuleCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: const Color(0xFF68736D),
+                        color: context.adaptive(light: const Color(0xFF68736D), dark: const Color(0xFFA3A5B0)),
                         fontSize: 11,
                       ),
                     ),
@@ -418,7 +421,7 @@ class _AccountantModuleCard extends StatelessWidget {
                     Text(
                       '${spec.actionLabel}  →',
                       style: TextStyle(
-                        color: spec.to,
+                        color: hueInk,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                       ),
@@ -434,7 +437,10 @@ class _AccountantModuleCard extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.82),
+                  color: context.adaptive(
+                    light: Colors.white.withValues(alpha: 0.82),
+                    dark: context.palette.surface.withValues(alpha: 0.72),
+                  ),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: spec.to.withValues(alpha: 0.18)),
                 ),
@@ -446,7 +452,7 @@ class _AccountantModuleCard extends StatelessWidget {
                       child: Text(
                         spec.metric,
                         style: TextStyle(
-                          color: spec.to,
+                          color: hueInk,
                           fontSize: 17,
                           fontWeight: FontWeight.w900,
                         ),
@@ -457,7 +463,7 @@ class _AccountantModuleCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: const Color(0xFF68736D),
+                        color: context.adaptive(light: const Color(0xFF68736D), dark: const Color(0xFFA3A5B0)),
                         fontSize: 9,
                       ),
                     ),
@@ -470,6 +476,7 @@ class _AccountantModuleCard extends StatelessWidget {
       ),
     ),
   );
+  }
 }
 
 class _StudentWalletDirectoryPage extends StatefulWidget {
@@ -529,7 +536,7 @@ class _StudentWalletDirectoryPageState
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surfaceRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -566,7 +573,7 @@ class _StudentWalletDirectoryPageState
         ? const <StudentYearGroup<StudentWalletAccount>>[]
         : groupStudentsByYear(wallets, (wallet) => wallet.yearOfStudy);
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F7F5),
+      backgroundColor: context.adaptive(light: const Color(0xFFF3F7F5), dark: const Color(0xFF0E0F13)),
       appBar: AppBar(title: const Text('Student wallets')),
       body: RefreshIndicator(
         onRefresh: _load,
@@ -580,7 +587,7 @@ class _StudentWalletDirectoryPageState
                 hintText: 'Search name, roll number or department',
                 prefixIcon: const Icon(Icons.search_rounded),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: context.palette.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
@@ -596,15 +603,15 @@ class _StudentWalletDirectoryPageState
                   vertical: 11,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE5F4EA),
+                  color: context.adaptive(light: const Color(0xFFE5F4EA), dark: const Color(0x2E147745)),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.groups_2_outlined,
                       size: 20,
-                      color: Color(0xFF147745),
+                      color: context.adaptive(light: const Color(0xFF147745), dark: const Color(0xFF6EE7B7)),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -612,10 +619,10 @@ class _StudentWalletDirectoryPageState
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                     const Spacer(),
-                    const Text(
+                    Text(
                       'A–Z',
                       style: TextStyle(
-                        color: Color(0xFF147745),
+                        color: context.adaptive(light: const Color(0xFF147745), dark: const Color(0xFF6EE7B7)),
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -649,8 +656,8 @@ class _StudentWalletDirectoryPageState
                       const Spacer(),
                       Text(
                         '${group.students.length}',
-                        style: const TextStyle(
-                          color: Color(0xFF147745),
+                        style: TextStyle(
+                          color: context.adaptive(light: const Color(0xFF147745), dark: const Color(0xFF6EE7B7)),
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -700,7 +707,7 @@ class _WalletActivityPageState extends State<_WalletActivityPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF6F4FF),
+    backgroundColor: context.adaptive(light: const Color(0xFFF6F4FF), dark: const Color(0xFF0E0F13)),
     appBar: AppBar(title: const Text('Wallet activity')),
     body: RefreshIndicator(
       onRefresh: _load,
@@ -804,7 +811,7 @@ class _WalletLimitSettingsPageState extends State<_WalletLimitSettingsPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF6F4FF),
+    backgroundColor: context.adaptive(light: const Color(0xFFF6F4FF), dark: const Color(0xFF0E0F13)),
     appBar: AppBar(title: const Text('Student top-up limits')),
     body: ListView(
       padding: const EdgeInsets.all(18),
@@ -848,7 +855,7 @@ class _WalletLimitSettingsPageState extends State<_WalletLimitSettingsPage> {
         const SizedBox(height: 20),
         Card(
           elevation: 0,
-          color: Colors.white,
+          color: context.palette.surface,
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: Column(
@@ -916,13 +923,13 @@ class _SummaryValue extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(10),
     decoration: BoxDecoration(
-      color: const Color(0xFFF5F8F6),
+      color: context.adaptive(light: const Color(0xFFF5F8F6), dark: const Color(0xFF1C1D23)),
       borderRadius: BorderRadius.circular(14),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 17, color: const Color(0xFF147745)),
+        Icon(icon, size: 17, color: context.adaptive(light: const Color(0xFF147745), dark: const Color(0xFF6EE7B7))),
         const SizedBox(height: 6),
         Text(
           value,
@@ -933,7 +940,7 @@ class _SummaryValue extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: Color(0xFF718078), fontSize: 9.5),
+          style: TextStyle(color: context.adaptive(light: const Color(0xFF718078), dark: const Color(0xFFA3A5B0)), fontSize: 9.5),
         ),
       ],
     ),
@@ -955,11 +962,11 @@ class _TransactionCard extends StatelessWidget {
   Widget build(BuildContext context) => Card(
     margin: const EdgeInsets.only(bottom: 10),
     elevation: 0,
-    color: Colors.white,
+    color: context.palette.surface,
     child: ListTile(
       leading: CircleAvatar(
         backgroundColor: AppColors.brandLavender,
-        foregroundColor: AppColors.primary,
+        foregroundColor: context.palette.brand,
         child: Icon(
           transaction.isCredit
               ? Icons.south_west_rounded
@@ -980,8 +987,8 @@ class _TransactionCard extends StatelessWidget {
       ),
       trailing: Text(
         '${transaction.isCredit ? '+' : ''}${transaction.amount.toStringAsFixed(0)}',
-        style: const TextStyle(
-          color: AppColors.primary,
+        style: TextStyle(
+          color: context.palette.brandInk,
           fontSize: 18,
           fontWeight: FontWeight.w800,
         ),
@@ -1001,7 +1008,7 @@ class _WalletCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
-      color: Colors.white,
+      color: context.palette.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -1022,7 +1029,7 @@ class _WalletCard extends StatelessWidget {
                       wallet.studentNumber,
                       wallet.department,
                     ].where((value) => value.isNotEmpty).join(' · '),
-                    style: const TextStyle(color: Color(0xFF747080)),
+                    style: TextStyle(color: context.adaptive(light: const Color(0xFF747080), dark: const Color(0xFFA3A5B0))),
                   ),
                 ],
               ),
@@ -1032,8 +1039,8 @@ class _WalletCard extends StatelessWidget {
               children: [
                 Text(
                   wallet.balance.toStringAsFixed(0),
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: context.palette.brandInk,
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1065,11 +1072,11 @@ class _StudentWalletAvatar extends StatelessWidget {
     final photoUrl = wallet.photoUrl?.trim();
     final fallback = Container(
       alignment: Alignment.center,
-      color: const Color(0xFFE8E2FF),
+      color: context.adaptive(light: const Color(0xFFE8E2FF), dark: const Color(0xFF231F4A)),
       child: Text(
         _initials(wallet.studentName),
-        style: const TextStyle(
-          color: AppColors.primary,
+        style: TextStyle(
+          color: context.palette.brandInk,
           fontWeight: FontWeight.w800,
         ),
       ),
@@ -1081,7 +1088,7 @@ class _StudentWalletAvatar extends StatelessWidget {
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
+        color: context.palette.surface,
         border: Border.all(color: const Color(0xFF39A66B), width: 2),
       ),
       child: ClipOval(

@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 enum TransactionResult { success, failure }
 
 Future<void> showTransactionResult(
@@ -91,8 +93,20 @@ class _TransactionResultViewState extends State<_TransactionResultView>
         ? const Color(0xFF08794A)
         : const Color(0xFFB4232A);
     final background = _successful
-        ? const Color(0xFFF4FBF7)
-        : const Color(0xFFFFF7F7);
+        ? context.adaptive(
+            light: const Color(0xFFF4FBF7),
+            dark: const Color(0xFF0F1A15),
+          )
+        : context.adaptive(
+            light: const Color(0xFFFFF7F7),
+            dark: const Color(0xFF1C1012),
+          );
+    // The deep accent carries the amount as text; lift it on dark.
+    final amountColor = context.adaptive(
+      light: deepAccent,
+      dark: _successful ? const Color(0xFF6EE7B7) : const Color(0xFFFCA5A5),
+    );
+    final p = context.palette;
     final scale = CurvedAnimation(
       parent: _controller,
       curve: const Interval(0.05, 0.48, curve: Curves.elasticOut),
@@ -169,7 +183,7 @@ class _TransactionResultViewState extends State<_TransactionResultView>
                                   'transaction-result-amount',
                                 ),
                                 style: TextStyle(
-                                  color: deepAccent,
+                                  color: amountColor,
                                   fontSize: 34,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: -1,
@@ -181,8 +195,11 @@ class _TransactionResultViewState extends State<_TransactionResultView>
                               widget.title,
                               key: const ValueKey('transaction-result-title'),
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Color(0xFF171A21),
+                              style: TextStyle(
+                                color: context.adaptive(
+                                  light: const Color(0xFF171A21),
+                                  dark: p.ink,
+                                ),
                                 fontSize: 25,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: -0.35,
@@ -193,8 +210,11 @@ class _TransactionResultViewState extends State<_TransactionResultView>
                               Text(
                                 message,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Color(0xFF687080),
+                                style: TextStyle(
+                                  color: context.adaptive(
+                                    light: const Color(0xFF687080),
+                                    dark: p.inkSecondary,
+                                  ),
                                   fontSize: 15,
                                   height: 1.4,
                                 ),
@@ -208,7 +228,7 @@ class _TransactionResultViewState extends State<_TransactionResultView>
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.75),
+                                  color: p.surfaceRaised.withValues(alpha: 0.75),
                                   borderRadius: BorderRadius.circular(999),
                                   border: Border.all(
                                     color: accent.withValues(alpha: 0.16),
@@ -216,8 +236,11 @@ class _TransactionResultViewState extends State<_TransactionResultView>
                                 ),
                                 child: Text(
                                   reference,
-                                  style: const TextStyle(
-                                    color: Color(0xFF687080),
+                                  style: TextStyle(
+                                    color: context.adaptive(
+                                      light: const Color(0xFF687080),
+                                      dark: p.inkSecondary,
+                                    ),
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -281,7 +304,7 @@ class _ResultMedallion extends StatelessWidget {
     height: 146,
     decoration: BoxDecoration(
       shape: BoxShape.circle,
-      color: Colors.white,
+      color: context.palette.surfaceRaised,
       boxShadow: [
         BoxShadow(
           color: color.withValues(alpha: 0.22),

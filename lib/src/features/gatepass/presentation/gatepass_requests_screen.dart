@@ -50,9 +50,9 @@ class GatepassRequestsScreen extends StatelessWidget {
                         child: Text('Apply hostel outpass'),
                       ),
                   ],
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.add_circle,
-                    color: AppColors.gateBlue,
+                    color: context.palette.brandInk,
                     size: 30,
                   ),
                 ),
@@ -116,7 +116,7 @@ class _RequestCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              const Icon(Icons.logout, size: 18, color: AppColors.gateBlue),
+              Icon(Icons.logout, size: 18, color: context.palette.brandInk),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -128,7 +128,14 @@ class _RequestCard extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.login, size: 18, color: AppColors.gateMagenta),
+              Icon(
+                Icons.login,
+                size: 18,
+                color: context.adaptive(
+                  light: AppColors.gateMagenta,
+                  dark: const Color(0xFFD58CFF),
+                ),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -176,28 +183,31 @@ class _RequestCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
                         Icons.verified_user_outlined,
-                        color: Color(0xFF087A4B),
+                        color: context.adaptive(
+                          light: const Color(0xFF087A4B),
+                          dark: const Color(0xFF6EE7B7),
+                        ),
                         size: 28,
                       ),
-                      SizedBox(height: 10),
-                      Text(
+                      const SizedBox(height: 10),
+                      const Text(
                         'Gate access ready',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      SizedBox(height: 5),
+                      const SizedBox(height: 5),
                       Text(
                         'Show this QR at security. Tap it to open full screen.',
                         style: TextStyle(
-                          color: AppColors.muted,
+                          color: context.palette.inkSecondary,
                           fontSize: 12,
                           height: 1.35,
                         ),

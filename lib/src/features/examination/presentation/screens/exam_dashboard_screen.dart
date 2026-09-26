@@ -30,12 +30,12 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
                 setState(() => _selectedStatus = status),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Quick Statistics & KPIs',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppColors.ink,
+              color: context.palette.ink,
             ),
           ),
           const SizedBox(height: 12),
@@ -198,9 +198,9 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.palette.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.palette.border),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.02),
@@ -235,19 +235,19 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
                           ),
                           Text(
                             item.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.ink,
+                              color: context.palette.ink,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             item.subtitle,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.muted,
+                              color: context.palette.inkSecondary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -300,33 +300,33 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.pending_actions,
-                color: AppColors.primary,
+                color: context.palette.brandInk,
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Pending Workflow Actions & Approvals',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
+                  color: context.palette.ink,
                 ),
               ),
               const Spacer(),
               Chip(
                 label: Text('${actions.length} Actionable'),
-                backgroundColor: AppColors.amberSoft,
+                backgroundColor: context.adaptive(light: AppColors.amberSoft, dark: const Color(0x2EF5A623)),
                 side: BorderSide.none,
                 labelStyle: const TextStyle(
                   fontSize: 11,
@@ -357,7 +357,7 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
                 ),
                 subtitle: Text(
                   act.subtitle,
-                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -426,23 +426,23 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.history, color: AppColors.primary, size: 20),
+              Icon(Icons.history, color: context.palette.brandInk, size: 20),
               SizedBox(width: 8),
               Text(
                 'Recent Exam Log',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
+                  color: context.palette.ink,
                 ),
               ),
             ],
@@ -478,9 +478,9 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
                           ),
                           Text(
                             act.time,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.muted,
+                              color: context.palette.inkSecondary,
                             ),
                           ),
                         ],

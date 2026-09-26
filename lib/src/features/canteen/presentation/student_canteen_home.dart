@@ -365,17 +365,17 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
           child: Container(
             height: 38,
             padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: const ShapeDecoration(
-              color: Color(0xFFEAF1FE),
+            decoration: ShapeDecoration(
+              color: context.adaptive(light: const Color(0xFFEAF1FE), dark: const Color(0x2E2563EB)),
               shape: StadiumBorder(),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.account_balance_wallet_outlined,
                   size: 17,
-                  color: Color(0xFF2563EB),
+                  color: context.palette.info,
                 ),
                 const SizedBox(width: 7),
                 FittedBox(
@@ -383,11 +383,11 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                   child: Text(
                     formatCurrency(widget.store.walletBalances[_selectedShopKey] ?? 0.0),
                     maxLines: 1,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF2563EB),
+                      color: context.palette.info,
                       letterSpacing: -0.1,
                       height: 1.1,
                     ),
@@ -408,7 +408,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
             tooltip: 'Scan laundry QR',
             onPressed: widget.onScanLaundryQr,
             icon: const Icon(Icons.qr_code_scanner_rounded),
-            color: const Color(0xFF2563EB),
+            color: context.palette.info,
           )
         else
           IconButton(
@@ -429,7 +429,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                 ? NetworkImage(widget.photoUrl!)
                 : null,
             child: widget.photoUrl == null || widget.photoUrl!.isEmpty
-                ? const Icon(Icons.person, size: 22, color: Colors.grey)
+                ? Icon(Icons.person, size: 22, color: context.adaptive(light: Colors.grey, dark: const Color(0xFF878995)))
                 : null,
           ),
         ),
@@ -469,10 +469,10 @@ class _StoreSelector extends StatelessWidget {
               ? Icons.local_laundry_service_outlined
               : Icons.restaurant;
           return Material(
-            color: isSelected ? AppColors.primary : Colors.white,
+            color: isSelected ? context.palette.brand : context.palette.surface,
             shape: StadiumBorder(
               side: BorderSide(
-                color: isSelected ? AppColors.primary : AppColors.border,
+                color: isSelected ? context.palette.brand : context.palette.border,
               ),
             ),
             child: InkWell(
@@ -486,13 +486,13 @@ class _StoreSelector extends StatelessWidget {
                     Icon(
                       icon,
                       size: 18,
-                      color: isSelected ? Colors.white : AppColors.muted,
+                      color: isSelected ? Colors.white : context.palette.inkSecondary,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       shop.name,
                       style: TextStyle(
-                        color: isSelected ? Colors.white : AppColors.muted,
+                        color: isSelected ? Colors.white : context.palette.inkSecondary,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -541,10 +541,10 @@ class _SubCategoryFilter extends StatelessWidget {
           final category = index == 0 ? null : categories[index - 1];
           final isSelected = category == selected;
           return Material(
-            color: isSelected ? AppColors.primary : Colors.white,
+            color: isSelected ? context.palette.brand : context.palette.surface,
             shape: StadiumBorder(
               side: BorderSide(
-                color: isSelected ? AppColors.primary : AppColors.border,
+                color: isSelected ? context.palette.brand : context.palette.border,
               ),
             ),
             child: InkWell(
@@ -556,7 +556,7 @@ class _SubCategoryFilter extends StatelessWidget {
                   child: Text(
                     category ?? 'All',
                     style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.muted,
+                      color: isSelected ? Colors.white : context.palette.inkSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -608,7 +608,7 @@ class _LaundryStudentPanel extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Wallet balance: ${formatCurrency(walletBalance)}',
-              style: const TextStyle(color: AppColors.muted),
+              style: TextStyle(color: context.palette.inkSecondary),
             ),
           ],
         ),
@@ -660,10 +660,10 @@ class _LaundryStudentPanel extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 18),
           child: Column(
             children: [
-              const Icon(
+              Icon(
                 Icons.qr_code_scanner_rounded,
                 size: 48,
-                color: Color(0xFF2563EB),
+                color: context.palette.info,
               ),
               const SizedBox(height: 12),
               const Text(
@@ -671,10 +671,10 @@ class _LaundryStudentPanel extends StatelessWidget {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'The laundry counter will create a QR for your clothes. Scan it to review and pay your bill.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.muted),
+                style: TextStyle(color: context.palette.inkSecondary),
               ),
               if (onScan != null) ...[
                 const SizedBox(height: 18),
@@ -722,7 +722,7 @@ class _LaundryStudentPanel extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 10),
             child: CanteenSurface(
               color: charge.status == LaundryChargeStatus.paid
-                  ? const Color(0xFFF0FAF3)
+                  ? context.adaptive(light: const Color(0xFFF0FAF3), dark: const Color(0x2E16803C))
                   : Colors.white,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -733,14 +733,14 @@ class _LaundryStudentPanel extends StatelessWidget {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFE9FF),
+                          color: context.adaptive(light: const Color(0xFFEFE9FF), dark: const Color(0x2E5B22FF)),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(
                           charge.serviceType == LaundryServiceType.wash
                               ? Icons.local_laundry_service_outlined
                               : Icons.iron_outlined,
-                          color: AppColors.primary,
+                          color: context.palette.brandInk,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -757,15 +757,15 @@ class _LaundryStudentPanel extends StatelessWidget {
                             ),
                             Text(
                               '${charge.quantity.toStringAsFixed(charge.unitLabel == 'kg' ? 1 : 0)} ${charge.unitLabel} · ${charge.serviceType == LaundryServiceType.wash ? 'Washing' : 'Ironing'}',
-                              style: const TextStyle(color: AppColors.muted),
+                              style: TextStyle(color: context.palette.inkSecondary),
                             ),
                           ],
                         ),
                       ),
                       Text(
                         formatCurrency(charge.total),
-                        style: const TextStyle(
-                          color: Color(0xFF2563EB),
+                        style: TextStyle(
+                          color: context.palette.info,
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                         ),
@@ -801,8 +801,8 @@ class _LaundryStudentPanel extends StatelessWidget {
                               : Icons.info_outline,
                           size: 18,
                           color: charge.status == LaundryChargeStatus.paid
-                              ? const Color(0xFF16803C)
-                              : AppColors.muted,
+                              ? context.adaptive(light: const Color(0xFF16803C), dark: const Color(0xFF6EE7B7))
+                              : context.palette.inkSecondary,
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -830,7 +830,7 @@ class _ClosedShopCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CanteenSurface(
-      color: const Color(0xFFFFF3EE),
+      color: context.adaptive(light: const Color(0xFFFFF3EE), dark: const Color(0x2EB64226)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 18),
         child: Column(
@@ -840,12 +840,12 @@ class _ClosedShopCard extends StatelessWidget {
               height: 52,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: const Color(0xFFFFDDD0),
+                color: context.adaptive(light: const Color(0xFFFFDDD0), dark: const Color(0x47B64226)),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.storefront_outlined,
-                color: Color(0xFFB64226),
+                color: context.adaptive(light: const Color(0xFFB64226), dark: const Color(0xFFF0B389)),
               ),
             ),
             const SizedBox(height: 13),
@@ -855,10 +855,10 @@ class _ClosedShopCard extends StatelessWidget {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 5),
-            const Text(
+            Text(
               'The menu will appear here when the counter opens.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.muted),
+              style: TextStyle(color: context.palette.inkSecondary),
             ),
           ],
         ),
@@ -927,8 +927,8 @@ class _MenuItemRow extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     formatCurrency(item.price),
-                    style: const TextStyle(
-                      color: Color(0xFF2563EB),
+                    style: TextStyle(
+                      color: context.palette.info,
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                     ),
@@ -938,7 +938,7 @@ class _MenuItemRow extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             if (unavailable)
-              const Text('Sold out', style: TextStyle(color: AppColors.muted))
+              Text('Sold out', style: TextStyle(color: context.palette.inkSecondary))
             else
               Align(
                 alignment: Alignment.centerRight,
@@ -970,10 +970,10 @@ class _CartBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.primary,
+      color: context.palette.brand,
       borderRadius: BorderRadius.circular(10),
       elevation: 6,
-      shadowColor: AppColors.primary.withValues(alpha: 0.35),
+      shadowColor: context.palette.brand.withValues(alpha: 0.35),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,

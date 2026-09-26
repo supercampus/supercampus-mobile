@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
+
 class QuantityControl extends StatelessWidget {
   const QuantityControl({
     super.key,
@@ -21,6 +23,7 @@ class QuantityControl extends StatelessWidget {
     final double width =
         isZero ? (compact ? 44.0 : 46.0) : (compact ? 96.0 : 108.0);
     final double iconButtonSize = compact ? 32.0 : 36.0;
+    final stepperInk = context.palette.info;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 280),
@@ -28,10 +31,20 @@ class QuantityControl extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: isZero ? const Color(0xFF2563EB) : const Color(0xFFE7F3EC),
+        color: isZero
+            ? const Color(0xFF2563EB)
+            : context.adaptive(
+                light: const Color(0xFFE7F3EC),
+                dark: const Color(0x2E2E7D52),
+              ),
         borderRadius: BorderRadius.circular(isZero ? (height / 2) : 8.0),
         border: Border.all(
-          color: isZero ? Colors.transparent : const Color(0xFFBBD9C6),
+          color: isZero
+              ? Colors.transparent
+              : context.adaptive(
+                  light: const Color(0xFFBBD9C6),
+                  dark: const Color(0x662E7D52),
+                ),
           width: 1.2,
         ),
         boxShadow: isZero
@@ -92,10 +105,10 @@ class QuantityControl extends StatelessWidget {
                         ),
                         padding: EdgeInsets.zero,
                         onPressed: onRemove,
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.remove,
                           size: 18,
-                          color: Color(0xFF2563EB),
+                          color: stepperInk,
                         ),
                       ),
                       AnimatedSwitcher(
@@ -116,8 +129,8 @@ class QuantityControl extends StatelessWidget {
                           '$quantity',
                           key: ValueKey('qty_$quantity'),
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Color(0xFF2563EB),
+                          style: TextStyle(
+                            color: stepperInk,
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
                           ),
@@ -131,10 +144,10 @@ class QuantityControl extends StatelessWidget {
                         ),
                         padding: EdgeInsets.zero,
                         onPressed: onAdd,
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.add,
                           size: 18,
-                          color: Color(0xFF2563EB),
+                          color: stepperInk,
                         ),
                       ),
                     ],

@@ -214,7 +214,7 @@ class _CanteenMenuItemEditorScreenState
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.info_outline_rounded, size: 18, color: AppColors.primary),
+                      Icon(Icons.info_outline_rounded, size: 18, color: context.palette.brandInk),
                       const SizedBox(width: 8),
                       Text(
                         'Item Details',
@@ -287,7 +287,7 @@ class _CanteenMenuItemEditorScreenState
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.payments_outlined, size: 18, color: AppColors.primary),
+                      Icon(Icons.payments_outlined, size: 18, color: context.palette.brandInk),
                       const SizedBox(width: 8),
                       Text(
                         'Pricing & Profit',
@@ -298,9 +298,9 @@ class _CanteenMenuItemEditorScreenState
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Set cost and selling price to track profit in the Sales section',
-                    style: TextStyle(fontSize: 12, color: AppColors.muted),
+                    style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
                   ),
                   const SizedBox(height: 14),
 
@@ -365,17 +365,17 @@ class _CanteenMenuItemEditorScreenState
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
                       color: profit == null
-                          ? const Color(0xFFF1F5F9)
+                          ? context.adaptive(light: const Color(0xFFF1F5F9), dark: const Color(0xFF1C1D23))
                           : profit >= 0
-                              ? const Color(0xFFECFDF5)
-                              : const Color(0xFFFEF2F2),
+                              ? context.adaptive(light: const Color(0xFFECFDF5), dark: const Color(0x2E10B981))
+                              : context.adaptive(light: const Color(0xFFFEF2F2), dark: const Color(0x2EEF4444)),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: profit == null
-                            ? const Color(0xFFCBD5E1)
+                            ? context.adaptive(light: const Color(0xFFCBD5E1), dark: const Color(0xFF3A3B44))
                             : profit >= 0
-                                ? const Color(0xFFA7F3D0)
-                                : const Color(0xFFFECACA),
+                                ? context.adaptive(light: const Color(0xFFA7F3D0), dark: const Color(0x6610B981))
+                                : context.adaptive(light: const Color(0xFFFECACA), dark: const Color(0x66EF4444)),
                       ),
                     ),
                     child: Row(
@@ -387,10 +387,10 @@ class _CanteenMenuItemEditorScreenState
                                   ? Icons.trending_up_rounded
                                   : Icons.trending_down_rounded,
                           color: profit == null
-                              ? const Color(0xFF64748B)
+                              ? context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0))
                               : profit >= 0
-                                  ? const Color(0xFF059669)
-                                  : const Color(0xFFDC2626),
+                                  ? context.adaptive(light: const Color(0xFF059669), dark: const Color(0xFF34D399))
+                                  : context.adaptive(light: const Color(0xFFDC2626), dark: const Color(0xFFF87171)),
                           size: 24,
                         ),
                         const SizedBox(width: 12),
@@ -408,10 +408,10 @@ class _CanteenMenuItemEditorScreenState
                                   fontWeight: FontWeight.w700,
                                   fontSize: 14,
                                   color: profit == null
-                                      ? const Color(0xFF475569)
+                                      ? context.adaptive(light: const Color(0xFF475569), dark: const Color(0xFFD9DAE0))
                                       : profit >= 0
-                                          ? const Color(0xFF047857)
-                                          : const Color(0xFFB91C1C),
+                                          ? context.adaptive(light: const Color(0xFF047857), dark: const Color(0xFF6EE7B7))
+                                          : context.adaptive(light: const Color(0xFFB91C1C), dark: const Color(0xFFFCA5A5)),
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -422,10 +422,10 @@ class _CanteenMenuItemEditorScreenState
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: profit == null
-                                      ? const Color(0xFF64748B)
+                                      ? context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0))
                                       : profit >= 0
-                                          ? const Color(0xFF065F46)
-                                          : const Color(0xFF991B1B),
+                                          ? context.adaptive(light: const Color(0xFF065F46), dark: const Color(0xFFA7F3D0))
+                                          : context.adaptive(light: const Color(0xFF991B1B), dark: const Color(0xFFFECACA)),
                                 ),
                               ),
                             ],
@@ -447,7 +447,7 @@ class _CanteenMenuItemEditorScreenState
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.image_outlined, size: 18, color: AppColors.primary),
+                      Icon(Icons.image_outlined, size: 18, color: context.palette.brandInk),
                       const SizedBox(width: 8),
                       Text(
                         'Item Art / Photo',
@@ -466,17 +466,17 @@ class _CanteenMenuItemEditorScreenState
                           width: 76,
                           height: 76,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: context.adaptive(light: const Color(0xFFF8FAFC), dark: const Color(0xFF1C1D23)),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: context.palette.border),
                           ),
                           child: _imageBytes != null
                               ? Image.memory(_imageBytes!, fit: BoxFit.cover)
                               : _imageUrl != null && _imageUrl!.isNotEmpty
                                   ? Image.network(_imageUrl!, fit: BoxFit.cover)
-                                  : const ColoredBox(
-                                      color: Color(0xFFE9EDF5),
-                                      child: Icon(Icons.restaurant_menu_rounded, size: 32, color: AppColors.primary),
+                                  : ColoredBox(
+                                      color: context.adaptive(light: const Color(0xFFE9EDF5), dark: const Color(0xFF202128)),
+                                      child: Icon(Icons.restaurant_menu_rounded, size: 32, color: context.palette.brandInk),
                                     ),
                         ),
                       ),

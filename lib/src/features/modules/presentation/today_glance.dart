@@ -4,6 +4,7 @@ import '../../../core/widgets/skeleton_loading.dart';
 import '../../../core/access/academic_presentation.dart';
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// What a person's day is made of.
 ///
@@ -408,23 +409,38 @@ class _ActivityRow extends StatelessWidget {
     final (icon, colour) = switch (activity.kind) {
       StudentActivityKind.canteen => (
         Icons.restaurant_outlined,
-        const Color(0xFF5B35D5),
+        context.adaptive(
+          light: const Color(0xFF5B35D5),
+          dark: const Color(0xFFB4A2F5),
+        ),
       ),
       StudentActivityKind.gatepass => (
         Icons.directions_walk_outlined,
-        const Color(0xFF3558D4),
+        context.adaptive(
+          light: const Color(0xFF3558D4),
+          dark: const Color(0xFF93B0F5),
+        ),
       ),
       StudentActivityKind.library => (
         Icons.local_library_outlined,
-        const Color(0xFF7A3DB8),
+        context.adaptive(
+          light: const Color(0xFF7A3DB8),
+          dark: const Color(0xFFD0A8F5),
+        ),
       ),
       StudentActivityKind.fees => (
         Icons.account_balance_wallet_outlined,
-        const Color(0xFFC06A00),
+        context.adaptive(
+          light: const Color(0xFFC06A00),
+          dark: const Color(0xFFF5B55C),
+        ),
       ),
       StudentActivityKind.timetable => (
         Icons.schedule_outlined,
-        const Color(0xFF087C68),
+        context.adaptive(
+          light: const Color(0xFF087C68),
+          dark: const Color(0xFF5EDCC3),
+        ),
       ),
     };
     final theme = Theme.of(context);

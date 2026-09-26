@@ -59,16 +59,16 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
   Widget _buildHeaderBanner(bool isMobile) {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.palette.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: Padding(
         padding: EdgeInsets.all(isMobile ? 12 : 16),
         child: Row(
           children: [
-            const Icon(Icons.publish, color: AppColors.primary, size: 28),
+            Icon(Icons.publish, color: context.palette.brandInk, size: 28),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -79,9 +79,9 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     'Staggered publication, embargo release controls, and recipient notifications.',
-                    style: TextStyle(fontSize: 11, color: AppColors.muted),
+                    style: TextStyle(fontSize: 11, color: context.palette.inkSecondary),
                   ),
                 ],
               ),
@@ -96,9 +96,9 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
     return Container(
       padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -123,9 +123,9 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,9 +169,9 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,9 +208,15 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.orange.shade50,
+              color: context.adaptive(
+                light: Colors.orange.shade50,
+                dark: const Color(0x2EFF9800),
+              ),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.orange.shade200),
+              border: Border.all(color: context.adaptive(
+                light: Colors.orange.shade200,
+                dark: const Color(0x66FF9800),
+              )),
             ),
             child: const Row(
               children: [
@@ -236,7 +242,8 @@ class _ResultPublishingScreenState extends State<ResultPublishingScreen> {
               style: FilledButton.styleFrom(
                 backgroundColor: _isPublished
                     ? Colors.green
-                    : AppColors.primary,
+                    : context.palette.brand,
+                foregroundColor: Colors.white,
               ),
               onPressed: () {
                 setState(() => _isPublished = true);
@@ -279,12 +286,23 @@ class _StepItem extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 12,
-          backgroundColor: done ? Colors.green : Colors.grey.shade300,
+          backgroundColor: done
+              ? Colors.green
+              : context.adaptive(
+                  light: Colors.grey.shade300,
+                  dark: const Color(0xFF3A3B44),
+                ),
           child: done
               ? const Icon(Icons.check, size: 12, color: Colors.white)
               : Text(
                   step,
-                  style: const TextStyle(fontSize: 10, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: context.adaptive(
+                      light: Colors.black54,
+                      dark: const Color(0xFFA3A5B0),
+                    ),
+                  ),
                 ),
         ),
         const SizedBox(height: 4),
@@ -308,7 +326,10 @@ class _StepDivider extends StatelessWidget {
     return Container(
       width: 30,
       height: 2,
-      color: Colors.grey.shade300,
+      color: context.adaptive(
+        light: Colors.grey.shade300,
+        dark: const Color(0xFF3A3B44),
+      ),
       margin: const EdgeInsets.symmetric(horizontal: 4),
     );
   }

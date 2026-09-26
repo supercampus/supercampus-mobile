@@ -145,6 +145,14 @@ class GatepassTicketCard extends StatelessWidget {
                       width: 76,
                       height: 76,
                       alignment: Alignment.center,
+                      // QR stays dark-on-white in dark mode so it scans.
+                      padding: isDark ? const EdgeInsets.all(4) : null,
+                      decoration: isDark
+                          ? BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            )
+                          : null,
                       child: QrImageView(
                         data: qrData,
                         size: 74,
@@ -152,11 +160,11 @@ class GatepassTicketCard extends StatelessWidget {
                         padding: EdgeInsets.zero,
                         eyeStyle: QrEyeStyle(
                           eyeShape: QrEyeShape.circle,
-                          color: textColor,
+                          color: isDark ? const Color(0xFF0F172A) : textColor,
                         ),
                         dataModuleStyle: QrDataModuleStyle(
                           dataModuleShape: QrDataModuleShape.circle,
-                          color: textColor,
+                          color: isDark ? const Color(0xFF0F172A) : textColor,
                         ),
                       ),
                     ),

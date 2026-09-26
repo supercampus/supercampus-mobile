@@ -29,7 +29,7 @@ class _MergedExamManagementScreenState
                 horizontal: isMobile ? 12 : 16,
                 vertical: 10,
               ),
-              color: Colors.white,
+              color: context.palette.surface,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: SegmentedButton<int>(
@@ -56,7 +56,7 @@ class _MergedExamManagementScreenState
                 ),
               ),
             ),
-            const Divider(height: 1, color: AppColors.border),
+            Divider(height: 1, color: context.palette.border),
             Expanded(
               child: IndexedStack(
                 index: _selectedSection,

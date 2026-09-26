@@ -164,7 +164,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
         .split(RegExp(r'\s+'))
         .first;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F2FF),
+      backgroundColor: context.adaptive(light: const Color(0xFFF5F2FF), dark: context.palette.canvas),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         titleSpacing: 20,
@@ -177,7 +177,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
             ),
             Text(
               '$firstName • $_checkpoint',
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
             ),
           ],
         ),
@@ -355,9 +355,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Use this only when the camera cannot read the QR.',
-            style: TextStyle(color: AppColors.muted),
+            style: TextStyle(color: context.palette.inkSecondary),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -381,7 +381,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                 icon: const Icon(Icons.arrow_forward_rounded),
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: context.palette.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(18),
                 borderSide: BorderSide.none,
@@ -452,7 +452,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -464,7 +464,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
               color: _softPurple.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: _brandBlue),
+            child: Icon(icon, color: context.adaptive(light: _brandBlue, dark: context.palette.brandInk)),
           ),
           const SizedBox(width: 12),
           Column(
@@ -477,7 +477,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Text(label, style: const TextStyle(color: AppColors.muted)),
+              Text(label, style: TextStyle(color: context.palette.inkSecondary)),
             ],
           ),
         ],
@@ -498,9 +498,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 5),
-          const Text(
+          Text(
             'Latest verified scans from every checkpoint.',
-            style: TextStyle(color: AppColors.muted),
+            style: TextStyle(color: context.palette.inkSecondary),
           ),
           const SizedBox(height: 18),
           if (_loadingHistory)
@@ -537,7 +537,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
@@ -553,7 +553,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
             ),
             child: Icon(
               isEntry ? Icons.login_rounded : Icons.logout_rounded,
-              color: isEntry ? _brandBlue : _brandPurple,
+              color: isEntry ? context.adaptive(light: _brandBlue, dark: context.palette.brandInk) : context.adaptive(light: _brandPurple, dark: const Color(0xFFD38CFF)),
             ),
           ),
           const SizedBox(width: 12),
@@ -567,14 +567,14 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                 ),
                 Text(
                   movement.checkpoint,
-                  style: const TextStyle(color: AppColors.muted),
+                  style: TextStyle(color: context.palette.inkSecondary),
                 ),
               ],
             ),
           ),
           Text(
             _time(movement.createdAt),
-            style: const TextStyle(color: AppColors.muted, fontSize: 12),
+            style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
           ),
         ],
       ),
@@ -585,7 +585,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(22),
       ),
       child: Column(
@@ -636,12 +636,20 @@ class _ScanResultSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = accepted ? _brandBlue : const Color(0xFFE53935);
+    final p = context.palette;
+    // Strong fill for the action button (white label) and a legible ink for
+    // the icon: identical in light, lifted ink in dark.
+    final color = accepted
+        ? context.adaptive(light: _brandBlue, dark: p.brand)
+        : const Color(0xFFE53935);
+    final ink = accepted
+        ? context.adaptive(light: _brandBlue, dark: p.brandInk)
+        : context.adaptive(light: const Color(0xFFE53935), dark: p.danger);
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.fromLTRB(24, 26, 24, 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: p.surfaceRaised,
         borderRadius: BorderRadius.circular(30),
       ),
       child: SafeArea(
@@ -653,13 +661,13 @@ class _ScanResultSheet extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: .1),
+                color: ink.withValues(alpha: context.isDarkTheme ? .16 : .1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 accepted ? Icons.verified_rounded : Icons.block_rounded,
                 size: 40,
-                color: color,
+                color: ink,
               ),
             ),
             const SizedBox(height: 16),
@@ -672,14 +680,14 @@ class _ScanResultSheet extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.muted, height: 1.4),
+              style: TextStyle(color: p.inkSecondary, height: 1.4),
             ),
             if (movement != null) ...[
               const SizedBox(height: 12),
               Text(
                 'Reference ${movement!.id}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                style: TextStyle(fontSize: 11, color: p.inkSecondary),
               ),
             ],
             const SizedBox(height: 22),
@@ -687,6 +695,7 @@ class _ScanResultSheet extends StatelessWidget {
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
                 backgroundColor: color,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),

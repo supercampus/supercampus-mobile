@@ -95,21 +95,21 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
   Widget _buildRulesHeader(bool isMobile) {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.palette.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.palette.border),
       ),
       child: Padding(
         padding: EdgeInsets.all(isMobile ? 12 : 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
                 Icon(
                   Icons.verified_user_outlined,
-                  color: AppColors.primary,
+                  color: context.palette.brandInk,
                   size: 22,
                 ),
                 SizedBox(width: 8),
@@ -118,7 +118,7 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.ink,
+                    color: context.palette.ink,
                   ),
                 ),
               ],
@@ -205,10 +205,10 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
 
           return Card(
             elevation: 0,
-            color: Colors.white,
+            color: context.palette.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppColors.border),
+              side: BorderSide(color: context.palette.border),
             ),
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -249,9 +249,9 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
                   const SizedBox(height: 2),
                   Text(
                     'Roll: ${s['roll']} • ${s['programme']}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.muted,
+                      color: context.palette.inkSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -278,7 +278,7 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
                       if (isEligible)
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: context.palette.brand,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
                               vertical: 6,
@@ -315,9 +315,9 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -422,7 +422,7 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(Icons.badge, color: AppColors.primary),
+            Icon(Icons.badge, color: context.palette.brandInk),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -441,9 +441,9 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.canvas,
+                  color: context.palette.canvas,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.palette.border),
                 ),
                 child: Row(
                   children: [
@@ -452,10 +452,10 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
                       backgroundColor: AppColors.primary.withValues(alpha: 0.2),
                       child: Text(
                         student['name'][0],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: context.palette.brandInk,
                         ),
                       ),
                     ),
@@ -473,9 +473,9 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
                           ),
                           Text(
                             'Roll: ${student['roll']}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.muted,
+                              color: context.palette.inkSecondary,
                             ),
                           ),
                         ],
@@ -489,11 +489,12 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
                 data: 'SUPERCAMPUS-HALLTICKET-${student['roll']}-2026AUTUMN',
                 version: QrVersions.auto,
                 size: 140.0,
+                backgroundColor: Colors.white,
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Scan at Exam Hall Entrance for Verification',
-                style: TextStyle(fontSize: 10, color: AppColors.muted),
+                style: TextStyle(fontSize: 10, color: context.palette.inkSecondary),
               ),
             ],
           ),
@@ -504,7 +505,10 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
             child: const Text('Close'),
           ),
           FilledButton.icon(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.brand,
+              foregroundColor: context.palette.onBrand,
+            ),
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(

@@ -32,7 +32,7 @@ class GatepassVisitorsScreen extends StatelessWidget {
                   tooltip: 'Invite visitor',
                   onPressed: onInvite,
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.gateBlue,
+                    backgroundColor: context.palette.brand,
                   ),
                   icon: const Icon(Icons.person_add_alt_1),
                 ),
@@ -41,7 +41,10 @@ class GatepassVisitorsScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF171719),
+                  color: context.adaptive(
+                    light: const Color(0xFF171719),
+                    dark: context.palette.surfaceRaised,
+                  ),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Row(
@@ -81,11 +84,17 @@ class _VisitorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Material(
-      color: Colors.white,
+      color: p.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: Color(0xFFE8E8EC)),
+        side: BorderSide(
+          color: context.adaptive(
+            light: const Color(0xFFE8E8EC),
+            dark: p.border,
+          ),
+        ),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
@@ -98,11 +107,14 @@ class _VisitorCard extends StatelessWidget {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: const Color(0xFFF1F0FF),
+                    backgroundColor: context.adaptive(
+                      light: const Color(0xFFF1F0FF),
+                      dark: p.brandSoft,
+                    ),
                     child: Text(
                       visitor.visitorName.substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                        color: AppColors.gateBlue,
+                      style: TextStyle(
+                        color: p.brandInk,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -123,7 +135,7 @@ class _VisitorCard extends StatelessWidget {
                   ApprovalPill(status: visitor.status),
                   if (visitor.qrPayload != null) ...[
                     const SizedBox(width: 5),
-                    const Icon(Icons.chevron_right, color: AppColors.muted),
+                    Icon(Icons.chevron_right, color: p.inkSecondary),
                   ],
                 ],
               ),
@@ -136,7 +148,7 @@ class _VisitorCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 visitor.id,
-                style: const TextStyle(color: AppColors.gateBlue),
+                style: TextStyle(color: p.brandInk),
               ),
             ],
           ),
@@ -149,7 +161,10 @@ class _VisitorCard extends StatelessWidget {
     await showModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
-      backgroundColor: const Color(0xFF171719),
+      backgroundColor: context.adaptive(
+        light: const Color(0xFF171719),
+        dark: context.palette.surfaceRaised,
+      ),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
       ),
@@ -388,7 +403,7 @@ class _InviteVisitorSheetState extends State<InviteVisitorSheet> {
                   FilledButton(
                     onPressed: _submitting ? null : _submit,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.gateBlue,
+                      backgroundColor: context.palette.brand,
                     ),
                     child: _submitting
                         ? const SizedBox.square(

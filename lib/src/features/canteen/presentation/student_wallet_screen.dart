@@ -49,7 +49,7 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surfaceRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
       ),
@@ -83,7 +83,7 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
                 width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.border,
+                  color: context.palette.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -118,9 +118,9 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
             Container(
               padding: const EdgeInsets.all(17),
               decoration: BoxDecoration(
-                color: const Color(0xFFE7F3EC),
+                color: context.adaptive(light: const Color(0xFFE7F3EC), dark: const Color(0x2E2E7D52)),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFBBD9C6)),
+                border: Border.all(color: context.adaptive(light: const Color(0xFFBBD9C6), dark: const Color(0x662E7D52))),
               ),
               child: Row(
                 children: [
@@ -129,12 +129,12 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
                     height: 46,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.palette.surface,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.account_balance_wallet,
-                      color: AppColors.primary,
+                      color: context.palette.brandInk,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -142,15 +142,15 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Personal balance',
-                          style: TextStyle(color: AppColors.muted),
+                          style: TextStyle(color: context.palette.inkSecondary),
                         ),
                         const SizedBox(height: 2),
                           Text(
                             formatCurrency(store.walletBalances[widget.shopKey] ?? 0.0),
-                            style: const TextStyle(
-                            color: AppColors.primary,
+                            style: TextStyle(
+                            color: context.palette.brandInk,
                             fontSize: 25,
                             fontWeight: FontWeight.w500,
                           ),
@@ -214,8 +214,8 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
                                   alignment: Alignment.center,
                                   decoration: BoxDecoration(
                                     color: isCredit
-                                        ? const Color(0xFFE7F3EC)
-                                        : const Color(0xFFFDEBE9),
+                                        ? context.adaptive(light: const Color(0xFFE7F3EC), dark: const Color(0x2E2E7D52))
+                                        : context.adaptive(light: const Color(0xFFFDEBE9), dark: const Color(0x2EC43B31)),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(
@@ -223,8 +223,8 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
                                         ? Icons.south_west
                                         : Icons.north_east,
                                     color: isCredit
-                                        ? AppColors.success
-                                        : const Color(0xFFC43B31),
+                                        ? context.palette.success
+                                        : context.adaptive(light: const Color(0xFFC43B31), dark: const Color(0xFFFCA5A5)),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -258,8 +258,8 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
                                   ),
                                   style: TextStyle(
                                     color: isCredit
-                                        ? AppColors.success
-                                        : const Color(0xFFC43B31),
+                                        ? context.palette.success
+                                        : context.adaptive(light: const Color(0xFFC43B31), dark: const Color(0xFFFCA5A5)),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -314,14 +314,14 @@ class _OrderHistory extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: settled
-                      ? const Color(0xFFF1F2F4)
-                      : const Color(0xFFEAF1FE),
+                      ? context.adaptive(light: const Color(0xFFF1F2F4), dark: const Color(0xFF1C1D23))
+                      : context.adaptive(light: const Color(0xFFEAF1FE), dark: const Color(0x2E2563EB)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   settled ? Icons.check_rounded : Icons.schedule,
                   size: 20,
-                  color: settled ? AppColors.muted : const Color(0xFF2563EB),
+                  color: settled ? context.palette.inkSecondary : context.palette.info,
                 ),
               ),
               const SizedBox(width: 12),
@@ -381,7 +381,7 @@ class _EmptyHistory extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 30, color: AppColors.muted),
+          Icon(icon, size: 30, color: context.palette.inkSecondary),
           const SizedBox(height: 10),
           Text(message, style: Theme.of(context).textTheme.bodyMedium),
         ],

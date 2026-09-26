@@ -44,7 +44,9 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  ThemeMode _currentThemeMode = ThemeMode.system;
+  // Matches the app's default (app.dart `_loadThemeMode`): an account with no
+  // saved choice renders light, so the picker must say Light, not System.
+  ThemeMode _currentThemeMode = ThemeMode.light;
   late CanteenStaffMode _canteenMode =
       widget.currentCanteenMode ?? CanteenStaffMode.work;
 
@@ -72,7 +74,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (stored != null) {
         final mode = ThemeMode.values.firstWhere(
           (m) => m.name == stored,
-          orElse: () => ThemeMode.system,
+          orElse: () => ThemeMode.light,
         );
         if (mounted) {
           setState(() => _currentThemeMode = mode);
@@ -370,10 +372,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           _canteenMode == CanteenStaffMode.work
                               ? 'Work mode'
                               : 'Eat mode',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+                            color: context.palette.brandInk,
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -425,8 +427,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   _SettingsTile(
                     icon: Icons.delete_outline_rounded,
                     title: 'Deactivate my account',
-                    textColor: const Color(0xFFE53935),
-                    iconColor: const Color(0xFFE53935),
+                    textColor: context.adaptive(
+                      light: const Color(0xFFE53935),
+                      dark: const Color(0xFFFF7A75),
+                    ),
+                    iconColor: context.adaptive(
+                      light: const Color(0xFFE53935),
+                      dark: const Color(0xFFFF7A75),
+                    ),
                     isDark: isDark,
                     onTap: () => _confirmDeactivate(context),
                   ),
@@ -594,7 +602,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: _canteenMode == CanteenStaffMode.work
-                          ? AppColors.primary.withValues(alpha: 0.12)
+                          ? context.palette.brandInk.withValues(alpha: 0.12)
                           : (isDark
                               ? const Color(0xFF2A2A2E)
                               : const Color(0xFFF2F2F5)),
@@ -603,7 +611,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: Icon(
                       Icons.work_outline_rounded,
                       color: _canteenMode == CanteenStaffMode.work
-                          ? AppColors.primary
+                          ? context.palette.brandInk
                           : mutedColor,
                     ),
                   ),
@@ -619,7 +627,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     style: TextStyle(color: mutedColor, fontSize: 12),
                   ),
                   trailing: _canteenMode == CanteenStaffMode.work
-                      ? const Icon(Icons.check_circle, color: AppColors.primary)
+                      ? Icon(Icons.check_circle, color: context.palette.brandInk)
                       : null,
                   onTap: () {
                     setState(() => _canteenMode = CanteenStaffMode.work);
@@ -636,7 +644,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: _canteenMode == CanteenStaffMode.eat
-                          ? AppColors.primary.withValues(alpha: 0.12)
+                          ? context.palette.brandInk.withValues(alpha: 0.12)
                           : (isDark
                               ? const Color(0xFF2A2A2E)
                               : const Color(0xFFF2F2F5)),
@@ -645,7 +653,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: Icon(
                       Icons.restaurant_outlined,
                       color: _canteenMode == CanteenStaffMode.eat
-                          ? AppColors.primary
+                          ? context.palette.brandInk
                           : mutedColor,
                     ),
                   ),
@@ -661,7 +669,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     style: TextStyle(color: mutedColor, fontSize: 12),
                   ),
                   trailing: _canteenMode == CanteenStaffMode.eat
-                      ? const Icon(Icons.check_circle, color: AppColors.primary)
+                      ? Icon(Icons.check_circle, color: context.palette.brandInk)
                       : null,
                   onTap: () {
                     setState(() => _canteenMode = CanteenStaffMode.eat);
@@ -765,13 +773,13 @@ class _SettingsPageState extends State<SettingsPage> {
         height: 38,
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.12)
+              ? context.palette.brandInk.withValues(alpha: 0.12)
               : (isDark ? const Color(0xFF2C2C32) : const Color(0xFFF1F2F6)),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(
           icon,
-          color: isSelected ? AppColors.primary : textColor,
+          color: isSelected ? context.palette.brandInk : textColor,
           size: 20,
         ),
       ),
@@ -780,7 +788,7 @@ class _SettingsPageState extends State<SettingsPage> {
         style: TextStyle(
           fontSize: 15,
           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-          color: isSelected ? AppColors.primary : textColor,
+          color: isSelected ? context.palette.brandInk : textColor,
         ),
       ),
       subtitle: Text(
@@ -790,7 +798,7 @@ class _SettingsPageState extends State<SettingsPage> {
       trailing: isSelected
           ? Icon(
               Icons.check_circle_rounded,
-              color: AppColors.primary,
+              color: context.palette.brandInk,
               size: 22,
             )
           : null,
@@ -900,10 +908,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   color: const Color(0xFF6366F1).withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.school_rounded,
                   size: 34,
-                  color: Color(0xFF6366F1),
+                  color: isDark
+                      ? const Color(0xFFA5B4FC)
+                      : const Color(0xFF6366F1),
                 ),
               ),
               const SizedBox(height: 14),
@@ -933,6 +943,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   onPressed: () => Navigator.of(ctx).pop(),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF6366F1),
+                    foregroundColor: isDark ? Colors.white : null,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -969,7 +980,10 @@ class _SettingsPageState extends State<SettingsPage> {
               widget.onSignOut();
             },
             style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFE53935),
+              foregroundColor: context.adaptive(
+                light: const Color(0xFFE53935),
+                dark: const Color(0xFFFF7A75),
+              ),
             ),
             child: const Text(
               'Sign out / Deactivate',
