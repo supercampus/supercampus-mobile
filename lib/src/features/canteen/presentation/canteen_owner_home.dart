@@ -28,6 +28,10 @@ class CanteenOwnerHome extends StatefulWidget {
     required this.onDeleteMenuItem,
     required this.onUploadMedia,
     this.isMainHome = false,
+    this.onProfileTap,
+    this.photoUrl,
+    this.displayName,
+    this.email,
   });
 
   final CanteenStore store;
@@ -42,6 +46,10 @@ class CanteenOwnerHome extends StatefulWidget {
   final Future<void> Function(String itemId) onDeleteMenuItem;
   final Future<String> Function(Uint8List bytes, String filename) onUploadMedia;
   final bool isMainHome;
+  final VoidCallback? onProfileTap;
+  final String? photoUrl;
+  final String? displayName;
+  final String? email;
 
   @override
   State<CanteenOwnerHome> createState() => _CanteenOwnerHomeState();
@@ -159,6 +167,12 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
         busy: _busy,
         onEdit: _editItem,
         onDelete: (id) => _run(() => widget.onDeleteMenuItem(id)),
+        onToggleAvailability: (item, isAvailable) => _run(
+          () => widget.onSaveMenuItem(
+            item.copyWith(isAvailable: isAvailable),
+            false,
+          ),
+        ),
       ),
       OwnerCaptainSalesAnalytics(
         store: scopedStore,
@@ -189,17 +203,36 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
             icon: const Icon(Icons.tune),
             onPressed: _busy ? null : _openCounterControls,
           ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12, left: 4),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: widget.onProfileTap ?? _openCounterControls,
+              child: CircleAvatar(
+                radius: 17,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                backgroundImage: (widget.photoUrl != null &&
+                        widget.photoUrl!.isNotEmpty)
+                    ? NetworkImage(widget.photoUrl!)
+                    : null,
+                child: (widget.photoUrl == null || widget.photoUrl!.isEmpty)
+                    ? const Icon(Icons.person, size: 20, color: AppColors.primary)
+                    : null,
+              ),
+            ),
+          ),
         ],
       ),
       body: Column(
         children: [
-          _AssignedShopSelector(
-            shops: _assignedShops,
-            selectedShopKey: shopKey,
-            onSelected: (value) => setState(() {
-              _selectedShopKey = value;
-            }),
-          ),
+          if (_assignedShops.length > 1)
+            _AssignedShopSelector(
+              shops: _assignedShops,
+              selectedShopKey: shopKey,
+              onSelected: (value) => setState(() {
+                _selectedShopKey = value;
+              }),
+            ),
           // These are sections of this page, not app navigation, so they sit
           // at the top of it. A second bar at the bottom would land underneath
           // the one the host already floats there.
@@ -336,6 +369,7 @@ class _AssignedShopSelector extends StatelessWidget {
             return ChoiceChip(
               label: Text(shop.name),
               selected: shop.shopKey == selectedShopKey,
+              showCheckmark: false,
               onSelected: (_) => onSelected(shop.shopKey),
             );
           },
@@ -837,36 +871,104 @@ class _OwnerOrderCard extends StatelessWidget {
 
 
 
-class _OwnerMenu extends StatelessWidget {
+class _OwnerMenu extends StatefulWidget {
   const _OwnerMenu({
     required this.items,
     required this.busy,
     required this.onEdit,
     required this.onDelete,
+    required this.onToggleAvailability,
   });
 
   final List<CanteenMenuItem> items;
   final bool busy;
   final ValueChanged<CanteenMenuItem> onEdit;
   final ValueChanged<String> onDelete;
+  final void Function(CanteenMenuItem item, bool isAvailable)
+      onToggleAvailability;
+
+  @override
+  State<_OwnerMenu> createState() => _OwnerMenuState();
+}
+
+class _OwnerMenuState extends State<_OwnerMenu> {
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final query = _searchQuery.trim().toLowerCase();
+    final filtered = query.isEmpty
+        ? widget.items
+        : widget.items.where((item) {
+            return item.name.toLowerCase().contains(query) ||
+                item.category.toLowerCase().contains(query) ||
+                item.description.toLowerCase().contains(query);
+          }).toList();
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Menu management', style: Theme.of(context).textTheme.titleLarge),
             Text(
-              '${items.length} items',
+              'Menu management',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            Text(
+              query.isEmpty
+                  ? '${widget.items.length} items'
+                  : '${filtered.length} of ${widget.items.length} items',
               style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        for (final item in items)
+        // Search bar for menu items
+        TextField(
+          controller: _searchController,
+          onChanged: (val) => setState(() => _searchQuery = val),
+          decoration: InputDecoration(
+            hintText: 'Search menu items...',
+            prefixIcon: const Icon(Icons.search, size: 20),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear, size: 18),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                : null,
+            filled: true,
+            fillColor: const Color(0xFFF1F5F9),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (filtered.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 36),
+            child: Center(
+              child: Text(
+                'No menu items found',
+                style: TextStyle(color: AppColors.muted, fontSize: 14),
+              ),
+            ),
+          ),
+        for (final item in filtered)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: CanteenSurface(
@@ -941,8 +1043,10 @@ class _OwnerMenu extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: item.profit >= 0
-                                    ? const Color(0xFF10B981).withValues(alpha: 0.12)
-                                    : const Color(0xFFEF4444).withValues(alpha: 0.12),
+                                    ? const Color(0xFF10B981)
+                                        .withValues(alpha: 0.12)
+                                    : const Color(0xFFEF4444)
+                                        .withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -973,14 +1077,27 @@ class _OwnerMenu extends StatelessWidget {
                       ],
                     ),
                   ),
+                  // Availability on/off toggle right in the menu item card
+                  Tooltip(
+                    message: item.isAvailable
+                        ? 'Available (tap to make unavailable)'
+                        : 'Unavailable (tap to make available)',
+                    child: Switch.adaptive(
+                      value: item.isAvailable,
+                      activeTrackColor: const Color(0xFF10B981),
+                      onChanged: widget.busy
+                          ? null
+                          : (val) => widget.onToggleAvailability(item, val),
+                    ),
+                  ),
                   IconButton(
                     tooltip: 'Edit item',
-                    onPressed: busy ? null : () => onEdit(item),
+                    onPressed: widget.busy ? null : () => widget.onEdit(item),
                     icon: const Icon(Icons.edit_outlined, size: 20),
                   ),
                   IconButton(
                     tooltip: 'Delete item',
-                    onPressed: busy ? null : () => onDelete(item.id),
+                    onPressed: widget.busy ? null : () => widget.onDelete(item.id),
                     icon: const Icon(Icons.delete_outline, size: 20),
                   ),
                 ],

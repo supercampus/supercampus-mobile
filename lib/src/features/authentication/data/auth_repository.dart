@@ -277,6 +277,27 @@ class UserSession {
         roles.contains('hostel');
   }
 
+  /// Whether the user is Laundry Staff / Owner.
+  bool get isLaundryOwner {
+    final roles = <String>{
+      roleKey,
+      ...roleIds,
+    }.map((r) => r.trim().toLowerCase()).toSet();
+    return email.trim().toLowerCase() == 'laundry@mec.local' ||
+        roles.contains('laundry') ||
+        roles.contains('laundry_owner') ||
+        roles.contains('laundry_staff');
+  }
+
+  /// Whether the user has permission to use QR scanning in their navigation bar.
+  /// Strictly restricted to: canteen owner, captains, stationery owner, laundry owner, and security.
+  bool get canScanQr =>
+      isCanteenOwner ||
+      isCaptain ||
+      isStationeryOwner ||
+      isLaundryOwner ||
+      isSecurityStaff;
+
   /// High-visibility short role badge text for institutional portal headers.
   String get roleBadgeText {
     if (isAdmin) return 'ADMIN';
@@ -284,6 +305,7 @@ class UserSession {
     if (isCaptain) return 'CAPTAIN';
     if (isAccountant) return 'ACCOUNTS';
     if (isStationeryOwner) return 'STATIONERY';
+    if (isLaundryOwner) return 'LAUNDRY';
     final roles = <String>{
       roleKey,
       ...roleIds,

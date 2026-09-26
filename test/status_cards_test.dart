@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supercampus_mobile/src/features/authentication/data/auth_repository.dart';
 import 'package:supercampus_mobile/src/features/canteen/data/canteen_models.dart';
 import 'package:supercampus_mobile/src/features/gatepass/data/gatepass_models.dart';
 import 'package:supercampus_mobile/src/features/modules/presentation/widgets/status_cards/academics_report_card.dart';
@@ -18,7 +19,10 @@ import 'package:supercampus_mobile/src/features/modules/presentation/widgets/sta
 void main() {
   group('Status Card Builder', () {
     test('builds all 9 distinctive status card variants with fallbacks', () {
-      final cards = buildStudentStatusCards();
+      final cards = buildStudentStatusCards(
+        includePreviews: true,
+        shopsAndGatepassOnly: false,
+      );
       expect(cards.length, 9);
 
       final types = cards.map((c) => c.type).toSet();
@@ -31,6 +35,47 @@ void main() {
       expect(types, contains(StatusCardType.stationery));
       expect(types, contains(StatusCardType.laundry));
       expect(types, contains(StatusCardType.announcement));
+    });
+
+    test('returns empty list by default when student has not ordered', () {
+      final cards = buildStudentStatusCards();
+      expect(cards, isEmpty);
+    });
+
+    test('returns 0 status cards for akhil@gmail.com in eat mode when he has not ordered', () {
+      const session = UserSession(
+        email: 'akhil@gmail.com',
+        displayName: 'Akhil Canteen',
+        role: UserRole.staff,
+      );
+      final store = CanteenStore(
+        user: const CanteenUser(
+          name: 'Akhil Canteen',
+          email: 'akhil@gmail.com',
+          rollNumber: 'STAFF-01',
+          department: 'Canteen Operations',
+        ),
+        walletBalances: const {},
+        shops: const [],
+        menu: const [],
+        orders: [
+          // Order placed by another student at the counter
+          CanteenOrder(
+            id: 'ord-student-1',
+            lines: const [],
+            total: 120,
+            status: CanteenOrderStatus.preparing,
+            fulfilmentMode: FulfilmentMode.pickup,
+            createdAt: DateTime.now(),
+            customerName: 'Student Rajesh',
+          ),
+        ],
+        walletTransactions: const [],
+        canManage: true,
+      );
+
+      final cards = buildStudentStatusCards(store: store, session: session);
+      expect(cards, isEmpty);
     });
   });
 
@@ -301,7 +346,7 @@ void main() {
       tester,
     ) async {
       StatusCardData? selected;
-      final cards = buildStudentStatusCards();
+      final cards = buildStudentStatusCards(includePreviews: true);
 
       await tester.pumpWidget(
         MaterialApp(

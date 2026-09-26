@@ -7,45 +7,74 @@ import 'status_card_models.dart';
 
 /// Pure mapping builder that transforms live store, glance facts, and announcements
 /// into strongly typed [StatusCardData] instances for the student status carousel.
+///
+/// By default, only active shop orders (food, stationery, laundry) and active gatepasses
+/// are included for users who have actually ordered or have an active gatepass.
 List<StatusCardData> buildStudentStatusCards({
   CanteenStore? store,
   GlanceFacts? glance,
   List<LibraryAnnouncement>? announcements,
   UserSession? session,
+  bool includePreviews = false,
+  bool shopsAndGatepassOnly = true,
 }) {
   final cards = <StatusCardData>[];
 
   // ---------------------------------------------------------------------------
-  // 1. Food Orders (Kitchen Order Slip)
+  // Personal order filtering (specifically for canteen staff/owners in eat mode)
   // ---------------------------------------------------------------------------
-  if (store != null && store.orders.isNotEmpty) {
-    final activeOrders = store.orders.where((o) => o.status.isActive).toList();
-    if (activeOrders.isNotEmpty) {
-      for (final order in activeOrders.take(2)) {
-        cards.add(
-          FoodOrderCardData(
-            id: 'order-${order.id}',
-            orderNumber: order.displayId,
-            status: order.status,
-            itemName: order.lines.firstOrNull?.item.name,
-            imageUrl: order.lines.firstOrNull?.item.imageUrl,
-          ),
-        );
-      }
-    } else {
-      final latest = store.orders.first;
+  final currentUserName = session?.displayName.trim().toLowerCase();
+  final currentUserEmail = session?.email.trim().toLowerCase();
+
+  final personalOrders = (store?.orders ?? []).where((o) {
+    if (session == null) return true;
+    // For canteen owners, stationery operators, captains, or staff where store.canManage
+    // is true, store.orders contains counter-wide orders from all students.
+    // In Eat mode, the user should only see orders they personally placed.
+    if (session.isCanteenOwner ||
+        session.isCaptain ||
+        session.isStationeryOwner ||
+        (store?.canManage ?? false)) {
+      final cust = (o.customerName ?? '').trim().toLowerCase();
+      final matchesName = currentUserName != null &&
+          currentUserName.isNotEmpty &&
+          cust == currentUserName;
+      final matchesEmail = currentUserEmail != null &&
+          currentUserEmail.isNotEmpty &&
+          cust == currentUserEmail;
+      return matchesName || matchesEmail;
+    }
+    return true;
+  }).toList();
+
+  // ---------------------------------------------------------------------------
+  // 1. Food Orders (Kitchen Order Slip) - Active orders only
+  // ---------------------------------------------------------------------------
+  final activeFoodOrders = personalOrders.where((o) {
+    if (!o.status.isActive) return false;
+    // Must contain food items (not purely stationery)
+    final isStationeryOnly = o.lines.every(
+      (l) =>
+          l.item.store == MenuStore.stationery ||
+          l.item.shopKey == 'stationery' ||
+          l.item.effectiveShopKey == 'stationery',
+    );
+    return !isStationeryOnly;
+  }).toList();
+
+  if (activeFoodOrders.isNotEmpty) {
+    for (final order in activeFoodOrders.take(2)) {
       cards.add(
         FoodOrderCardData(
-          id: 'order-${latest.id}',
-          orderNumber: latest.displayId,
-          status: latest.status,
-          itemName: latest.lines.firstOrNull?.item.name,
-          imageUrl: latest.lines.firstOrNull?.item.imageUrl,
+          id: 'order-${order.id}',
+          orderNumber: order.displayId,
+          status: order.status,
+          itemName: order.lines.firstOrNull?.item.name,
+          imageUrl: order.lines.firstOrNull?.item.imageUrl,
         ),
       );
     }
-  } else {
-    // Default preview order matching reference design
+  } else if (includePreviews) {
     cards.add(
       const FoodOrderCardData(
         id: 'order-1275',
@@ -57,7 +86,7 @@ List<StatusCardData> buildStudentStatusCards({
   }
 
   // ---------------------------------------------------------------------------
-  // 2. Gatepass (Admission / Exit Ticket)
+  // 2. Gatepass (Admission / Exit Ticket) - Active gatepass only
   // ---------------------------------------------------------------------------
   final gpActivity = glance?.activities
       .where((a) => a.kind == StudentActivityKind.gatepass)
@@ -75,13 +104,13 @@ List<StatusCardData> buildStudentStatusCards({
             ? ApprovalStatus.pending
             : ApprovalStatus.approved,
         validUntilText: gpActivity.supporting.isNotEmpty
-            ? gpActivity.supporting.toUpperCase()
+            ? gpActivity.supporting
             : 'VALID UNTIL 09:30 PM',
         destination: 'Campus Exit',
         qrPayload: qrPayload,
       ),
     );
-  } else {
+  } else if (includePreviews) {
     cards.add(
       GatepassTicketCardData(
         id: 'gp-current',
@@ -95,7 +124,86 @@ List<StatusCardData> buildStudentStatusCards({
   }
 
   // ---------------------------------------------------------------------------
-  // 3. Academics (Report Card / Marksheet)
+  // 3. Stationery (Parcel Shipping Label) - Active orders only
+  // ---------------------------------------------------------------------------
+  final activeStationeryOrder = personalOrders.where((o) {
+    if (!o.status.isActive) return false;
+    return o.lines.any(
+      (l) =>
+          l.item.store == MenuStore.stationery ||
+          l.item.shopKey == 'stationery' ||
+          l.item.effectiveShopKey == 'stationery',
+    );
+  }).firstOrNull;
+
+  if (activeStationeryOrder != null) {
+    final totalItems = activeStationeryOrder.lines.fold<int>(
+      0,
+      (sum, l) => sum + l.quantity,
+    );
+    cards.add(
+      StationeryParcelCardData(
+        id: 'stat-${activeStationeryOrder.id}',
+        orderNumber: activeStationeryOrder.displayId,
+        itemCount: totalItems,
+        pickupLocation: 'Desk #1, Stationery Store',
+        status: activeStationeryOrder.status == CanteenOrderStatus.ready
+            ? StationeryParcelStatus.readyForPickup
+            : StationeryParcelStatus.processing,
+      ),
+    );
+  } else if (includePreviews) {
+    cards.add(
+      const StationeryParcelCardData(
+        id: 'stat-demo',
+        orderNumber: '0418',
+        itemCount: 3,
+        pickupLocation: 'Desk #2, Ground Floor',
+        status: StationeryParcelStatus.readyForPickup,
+        trackingCode: 'PKG-MEC-4910',
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // 4. Laundry (Dry-cleaner Claim Tag) - Pending charges only
+  // ---------------------------------------------------------------------------
+  final unpaidCharge = store?.laundryCharges
+      .where((c) => c.status == LaundryChargeStatus.pending)
+      .firstOrNull;
+
+  if (unpaidCharge != null) {
+    cards.add(
+      LaundryTagCardData(
+        id: 'laundry-${unpaidCharge.id}',
+        tokenNumber:
+            'L-${unpaidCharge.id.substring(0, unpaidCharge.id.length.clamp(0, 4)).toUpperCase()}',
+        clothesCount: unpaidCharge.quantity.toInt().clamp(1, 99),
+        status: unpaidCharge.status == LaundryChargeStatus.paid
+            ? LaundryTagStatus.ready
+            : LaundryTagStatus.washing,
+        pickupDeadline: 'Ready today by 5 PM',
+      ),
+    );
+  } else if (includePreviews) {
+    cards.add(
+      const LaundryTagCardData(
+        id: 'laundry-demo',
+        tokenNumber: 'L-204',
+        clothesCount: 6,
+        status: LaundryTagStatus.ready,
+        pickupDeadline: 'Ready today by 5 PM',
+      ),
+    );
+  }
+
+  // If only shops and gatepass are requested, return here
+  if (shopsAndGatepassOnly) {
+    return cards;
+  }
+
+  // ---------------------------------------------------------------------------
+  // 5. Academics (Report Card / Marksheet)
   // ---------------------------------------------------------------------------
   final standing = glance?.standing;
   if (standing != null && !standing.isUnrecorded) {
@@ -113,7 +221,7 @@ List<StatusCardData> buildStudentStatusCards({
         subtitle: sub,
       ),
     );
-  } else {
+  } else if (includePreviews) {
     cards.add(
       const AcademicsReportCardData(
         id: 'acad-demo',
@@ -127,7 +235,7 @@ List<StatusCardData> buildStudentStatusCards({
   }
 
   // ---------------------------------------------------------------------------
-  // 4. Timetable (Digital Schedule Display)
+  // 6. Timetable (Digital Schedule Display)
   // ---------------------------------------------------------------------------
   final todayClass = glance?.classes.firstOrNull;
   final ttActivity = glance?.activities
@@ -161,7 +269,7 @@ List<StatusCardData> buildStudentStatusCards({
         countdownText: ttActivity.statusLabel,
       ),
     );
-  } else {
+  } else if (includePreviews) {
     cards.add(
       const TimetableScheduleCardData(
         id: 'tt-demo',
@@ -175,7 +283,7 @@ List<StatusCardData> buildStudentStatusCards({
   }
 
   // ---------------------------------------------------------------------------
-  // 5. Fees (Printed Cashier Receipt)
+  // 7. Fees (Printed Cashier Receipt)
   // ---------------------------------------------------------------------------
   final feeActivity = glance?.activities
       .where((a) => a.kind == StudentActivityKind.fees)
@@ -193,7 +301,7 @@ List<StatusCardData> buildStudentStatusCards({
         receiptNumber: 'REC-MEC-8492',
       ),
     );
-  } else {
+  } else if (includePreviews) {
     cards.add(
       const FeesReceiptCardData(
         id: 'fee-demo',
@@ -206,7 +314,7 @@ List<StatusCardData> buildStudentStatusCards({
   }
 
   // ---------------------------------------------------------------------------
-  // 6. Library (Paper Circulation Slip)
+  // 8. Library (Paper Circulation Slip)
   // ---------------------------------------------------------------------------
   final libActivity = glance?.activities
       .where((a) => a.kind == StudentActivityKind.library)
@@ -224,7 +332,7 @@ List<StatusCardData> buildStudentStatusCards({
         status: LibrarySlipStatus.borrowed,
       ),
     );
-  } else {
+  } else if (includePreviews) {
     cards.add(
       const LibrarySlipCardData(
         id: 'lib-demo',
@@ -232,81 +340,6 @@ List<StatusCardData> buildStudentStatusCards({
         author: 'Robert C. Martin',
         returnDateText: 'RETURN BY 28 SEP 2026',
         status: LibrarySlipStatus.borrowed,
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // 7. Stationery (Parcel Shipping Label)
-  // ---------------------------------------------------------------------------
-  final stationeryOrder = store?.orders
-      .where(
-        (o) => o.lines.any(
-          (l) =>
-              l.item.store == MenuStore.stationery ||
-              l.item.shopKey == 'stationery',
-        ),
-      )
-      .firstOrNull;
-
-  if (stationeryOrder != null) {
-    final totalItems = stationeryOrder.lines.fold<int>(
-      0,
-      (sum, l) => sum + l.quantity,
-    );
-    cards.add(
-      StationeryParcelCardData(
-        id: 'stat-${stationeryOrder.id}',
-        orderNumber: stationeryOrder.displayId,
-        itemCount: totalItems,
-        pickupLocation: 'Desk #1, Stationery Store',
-        status: stationeryOrder.status == CanteenOrderStatus.ready
-            ? StationeryParcelStatus.readyForPickup
-            : StationeryParcelStatus.processing,
-      ),
-    );
-  } else {
-    cards.add(
-      const StationeryParcelCardData(
-        id: 'stat-demo',
-        orderNumber: '0418',
-        itemCount: 3,
-        pickupLocation: 'Desk #2, Ground Floor',
-        status: StationeryParcelStatus.readyForPickup,
-        trackingCode: 'PKG-MEC-4910',
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // 8. Laundry (Dry-cleaner Claim Tag)
-  // ---------------------------------------------------------------------------
-  final unpaidCharge = store?.laundryCharges
-          .where((c) => c.status != LaundryChargeStatus.paid)
-          .firstOrNull ??
-      store?.laundryCharges.firstOrNull;
-
-  if (unpaidCharge != null) {
-    cards.add(
-      LaundryTagCardData(
-        id: 'laundry-${unpaidCharge.id}',
-        tokenNumber:
-            'L-${unpaidCharge.id.substring(0, unpaidCharge.id.length.clamp(0, 4)).toUpperCase()}',
-        clothesCount: unpaidCharge.quantity.toInt().clamp(1, 99),
-        status: unpaidCharge.status == LaundryChargeStatus.paid
-            ? LaundryTagStatus.ready
-            : LaundryTagStatus.washing,
-        pickupDeadline: 'Ready today by 5 PM',
-      ),
-    );
-  } else {
-    cards.add(
-      const LaundryTagCardData(
-        id: 'laundry-demo',
-        tokenNumber: 'L-204',
-        clothesCount: 6,
-        status: LaundryTagStatus.ready,
-        pickupDeadline: 'Ready today by 5 PM',
       ),
     );
   }
@@ -328,7 +361,7 @@ List<StatusCardData> buildStudentStatusCards({
         urgency: NoticeUrgency.important,
       ),
     );
-  } else {
+  } else if (includePreviews) {
     cards.add(
       const AnnouncementNoticeCardData(
         id: 'ann-demo',

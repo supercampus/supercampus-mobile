@@ -638,6 +638,10 @@ class _CanteenShellState extends State<CanteenShell> {
         onUploadMedia: (bytes, filename) =>
             _repository.uploadMedia(bytes, filename: filename),
         isMainHome: widget.isMainHome,
+        onProfileTap: widget.onProfileTap ?? () => _openProfile(context),
+        photoUrl: widget.photoUrl ?? widget.session.photoUrl,
+        displayName: widget.session.displayName,
+        email: widget.session.email,
       );
     }
 

@@ -267,14 +267,15 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
             bottom: safeBottom + 10,
             child: CampusNavBar(
               selectedId: 'home',
+              showScan: widget.session.canScanQr,
               initials: initialsOf(widget.session.displayName),
               avatarUrl: widget.session.photoUrl,
               onHome: () {},
               onModules: _openModules,
               onProfile: _openProfileSheet,
-              onScan: widget.onScan == null
-                  ? null
-                  : () => widget.onScan!(context),
+              onScan: widget.session.canScanQr && widget.onScan != null
+                  ? () => widget.onScan!(context)
+                  : null,
             ),
           ),
         ],
@@ -346,14 +347,16 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                         bottom: MediaQuery.paddingOf(context).bottom + 10,
                         child: CampusNavBar(
                           selectedId: _selectedNavId,
+                          showScan: widget.session.canScanQr,
                           initials: initialsOf(widget.session.displayName),
                           avatarUrl: widget.session.photoUrl,
                           onHome: () {},
                           onModules: _openModules,
                           onProfile: _openProfileSheet,
-                          onScan: widget.onScan == null
-                              ? null
-                              : () => widget.onScan!(context),
+                          onScan:
+                              widget.session.canScanQr && widget.onScan != null
+                                  ? () => widget.onScan!(context)
+                                  : null,
                         ),
                       ),
                     ],

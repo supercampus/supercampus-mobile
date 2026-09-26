@@ -72,6 +72,110 @@ class ModuleNavigationHost extends StatelessWidget {
     final navHeight = CampusNavBar.heightFor(context);
     final reservedBottom = safeBottom + navHeight + 20;
 
+    final canScan = session.canScanQr;
+    final List<CampusNavItem>? roleItems;
+
+    if (!canScan) {
+      if (session.isAdmin) {
+        roleItems = [
+          CampusNavItem(
+            id: 'home',
+            label: 'Home',
+            icon: const Icon(Icons.dashboard_outlined),
+            selectedIcon: const Icon(Icons.dashboard_rounded),
+            onTap: onExitModule,
+          ),
+          CampusNavItem(
+            id: 'modules',
+            label: 'Modules',
+            icon: const CampusNavCubeGlyph(filled: false),
+            selectedIcon: const CampusNavCubeGlyph(filled: true),
+            onTap: () => _openModules(context),
+          ),
+          CampusNavItem(
+            id: 'desk',
+            label: 'Admin Desk',
+            icon: const Icon(Icons.admin_panel_settings_outlined),
+            selectedIcon: const Icon(Icons.admin_panel_settings_rounded),
+            onTap: () => onOpenModule(ModuleCatalog.administration),
+          ),
+          CampusNavItem(
+            id: 'alerts',
+            label: 'Alerts',
+            icon: const Icon(Icons.notifications_none_rounded),
+            selectedIcon: const Icon(Icons.notifications_rounded),
+            onTap: () => _openAlerts(context),
+          ),
+        ];
+      } else if (session.isFaculty) {
+        roleItems = [
+          CampusNavItem(
+            id: 'home',
+            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home_rounded),
+            onTap: onExitModule,
+          ),
+          CampusNavItem(
+            id: 'modules',
+            label: 'Modules',
+            icon: const CampusNavCubeGlyph(filled: false),
+            selectedIcon: const CampusNavCubeGlyph(filled: true),
+            onTap: () => _openModules(context),
+          ),
+          CampusNavItem(
+            id: 'timetable',
+            label: 'Schedule',
+            icon: const Icon(Icons.calendar_today_outlined),
+            selectedIcon: const Icon(Icons.calendar_today_rounded),
+            onTap: () => onOpenModule(ModuleCatalog.timetable),
+          ),
+          CampusNavItem(
+            id: 'attendance',
+            label: 'Roll',
+            icon: const Icon(Icons.how_to_reg_outlined),
+            selectedIcon: const Icon(Icons.how_to_reg_rounded),
+            onTap: () => onOpenModule(ModuleCatalog.attendance),
+          ),
+        ];
+      } else if (session.isAccountant) {
+        roleItems = [
+          CampusNavItem(
+            id: 'home',
+            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home_rounded),
+            onTap: onExitModule,
+          ),
+          CampusNavItem(
+            id: 'modules',
+            label: 'Modules',
+            icon: const CampusNavCubeGlyph(filled: false),
+            selectedIcon: const CampusNavCubeGlyph(filled: true),
+            onTap: () => _openModules(context),
+          ),
+          CampusNavItem(
+            id: 'fees',
+            label: 'Fee Desk',
+            icon: const Icon(Icons.receipt_long_outlined),
+            selectedIcon: const Icon(Icons.receipt_long_rounded),
+            onTap: () => onOpenModule(ModuleCatalog.tuitionFee),
+          ),
+          CampusNavItem(
+            id: 'alerts',
+            label: 'Alerts',
+            icon: const Icon(Icons.notifications_none_rounded),
+            selectedIcon: const Icon(Icons.notifications_rounded),
+            onTap: () => _openAlerts(context),
+          ),
+        ];
+      } else {
+        roleItems = null;
+      }
+    } else {
+      roleItems = null;
+    }
+
     return Stack(
       children: [
         Positioned.fill(bottom: reservedBottom, child: child),
@@ -81,17 +185,29 @@ class ModuleNavigationHost extends StatelessWidget {
           bottom: safeBottom + 10,
           child: CampusNavBar(
             selectedId: selectedId,
+            showScan: canScan,
+            items: roleItems,
             initials: initialsOf(session.displayName),
             avatarUrl: session.photoUrl,
             onHome: onExitModule,
             onModules: () => _openModules(context),
             onProfile: () => _openProfile(context),
-            onScan: onScan == null ? null : () => onScan!(context),
+            onScan: canScan && onScan != null ? () => onScan!(context) : null,
           ),
         ),
       ],
     );
   }
+
+  void _openAlerts(BuildContext context) => showHomeSheet(
+    context: context,
+    title: 'Notifications',
+    expand: true,
+    child: const InsightListSheet(
+      insights: [],
+      emptyText: 'You are all clear. Nothing needs attention.',
+    ),
+  );
 
   void _onNavSelect(BuildContext context, String id) {
     switch (id) {

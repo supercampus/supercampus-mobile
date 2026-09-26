@@ -217,18 +217,24 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                 ),
                 children: [
                   _buildHeader(context),
-                  if (!_isSearching) ...[
-                    const SizedBox(height: 14),
-                    StatusCardCarousel(
-                      cards: buildStudentStatusCards(
-                        store: widget.store,
-                        glance: widget.glance,
-                        announcements: widget.announcements,
-                        session: widget.session,
-                      ),
-                      onCardTap: _handleStatusCardTap,
-                    ),
-                  ],
+                  () {
+                    final statusCards = buildStudentStatusCards(
+                      store: widget.store,
+                      glance: widget.glance,
+                      announcements: widget.announcements,
+                      session: widget.session,
+                    );
+                    if (!_isSearching && statusCards.isNotEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 14),
+                        child: StatusCardCarousel(
+                          cards: statusCards,
+                          onCardTap: _handleStatusCardTap,
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }(),
                   if (_isSearching) ...[
                     const SizedBox(height: 14),
                     TextField(

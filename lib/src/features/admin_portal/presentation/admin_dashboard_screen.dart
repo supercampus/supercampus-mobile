@@ -165,21 +165,143 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ],
                     ],
                   ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: MediaQuery.paddingOf(context).bottom + 10,
-                    child: CampusNavBar(
-                      selectedId: 'home',
-                      initials: initialsOf(session.displayName),
-                      avatarUrl: session.photoUrl,
-                      onHome: () {},
-                      onModules: widget.onOpenModulesSheet ??
-                          () => widget.onOpenModule(_primaryModuleId()),
-                      onProfile: widget.onProfileTap,
-                      onScan: widget.onScan == null ? null : () => widget.onScan!(context),
-                    ),
-                  ),
+                  () {
+                    final canScan = session.canScanQr;
+                    final List<CampusNavItem>? roleItems;
+                    if (!canScan) {
+                      if (session.isAdmin) {
+                        roleItems = [
+                          CampusNavItem(
+                            id: 'home',
+                            label: 'Home',
+                            icon: const Icon(Icons.dashboard_outlined),
+                            selectedIcon: const Icon(Icons.dashboard_rounded),
+                            onTap: () {},
+                          ),
+                          CampusNavItem(
+                            id: 'modules',
+                            label: 'Modules',
+                            icon: const CampusNavCubeGlyph(filled: false),
+                            selectedIcon: const CampusNavCubeGlyph(filled: true),
+                            onTap: widget.onOpenModulesSheet ??
+                                () => widget.onOpenModule(_primaryModuleId()),
+                          ),
+                          CampusNavItem(
+                            id: 'desk',
+                            label: 'Admin Desk',
+                            icon: const Icon(Icons.admin_panel_settings_outlined),
+                            selectedIcon:
+                                const Icon(Icons.admin_panel_settings_rounded),
+                            onTap: () => widget
+                                .onOpenModule(ModuleCatalog.administration),
+                          ),
+                          CampusNavItem(
+                            id: 'alerts',
+                            label: 'Alerts',
+                            icon: const Icon(Icons.notifications_none_rounded),
+                            selectedIcon:
+                                const Icon(Icons.notifications_rounded),
+                            onTap: widget.onAlertsTap,
+                          ),
+                        ];
+                      } else if (session.isFaculty) {
+                        roleItems = [
+                          CampusNavItem(
+                            id: 'home',
+                            label: 'Home',
+                            icon: const Icon(Icons.home_outlined),
+                            selectedIcon: const Icon(Icons.home_rounded),
+                            onTap: () {},
+                          ),
+                          CampusNavItem(
+                            id: 'modules',
+                            label: 'Modules',
+                            icon: const CampusNavCubeGlyph(filled: false),
+                            selectedIcon: const CampusNavCubeGlyph(filled: true),
+                            onTap: widget.onOpenModulesSheet ??
+                                () => widget.onOpenModule(_primaryModuleId()),
+                          ),
+                          CampusNavItem(
+                            id: 'timetable',
+                            label: 'Schedule',
+                            icon: const Icon(Icons.calendar_today_outlined),
+                            selectedIcon:
+                                const Icon(Icons.calendar_today_rounded),
+                            onTap: () =>
+                                widget.onOpenModule(ModuleCatalog.timetable),
+                          ),
+                          CampusNavItem(
+                            id: 'attendance',
+                            label: 'Roll',
+                            icon: const Icon(Icons.how_to_reg_outlined),
+                            selectedIcon:
+                                const Icon(Icons.how_to_reg_rounded),
+                            onTap: () =>
+                                widget.onOpenModule(ModuleCatalog.attendance),
+                          ),
+                        ];
+                      } else if (session.isAccountant) {
+                        roleItems = [
+                          CampusNavItem(
+                            id: 'home',
+                            label: 'Home',
+                            icon: const Icon(Icons.home_outlined),
+                            selectedIcon: const Icon(Icons.home_rounded),
+                            onTap: () {},
+                          ),
+                          CampusNavItem(
+                            id: 'modules',
+                            label: 'Modules',
+                            icon: const CampusNavCubeGlyph(filled: false),
+                            selectedIcon: const CampusNavCubeGlyph(filled: true),
+                            onTap: widget.onOpenModulesSheet ??
+                                () => widget.onOpenModule(_primaryModuleId()),
+                          ),
+                          CampusNavItem(
+                            id: 'fees',
+                            label: 'Fee Desk',
+                            icon: const Icon(Icons.receipt_long_outlined),
+                            selectedIcon:
+                                const Icon(Icons.receipt_long_rounded),
+                            onTap: () =>
+                                widget.onOpenModule(ModuleCatalog.tuitionFee),
+                          ),
+                          CampusNavItem(
+                            id: 'alerts',
+                            label: 'Alerts',
+                            icon: const Icon(Icons.notifications_none_rounded),
+                            selectedIcon:
+                                const Icon(Icons.notifications_rounded),
+                            onTap: widget.onAlertsTap,
+                          ),
+                        ];
+                      } else {
+                        roleItems = null;
+                      }
+                    } else {
+                      roleItems = null;
+                    }
+
+                    return Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: MediaQuery.paddingOf(context).bottom + 10,
+                      child: CampusNavBar(
+                        selectedId: 'home',
+                        showScan: canScan,
+                        items: roleItems,
+                        initials: initialsOf(session.displayName),
+                        avatarUrl: session.photoUrl,
+                        onHome: () {},
+                        onModules: widget.onOpenModulesSheet ??
+                            () => widget.onOpenModule(_primaryModuleId()),
+                        onProfile: widget.onProfileTap,
+                        onScan: canScan && widget.onScan != null
+                            ? () => widget.onScan!(context)
+                            : null,
+                      ),
+                    );
+                  }(),
                 ],
               ),
             ),
@@ -305,12 +427,31 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ],
             ),
           ),
-          IconButton(
-            tooltip: 'Profile & Settings',
-            onPressed: widget.onProfileTap,
-            icon: Icon(
-              Icons.settings_outlined,
-              color: isDark ? Colors.white : const Color(0xFF334155),
+          Padding(
+            padding: const EdgeInsets.only(left: 6),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: widget.onProfileTap,
+              child: CircleAvatar(
+                radius: 17,
+                backgroundColor: isDark
+                    ? const Color(0xFF1E293B)
+                    : const Color(0xFFE2E8F0),
+                backgroundImage: session.photoUrl != null &&
+                        session.photoUrl!.isNotEmpty
+                    ? NetworkImage(session.photoUrl!)
+                    : null,
+                child: session.photoUrl == null || session.photoUrl!.isEmpty
+                    ? Text(
+                        initialsOf(session.displayName),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : const Color(0xFF334155),
+                        ),
+                      )
+                    : null,
+              ),
             ),
           ),
         ],

@@ -3,24 +3,37 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// The one navigation bar every surface uses.
+/// Single item descriptor for custom role-specific navigation tabs in [CampusNavBar].
+class CampusNavItem {
+  const CampusNavItem({
+    required this.id,
+    required this.label,
+    required this.icon,
+    this.selectedIcon,
+    required this.onTap,
+  });
+
+  final String id;
+  final String label;
+  final Widget icon;
+  final Widget? selectedIcon;
+  final VoidCallback onTap;
+}
+
+/// The unified navigation bar for staff, operators, and institutional portals.
 ///
-/// It replaced two bars that used to overlap: a floating pill from the module
-/// host and a docked [NavigationBar] declared by individual module screens. A
-/// screen inside the host must not declare its own — its sections belong at the
-/// top of the page, not in a second bar underneath this one.
-///
-/// Every measurement below is taken off the design board, which draws the bar
-/// at 942 x 152. They are written as fractions of that, and the bar keeps the
-/// board's proportion at any width, so the layout is the artwork's own rather
-/// than an approximation of it.
+/// Center profile avatar has been removed and replaced by top-right header avatars.
+/// QR scanner is strictly restricted to roles that perform scanning actions
+/// (canteen owner, stationery operator, laundry owner, captains, security).
 class CampusNavBar extends StatefulWidget {
   const CampusNavBar({
     super.key,
     required this.onHome,
     required this.onModules,
-    required this.onProfile,
+    this.onProfile,
     this.onScan,
+    this.showScan,
+    this.items,
     this.selectedId,
     this.initials = '',
     this.avatarUrl,
@@ -28,13 +41,23 @@ class CampusNavBar extends StatefulWidget {
 
   final VoidCallback onHome;
   final VoidCallback onModules;
-  final VoidCallback onProfile;
+
+  /// Deprecated: Profile avatar has been moved to the top right of each screen.
+  final VoidCallback? onProfile;
 
   /// Null leaves the scanner visible but inert, so a permission change never
   /// reflows the bar.
   final VoidCallback? onScan;
 
-  /// `home` or `modules`; anything else leaves both unselected.
+  /// Whether to display the Scan QR button on the right.
+  /// If null, defaults to whether [onScan] is non-null.
+  final bool? showScan;
+
+  /// Optional custom items for role-specific navigation (e.g. Admin, Faculty, Accountant).
+  /// If provided, these items are rendered instead of the default Home & Modules tabs.
+  final List<CampusNavItem>? items;
+
+  /// `home` or `modules` or item id; anything else leaves tabs unselected.
   final String? selectedId;
 
   final String initials;
@@ -68,16 +91,11 @@ class CampusNavBar extends StatefulWidget {
 const _scanFrom = Color(0xFF4400FF);
 const _scanTo = Color(0xFF9000FF);
 const _iconPurple = Color(0xFF5900FF);
-const _ringPurple = Color(0xFF4C00FF);
 
 /// What the label turns on each pulse.
 const _pulseMagenta = Color(0xFFDC00FF);
 
-// Horizontal placement, as a fraction of the bar's width. These are the centres
-// the board puts things on — each label sits exactly under its own glyph.
-const _homeCentreX = 109 / 942;
-const _modulesCentreX = 277 / 942;
-const _avatarCentreX = 470 / 942;
+// Horizontal placement, as a fraction of the bar's width.
 const _scanLeftX = 592 / 942;
 const _scanWidth = 312 / 942;
 
@@ -90,8 +108,6 @@ const _glyphSize = 53 / 152;
 const _glyphCentreY = 66 / 152;
 const _labelCentreY = 109.5 / 152;
 const _labelSize = 18 / 152;
-const _avatarSize = 129 / 152;
-const _avatarRing = 7 / 152;
 const _scanTop = 21 / 152;
 const _scanHeight = 115 / 152;
 const _scanLabelSize = 26.4 / 152;
@@ -108,14 +124,13 @@ class _CampusNavBarState extends State<CampusNavBar>
   );
   Timer? _ticker;
 
+  bool get _effectiveShowScan => widget.showScan ?? (widget.onScan != null);
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // A pulse is an attention cue, not information. Where the platform asks for
-    // less motion it is dropped rather than slowed: the button already reads as
-    // the primary action without it.
     final quiet = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (quiet || widget.onScan == null) {
+    if (quiet || !_effectiveShowScan || widget.onScan == null) {
       _stop();
     } else {
       _start();
@@ -140,8 +155,10 @@ class _CampusNavBarState extends State<CampusNavBar>
   @override
   void didUpdateWidget(covariant CampusNavBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if ((widget.onScan == null) != (oldWidget.onScan == null)) {
-      widget.onScan == null ? _stop() : _start();
+    final oldShow = oldWidget.showScan ?? (oldWidget.onScan != null);
+    if ((_effectiveShowScan && widget.onScan != null) !=
+        (oldShow && oldWidget.onScan != null)) {
+      (_effectiveShowScan && widget.onScan != null) ? _start() : _stop();
     }
   }
 
@@ -167,6 +184,130 @@ class _CampusNavBarState extends State<CampusNavBar>
               builder: (context, constraints) {
                 final w = constraints.maxWidth;
                 final h = constraints.maxHeight;
+                final hasScan = _effectiveShowScan;
+
+                final List<Widget> navChildren = [];
+
+                if (hasScan) {
+                  // Right side: Scan Button
+                  navChildren.add(
+                    Positioned(
+                      left: _scanLeftX * w,
+                      top: _scanTop * h,
+                      width: _scanWidth * w,
+                      height: _scanHeight * h,
+                      child: _ScanButton(
+                        pulse: _pulse,
+                        onTap: widget.onScan,
+                        barHeight: h,
+                      ),
+                    ),
+                  );
+
+                  // Left area (width: _scanLeftX * w)
+                  if (widget.items != null && widget.items!.isNotEmpty) {
+                    final count = widget.items!.length;
+                    for (int i = 0; i < count; i++) {
+                      final item = widget.items![i];
+                      final centreX = (_scanLeftX * (i + 0.5)) / count;
+                      navChildren.add(
+                        _tab(
+                          w: w,
+                          h: h,
+                          centreX: centreX,
+                          id: item.id,
+                          label: item.label,
+                          icon: item.icon,
+                          selectedIcon: item.selectedIcon,
+                          onTap: item.onTap,
+                          customWidth: (_scanLeftX * w) / count,
+                        ),
+                      );
+                    }
+                  } else {
+                    // Default Home & Modules spaced cleanly in left zone
+                    navChildren.add(
+                      _tab(
+                        w: w,
+                        h: h,
+                        centreX: _scanLeftX * 0.30,
+                        id: 'home',
+                        label: 'Home',
+                        icon: Icon(
+                          widget.selectedId == 'home'
+                              ? Icons.home_rounded
+                              : Icons.home_outlined,
+                        ),
+                        onTap: widget.onHome,
+                      ),
+                    );
+                    navChildren.add(
+                      _tab(
+                        w: w,
+                        h: h,
+                        centreX: _scanLeftX * 0.72,
+                        id: 'modules',
+                        label: 'Modules',
+                        icon: CampusNavCubeGlyph(
+                          filled: widget.selectedId == 'modules',
+                        ),
+                        onTap: widget.onModules,
+                      ),
+                    );
+                  }
+                } else {
+                  // No scan button: Full width w used
+                  if (widget.items != null && widget.items!.isNotEmpty) {
+                    final count = widget.items!.length;
+                    for (int i = 0; i < count; i++) {
+                      final item = widget.items![i];
+                      final centreX = (i + 0.5) / count;
+                      navChildren.add(
+                        _tab(
+                          w: w,
+                          h: h,
+                          centreX: centreX,
+                          id: item.id,
+                          label: item.label,
+                          icon: item.icon,
+                          selectedIcon: item.selectedIcon,
+                          onTap: item.onTap,
+                          customWidth: w / count,
+                        ),
+                      );
+                    }
+                  } else {
+                    // Default: Home and Modules spaced across width
+                    navChildren.add(
+                      _tab(
+                        w: w,
+                        h: h,
+                        centreX: 0.30,
+                        id: 'home',
+                        label: 'Home',
+                        icon: Icon(
+                          widget.selectedId == 'home'
+                              ? Icons.home_rounded
+                              : Icons.home_outlined,
+                        ),
+                        onTap: widget.onHome,
+                      ),
+                    );
+                    navChildren.add(
+                      _tab(
+                        w: w,
+                        h: h,
+                        centreX: 0.70,
+                        id: 'modules',
+                        label: 'Modules',
+                        icon: CampusNavCubeGlyph(
+                          filled: widget.selectedId == 'modules',
+                        ),
+                        onTap: widget.onModules,
+                      ),
+                    );
+                  }
+                }
 
                 return DecoratedBox(
                   decoration: BoxDecoration(
@@ -180,64 +321,12 @@ class _CampusNavBarState extends State<CampusNavBar>
                       ),
                     ],
                   ),
-                  // The taps inside are ink responses, which need a material to
-                  // splash on. It is transparent — the fill and the shadow are
-                  // the decoration's, so the bar keeps a soft edge rather than
-                  // the hard ring an elevation draws.
                   child: Material(
                     color: Colors.transparent,
                     shape: const StadiumBorder(),
                     clipBehavior: Clip.antiAlias,
                     child: Stack(
-                      children: [
-                        _tab(
-                          w: w,
-                          h: h,
-                          centreX: _homeCentreX,
-                          id: 'home',
-                          label: 'Home',
-                          icon: Icon(
-                            widget.selectedId == 'home'
-                                ? Icons.home_rounded
-                                : Icons.home_outlined,
-                          ),
-                          onTap: widget.onHome,
-                        ),
-                        _tab(
-                          w: w,
-                          h: h,
-                          centreX: _modulesCentreX,
-                          id: 'modules',
-                          label: 'Modules',
-                          icon: _CubeGlyph(
-                            filled: widget.selectedId == 'modules',
-                          ),
-                          onTap: widget.onModules,
-                        ),
-                        Positioned(
-                          left: _avatarCentreX * w - _avatarSize * h / 2,
-                          top: (h - _avatarSize * h) / 2,
-                          width: _avatarSize * h,
-                          height: _avatarSize * h,
-                          child: _Avatar(
-                            initials: widget.initials,
-                            imageUrl: widget.avatarUrl,
-                            ring: _avatarRing * h,
-                            onTap: widget.onProfile,
-                          ),
-                        ),
-                        Positioned(
-                          left: _scanLeftX * w,
-                          top: _scanTop * h,
-                          width: _scanWidth * w,
-                          height: _scanHeight * h,
-                          child: _ScanButton(
-                            pulse: _pulse,
-                            onTap: widget.onScan,
-                            barHeight: h,
-                          ),
-                        ),
-                      ],
+                      children: navChildren,
                     ),
                   ),
                 );
@@ -256,14 +345,17 @@ class _CampusNavBarState extends State<CampusNavBar>
     required String id,
     required String label,
     required Widget icon,
+    Widget? selectedIcon,
     required VoidCallback onTap,
+    double? customWidth,
   }) {
-    final width = _tabWidth * w;
+    final width = customWidth ?? (_tabWidth * w);
     final glyph = _glyphSize * h;
     final selected = widget.selectedId == id;
     final inactiveColor = Theme.of(
       context,
     ).colorScheme.onSurfaceVariant.withValues(alpha: .58);
+    final displayIcon = (selected && selectedIcon != null) ? selectedIcon : icon;
 
     return Positioned(
       left: centreX * w - width / 2,
@@ -287,7 +379,7 @@ class _CampusNavBarState extends State<CampusNavBar>
                   color: selected ? _iconPurple : inactiveColor,
                   size: glyph,
                 ),
-                child: Center(child: icon),
+                child: Center(child: displayIcon),
               ),
             ),
             Positioned(
@@ -305,9 +397,6 @@ class _CampusNavBarState extends State<CampusNavBar>
                         : inactiveColor,
                     fontSize: _labelSize * h,
                     height: 1.2,
-                    // The board sets both labels the same. Selection is carried
-                    // by weight alone, the signal that does not recolour half
-                    // the bar as you move through it.
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
                   ),
                 ),
@@ -320,11 +409,9 @@ class _CampusNavBarState extends State<CampusNavBar>
   }
 }
 
-/// The board's Modules glyph: an isometric cube — a filled hexagon split into
-/// its three visible faces. Material ships no filled cube, and an outlined one
-/// beside a solid house reads as a different family.
-class _CubeGlyph extends StatelessWidget {
-  const _CubeGlyph({required this.filled});
+/// The board's Modules glyph: an isometric cube.
+class CampusNavCubeGlyph extends StatelessWidget {
+  const CampusNavCubeGlyph({super.key, required this.filled});
 
   final bool filled;
 
@@ -351,9 +438,6 @@ class _CubePainter extends CustomPainter {
   });
 
   final Color color;
-
-  /// The face seams are cut out of the solid, so they take the bar's own colour
-  /// rather than being painted white over it.
   final Color seam;
   final bool filled;
 
@@ -381,8 +465,6 @@ class _CubePainter extends CustomPainter {
       );
     }
 
-    // Three seams from the middle to alternating corners cut the hexagon into a
-    // top face and two sides, which is what makes it read as a box.
     final pen = Paint()
       ..color = filled ? seam : color
       ..style = PaintingStyle.stroke
@@ -400,67 +482,7 @@ class _CubePainter extends CustomPainter {
       oldDelegate.filled != filled;
 }
 
-class _Avatar extends StatelessWidget {
-  const _Avatar({
-    required this.initials,
-    required this.ring,
-    required this.onTap,
-    this.imageUrl,
-  });
-
-  final String initials;
-  final double ring;
-  final String? imageUrl;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final url = imageUrl;
-    final hasImage = url != null && url.isNotEmpty;
-
-    return Semantics(
-      button: true,
-      label: 'Profile',
-      child: InkResponse(
-        key: const ValueKey('nav-profile'),
-        onTap: onTap,
-        containedInkWell: false,
-        child: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: _ringPurple, width: ring),
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            image: hasImage
-                ? DecorationImage(image: NetworkImage(url), fit: BoxFit.cover)
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: hasImage
-              ? null
-              : FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Padding(
-                    padding: EdgeInsets.all(ring * 2),
-                    child: Text(
-                      initials,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ),
-        ),
-      ),
-    );
-  }
-}
-
 /// The scanner: a gradient slab framed by viewfinder corners.
-///
-/// Every five seconds the frame opens a little and the label turns magenta,
-/// then settles back. It is a short pulse rather than a slow cycle, so the bar
-/// is still for most of the time it is on screen.
 class _ScanButton extends StatelessWidget {
   const _ScanButton({
     required this.pulse,
@@ -480,50 +502,62 @@ class _ScanButton extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: enabled,
-      label: enabled ? 'Scan here' : 'Scanner unavailable',
-      child: GestureDetector(
+      label: 'Scan QR code',
+      child: InkResponse(
         key: const ValueKey('nav-scan'),
-        behavior: HitTestBehavior.opaque,
         onTap: onTap,
+        containedInkWell: false,
         child: AnimatedBuilder(
           animation: pulse,
           builder: (context, _) {
-            final t = Curves.easeOut.transform(pulse.value);
-            return DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: enabled
-                    ? const LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [_scanFrom, _scanTo],
-                      )
-                    : null,
-                color: enabled
-                    ? null
-                    : Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(_scanHeight * h / 2),
+            final t = pulse.value;
+            final arm = (_bracketArm + t * 0.035) * h;
+            final inset = (_bracketInset - t * 0.02) * h;
+            final bracketColor = Color.lerp(Colors.white, _pulseMagenta, t)!;
+
+            return CustomPaint(
+              foregroundPainter: _ViewfinderPainter(
+                stroke: _bracketStroke * h,
+                arm: arm,
+                inset: inset,
+                color: bracketColor,
               ),
-              child: CustomPaint(
-                painter: _ViewfinderPainter(
-                  stroke: _bracketStroke * h,
-                  arm: _bracketArm * h,
-                  inset: _bracketInset * h * (1 - 0.28 * t),
-                  color: enabled
-                      ? Colors.white
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(_scanHeight * h / 2),
+                  gradient: const LinearGradient(
+                    colors: [_scanFrom, _scanTo],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _scanTo.withValues(alpha: 0.35),
+                      blurRadius: h * 0.20,
+                      offset: Offset(0, h * 0.06),
+                    ),
+                  ],
                 ),
                 child: Center(
-                  child: Text(
-                    'Scan here',
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontSize: _scanLabelSize * h,
-                      fontWeight: FontWeight.w600,
-                      height: 1.1,
-                      color: enabled
-                          ? Color.lerp(Colors.white, _pulseMagenta, t)
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.qr_code_scanner_rounded,
+                        color: Colors.white,
+                        size: _scanLabelSize * h * 1.05,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Scan',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: _scanLabelSize * h * 0.9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -535,8 +569,6 @@ class _ScanButton extends StatelessWidget {
   }
 }
 
-/// Four corner brackets, inset from the slab's edge — the frame a camera draws
-/// around what it is about to read.
 class _ViewfinderPainter extends CustomPainter {
   const _ViewfinderPainter({
     required this.stroke,
@@ -566,12 +598,7 @@ class _ViewfinderPainter extends CustomPainter {
       size.height - inset - stroke / 2,
     );
 
-    // Curve each bracket around the pill instead of drawing a sharp L. Keeping
-    // the radius proportional to the arm makes the frame follow the rounded
-    // button at every responsive navigation-bar size.
     void corner(Offset at, double dx, double dy) {
-      // Use a generous radius so the rounding remains clearly visible at the
-      // compact mobile size and mirrors the capsule behind it.
       final radius = arm * 0.72;
       canvas.drawPath(
         Path()
