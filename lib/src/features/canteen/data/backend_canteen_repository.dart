@@ -338,20 +338,20 @@ class BackendCanteenRepository implements CanteenRepository {
     final uri = create
         ? _uri('/api/v1/operations/canteen/menu')
         : _uri('/api/v1/operations/canteen/menu/${item.id}');
+    final costPrice = item.cost ?? item.actualPrice ?? (item.price * 0.7);
     final body = jsonEncode({
-      'name': item.name,
-      'description': item.description,
-      'store': item.effectiveShopKey,
-      'category': item.category,
+      'name': item.name.trim(),
+      'description': item.description.trim(),
+      'store': item.effectiveShopKey.trim(),
+      'category': item.category.trim().isEmpty ? 'meals' : item.category.trim(),
       'price': item.price,
-      'actualPrice': item.effectiveActualPrice,
-      'cost': item.cost ?? item.effectiveCost,
-      'prepMinutes': item.prepMinutes,
+      'actualPrice': costPrice,
+      'prepMinutes': item.prepMinutes < 1 ? 10 : item.prepMinutes,
       'isVegetarian': item.isVegetarian,
       'isPopular': item.isPopular,
       'isAvailable': item.isAvailable,
       'isInstant': item.isInstant,
-      'imageUrl': item.imageUrl,
+      'imageUrl': item.imageUrl?.trim().isEmpty == true ? null : item.imageUrl?.trim(),
     });
     final response = await _authorizedRequest(
       (headers) => create
@@ -505,7 +505,9 @@ class BackendCanteenRepository implements CanteenRepository {
           : _number(item['actualPrice']),
       cost: item['cost'] != null
           ? _number(item['cost'])
-          : (item['costPrice'] != null ? _number(item['costPrice']) : null),
+          : (item['costPrice'] != null
+              ? _number(item['costPrice'])
+              : (item['actualPrice'] != null ? _number(item['actualPrice']) : null)),
       isVegetarian: item['isVegetarian'] != false,
       isPopular: item['isPopular'] == true,
       isAvailable: item['isAvailable'] != false,
@@ -649,25 +651,47 @@ class BackendCanteenRepository implements CanteenRepository {
   }
 
   Map<String, dynamic> _data(http.Response response) {
-    Map<String, dynamic> body;
+    Map<String, dynamic>? body;
     try {
-      body = jsonDecode(response.body) as Map<String, dynamic>;
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        body = decoded;
+      }
     } catch (_) {
+      // Body is not JSON
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      if (body != null) {
+        final error = body['error'];
+        final message = switch (error) {
+          final Map<String, dynamic> map => _text(map['message']),
+          final String text => text.trim(),
+          _ => '',
+        };
+        if (message.isNotEmpty) {
+          throw CanteenException(message);
+        }
+        final directMessage = _text(body['message']);
+        if (directMessage.isNotEmpty) {
+          throw CanteenException(directMessage);
+        }
+      }
+      final raw = response.body.trim();
+      if (raw.isNotEmpty && raw.length < 300 && !raw.startsWith('<')) {
+        throw CanteenException(raw);
+      }
+      throw CanteenException(
+        'The canteen request failed (${response.statusCode}).',
+      );
+    }
+
+    if (body == null) {
       throw const CanteenException(
         'The canteen service returned an unreadable response.',
       );
     }
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      final error = body['error'];
-      final message = switch (error) {
-        final Map<String, dynamic> map => _text(map['message']),
-        final String text => text.trim(),
-        _ => '',
-      };
-      throw CanteenException(
-        message.isEmpty ? 'The canteen request failed.' : message,
-      );
-    }
+
     final data = body['data'];
     if (data is! Map<String, dynamic>) {
       throw const CanteenException('The canteen response is missing data.');

@@ -60,8 +60,8 @@ class CanteenMenuItem {
   /// Cost price to prepare / procure the item.
   final double? cost;
 
-  /// Effective cost, defaulting to 70% of price if unconfigured so profit is always available.
-  double get effectiveCost => cost ?? (price * 0.7);
+  /// Effective cost, defaulting to actualPrice or 70% of price if unconfigured.
+  double get effectiveCost => cost ?? actualPrice ?? (price * 0.7);
 
   /// Profit per item = Selling Price - Cost.
   double get profit => price - effectiveCost;
@@ -70,7 +70,7 @@ class CanteenMenuItem {
   double get profitMargin => price > 0 ? (profit / price) : 0.0;
 
   final double? actualPrice;
-  double get effectiveActualPrice => actualPrice ?? price;
+  double get effectiveActualPrice => actualPrice ?? cost ?? price;
   final bool isVegetarian;
   final bool isPopular;
   final bool isAvailable;

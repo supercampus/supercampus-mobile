@@ -163,15 +163,16 @@ class _CanteenMenuItemEditorScreenState
       description: _description.text.trim(),
       store: MenuStoreLabel.parse(_shopKey),
       shopKey: _shopKey,
-      category: _category.text.trim(),
+      category: _category.text.trim().isEmpty ? 'meals' : _category.text.trim(),
       price: sellingPrice,
       cost: cost,
+      actualPrice: cost,
       isVegetarian: _vegetarian,
       isPopular: widget.item?.isPopular ?? false,
       isAvailable: _available,
       isInstant: _instant,
-      prepMinutes: widget.item?.prepMinutes ?? 10,
-      imageUrl: _imageUrl,
+      prepMinutes: (widget.item?.prepMinutes ?? 10) < 1 ? 10 : (widget.item?.prepMinutes ?? 10),
+      imageUrl: _imageUrl?.trim().isEmpty == true ? null : _imageUrl?.trim(),
     );
 
     Navigator.of(context).pop(savedItem);
