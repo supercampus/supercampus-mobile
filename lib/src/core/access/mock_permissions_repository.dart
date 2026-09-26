@@ -26,7 +26,12 @@ class MockPermissionsRepository implements PermissionsRepository {
   }
 
   Map<String, dynamic> _payloadFor(UserRole role) => switch (role) {
-    UserRole.admin => _payloadFor(UserRole.timetableAllocator),
+    UserRole.admin => {
+      'grants': ['*'],
+      'scopes': {
+        for (final m in ModuleCatalog.all) m.id: 'institution',
+      },
+    },
     UserRole.student => {
       'modules': {
         ModuleCatalog.timetable: {

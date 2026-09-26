@@ -28,6 +28,7 @@ class AdminDashboardScreen extends StatefulWidget {
     required this.onAlertsTap,
     this.hasAlerts = false,
     this.onScan,
+    this.onOpenModulesSheet,
     this.advisorStudentsSource,
     this.glance,
     this.onOpenAttendanceClass,
@@ -36,6 +37,7 @@ class AdminDashboardScreen extends StatefulWidget {
   final UserSession session;
   final EffectivePermissions permissions;
   final void Function(String moduleId, [String? action]) onOpenModule;
+  final VoidCallback? onOpenModulesSheet;
   final void Function(
     String moduleId,
     String actionId,
@@ -88,7 +90,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   String _primaryModuleId() {
-    if (session.isAdmin) return ModuleCatalog.canteen;
+    if (session.isAdmin) return ModuleCatalog.administration;
     if (session.isCanteenOwner) return ModuleCatalog.canteen;
     if (session.isCaptain) return ModuleCatalog.canteen;
     if (session.isAccountant) return ModuleCatalog.canteen;
@@ -97,7 +99,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     if (session.isLibrarian) return ModuleCatalog.library;
     if (session.isHostelWarden) return ModuleCatalog.hostel;
     if (session.isFaculty) return ModuleCatalog.attendance;
-    return ModuleCatalog.canteen;
+    return ModuleCatalog.administration;
   }
 
   @override
@@ -172,7 +174,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       initials: initialsOf(session.displayName),
                       avatarUrl: session.photoUrl,
                       onHome: () {},
-                      onModules: () => widget.onOpenModule(_primaryModuleId()),
+                      onModules: widget.onOpenModulesSheet ??
+                          () => widget.onOpenModule(_primaryModuleId()),
                       onProfile: widget.onProfileTap,
                       onScan: widget.onScan == null ? null : () => widget.onScan!(context),
                     ),
@@ -323,6 +326,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     if (session.isAdmin) {
       shortcuts.addAll([
+        _buildActionPill(
+          icon: Icons.admin_panel_settings_rounded,
+          label: 'Admin Desk',
+          color: const Color(0xFF4F46E5),
+          onTap: () => widget.onOpenModule(ModuleCatalog.administration),
+        ),
+        _buildActionPill(
+          icon: Icons.school_rounded,
+          label: 'Student Directory',
+          color: const Color(0xFF2563EB),
+          onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'students'),
+        ),
+        _buildActionPill(
+          icon: Icons.manage_accounts_rounded,
+          label: 'Users & Roles',
+          color: const Color(0xFF7C3AED),
+          onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'access_control'),
+        ),
+        _buildActionPill(
+          icon: Icons.campaign_rounded,
+          label: 'Announcements',
+          color: const Color(0xFFEA580C),
+          onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'announcements'),
+        ),
         _buildActionPill(
           icon: Icons.storefront_rounded,
           label: 'Live Sales Dashboard',
@@ -490,6 +517,34 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // ===========================================================================
   Widget _buildKpiBentoGrid(BuildContext context) {
     if (session.isAdmin) {
+      return Row(
+        children: [
+          Expanded(
+            child: _buildStatTile(
+              title: 'Institution Control',
+              value: 'Admin Desk',
+              badge: 'Users & Roles',
+              icon: Icons.admin_panel_settings_rounded,
+              color: const Color(0xFF4F46E5),
+              onTap: () => widget.onOpenModule(ModuleCatalog.administration),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildStatTile(
+              title: 'Student Directory',
+              value: 'Students',
+              badge: 'Residency & Info',
+              icon: Icons.school_rounded,
+              color: const Color(0xFF2563EB),
+              onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'students'),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (session.isCanteenOwner) {
       return _buildSalesHeroCard(context);
     }
 
@@ -819,7 +874,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // 4. CATEGORY FILTER TABS
   // ===========================================================================
   Widget _buildCategoryFilterBar(BuildContext context) {
-    final categories = ['All Services', 'Commerce & Ops', 'Academics', 'Facilities & Security'];
+    final categories = [
+      'All Services',
+      'Administration',
+      'Academics',
+      'Commerce & Ops',
+      'Facilities & Security',
+    ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -891,11 +952,44 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildWorkspaceBentoGrid(BuildContext context) {
     final List<Widget> tiles = [];
 
-    // Category 0 = All, 1 = Commerce & Ops, 2 = Academics, 3 = Facilities & Security
+    // Category 0 = All, 1 = Administration, 2 = Academics, 3 = Commerce & Ops, 4 = Facilities & Security
     final showAll = _selectedCategoryIndex == 0;
-    final showCommerce = showAll || _selectedCategoryIndex == 1;
+    final showAdmin = showAll || _selectedCategoryIndex == 1;
     final showAcademics = showAll || _selectedCategoryIndex == 2;
-    final showFacilities = showAll || _selectedCategoryIndex == 3;
+    final showCommerce = showAll || _selectedCategoryIndex == 3;
+    final showFacilities = showAll || _selectedCategoryIndex == 4;
+
+    // --- Administration & Student Management ---
+    if (permissions.canSeeModule(ModuleCatalog.administration) && showAdmin) {
+      tiles.add(_buildAppTile(
+        title: 'Admin Desk',
+        tag: 'Control & Access',
+        icon: Icons.admin_panel_settings_rounded,
+        color: const Color(0xFF4F46E5),
+        onTap: () => widget.onOpenModule(ModuleCatalog.administration),
+      ));
+      tiles.add(_buildAppTile(
+        title: 'Student Directory',
+        tag: 'Registry & Residency',
+        icon: Icons.school_rounded,
+        color: const Color(0xFF2563EB),
+        onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'students'),
+      ));
+      tiles.add(_buildAppTile(
+        title: 'User Accounts',
+        tag: 'Roles & Credentials',
+        icon: Icons.manage_accounts_rounded,
+        color: const Color(0xFF7C3AED),
+        onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'access_control'),
+      ));
+      tiles.add(_buildAppTile(
+        title: 'Announcements',
+        tag: 'Campus Circulars',
+        icon: Icons.campaign_rounded,
+        color: const Color(0xFFEA580C),
+        onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'announcements'),
+      ));
+    }
 
     // --- Commerce & Ops ---
     if (permissions.canSeeModule(ModuleCatalog.canteen) && showCommerce) {
@@ -992,6 +1086,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         icon: Icons.auto_stories_outlined,
         color: const Color(0xFF3B82F6),
         onTap: () => widget.onOpenModule(ModuleCatalog.academics),
+      ));
+    }
+
+    if (permissions.canSeeModule(ModuleCatalog.examination) && (showAcademics || showAdmin)) {
+      tiles.add(_buildAppTile(
+        title: 'Examinations',
+        tag: 'Marks & Results',
+        icon: Icons.assignment_outlined,
+        color: const Color(0xFF9333EA),
+        onTap: () => widget.onOpenModule(ModuleCatalog.examination),
       ));
     }
 

@@ -260,6 +260,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       session: widget.session,
       permissions: widget.permissions,
       onOpenModule: widget.onOpenModule,
+      onOpenModulesSheet: _openModules,
       onQuickAction: widget.onQuickAction,
       onSignOut: widget.onSignOut,
       onProfileTap: _openProfileSheet,
