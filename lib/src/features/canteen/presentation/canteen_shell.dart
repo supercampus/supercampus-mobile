@@ -78,17 +78,32 @@ class _CanteenShellState extends State<CanteenShell> {
     final session = widget.session;
     return (_store?.canManage == true ||
             session.isCaptain ||
-            session.isCanteenOwner) &&
+            session.isCanteenOwner ||
+            session.isStationeryOwner ||
+            _isStationeryOperator) &&
         session.role != UserRole.student &&
         session.activePortalFamily != PortalFamily.student;
   }
 
   bool get _isStationeryOperator {
+    final lowerEmail = widget.session.email.trim().toLowerCase();
+    if (lowerEmail == 'stationary@mec.local' ||
+        lowerEmail == 'stationery@mec.local' ||
+        lowerEmail.contains('stationery') ||
+        lowerEmail.contains('stationary')) {
+      return true;
+    }
+    if (widget.session.isStationeryOwner) {
+      return true;
+    }
     final roles = <String>{
       widget.session.roleKey,
       ...widget.session.roleIds,
     }.map((role) => role.trim().toLowerCase());
-    return roles.contains('stationery_operator');
+    return roles.contains('stationery_operator') ||
+        roles.contains('stationery_owner') ||
+        roles.contains('stationery') ||
+        roles.contains('stationary');
   }
 
   bool get _isLaundryOperator =>
@@ -533,18 +548,32 @@ class _CanteenShellState extends State<CanteenShell> {
       );
     }
 
-    if (_isStationeryOperator) {
+    if (_isStationeryOperator && _ownerWorkMode) {
+      final stationeryStore = store.staffState.mode == CanteenStaffMode.work
+          ? store
+          : store.copyWith(
+              staffState: CanteenStaffState(
+                mode: CanteenStaffMode.work,
+                shopOpen: store.staffState.shopOpen,
+              ),
+            );
       return StationeryOperatorHome(
-        store: store,
+        store: stationeryStore,
         initialAction: widget.initialAction,
         onExitModule: widget.onExitModule,
         onSignOut: widget.onSignOut,
         onRefresh: () => _loadStore(silent: true),
         onCounterStateChanged: _updateOwnerMode,
+        onShopOpenChanged: _updateShopOpen,
         onOrderStatusChanged: _updateOrderStatus,
-        onSaveItem: (item) => _saveMenuItem(item, false),
+        onSaveItem: (item, create) => _saveMenuItem(item, create),
         onUploadMedia: (bytes, filename) =>
             _repository.uploadMedia(bytes, filename: filename),
+        isMainHome: widget.isMainHome,
+        onProfileTap: widget.onProfileTap,
+        displayName: widget.session.displayName,
+        email: widget.session.email,
+        photoUrl: widget.photoUrl ?? widget.session.photoUrl,
       );
     }
 

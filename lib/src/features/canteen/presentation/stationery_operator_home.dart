@@ -26,7 +26,13 @@ class StationeryOperatorHome extends StatefulWidget {
     required this.onOrderStatusChanged,
     required this.onSaveItem,
     required this.onUploadMedia,
+    this.onShopOpenChanged,
     this.initialAction,
+    this.isMainHome = false,
+    this.onProfileTap,
+    this.displayName,
+    this.email,
+    this.photoUrl,
   });
 
   final CanteenStore store;
@@ -34,18 +40,24 @@ class StationeryOperatorHome extends StatefulWidget {
   final VoidCallback onSignOut;
   final Future<void> Function() onRefresh;
   final Future<void> Function(CanteenStaffMode mode) onCounterStateChanged;
+  final Future<void> Function(bool open)? onShopOpenChanged;
   final Future<void> Function(String orderId, CanteenOrderStatus status)
-  onOrderStatusChanged;
-  final Future<void> Function(CanteenMenuItem item) onSaveItem;
+      onOrderStatusChanged;
+  final Future<void> Function(CanteenMenuItem item, bool create) onSaveItem;
   final Future<String> Function(Uint8List bytes, String filename) onUploadMedia;
   final String? initialAction;
+  final bool isMainHome;
+  final VoidCallback? onProfileTap;
+  final String? displayName;
+  final String? email;
+  final String? photoUrl;
 
   @override
   State<StationeryOperatorHome> createState() => _StationeryOperatorHomeState();
 }
 
 class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
-  var _index = 0;
+  var _index = 1;
   var _busy = false;
   var _showHistory = false;
   var _query = '';
@@ -54,10 +66,19 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
   @override
   void initState() {
     super.initState();
-    if (const {'orders', 'order_history'}.contains(widget.initialAction)) {
-      _index = 1;
-      _showHistory = widget.initialAction == 'order_history';
+    // Default to Orders (index 1) matching Image 1, unless initialAction explicitly requests inventory
+    _index = widget.initialAction == 'inventory' ? 0 : 1;
+    if (widget.initialAction == 'order_history') {
+      _showHistory = true;
     }
+  }
+
+  String get _userInitials {
+    final name = (widget.displayName ?? widget.store.user.name).trim();
+    final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return 'ST';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+    return (parts.first[0] + parts.last[0]).toUpperCase();
   }
 
   Future<void> _run(Future<void> Function() action) async {
@@ -127,22 +148,63 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
             .where((order) => !order.status.isActive)
             .toList(growable: false)
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final shopOpen = widget.store.staffState.shopOpen ?? true;
     final counterOpen = widget.store.staffState.mode == CanteenStaffMode.work;
 
     return Scaffold(
       appBar: AppBar(
-        leading: ModuleBackButton(onPressed: widget.onExitModule),
+        leading: widget.isMainHome
+            ? null
+            : ModuleBackButton(onPressed: widget.onExitModule),
+        automaticallyImplyLeading: !widget.isMainHome,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Stationery shop'),
             Text(
-              counterOpen ? 'Counter open' : 'Counter paused',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+              shopOpen ? 'Shop open · Counter active' : 'Shop closed · Ordering paused',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: shopOpen ? const Color(0xFF087A53) : const Color(0xFFB42318),
+              ),
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            key: const ValueKey('stationery-top-profile-btn'),
+            tooltip: 'Settings & Profile',
+            onPressed: () => _openSettings(context),
+            icon: CircleAvatar(
+              radius: 17,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+              backgroundImage: (widget.photoUrl != null && widget.photoUrl!.isNotEmpty)
+                  ? NetworkImage(widget.photoUrl!)
+                  : null,
+              child: (widget.photoUrl == null || widget.photoUrl!.isEmpty)
+                  ? Text(
+                      _userInitials,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
+      floatingActionButton: _index == 0
+          ? FloatingActionButton.extended(
+              key: const ValueKey('stationery-add-item-fab'),
+              onPressed: _addNewItem,
+              icon: const Icon(Icons.add),
+              label: const Text('Add item'),
+            )
+          : null,
       body: Column(
         children: [
           if (_busy) const LinearProgressIndicator(minHeight: 2),
@@ -170,6 +232,7 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                   onCategoryChanged: (value) =>
                       setState(() => _category = value),
                   onRefresh: () => _run(widget.onRefresh),
+                  onAdd: _addNewItem,
                   onEdit: _editItem,
                 ),
                 _OrdersPage(
@@ -183,19 +246,28 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                   onStatus: (id, status) =>
                       _run(() => widget.onOrderStatusChanged(id, status)),
                 ),
-                _StationeryProfile(
-                  store: widget.store,
-                  busy: _busy,
-                  onCounterStateChanged: (mode) =>
-                      _run(() => widget.onCounterStateChanged(mode)),
-                  onSignOut: widget.onSignOut,
-                ),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _addNewItem() async {
+    final newItem = await showModalBottomSheet<CanteenMenuItem>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      builder: (_) => _StationeryItemEditor(
+        item: null,
+        onUploadMedia: widget.onUploadMedia,
+        existingCategories: _categories,
+      ),
+    );
+    if (newItem == null || !mounted) return;
+    await _run(() => widget.onSaveItem(newItem, true));
   }
 
   Future<void> _editItem(CanteenMenuItem item) async {
@@ -207,10 +279,360 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
       builder: (_) => _StationeryItemEditor(
         item: item,
         onUploadMedia: widget.onUploadMedia,
+        existingCategories: _categories,
       ),
     );
     if (edited == null || !mounted) return;
-    await _run(() => widget.onSaveItem(edited));
+    await _run(() => widget.onSaveItem(edited, false));
+  }
+
+  void _openSettings(BuildContext context) {
+    final theme = Theme.of(context);
+    final userInitials = _userInitials;
+    final userName = widget.displayName ?? widget.store.user.name;
+    final userEmail = widget.email ?? widget.store.user.email;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final shopOpen = widget.store.staffState.shopOpen ?? true;
+            final mode = widget.store.staffState.mode;
+
+            return SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.muted.withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    // Operator Profile Card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1D4ED8).withValues(alpha: 0.25),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 28,
+                            backgroundColor: Colors.white.withValues(alpha: 0.2),
+                            foregroundColor: Colors.white,
+                            backgroundImage: (widget.photoUrl != null &&
+                                    widget.photoUrl!.isNotEmpty)
+                                ? NetworkImage(widget.photoUrl!)
+                                : null,
+                            child: (widget.photoUrl == null ||
+                                    widget.photoUrl!.isEmpty)
+                                ? Text(
+                                    userInitials,
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  userName,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  userEmail,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    'Stationery Shop Operator',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Shop Open / Closed Setting
+                    CanteenSurface(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: shopOpen
+                                      ? const Color(0xFF087A53).withValues(alpha: 0.12)
+                                      : const Color(0xFFB42318).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  shopOpen
+                                      ? Icons.storefront_outlined
+                                      : Icons.store_mall_directory_outlined,
+                                  color: shopOpen
+                                      ? const Color(0xFF087A53)
+                                      : const Color(0xFFB42318),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Shop Status',
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      shopOpen
+                                          ? 'Shop is OPEN · Accepting orders'
+                                          : 'Shop is CLOSED · Ordering paused',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: shopOpen
+                                            ? const Color(0xFF087A53)
+                                            : const Color(0xFFB42318),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch.adaptive(
+                                value: shopOpen,
+                                onChanged: _busy
+                                    ? null
+                                    : (value) async {
+                                        setSheetState(() {});
+                                        await _run(() async {
+                                          if (widget.onShopOpenChanged != null) {
+                                            await widget.onShopOpenChanged!(value);
+                                          }
+                                        });
+                                        if (context.mounted) {
+                                          setSheetState(() {});
+                                        }
+                                      },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            shopOpen
+                                ? 'Students can view items and place stationery orders.'
+                                : 'Incoming orders are paused. Students will see the shop as closed.',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Eat Mode / Work Mode Setting
+                    CanteenSurface(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  mode == CanteenStaffMode.work
+                                      ? Icons.work_outline_rounded
+                                      : Icons.restaurant_outlined,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Workspace Mode',
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      mode == CanteenStaffMode.work
+                                          ? 'Work mode active'
+                                          : 'Eat mode active',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SegmentedButton<CanteenStaffMode>(
+                            showSelectedIcon: true,
+                            segments: const [
+                              ButtonSegment(
+                                value: CanteenStaffMode.work,
+                                icon: Icon(Icons.work_outline_rounded),
+                                label: Text('Work mode'),
+                              ),
+                              ButtonSegment(
+                                value: CanteenStaffMode.eat,
+                                icon: Icon(Icons.restaurant_outlined),
+                                label: Text('Eat mode'),
+                              ),
+                            ],
+                            selected: {mode},
+                            onSelectionChanged: _busy
+                                ? null
+                                : (selection) async {
+                                    final newMode = selection.first;
+                                    Navigator.of(sheetContext).pop();
+                                    await _run(() => widget.onCounterStateChanged(newMode));
+                                  },
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            mode == CanteenStaffMode.work
+                                ? 'Work mode lets you manage stationery inventory and incoming orders.'
+                                : 'Eat mode switches to customer view to browse campus items and order food or supplies.',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Full Settings Link (if onProfileTap is provided)
+                    if (widget.onProfileTap != null) ...[
+                      ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: AppColors.border),
+                        ),
+                        leading: const Icon(Icons.settings_outlined, color: AppColors.primary),
+                        title: const Text('All App Settings', style: TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: const Text('Account, theme, notifications, and security'),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          widget.onProfileTap!();
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+
+                    // Sign Out button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFB42318),
+                          side: const BorderSide(color: Color(0xFFFECDCA)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          widget.onSignOut();
+                        },
+                        icon: const Icon(Icons.logout_rounded),
+                        label: const Text('Sign out'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
 
@@ -243,11 +665,6 @@ class _StationerySectionSwitcher extends StatelessWidget {
               icon: Icon(Icons.receipt_long_outlined),
               label: Text('Orders'),
             ),
-            ButtonSegment(
-              value: 2,
-              icon: Icon(Icons.person_outline),
-              label: Text('Profile'),
-            ),
           ],
           selected: {selectedIndex},
           onSelectionChanged: (selection) => onSelected(selection.first),
@@ -267,6 +684,7 @@ class _InventoryPage extends StatelessWidget {
     required this.onQueryChanged,
     required this.onCategoryChanged,
     required this.onRefresh,
+    required this.onAdd,
     required this.onEdit,
   });
 
@@ -278,6 +696,7 @@ class _InventoryPage extends StatelessWidget {
   final ValueChanged<String> onQueryChanged;
   final ValueChanged<String?> onCategoryChanged;
   final Future<void> Function() onRefresh;
+  final VoidCallback onAdd;
   final ValueChanged<CanteenMenuItem> onEdit;
 
   @override
@@ -306,6 +725,22 @@ class _InventoryPage extends StatelessWidget {
                   ],
                 ),
               ),
+              FilledButton.icon(
+                key: const ValueKey('stationery-header-add-btn'),
+                onPressed: onAdd,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add item'),
+              ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 11,
@@ -365,18 +800,25 @@ class _InventoryPage extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           if (items.isEmpty)
-            const CanteenSurface(
+            CanteenSurface(
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
+                padding: const EdgeInsets.symmetric(vertical: 32),
                 child: Column(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.inventory_2_outlined,
                       size: 38,
                       color: AppColors.primary,
                     ),
-                    SizedBox(height: 10),
-                    Text('No stationery items match this filter.'),
+                    const SizedBox(height: 10),
+                    const Text('No stationery items match this filter.'),
+                    const SizedBox(height: 14),
+                    FilledButton.icon(
+                      key: const ValueKey('stationery-empty-add-btn'),
+                      onPressed: onAdd,
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add new item'),
+                    ),
                   ],
                 ),
               ),
@@ -466,12 +908,14 @@ class _InventoryPage extends StatelessWidget {
 
 class _StationeryItemEditor extends StatefulWidget {
   const _StationeryItemEditor({
-    required this.item,
+    this.item,
     required this.onUploadMedia,
+    this.existingCategories = const [],
   });
 
-  final CanteenMenuItem item;
+  final CanteenMenuItem? item;
   final Future<String> Function(Uint8List bytes, String filename) onUploadMedia;
+  final List<String> existingCategories;
 
   @override
   State<_StationeryItemEditor> createState() => _StationeryItemEditorState();
@@ -480,6 +924,7 @@ class _StationeryItemEditor extends StatefulWidget {
 class _StationeryItemEditorState extends State<_StationeryItemEditor> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
+  late final TextEditingController _category;
   late final TextEditingController _description;
   late final TextEditingController _actualPrice;
   late final TextEditingController _sellingPrice;
@@ -488,23 +933,46 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
   Uint8List? _imageBytes;
   var _uploading = false;
 
+  late final List<String> _suggestedCategories;
+
   @override
   void initState() {
     super.initState();
     final item = widget.item;
-    _name = TextEditingController(text: item.name);
-    _description = TextEditingController(text: item.description);
-    _actualPrice = TextEditingController(
-      text: item.effectiveActualPrice.toStringAsFixed(2),
+    _name = TextEditingController(text: item?.name ?? '');
+    _category = TextEditingController(
+      text: item?.category ??
+          (widget.existingCategories.isNotEmpty
+              ? widget.existingCategories.first
+              : 'Notebooks'),
     );
-    _sellingPrice = TextEditingController(text: item.price.toStringAsFixed(2));
-    _available = item.isAvailable;
-    _imageUrl = item.imageUrl;
+    _description = TextEditingController(text: item?.description ?? '');
+    _actualPrice = TextEditingController(
+      text: item != null ? item.effectiveActualPrice.toStringAsFixed(2) : '',
+    );
+    _sellingPrice = TextEditingController(
+      text: item != null ? item.price.toStringAsFixed(2) : '',
+    );
+    _available = item?.isAvailable ?? true;
+    _imageUrl = item?.imageUrl;
+
+    final baseSuggestions = [
+      'Notebooks',
+      'Pens & Writing',
+      'Files & Folders',
+      'Drawing & Geometry',
+      'Exam Supplies',
+      'General Stationery',
+    ];
+    final combined = {...widget.existingCategories, ...baseSuggestions}.toList();
+    combined.sort();
+    _suggestedCategories = combined;
   }
 
   @override
   void dispose() {
     _name.dispose();
+    _category.dispose();
     _description.dispose();
     _actualPrice.dispose();
     _sellingPrice.dispose();
@@ -514,6 +982,7 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final isNew = widget.item == null;
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: DraggableScrollableSheet(
@@ -539,13 +1008,15 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
               ),
               const SizedBox(height: 18),
               Text(
-                'Edit inventory item',
+                isNew ? 'Add stationery item' : 'Edit inventory item',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Changes update the live student catalogue.',
-                style: TextStyle(color: AppColors.muted),
+              Text(
+                isNew
+                    ? 'Publish a new stationery item to the student catalog.'
+                    : 'Changes update the live student catalogue.',
+                style: const TextStyle(color: AppColors.muted),
               ),
               const SizedBox(height: 18),
               _imageEditor(),
@@ -553,21 +1024,65 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
               TextFormField(
                 key: const ValueKey('stationery-edit-name'),
                 controller: _name,
-                decoration: const InputDecoration(labelText: 'Item name'),
+                decoration: const InputDecoration(
+                  labelText: 'Item name',
+                  hintText: 'e.g. Classmate 200-page Notebook',
+                ),
                 validator: _required,
               ),
-              const SizedBox(height: 12),
+              if (isNew) ...[
+                const SizedBox(height: 14),
+                const Text(
+                  'Category',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  height: 36,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      for (final cat in _suggestedCategories) ...[
+                        ChoiceChip(
+                          label: Text(cat),
+                          selected: _category.text.trim().toLowerCase() ==
+                              cat.toLowerCase(),
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() => _category.text = cat);
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  key: const ValueKey('stationery-edit-category'),
+                  controller: _category,
+                  decoration: const InputDecoration(
+                    labelText: 'Category name',
+                    hintText: 'e.g. Notebooks, Pens & Writing...',
+                    prefixIcon: Icon(Icons.category_outlined, size: 20),
+                  ),
+                  validator: _required,
+                ),
+              ],
+              const SizedBox(height: 14),
               TextFormField(
                 key: const ValueKey('stationery-edit-description'),
                 controller: _description,
                 minLines: 2,
                 maxLines: 4,
                 decoration: const InputDecoration(
-                  labelText: 'Item description',
+                  labelText: 'Item description (optional)',
+                  hintText: 'Size, brand, or details students should know',
                   alignLabelWithHint: true,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -580,9 +1095,9 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
                       ),
                       decoration: const InputDecoration(
                         labelText: 'Actual price',
+                        hintText: 'Cost / procurement price',
                         prefixText: '₹ ',
                       ),
-                      validator: _priceValidator,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -631,8 +1146,8 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
                     child: FilledButton.icon(
                       key: const ValueKey('stationery-edit-save'),
                       onPressed: _uploading ? null : _save,
-                      icon: const Icon(Icons.save_outlined),
-                      label: const Text('Save changes'),
+                      icon: Icon(isNew ? Icons.add_shopping_cart : Icons.save_outlined),
+                      label: Text(isNew ? 'Add to inventory' : 'Save changes'),
                     ),
                   ),
                 ],
@@ -699,17 +1214,41 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
-    Navigator.pop(
-      context,
-      widget.item.copyWith(
+    final cat = _category.text.trim();
+    final costPrice = double.tryParse(_actualPrice.text.trim());
+    final sellPrice = double.parse(_sellingPrice.text.trim());
+
+    if (widget.item == null) {
+      final newItem = CanteenMenuItem(
+        id: 'stat_${DateTime.now().millisecondsSinceEpoch}',
         name: _name.text.trim(),
         description: _description.text.trim(),
-        actualPrice: double.parse(_actualPrice.text.trim()),
-        price: double.parse(_sellingPrice.text.trim()),
+        category: cat.isEmpty ? 'General Stationery' : cat,
+        price: sellPrice,
+        actualPrice: costPrice ?? sellPrice,
+        cost: costPrice ?? sellPrice,
+        isVegetarian: true,
+        store: MenuStore.stationery,
+        shopKey: 'stationery',
         isAvailable: _available,
         imageUrl: _imageUrl,
-      ),
-    );
+      );
+      Navigator.pop(context, newItem);
+    } else {
+      Navigator.pop(
+        context,
+        widget.item!.copyWith(
+          name: _name.text.trim(),
+          description: _description.text.trim(),
+          category: cat.isEmpty ? widget.item!.category : cat,
+          actualPrice: costPrice ?? widget.item!.effectiveActualPrice,
+          cost: costPrice ?? widget.item!.cost,
+          price: sellPrice,
+          isAvailable: _available,
+          imageUrl: _imageUrl,
+        ),
+      );
+    }
   }
 
   Future<void> _pickAndUploadImage() async {
@@ -1043,126 +1582,6 @@ class _HistoryOrderCard extends StatelessWidget {
   );
 }
 
-class _StationeryProfile extends StatelessWidget {
-  const _StationeryProfile({
-    required this.store,
-    required this.busy,
-    required this.onCounterStateChanged,
-    required this.onSignOut,
-  });
-
-  final CanteenStore store;
-  final bool busy;
-  final ValueChanged<CanteenStaffMode> onCounterStateChanged;
-  final VoidCallback onSignOut;
-
-  @override
-  Widget build(BuildContext context) {
-    final mode = store.staffState.mode;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
-      children: [
-        Text(
-          'Stationery profile',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF4200FF), Color(0xFF9600FF)],
-            ),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 31,
-                backgroundColor: Colors.white.withValues(alpha: .18),
-                foregroundColor: Colors.white,
-                child: Text(
-                  store.user.initials,
-                  style: const TextStyle(fontSize: 22),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      store.user.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      store.user.email,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'MEC Stationery · Shop operator',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        CanteenSurface(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Counter status',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 5),
-              const Text(
-                'Open accepts and processes stationery orders. Paused temporarily stops the counter queue.',
-                style: TextStyle(color: AppColors.muted),
-              ),
-              const SizedBox(height: 14),
-              SegmentedButton<CanteenStaffMode>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(
-                    value: CanteenStaffMode.work,
-                    icon: Icon(Icons.storefront_outlined),
-                    label: Text('Open'),
-                  ),
-                  ButtonSegment(
-                    value: CanteenStaffMode.eat,
-                    icon: Icon(Icons.pause_circle_outline),
-                    label: Text('Paused'),
-                  ),
-                ],
-                selected: {mode},
-                onSelectionChanged: busy
-                    ? null
-                    : (selection) => onCounterStateChanged(selection.first),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        OutlinedButton.icon(
-          onPressed: onSignOut,
-          icon: const Icon(Icons.logout),
-          label: const Text('Sign out'),
-        ),
-      ],
-    );
-  }
-}
-
 class _CounterPausedNotice extends StatelessWidget {
   const _CounterPausedNotice();
 
@@ -1180,7 +1599,7 @@ class _CounterPausedNotice extends StatelessWidget {
           ),
           SizedBox(height: 5),
           Text(
-            'Open it from Profile to process incoming orders.',
+            'Open it from Settings at the top right to process incoming orders.',
             style: TextStyle(color: AppColors.muted),
           ),
         ],

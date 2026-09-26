@@ -198,6 +198,13 @@ class UserSession {
 
   /// Whether the user is a Stationery Shop owner or operator.
   bool get isStationeryOwner {
+    final lowerEmail = email.trim().toLowerCase();
+    if (lowerEmail == 'stationary@mec.local' ||
+        lowerEmail == 'stationery@mec.local' ||
+        lowerEmail.contains('stationery') ||
+        lowerEmail.contains('stationary')) {
+      return true;
+    }
     final roles = <String>{
       roleKey,
       ...roleIds,
@@ -205,6 +212,7 @@ class UserSession {
     return roles.contains('stationery_operator') ||
         roles.contains('stationery_owner') ||
         roles.contains('stationery') ||
+        roles.contains('stationary') ||
         roles.contains('bookstore');
   }
 

@@ -111,7 +111,9 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
   CanteenStaffMode _canteenStaffMode = CanteenStaffMode.work;
 
   bool get _isCanteenStaffUser {
-    return widget.session.isCanteenOwner || widget.session.isCaptain;
+    return widget.session.isCanteenOwner ||
+        widget.session.isCaptain ||
+        widget.session.isStationeryOwner;
   }
 
   Future<void> _updateCanteenMode(CanteenStaffMode mode) async {
@@ -241,7 +243,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       );
     }
 
-    if (widget.session.isCanteenOwner) {
+    if (widget.session.isCanteenOwner || widget.session.isStationeryOwner) {
       final safeBottom = MediaQuery.paddingOf(context).bottom;
       return Stack(
         children: [
@@ -542,9 +544,11 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                             color: AppColors.primary,
                           ),
                           const SizedBox(width: 8),
-                          const Text(
-                            'Canteen Mode',
-                            style: TextStyle(
+                          Text(
+                            widget.session.isStationeryOwner
+                                ? 'Stationery Mode'
+                                : 'Canteen Mode',
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -554,7 +558,9 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                       const SizedBox(height: 6),
                       Text(
                         _canteenStaffMode == CanteenStaffMode.work
-                            ? 'Work mode (managing orders & counter)'
+                            ? (widget.session.isStationeryOwner
+                                ? 'Work mode (managing stationery orders & inventory)'
+                                : 'Work mode (managing orders & counter)')
                             : 'Eat mode (student menu & ordering)',
                         style: TextStyle(
                           fontSize: 12,

@@ -353,11 +353,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 if (widget.session.isCanteenOwner ||
-                    widget.session.isCaptain) ...[
+                    widget.session.isCaptain ||
+                    widget.session.isStationeryOwner) ...[
                   _buildDivider(dividerColor),
                   _SettingsTile(
                     icon: Icons.storefront_outlined,
-                    title: 'Canteen mode',
+                    title: widget.session.isStationeryOwner
+                        ? 'Stationery mode'
+                        : 'Canteen mode',
                     textColor: textColor,
                     isDark: isDark,
                     trailing: Row(
