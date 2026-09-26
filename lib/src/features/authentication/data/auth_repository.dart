@@ -523,9 +523,13 @@ class AuthenticationException implements Exception {
     this.message, {
     this.sessionExpired = false,
     this.signedInElsewhere = false,
+    this.invalidCredentials = false,
   });
 
   final String message;
   final bool sessionExpired;
   final bool signedInElsewhere;
+
+  /// The email or password was wrong; counts toward the sign-in lockout.
+  final bool invalidCredentials;
 }

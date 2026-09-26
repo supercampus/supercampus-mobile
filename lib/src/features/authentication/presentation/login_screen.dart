@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/skeleton_loading.dart';
 import '../data/auth_repository.dart';
+import '../data/login_attempt_limiter.dart';
 
 enum _AuthView { signIn, resetPassword }
 
@@ -14,11 +16,15 @@ class LoginScreen extends StatefulWidget {
     required this.authRepository,
     required this.onSignedIn,
     this.sessionNotice,
+    this.attemptLimiter,
   });
 
   final AuthRepository authRepository;
   final ValueChanged<UserSession> onSignedIn;
   final String? sessionNotice;
+
+  /// Overrides the default persisted limiter, for tests.
+  final LoginAttemptLimiter? attemptLimiter;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -39,11 +45,58 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _errorMessage;
   UserSession? _successSession;
   bool _sessionNoticeShown = false;
+  late final LoginAttemptLimiter _attemptLimiter;
+  Timer? _lockoutTicker;
+  Duration _lockoutRemaining = Duration.zero;
 
   @override
   void initState() {
     super.initState();
+    _attemptLimiter = widget.attemptLimiter ?? LoginAttemptLimiter();
+    if (widget.attemptLimiter == null) {
+      _attemptLimiter.restore().then((_) {
+        if (mounted && _attemptLimiter.isLocked) _startLockoutTicker();
+      });
+    } else if (_attemptLimiter.isLocked) {
+      _startLockoutTicker();
+    }
     _showSessionNotice();
+  }
+
+  void _startLockoutTicker() {
+    _lockoutTicker?.cancel();
+    _tickLockout();
+    _lockoutTicker = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _tickLockout(),
+    );
+  }
+
+  void _tickLockout() {
+    if (!mounted) return;
+    final remaining = _attemptLimiter.lockoutRemaining;
+    setState(() {
+      _lockoutRemaining = remaining;
+      if (remaining == Duration.zero) {
+        _lockoutTicker?.cancel();
+        _lockoutTicker = null;
+        _errorMessage = null;
+      } else {
+        _errorMessage = _lockoutMessage(remaining);
+      }
+    });
+  }
+
+  static String _lockoutMessage(Duration remaining) =>
+      'Too many incorrect attempts. Try again in '
+      '${_formatCountdown(remaining)}, or reset your password.';
+
+  static String _formatCountdown(Duration remaining) {
+    // Round up so the countdown never shows 0:00 while still locked.
+    final seconds = (remaining.inMilliseconds / 1000).ceil();
+    final minutes = seconds ~/ 60;
+    final rest = (seconds % 60).toString().padLeft(2, '0');
+    return minutes > 0 ? '$minutes:$rest' : '$seconds s';
   }
 
   @override
@@ -81,6 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _lockoutTicker?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     _resetEmailController.dispose();
@@ -106,7 +160,9 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showSignIn() {
     setState(() {
       _view = _AuthView.signIn;
-      _errorMessage = null;
+      _errorMessage = _lockoutRemaining > Duration.zero
+          ? _lockoutMessage(_lockoutRemaining)
+          : null;
     });
   }
 
@@ -121,6 +177,10 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (_attemptLimiter.isLocked) {
+      _startLockoutTicker();
+      return;
+    }
     setState(() => _errorMessage = null);
     if (!_formKey.currentState!.validate()) return;
 
@@ -131,6 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
         tenantDomain: '',
       );
+      _attemptLimiter.recordSuccess();
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
@@ -147,7 +208,27 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       if (mounted) widget.onSignedIn(session);
     } on AuthenticationException catch (error) {
-      if (mounted) setState(() => _errorMessage = error.message);
+      if (!mounted) return;
+      if (!error.invalidCredentials) {
+        setState(() => _errorMessage = error.message);
+        return;
+      }
+      final lockout = _attemptLimiter.recordFailure();
+      _passwordController.clear();
+      if (lockout != null) {
+        _startLockoutTicker();
+        return;
+      }
+      final left = _attemptLimiter.attemptsRemaining;
+      final lockLength = _formatCountdown(
+        _attemptLimiter.lockoutFor(_attemptLimiter.maxFailures),
+      );
+      setState(() {
+        _errorMessage =
+            '${error.message} $left ${left == 1 ? 'attempt' : 'attempts'} '
+            'left before sign-in locks for $lockLength.';
+      });
+      _passwordFocusNode.requestFocus();
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -209,6 +290,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     passwordFocusNode: _passwordFocusNode,
                     obscurePassword: _obscurePassword,
                     isSubmitting: _isSubmitting,
+                    lockoutRemaining: _lockoutRemaining,
                     errorMessage: _errorMessage,
                     validateEmail: _validateEmail,
                     validatePassword: _validatePassword,
@@ -558,6 +640,7 @@ class _SignInView extends StatelessWidget {
     required this.passwordFocusNode,
     required this.obscurePassword,
     required this.isSubmitting,
+    required this.lockoutRemaining,
     required this.errorMessage,
     required this.validateEmail,
     required this.validatePassword,
@@ -573,9 +656,12 @@ class _SignInView extends StatelessWidget {
   final FocusNode passwordFocusNode;
   final bool obscurePassword;
   final bool isSubmitting;
+  final Duration lockoutRemaining;
   final String? errorMessage;
   final String? Function(String?) validateEmail;
   final String? Function(String?) validatePassword;
+
+  bool get _isLocked => lockoutRemaining > Duration.zero;
   final VoidCallback onBack;
   final VoidCallback onTogglePassword;
   final VoidCallback onForgotPassword;
@@ -758,7 +844,7 @@ class _SignInView extends StatelessWidget {
                   ),
                   validator: validatePassword,
                   onFieldSubmitted: (_) {
-                    if (!isSubmitting) onSubmit();
+                    if (!isSubmitting && !_isLocked) onSubmit();
                   },
                 ),
               ),
@@ -800,23 +886,27 @@ class _SignInView extends StatelessWidget {
                 )
               else
                 FilledButton(
-                  onPressed: onSubmit,
+                  onPressed: _isLocked ? null : onSubmit,
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF18181B),
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xFFE4E4E7),
+                    disabledForegroundColor: const Color(0xFF71717A),
                     minimumSize: const Size.fromHeight(52),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Sign in',
-                    style: TextStyle(
+                  child: Text(
+                    _isLocked
+                        ? 'Locked · '
+                              '${_LoginScreenState._formatCountdown(lockoutRemaining)}'
+                        : 'Sign in',
+                    style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
                     ),
                   ),
                 ),

@@ -53,6 +53,7 @@ class BackendAuthRepository
     if (response.statusCode == 401) {
       throw const AuthenticationException(
         'The username or password you entered is incorrect.',
+        invalidCredentials: true,
       );
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {

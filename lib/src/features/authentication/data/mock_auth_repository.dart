@@ -21,6 +21,7 @@ class MockAuthRepository implements AuthRepository {
     if (password.toLowerCase() == 'invalid1') {
       throw const AuthenticationException(
         'The email or password you entered is incorrect.',
+        invalidCredentials: true,
       );
     }
 
