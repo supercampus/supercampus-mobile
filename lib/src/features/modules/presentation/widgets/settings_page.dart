@@ -7,6 +7,7 @@ import '../../../../core/access/module_catalog.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/auth_repository.dart';
 import '../../../canteen/data/backend_canteen_repository.dart';
+import '../../../canteen/data/canteen_models.dart';
 import '../../../canteen/presentation/transaction_pin_sheet.dart';
 import 'home_sheets.dart';
 
@@ -22,6 +23,8 @@ class SettingsPage extends StatefulWidget {
     required this.moduleOrder,
     this.onModuleOrderChanged,
     this.accessTokenProvider,
+    this.currentCanteenMode,
+    this.onCanteenModeChanged,
   });
 
   final UserSession session;
@@ -33,6 +36,8 @@ class SettingsPage extends StatefulWidget {
   final List<String> moduleOrder;
   final ValueChanged<List<String>>? onModuleOrderChanged;
   final AccessTokenProvider? accessTokenProvider;
+  final CanteenStaffMode? currentCanteenMode;
+  final ValueChanged<CanteenStaffMode>? onCanteenModeChanged;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -40,11 +45,22 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   ThemeMode _currentThemeMode = ThemeMode.system;
+  late CanteenStaffMode _canteenMode =
+      widget.currentCanteenMode ?? CanteenStaffMode.work;
 
   @override
   void initState() {
     super.initState();
     _loadCurrentThemeMode();
+  }
+
+  @override
+  void didUpdateWidget(SettingsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.currentCanteenMode != null &&
+        widget.currentCanteenMode != oldWidget.currentCanteenMode) {
+      _canteenMode = widget.currentCanteenMode!;
+    }
   }
 
   Future<void> _loadCurrentThemeMode() async {
@@ -336,6 +352,43 @@ class _SettingsPageState extends State<SettingsPage> {
                     mutedColor,
                   ),
                 ),
+                if (widget.session.isCanteenOwner ||
+                    widget.session.isCaptain) ...[
+                  _buildDivider(dividerColor),
+                  _SettingsTile(
+                    icon: Icons.storefront_outlined,
+                    title: 'Canteen mode',
+                    textColor: textColor,
+                    isDark: isDark,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _canteenMode == CanteenStaffMode.work
+                              ? 'Work mode'
+                              : 'Eat mode',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Color(0xFFC7C7CC),
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                    onTap: () => _openCanteenModeSelector(
+                      context,
+                      isDark,
+                      textColor,
+                      mutedColor,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -479,6 +532,145 @@ class _SettingsPageState extends State<SettingsPage> {
       thickness: 1,
       color: dividerColor,
       indent: 52,
+    );
+  }
+
+  void _openCanteenModeSelector(
+    BuildContext context,
+    bool isDark,
+    Color textColor,
+    Color mutedColor,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF222226) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (ctx, setSheetState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Canteen mode',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Choose whether you are actively running counter operations or browsing as a customer.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: mutedColor,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _canteenMode == CanteenStaffMode.work
+                          ? AppColors.primary.withValues(alpha: 0.12)
+                          : (isDark
+                              ? const Color(0xFF2A2A2E)
+                              : const Color(0xFFF2F2F5)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.work_outline_rounded,
+                      color: _canteenMode == CanteenStaffMode.work
+                          ? AppColors.primary
+                          : mutedColor,
+                    ),
+                  ),
+                  title: Text(
+                    'Work mode',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: textColor,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Manage live orders, counter controls, and menu items',
+                    style: TextStyle(color: mutedColor, fontSize: 12),
+                  ),
+                  trailing: _canteenMode == CanteenStaffMode.work
+                      ? const Icon(Icons.check_circle, color: AppColors.primary)
+                      : null,
+                  onTap: () {
+                    setState(() => _canteenMode = CanteenStaffMode.work);
+                    widget.onCanteenModeChanged?.call(CanteenStaffMode.work);
+                    Navigator.of(sheetContext).pop();
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _canteenMode == CanteenStaffMode.eat
+                          ? AppColors.primary.withValues(alpha: 0.12)
+                          : (isDark
+                              ? const Color(0xFF2A2A2E)
+                              : const Color(0xFFF2F2F5)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.restaurant_outlined,
+                      color: _canteenMode == CanteenStaffMode.eat
+                          ? AppColors.primary
+                          : mutedColor,
+                    ),
+                  ),
+                  title: Text(
+                    'Eat mode',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: textColor,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Browse student menu, order food, and pay from wallet',
+                    style: TextStyle(color: mutedColor, fontSize: 12),
+                  ),
+                  trailing: _canteenMode == CanteenStaffMode.eat
+                      ? const Icon(Icons.check_circle, color: AppColors.primary)
+                      : null,
+                  onTap: () {
+                    setState(() => _canteenMode = CanteenStaffMode.eat);
+                    widget.onCanteenModeChanged?.call(CanteenStaffMode.eat);
+                    Navigator.of(sheetContext).pop();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

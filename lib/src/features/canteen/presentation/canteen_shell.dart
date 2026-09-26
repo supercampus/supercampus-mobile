@@ -34,6 +34,8 @@ class CanteenShell extends StatefulWidget {
     this.hasAlerts = false,
     this.photoUrl,
     this.isMainHome = false,
+    this.initialStaffMode,
+    this.onStaffModeChanged,
   });
 
   final StudentSession session;
@@ -46,6 +48,8 @@ class CanteenShell extends StatefulWidget {
   final bool hasAlerts;
   final String? photoUrl;
   final bool isMainHome;
+  final CanteenStaffMode? initialStaffMode;
+  final ValueChanged<CanteenStaffMode>? onStaffModeChanged;
 
   @override
   State<CanteenShell> createState() => _CanteenShellState();
@@ -99,6 +103,9 @@ class _CanteenShellState extends State<CanteenShell> {
         ? 1
         : 0;
     _openedOrdersFromHome = false;
+    _ownerWorkMode = widget.initialStaffMode == null
+        ? true
+        : widget.initialStaffMode == CanteenStaffMode.work;
     _loadStore();
     if (widget.repository != null) {
       _refreshTimer = Timer.periodic(
@@ -111,6 +118,10 @@ class _CanteenShellState extends State<CanteenShell> {
   @override
   void didUpdateWidget(CanteenShell oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.initialStaffMode != null &&
+        widget.initialStaffMode != oldWidget.initialStaffMode) {
+      _ownerWorkMode = widget.initialStaffMode == CanteenStaffMode.work;
+    }
     if (widget.initialAction != null &&
         oldWidget.initialAction != widget.initialAction) {
       if (const {'orders', 'order_history'}.contains(widget.initialAction)) {
@@ -183,6 +194,7 @@ class _CanteenShellState extends State<CanteenShell> {
       _ownerWorkMode = mode == CanteenStaffMode.work;
       _store = _store!.copyWith(staffState: state);
     });
+    widget.onStaffModeChanged?.call(mode);
   }
 
   Future<void> _updateShopOpen(bool open) async {
@@ -465,6 +477,10 @@ class _CanteenShellState extends State<CanteenShell> {
       MaterialPageRoute<void>(
         builder: (_) => StudentCanteenProfileScreen(
           store: _store!,
+          canUseWorkMode: _canUseWorkMode,
+          currentMode:
+              _ownerWorkMode ? CanteenStaffMode.work : CanteenStaffMode.eat,
+          onModeChanged: (mode) => _updateOwnerMode(mode),
           onSignOut: () {
             Navigator.of(context).pop();
             widget.onSignOut();
@@ -657,16 +673,18 @@ class _CanteenShellState extends State<CanteenShell> {
       child: IndexedStack(index: _selectedIndex, children: pages),
     );
 
-    if (isCaptain) {
+    final body = SafeArea(
+      bottom: false,
+      child: eatContent,
+    );
+
+    if (isCaptain || Scaffold.maybeOf(context) == null) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: SafeArea(
-          bottom: false,
-          child: eatContent,
-        ),
+        body: body,
       );
     }
 
-    return eatContent;
+    return body;
   }
 }

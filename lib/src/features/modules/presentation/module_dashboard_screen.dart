@@ -23,6 +23,7 @@ import 'module_stack.dart';
 import 'today_glance.dart';
 import 'widgets/home_sheets.dart';
 import 'widgets/home_top_bar.dart';
+import '../../canteen/data/canteen_models.dart';
 import '../../canteen/data/canteen_repository.dart';
 import '../../canteen/presentation/canteen_shell.dart';
 import 'widgets/dashboard_nav_bar.dart';
@@ -106,6 +107,18 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
   GlanceFacts _glance = GlanceFacts.empty;
   String _selectedNavId = 'home';
   int _unreadNotifications = 0;
+  CanteenStaffMode _canteenStaffMode = CanteenStaffMode.work;
+
+  bool get _isCanteenStaffUser {
+    return widget.session.isCanteenOwner || widget.session.isCaptain;
+  }
+
+  Future<void> _updateCanteenMode(CanteenStaffMode mode) async {
+    setState(() => _canteenStaffMode = mode);
+    try {
+      await widget.canteenRepository?.updateStaffState(mode: mode);
+    } catch (_) {}
+  }
 
   @override
   void initState() {
@@ -198,6 +211,8 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
         onProfileTap: _openProfileSheet,
         hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
         photoUrl: widget.session.photoUrl,
+        initialStaffMode: _canteenStaffMode,
+        onStaffModeChanged: (mode) => setState(() => _canteenStaffMode = mode),
       );
     }
 
@@ -215,6 +230,9 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
             hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
             photoUrl: widget.session.photoUrl,
             isMainHome: true,
+            initialStaffMode: _canteenStaffMode,
+            onStaffModeChanged: (mode) =>
+                setState(() => _canteenStaffMode = mode),
           ),
           Positioned(
             left: 0,
@@ -476,6 +494,88 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                   ),
                 ),
               ],
+              if (_isCanteenStaffUser) ...[
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F6F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            _canteenStaffMode == CanteenStaffMode.work
+                                ? Icons.storefront_outlined
+                                : Icons.restaurant_outlined,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Canteen Mode',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _canteenStaffMode == CanteenStaffMode.work
+                            ? 'Work mode (managing orders & counter)'
+                            : 'Eat mode (student menu & ordering)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: SegmentedButton<CanteenStaffMode>(
+                          showSelectedIcon: false,
+                          segments: const [
+                            ButtonSegment(
+                              value: CanteenStaffMode.work,
+                              icon: Icon(Icons.work_outline_rounded, size: 16),
+                              label: Text(
+                                'Work mode',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            ButtonSegment(
+                              value: CanteenStaffMode.eat,
+                              icon: Icon(Icons.restaurant_outlined, size: 16),
+                              label: Text(
+                                'Eat mode',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                          selected: {_canteenStaffMode},
+                          onSelectionChanged: (selection) {
+                            final newMode = selection.first;
+                            _updateCanteenMode(newMode);
+                            Navigator.of(ctx).pop();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               const Divider(height: 1),
               // Settings row
@@ -522,6 +622,8 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
           moduleOrder: widget.moduleOrder,
           onModuleOrderChanged: widget.onModuleOrderChanged,
           accessTokenProvider: widget.accessTokenProvider,
+          currentCanteenMode: _canteenStaffMode,
+          onCanteenModeChanged: _updateCanteenMode,
         ),
       ),
     );

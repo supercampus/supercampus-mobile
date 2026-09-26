@@ -86,13 +86,12 @@ void main() {
     expect(find.text('Canteen captain'), findsOneWidget);
     expect(find.text('Live orders'), findsOneWidget);
     expect(find.text('Menu'), findsNothing);
-    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.byType(BottomNavigationBar), findsNothing);
 
-    await tester.tap(find.text('Profile'));
+    await tester.tap(find.byType(CircleAvatar));
     await tester.pumpAndSettle();
-    expect(find.text('Captain profile'), findsOneWidget);
-    expect(find.text('Eat / work mode'), findsOneWidget);
+    expect(find.text('Sign out'), findsOneWidget);
   });
 
   testWidgets(
@@ -252,7 +251,10 @@ class _LaundryStoreRepository implements CanteenRepository {
       rollNumber: operator ? 'MECLAU001' : 'MEC26CS041',
       department: operator ? 'Laundry' : 'CSE',
     ),
-    walletBalances: {'mec-canteen': operator ? 0 : 500},
+    walletBalances: {
+      'mec-canteen': operator ? 0 : 500,
+      'mec-laundry': operator ? 0 : 500,
+    },
     menu: const [],
     orders: const [],
     walletTransactions: const [],

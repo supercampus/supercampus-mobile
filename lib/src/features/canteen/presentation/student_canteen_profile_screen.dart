@@ -4,19 +4,42 @@ import '../../../core/theme/app_theme.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 
-class StudentCanteenProfileScreen extends StatelessWidget {
+class StudentCanteenProfileScreen extends StatefulWidget {
   const StudentCanteenProfileScreen({
     super.key,
     required this.store,
     required this.onSignOut,
+    this.canUseWorkMode = false,
+    this.currentMode = CanteenStaffMode.eat,
+    this.onModeChanged,
   });
 
   final CanteenStore store;
   final VoidCallback onSignOut;
+  final bool canUseWorkMode;
+  final CanteenStaffMode currentMode;
+  final ValueChanged<CanteenStaffMode>? onModeChanged;
+
+  @override
+  State<StudentCanteenProfileScreen> createState() =>
+      _StudentCanteenProfileScreenState();
+}
+
+class _StudentCanteenProfileScreenState
+    extends State<StudentCanteenProfileScreen> {
+  late CanteenStaffMode _currentMode = widget.currentMode;
+
+  @override
+  void didUpdateWidget(StudentCanteenProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentMode != widget.currentMode) {
+      _currentMode = widget.currentMode;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final user = store.user;
+    final user = widget.store.user;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile & settings'),
@@ -111,6 +134,92 @@ class StudentCanteenProfileScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
+          if (widget.canUseWorkMode) ...[
+            CanteenSurface(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE7F0FC),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          _currentMode == CanteenStaffMode.work
+                              ? Icons.storefront_outlined
+                              : Icons.restaurant_outlined,
+                          size: 20,
+                          color: const Color(0xFF2563A9),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Canteen Mode',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _currentMode == CanteenStaffMode.work
+                                  ? 'Work mode (managing orders & counter)'
+                                  : 'Eat mode (student menu & ordering)',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<CanteenStaffMode>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(
+                          value: CanteenStaffMode.work,
+                          icon: Icon(Icons.work_outline_rounded, size: 16),
+                          label: Text(
+                            'Work mode',
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                          ),
+                        ),
+                        ButtonSegment(
+                          value: CanteenStaffMode.eat,
+                          icon: Icon(Icons.restaurant_outlined, size: 16),
+                          label: Text(
+                            'Eat mode',
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                      selected: {_currentMode},
+                      onSelectionChanged: (selection) {
+                        final mode = selection.first;
+                        setState(() => _currentMode = mode);
+                        widget.onModeChanged?.call(mode);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
           for (final setting in const [
             (Icons.history, 'Order history', 'View past completed orders'),
             (
@@ -184,7 +293,7 @@ class StudentCanteenProfileScreen extends StatelessWidget {
               foregroundColor: Theme.of(context).colorScheme.error,
               side: BorderSide(color: Theme.of(context).colorScheme.error),
             ),
-            onPressed: onSignOut,
+            onPressed: widget.onSignOut,
             icon: const Icon(Icons.logout),
             label: const Text('Sign out'),
           ),
