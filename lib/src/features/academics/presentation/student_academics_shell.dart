@@ -52,6 +52,98 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
   DateTime _selectedAttendanceDay = DateTime.now();
   bool _showAttendanceHistory = false;
   bool _showMarksResults = false;
+  DateTime? _selectedWeekMonday;
+
+  DateTime get _activeWeekMonday {
+    if (_selectedWeekMonday != null) return _selectedWeekMonday!;
+    return _defaultWeekMonday();
+  }
+
+  DateTime _defaultWeekMonday() {
+    final dated = <DateTime>[];
+    for (final record in _attendanceRecords) {
+      final heldOn = DateTime.tryParse(record['heldOn']?.toString() ?? '');
+      if (heldOn != null) dated.add(heldOn);
+    }
+    final anchor = dated.isNotEmpty
+        ? dated.reduce((current, next) => next.isAfter(current) ? next : current)
+        : DateTime.now();
+    return _mondayOfWeek(anchor);
+  }
+
+  DateTime _mondayOfWeek(DateTime date) {
+    final d = DateTime(date.year, date.month, date.day);
+    return d.subtract(Duration(days: d.weekday - DateTime.monday));
+  }
+
+  DateTime _firstMondayOfMonth(int year, int month) {
+    DateTime d = DateTime(year, month, 1);
+    while (d.weekday != DateTime.monday) {
+      d = d.add(const Duration(days: 1));
+    }
+    return d;
+  }
+
+  DateTime _termStartMonday(DateTime reference) {
+    DateTime? earliestRecordDate;
+    for (final record in _attendanceRecords) {
+      final heldOn = DateTime.tryParse(record['heldOn']?.toString() ?? '');
+      if (heldOn != null) {
+        if (earliestRecordDate == null || heldOn.isBefore(earliestRecordDate)) {
+          earliestRecordDate = heldOn;
+        }
+      }
+    }
+
+    final year = reference.year;
+    if (reference.month >= 7) {
+      DateTime base = _firstMondayOfMonth(year, 8);
+      if (earliestRecordDate != null &&
+          earliestRecordDate.year == year &&
+          earliestRecordDate.month == 7) {
+        base = _firstMondayOfMonth(year, 7);
+      }
+      if (earliestRecordDate != null &&
+          earliestRecordDate.year == year &&
+          _mondayOfWeek(earliestRecordDate).isBefore(base)) {
+        return _mondayOfWeek(earliestRecordDate);
+      }
+      return base;
+    } else {
+      final base = _firstMondayOfMonth(year, 1);
+      if (earliestRecordDate != null &&
+          earliestRecordDate.year == year &&
+          _mondayOfWeek(earliestRecordDate).isBefore(base)) {
+        return _mondayOfWeek(earliestRecordDate);
+      }
+      return base;
+    }
+  }
+
+  int _weekNumberFor(DateTime monday) {
+    final termStart = _termStartMonday(monday);
+    final diffDays = monday.difference(termStart).inDays;
+    final num = (diffDays / 7).round() + 1;
+    return num < 1 ? 1 : (num > 30 ? 30 : num);
+  }
+
+  void _goToPreviousWeek() {
+    setState(() {
+      _selectedWeekMonday = _activeWeekMonday.subtract(const Duration(days: 7));
+    });
+  }
+
+  void _goToNextWeek() {
+    setState(() {
+      _selectedWeekMonday = _activeWeekMonday.add(const Duration(days: 7));
+    });
+  }
+
+  void _selectWeek(DateTime monday) {
+    setState(() {
+      _selectedWeekMonday = monday;
+    });
+  }
 
   @override
   void initState() {
@@ -183,12 +275,12 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _timetableCard(),
-                    const SizedBox(height: 16),
-                    KeyedSubtree(key: _attendanceKey, child: _attendance()),
-                    const SizedBox(height: 16),
-                    _attendanceOverviewTable(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+                    _attendanceHistoryLink(),
+                    const SizedBox(height: 12),
                     KeyedSubtree(key: _marksKey, child: _marksResultsLink()),
+                    const SizedBox(height: 20),
+                    KeyedSubtree(key: _attendanceKey, child: _attendance()),
                   ],
                 ),
               ),
@@ -338,12 +430,12 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       const Text(
-        'Attendance',
-        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+        'Attendance (overall attendance)',
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
       ),
       const SizedBox(height: 4),
       const Text(
-        'Overall attendance status and calendar records',
+        'Overall attendance status and weekly schedule',
         style: TextStyle(color: AppColors.muted, fontSize: 13),
       ),
       const SizedBox(height: 14),
@@ -358,266 +450,282 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
           'Attendance could not be loaded',
           _attendanceError!,
         )
-      else if (_count('totalClasses') == 0)
-        _attendanceMessage(
-          Icons.fact_check_outlined,
-          'No attendance published yet',
-          'A subject appears here after its staff member publishes the roll.',
-        )
       else ...[
         if (_loadingAttendance) const LinearProgressIndicator(minHeight: 2),
+        _weekSelectorBar(),
         _overallAttendanceCard(),
-        const SizedBox(height: 12),
-        _attendanceHistoryLink(),
+        if (_count('totalClasses') == 0) ...[
+          const SizedBox(height: 12),
+          _attendanceMessage(
+            Icons.fact_check_outlined,
+            'No attendance published yet',
+            'A subject appears here after its staff member publishes the roll.',
+          ),
+        ],
       ],
     ],
   );
 
-  int _countVal(Object? value) => switch (value) {
-    final int v => v,
-    final num v => v.round(),
-    _ => 0,
-  };
-
-  Widget _attendanceOverviewTable() {
-    final bySubjectRaw = _attendanceSummary?['bySubject'];
-    List<Map<String, dynamic>> subjectList = [];
-    if (bySubjectRaw is List && bySubjectRaw.isNotEmpty) {
-      subjectList = bySubjectRaw
-          .whereType<Map>()
-          .map((m) => m.map((k, v) => MapEntry(k.toString(), v)))
-          .toList();
+  Widget _weekSelectorBar() {
+    final monday = _activeWeekMonday;
+    final friday = monday.add(const Duration(days: 4));
+    final weekNum = _weekNumberFor(monday);
+    final String dateRangeStr;
+    if (monday.year != friday.year) {
+      dateRangeStr =
+          '${DateFormat('d MMM yyyy').format(monday)} – ${DateFormat('d MMM yyyy').format(friday)}';
     } else {
-      final map = <String, Map<String, dynamic>>{};
-      for (final r in _attendanceRecords) {
-        final id = r['subjectOfferingId']?.toString() ??
-            r['subjectName']?.toString() ??
-            'other';
-        final entry = map.putIfAbsent(id, () => {
-          'subjectName': r['subjectName'] ?? 'Unknown Subject',
-          'subjectCode': r['subjectCode'] ?? '',
-          'totalClasses': 0,
-          'presentClasses': 0,
-          'absentClasses': 0,
-          'onDutyClasses': 0,
-        });
-        entry['totalClasses'] = (entry['totalClasses'] as int) + 1;
-        final status = r['status']?.toString();
-        if (status == 'present') {
-          entry['presentClasses'] = (entry['presentClasses'] as int) + 1;
-        } else if (status == 'absent') {
-          entry['absentClasses'] = (entry['absentClasses'] as int) + 1;
-        } else if (status == 'od') {
-          entry['onDutyClasses'] = (entry['onDutyClasses'] as int) + 1;
-        }
-      }
-      subjectList = map.values.toList();
+      dateRangeStr =
+          '${DateFormat('d MMM').format(monday)} – ${DateFormat('d MMM yyyy').format(friday)}';
     }
 
-    if (subjectList.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'Attendance Overview',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Subject-wise breakdown of attended and missed classes',
-          style: TextStyle(color: AppColors.muted, fontSize: 13),
-        ),
-        const SizedBox(height: 12),
-        Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFFE5E7EB), width: 1),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: [
-              Container(
-                color: const Color(0xFFF9FAFB),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                child: const Row(
+        ],
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            key: const ValueKey('attendance-prev-week'),
+            tooltip: 'Previous week',
+            icon: const Icon(Icons.chevron_left_rounded, size: 22),
+            onPressed: _goToPreviousWeek,
+          ),
+          Expanded(
+            child: InkWell(
+              key: const ValueKey('attendance-week-picker'),
+              onTap: () => _openWeekPicker(context),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      flex: 4,
-                      child: Text(
-                        'Subject',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF4B5563),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Week $weekNum',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111827),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 18,
+                          color: AppColors.muted,
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'Total',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF4B5563),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'Present',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF4B5563),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'Absent',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF4B5563),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'Att. %',
-                        textAlign: TextAlign.end,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF4B5563),
-                        ),
+                    const SizedBox(height: 2),
+                    Text(
+                      dateRangeStr,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.muted,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1, thickness: 1, color: Color(0xFFE5E7EB)),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: subjectList.length,
-                separatorBuilder: (_, __) =>
-                    const Divider(height: 1, thickness: 1, color: Color(0xFFF3F4F6)),
-                itemBuilder: (context, index) {
-                  final s = subjectList[index];
-                  final total = _countVal(s['totalClasses']);
-                  final present =
-                      _countVal(s['presentClasses']) + _countVal(s['onDutyClasses']);
-                  final absent = _countVal(s['absentClasses']);
-                  final double pct = s['percentage'] != null
-                      ? _number(s['percentage'])
-                      : (total > 0 ? (present / total * 100) : 0.0);
-                  final isLow = pct < 75;
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 4,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                s['subjectName']?.toString() ?? 'Subject',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (s['subjectCode'] != null &&
-                                  s['subjectCode'].toString().isNotEmpty)
-                                Text(
-                                  s['subjectCode'].toString(),
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.muted,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            '$total',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF374151),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            '$present',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF059669),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            '$absent',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: absent > 0
-                                  ? const Color(0xFFDC2626)
-                                  : const Color(0xFF6B7280),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            '${pct.round()}%',
-                            textAlign: TextAlign.end,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: isLow
-                                  ? const Color(0xFFDC2626)
-                                  : const Color(0xFF059669),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
+            ),
           ),
-        ),
-      ],
+          IconButton(
+            key: const ValueKey('attendance-next-week'),
+            tooltip: 'Next week',
+            icon: const Icon(Icons.chevron_right_rounded, size: 22),
+            onPressed: _goToNextWeek,
+          ),
+        ],
+      ),
     );
   }
 
+  void _openWeekPicker(BuildContext context) {
+    final currentActiveMonday = _activeWeekMonday;
+    final termStart = _termStartMonday(currentActiveMonday);
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 6),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Select Week',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    TextButton.icon(
+                      icon: const Icon(Icons.calendar_month_outlined, size: 18),
+                      label: const Text('Pick Date'),
+                      onPressed: () async {
+                        Navigator.pop(sheetContext);
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: currentActiveMonday,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2035),
+                        );
+                        if (picked != null) {
+                          _selectWeek(_mondayOfWeek(picked));
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.55,
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: 16,
+                  itemBuilder: (itemCtx, index) {
+                    final weekNum = index + 1;
+                    final weekMon = termStart.add(Duration(days: index * 7));
+                    final weekFri = weekMon.add(const Duration(days: 4));
+                    final isSelected = isSameDay(weekMon, currentActiveMonday);
+                    final isCurrent = isSameDay(
+                      weekMon,
+                      _mondayOfWeek(DateTime.now()),
+                    );
+
+                    final String label;
+                    if (weekMon.year != weekFri.year) {
+                      label =
+                          '${DateFormat('d MMM yyyy').format(weekMon)} – ${DateFormat('d MMM yyyy').format(weekFri)}';
+                    } else {
+                      label =
+                          '${DateFormat('d MMM').format(weekMon)} – ${DateFormat('d MMM yyyy').format(weekFri)}';
+                    }
+
+                    return ListTile(
+                      leading: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: isSelected
+                            ? AppColors.gateBlue
+                            : isCurrent
+                            ? AppColors.gateBlue.withValues(alpha: 0.15)
+                            : Colors.grey.shade100,
+                        child: Text(
+                          '$weekNum',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: isSelected
+                                ? Colors.white
+                                : isCurrent
+                                ? AppColors.gateBlue
+                                : const Color(0xFF374151),
+                          ),
+                        ),
+                      ),
+                      title: Row(
+                        children: [
+                          Text(
+                            'Week $weekNum',
+                            style: TextStyle(
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? AppColors.gateBlue
+                                  : Colors.black87,
+                            ),
+                          ),
+                          if (isCurrent) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'Current',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      subtitle: Text(
+                        label,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? const Icon(
+                              Icons.check_circle_rounded,
+                              color: AppColors.gateBlue,
+                            )
+                          : null,
+                      onTap: () {
+                        _selectWeek(weekMon);
+                        Navigator.pop(sheetContext);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
   Widget _attendanceHistoryLink() => Card(
     elevation: 0,
     child: InkWell(
@@ -779,20 +887,13 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       if (heldOn != null) dated.add((heldOn, record));
     }
     if (dated.isEmpty) return grid;
-    final anchor = dated
-        .map((item) => item.$1)
-        .reduce((current, next) => next.isAfter(current) ? next : current);
-    final monday = DateTime(
-      anchor.year,
-      anchor.month,
-      anchor.day,
-    ).subtract(Duration(days: anchor.weekday - DateTime.monday));
+    final monday = _activeWeekMonday;
     for (final (date, record) in dated) {
       final day = DateTime(
         date.year,
         date.month,
         date.day,
-      ).difference(monday).inDays;
+      ).difference(DateTime(monday.year, monday.month, monday.day)).inDays;
       if (day < 0 || day >= 5) continue;
       final status = switch (record['status']?.toString().toLowerCase()) {
         'present' => _WeeklyAttendanceStatus.present,
