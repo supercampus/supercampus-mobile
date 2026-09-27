@@ -60,6 +60,7 @@ import 'features/vendor_management/presentation/vendor_management_shell.dart';
 import 'features/vendor_management/data/vendor_repository.dart';
 import 'features/admin_portal/presentation/admin_portal_shell.dart';
 import 'features/admin_portal/data/admin_student_repository.dart';
+import 'features/modules/data/announcement_events.dart';
 import 'features/modules/data/glance_source.dart';
 import 'features/modules/data/student_activity_source.dart';
 import 'features/modules/presentation/module_dashboard_screen.dart';
@@ -257,6 +258,13 @@ class _SupercampusAppState extends State<SupercampusApp>
 
   static bool get _isDevelopmentMode => kDebugMode || kProfileMode;
 
+  /// The backend the student report reads from; null when there is none to
+  /// read (mock builds, no configured URL), so the report says so honestly.
+  static String? get _reportsBaseUrl =>
+      _useMockData || _resolvedBackendBaseUrl.isEmpty
+      ? null
+      : _resolvedBackendBaseUrl;
+
   static void _validateBackendBaseUrl(String value) {
     if (value.trim().isEmpty) {
       throw StateError(
@@ -419,6 +427,12 @@ class _SupercampusAppState extends State<SupercampusApp>
     // already loaded the initial permission snapshot, so treating readiness as
     // a data change made the home dashboard flash on each reconnect.
     if (event.type == 'realtime.ready') return;
+    // A new or changed campus announcement: tell open walls and the home card
+    // to reload, without remounting the dashboard.
+    if (announcementEventTypes.contains(event.type)) {
+      announcementRevision.value++;
+      return;
+    }
     // The operations API publishes completed rolls as
     // `attendance.session.published_to_hod`. Keep the legacy event name for
     // compatibility with older deployments, but refresh on the canonical
@@ -824,6 +838,7 @@ class _SupercampusAppState extends State<SupercampusApp>
         canteenRepository: _resolvedCanteenRepository,
         announcementRepository: _announcementRepository,
         accessTokenProvider: _provideAccessToken,
+        baseUrl: _reportsBaseUrl,
         onOpenModule: (id, [action]) {
           if (!permissions.canSeeModule(id)) return;
           setState(() {
@@ -1205,6 +1220,9 @@ class _SupercampusAppState extends State<SupercampusApp>
       ),
       ModuleCatalog.examination => ExaminationShell(
         session: session,
+        permissions: _permissions,
+        reportsBaseUrl: _reportsBaseUrl,
+        accessTokenProvider: _reportsBaseUrl == null ? null : _provideAccessToken,
         onExitModule: exit,
         onSignOut: _signOut,
         initialAction: _openModuleAction,
@@ -1449,6 +1467,8 @@ class _SupercampusAppState extends State<SupercampusApp>
         _ => '',
       },
       announcementRepository: _announcementRepository,
+      baseUrl: _reportsBaseUrl,
+      accessTokenProvider: _reportsBaseUrl == null ? null : _provideAccessToken,
       child: module,
     );
   }

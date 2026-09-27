@@ -26,6 +26,8 @@ class ModuleNavigationHost extends StatelessWidget {
     this.onScan,
     this.selectedId,
     this.announcementRepository,
+    this.baseUrl,
+    this.accessTokenProvider,
   });
 
   final Widget child;
@@ -40,6 +42,10 @@ class ModuleNavigationHost extends StatelessWidget {
   final void Function(BuildContext context)? onScan;
   final String? selectedId;
   final LibrarianRepository? announcementRepository;
+
+  /// Backend and token provider for the Reports page. Null in mock builds.
+  final String? baseUrl;
+  final AccessTokenProvider? accessTokenProvider;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +68,7 @@ class ModuleNavigationHost extends StatelessWidget {
             child: DashboardNavBar(
               selectedId: selectedId ?? '',
               onSelect: (id) => _onNavSelect(context, id),
+              onHome: onExitModule,
             ),
           ),
         ],
@@ -232,6 +239,10 @@ class ModuleNavigationHost extends StatelessWidget {
               session: session,
               onOpenModule: onOpenModule,
               announcementRepository: announcementRepository,
+              onGoHome: onExitModule,
+              baseUrl: baseUrl,
+              accessTokenProvider: accessTokenProvider,
+              permissions: permissions,
             ),
           ),
         );
@@ -243,6 +254,10 @@ class ModuleNavigationHost extends StatelessWidget {
               session: session,
               onOpenModule: onOpenModule,
               announcementRepository: announcementRepository,
+              onGoHome: onExitModule,
+              baseUrl: baseUrl,
+              accessTokenProvider: accessTokenProvider,
+              permissions: permissions,
             ),
           ),
         );

@@ -38,8 +38,6 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.text('Details'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Digital ID card'));
     await tester.pumpAndSettle();
 

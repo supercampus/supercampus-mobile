@@ -13,6 +13,7 @@ import '../../timetable/data/backend_timetable_repository.dart';
 import '../../timetable/data/timetable_models.dart';
 import '../../timetable/data/timetable_repository.dart';
 import '../../../screens/tuition_fee/tuition_fee_repository.dart';
+import '../../examination/data/student_report_data.dart';
 import 'glance_source.dart';
 import '../presentation/today_glance.dart';
 
@@ -200,46 +201,7 @@ class BackendStudentActivitySource
         baseUrl: baseUrl,
         accessTokenProvider: accessTokenProvider,
       ).load();
-      final account = records
-          .where((row) => row.type == 'student_fee_accounts')
-          .firstOrNull;
-      final assignments = records.where((row) => row.type == 'fee_assignment');
-      final payments = records.where((row) => row.type == 'payments');
-      final fines = records.where((row) => row.type == 'fines_penalties');
-      final assigned = account == null
-          ? assignments.fold<double>(
-              0,
-              (sum, row) => sum + _number(row.data['amountPerStudent']),
-            )
-          : _number(account.data['totalAssigned']);
-      final paidFromRecords = payments
-          .where(
-            (row) => !{
-              'failed',
-              'reversed',
-              'void',
-            }.contains(row.data['status']?.toString().toLowerCase()),
-          )
-          .fold<double>(0, (sum, row) => sum + _number(row.data['amount']));
-      final paid = account == null
-          ? paidFromRecords
-          : _number(
-              account.data['paid'],
-            ).clamp(paidFromRecords, double.infinity);
-      final waiver = _number(account?.data['discountWaiver']);
-      final fine = account == null
-          ? fines.fold<double>(
-              0,
-              (sum, row) =>
-                  sum +
-                  _number(row.data['amount']) -
-                  _number(row.data['waivedAmount']),
-            )
-          : _number(account.data['fine']);
-      final outstanding = (assigned + fine - waiver - paid).clamp(
-        0,
-        double.infinity,
-      );
+      final outstanding = FeeReport.fromRecords(records).outstanding;
       if (outstanding < 1) return const [];
       return [
         StudentActivity(
@@ -349,8 +311,3 @@ String _dateTime(DateTime value) {
   return '${local.day}/${local.month} · ${_time(local)}';
 }
 
-double _number(Object? value) => switch (value) {
-  final num number => number.toDouble(),
-  final String text => double.tryParse(text) ?? 0,
-  _ => 0,
-};

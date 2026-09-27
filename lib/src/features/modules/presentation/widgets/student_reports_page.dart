@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/access/effective_permissions.dart';
 import '../../../../core/access/module_catalog.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../library/data/librarian_repository.dart';
 import '../../../authentication/data/auth_repository.dart';
 import '../../../examination/presentation/screens/student_reports_analytics_screen.dart';
@@ -15,6 +17,10 @@ class StudentReportsPage extends StatelessWidget {
     this.onOpenModule,
     this.onNavSelect,
     this.announcementRepository,
+    this.onGoHome,
+    this.baseUrl,
+    this.accessTokenProvider,
+    this.permissions,
   });
 
   final UserSession session;
@@ -22,18 +28,26 @@ class StudentReportsPage extends StatelessWidget {
   final ValueChanged<String>? onNavSelect;
   final LibrarianRepository? announcementRepository;
 
+  /// Called after the page pops back to the first route when the user
+  /// double-taps Wall or Reports, so a host can also leave an open module.
+  final VoidCallback? onGoHome;
+
+  /// The app's resolved backend and token provider. Null in mock builds, where
+  /// each report section says it is not available instead of inventing data.
+  final String? baseUrl;
+  final AccessTokenProvider? accessTokenProvider;
+
+  /// Hides report sections for modules the user may not see.
+  final EffectivePermissions? permissions;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final backgroundColor =
-        isDark ? const Color(0xFF141416) : const Color(0xFFF7F7F9);
-    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final p = context.palette;
 
     return PopScope(
       canPop: true,
       child: Scaffold(
-        backgroundColor: backgroundColor,
+        backgroundColor: p.canvas,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -43,20 +57,19 @@ class StudentReportsPage extends StatelessWidget {
             padding: const EdgeInsets.only(left: 16),
             child: Center(
               child: Material(
-                color: isDark ? const Color(0xFF2A2A2E) : Colors.white,
-                shape: const CircleBorder(),
-                elevation: isDark ? 0 : 1,
-                shadowColor: Colors.black.withValues(alpha: 0.04),
+                color: p.surface,
+                shape: CircleBorder(side: BorderSide(color: p.border)),
                 child: InkWell(
                   customBorder: const CircleBorder(),
-                  onTap: () => Navigator.of(context).pop(),
+                  onTap: () => Navigator.of(context).maybePop(),
                   child: Container(
                     width: 38,
                     height: 38,
                     alignment: Alignment.center,
                     child: Icon(
                       Icons.chevron_left_rounded,
-                      color: textColor,
+                      semanticLabel: 'Back',
+                      color: p.ink,
                       size: 24,
                     ),
                   ),
@@ -67,7 +80,7 @@ class StudentReportsPage extends StatelessWidget {
           title: Text(
             'Reports & Analysis',
             style: TextStyle(
-              color: textColor,
+              color: p.ink,
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
@@ -75,11 +88,25 @@ class StudentReportsPage extends StatelessWidget {
         ),
         body: StudentReportsAnalyticsScreen(
           session: session,
-          onOpenModule: onOpenModule,
+          // The report sits on top of its host; leave it before the host
+          // switches to the module, as the nav bar does.
+          onOpenModule: onOpenModule == null
+              ? null
+              : (id) {
+                  Navigator.of(context).pop();
+                  onOpenModule!(id);
+                },
+          baseUrl: baseUrl,
+          accessTokenProvider: accessTokenProvider,
+          permissions: permissions,
         ),
         bottomNavigationBar: DashboardNavBar(
           selectedId: 'analysis',
           onSelect: (id) => _handleNavSelect(context, id),
+          onHome: () {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            onGoHome?.call();
+          },
         ),
       ),
     );
@@ -101,6 +128,10 @@ class StudentReportsPage extends StatelessWidget {
               session: session,
               onOpenModule: onOpenModule,
               announcementRepository: announcementRepository,
+              onGoHome: onGoHome,
+              baseUrl: baseUrl,
+              accessTokenProvider: accessTokenProvider,
+              permissions: permissions,
             ),
           ),
         );

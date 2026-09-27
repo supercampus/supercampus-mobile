@@ -7,10 +7,46 @@ class DashboardNavBar extends StatelessWidget {
     super.key,
     required this.selectedId,
     this.onSelect,
+    this.onHome,
   });
 
   final String selectedId;
   final ValueChanged<String>? onSelect;
+
+  /// Returns to the home screen. Fired by a double tap on Wall or Reports.
+  final VoidCallback? onHome;
+
+  /// Tabs whose double tap goes home.
+  static const _homeOnDoubleTap = {'wall', 'analysis'};
+  static const _doubleTapWindow = Duration(milliseconds: 450);
+
+  // Static on purpose: the first tap usually pushes a new page, so the second
+  // tap lands on that page's nav bar — a different widget instance.
+  static String? _lastTapId;
+  static DateTime? _lastTapAt;
+
+  /// Visible for tests: forget the previous tap.
+  @visibleForTesting
+  static void resetTapMemory() {
+    _lastTapId = null;
+    _lastTapAt = null;
+  }
+
+  void _handleTap(String id) {
+    final now = DateTime.now();
+    final lastAt = _lastTapAt;
+    final isDoubleTap = id == _lastTapId &&
+        lastAt != null &&
+        now.difference(lastAt) <= _doubleTapWindow;
+    _lastTapId = id;
+    _lastTapAt = now;
+    if (isDoubleTap && _homeOnDoubleTap.contains(id) && onHome != null) {
+      resetTapMemory();
+      onHome!();
+      return;
+    }
+    onSelect?.call(id);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,28 +90,28 @@ class DashboardNavBar extends StatelessWidget {
                     icon: Icons.menu_book_rounded,
                     tooltip: 'Academics',
                     isSelected: selectedId == 'acads',
-                    onTap: () => onSelect?.call('acads'),
+                    onTap: () => _handleTap('acads'),
                   ),
                   _NavItem(
                     id: 'gatepass',
                     icon: Icons.badge_outlined,
                     tooltip: 'Gatepass',
                     isSelected: selectedId == 'gatepass',
-                    onTap: () => onSelect?.call('gatepass'),
+                    onTap: () => _handleTap('gatepass'),
                   ),
                   _NavItem(
                     id: 'wall',
                     icon: Icons.campaign_outlined,
                     tooltip: 'Wall - Announcements & Circulars',
                     isSelected: selectedId == 'wall',
-                    onTap: () => onSelect?.call('wall'),
+                    onTap: () => _handleTap('wall'),
                   ),
                   _NavItem(
                     id: 'analysis',
                     icon: Icons.bar_chart_rounded,
                     tooltip: 'Reports & Analysis',
                     isSelected: selectedId == 'analysis',
-                    onTap: () => onSelect?.call('analysis'),
+                    onTap: () => _handleTap('analysis'),
                   ),
                 ],
               ),

@@ -12,6 +12,7 @@ import '../data/backend_canteen_repository.dart';
 import '../data/canteen_models.dart';
 import '../data/canteen_repository.dart';
 import '../data/mock_canteen_repository.dart';
+import '../data/wallet_pin_repository.dart';
 import '../../scanner/presentation/scan_qr_screen.dart';
 import 'canteen_cart_screen.dart';
 import 'canteen_captain_home.dart';
@@ -368,8 +369,18 @@ class _CanteenShellState extends State<CanteenShell> {
   }
 
   Future<void> _setupPin(String pinHash, {String? hint}) async {
-    if (_repository case final BackendCanteenRepository backend) {
-      await backend.setWalletPin(pinHash, hint: hint);
+    if (_repository case final WalletPinRepository pins) {
+      try {
+        await pins.setWalletPin(pinHash, hint: hint);
+      } on WalletPinAlreadySetException {
+        // The server already holds a PIN for this account (set on another
+        // device). Remember that so the next checkout asks for it, and let
+        // the cart show the server's message instead of placing the order.
+        if (mounted) {
+          setState(() => _store = _store?.copyWith(hasPin: true));
+        }
+        rethrow;
+      }
     }
     if (mounted) {
       setState(() {

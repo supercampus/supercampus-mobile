@@ -7,8 +7,10 @@ import '../../authentication/data/auth_http_client.dart';
 import '../../authentication/data/auth_repository.dart';
 import 'canteen_models.dart';
 import 'canteen_repository.dart';
+import 'wallet_pin_repository.dart';
 
-class BackendCanteenRepository implements CanteenRepository {
+class BackendCanteenRepository
+    implements CanteenRepository, WalletPinRepository {
   BackendCanteenRepository({
     required String baseUrl,
     String? accessToken,
@@ -82,6 +84,7 @@ class BackendCanteenRepository implements CanteenRepository {
         data['laundryCharges'],
       ).map((value) => _laundryCharge(_map(value))).toList(growable: false),
       hasPin: data['hasPin'] == true,
+      hasPinHint: data['hasPinHint'] == true,
     );
   }
 
@@ -122,43 +125,91 @@ class BackendCanteenRepository implements CanteenRepository {
     );
   }
 
+  @override
+  Future<WalletPinStatus> loadPinStatus() async {
+    final response = await _authorizedRequest(
+      (headers) => _client.get(
+        _uri('/api/v1/operations/canteen/store'),
+        headers: headers,
+      ),
+    );
+    final data = _data(response);
+    return WalletPinStatus(
+      hasPin: data['hasPin'] == true,
+      hasPinHint: data['hasPinHint'] == true,
+    );
+  }
+
   /// Set the 4-digit wallet PIN for the first time.
+  @override
   Future<void> setWalletPin(String pinHash, {String? hint}) async {
-    await _authorizedRequest(
+    final response = await _authorizedRequest(
       (headers) => _client.post(
         _uri('/api/v1/operations/canteen/wallet-pin'),
         headers: headers,
         body: jsonEncode({
           'pinHash': pinHash,
-          if (hint != null && hint.isNotEmpty) 'hint': hint,
+          if (hint != null && hint.trim().isNotEmpty) 'hint': hint.trim(),
         }),
       ),
       json: true,
     );
+    if (response.statusCode == 409) {
+      try {
+        _checkedData(response);
+      } on CanteenException catch (error) {
+        throw WalletPinAlreadySetException(error.message);
+      }
+    }
+    _checkedData(response);
   }
 
-  /// Change the wallet PIN using one of three methods.
-  Future<void> changeWalletPin({
+  /// Change the wallet PIN after verifying with one of three methods.
+  @override
+  Future<bool> changeWalletPin({
     required String newPinHash,
-    required String method, // 'current_pin' | 'hint' | 'password'
+    required WalletPinVerification method,
     String? currentPinHash,
     String? hint,
     String? password,
+    String? newHint,
   }) async {
-    await _authorizedRequest(
+    final response = await _authorizedRequest(
       (headers) => _client.put(
         _uri('/api/v1/operations/canteen/wallet-pin'),
         headers: headers,
         body: jsonEncode({
           'newPinHash': newPinHash,
-          'method': method,
+          'method': method.wireValue,
           if (currentPinHash != null) 'currentPinHash': currentPinHash,
           if (hint != null) 'hint': hint,
           if (password != null) 'password': password,
+          if (newHint != null) 'newHint': newHint.trim(),
         }),
       ),
       json: true,
     );
+    final data = _checkedData(response);
+    return data['hasPinHint'] == true;
+  }
+
+  /// Like [_data], but a success without a `data` object is still a success
+  /// (the PIN endpoints only need the status). Failures throw the server's
+  /// message through [_data].
+  Map<String, dynamic> _checkedData(http.Response response) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      return _data(response);
+    }
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic> &&
+          decoded['data'] is Map<String, dynamic>) {
+        return decoded['data'] as Map<String, dynamic>;
+      }
+    } catch (_) {
+      // An empty or non-JSON 2xx body is still a success.
+    }
+    return const <String, dynamic>{};
   }
 
   Map<String, String> _headers(String token, {bool json = false}) => {

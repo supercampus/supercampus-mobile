@@ -18,6 +18,7 @@ import '../../insights/data/insight.dart';
 import '../../library/data/librarian_repository.dart';
 import '../../notifications/data/notification_repository.dart';
 import '../../notifications/presentation/notification_inbox_sheet.dart';
+import '../data/announcement_events.dart';
 import '../data/glance_source.dart';
 import 'module_stack.dart';
 import 'today_glance.dart';
@@ -61,6 +62,7 @@ class ModuleDashboardScreen extends StatefulWidget {
     this.announcementRepository,
     this.canteenRepository,
     this.accessTokenProvider,
+    this.baseUrl,
   });
 
   final UserSession session;
@@ -98,6 +100,9 @@ class ModuleDashboardScreen extends StatefulWidget {
   final CanteenRepository? canteenRepository;
   final AccessTokenProvider? accessTokenProvider;
 
+  /// Backend the Reports page reads from. Null in mock builds.
+  final String? baseUrl;
+
   @override
   State<ModuleDashboardScreen> createState() => _ModuleDashboardScreenState();
 }
@@ -129,6 +134,13 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
     _loadGlance();
     _loadNotifications();
     _loadAnnouncements();
+    announcementRevision.addListener(_loadAnnouncements);
+  }
+
+  @override
+  void dispose() {
+    announcementRevision.removeListener(_loadAnnouncements);
+    super.dispose();
   }
 
   @override
@@ -157,8 +169,10 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       final values = await repository.announcements();
       if (mounted) {
         setState(() {
+          // The API marks visible posts `approved` (pending / rejected are
+          // moderation states); it never returns `published`.
           _announcements = values
-              .where((a) => a.status.toLowerCase() == 'published')
+              .where((a) => a.status.toLowerCase() == 'approved')
               .toList();
         });
       }
@@ -395,6 +409,9 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
           announcementRepository: widget.announcementRepository,
           session: widget.session,
           onOpenModule: widget.onOpenModule,
+          baseUrl: widget.baseUrl,
+          accessTokenProvider: widget.accessTokenProvider,
+          permissions: widget.permissions,
         ),
       ),
     );
@@ -407,6 +424,9 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
           session: widget.session,
           onOpenModule: widget.onOpenModule,
           announcementRepository: widget.announcementRepository,
+          baseUrl: widget.baseUrl,
+          accessTokenProvider: widget.accessTokenProvider,
+          permissions: widget.permissions,
         ),
       ),
     );
@@ -686,6 +706,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
           accessTokenProvider: widget.accessTokenProvider,
           currentCanteenMode: _canteenStaffMode,
           onCanteenModeChanged: _updateCanteenMode,
+          apiBaseUrl: widget.baseUrl,
         ),
       ),
     );
@@ -857,6 +878,7 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
   void initState() {
     super.initState();
     _loadAnnouncements();
+    announcementRevision.addListener(_loadAnnouncements);
   }
 
   @override
@@ -958,6 +980,7 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
 
   @override
   void dispose() {
+    announcementRevision.removeListener(_loadAnnouncements);
     _pageController.dispose();
     super.dispose();
   }

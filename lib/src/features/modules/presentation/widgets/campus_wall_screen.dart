@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/access/effective_permissions.dart';
 import '../../../../core/access/module_catalog.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/skeleton_loading.dart';
 import '../../../authentication/data/auth_repository.dart';
 import '../../../library/data/librarian_repository.dart';
+import '../../data/announcement_events.dart';
 import 'dashboard_nav_bar.dart';
 import 'student_reports_page.dart';
 
@@ -15,17 +18,23 @@ class CampusWallNotice {
     required this.content,
     required this.author,
     required this.date,
+    DateTime? postedAt,
     this.attachmentName,
     this.attachmentUrl,
     this.isUrgent = false,
-  });
+  }) : _postedAt = postedAt;
 
   final String id;
   final String category;
   final String title;
   final String content;
   final String author;
+  /// The date the notice is about (for example the day of an event).
   final DateTime date;
+
+  /// When it was posted — drives "5m ago" and newest-first ordering.
+  DateTime get postedAt => _postedAt ?? date;
+  final DateTime? _postedAt;
   final String? attachmentName;
   final String? attachmentUrl;
   final bool isUrgent;
@@ -38,12 +47,25 @@ class CampusWallScreen extends StatefulWidget {
     this.session,
     this.onOpenModule,
     this.onNavSelect,
+    this.onGoHome,
+    this.baseUrl,
+    this.accessTokenProvider,
+    this.permissions,
   });
 
   final LibrarianRepository? announcementRepository;
   final UserSession? session;
   final ValueChanged<String>? onOpenModule;
   final ValueChanged<String>? onNavSelect;
+
+  /// Called after the wall pops back to the first route when the user
+  /// double-taps Wall or Reports, so a host can also leave an open module.
+  final VoidCallback? onGoHome;
+
+  /// Handed on to the Reports page when the nav bar swaps to it.
+  final String? baseUrl;
+  final AccessTokenProvider? accessTokenProvider;
+  final EffectivePermissions? permissions;
 
   @override
   State<CampusWallScreen> createState() => _CampusWallScreenState();
@@ -53,6 +75,7 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
   String _selectedFilter = 'All';
   String _searchQuery = '';
   bool _isLoading = false;
+  String? _loadError;
   List<CampusWallNotice> _notices = [];
 
   final List<String> _filters = const [
@@ -69,10 +92,21 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
   void initState() {
     super.initState();
     _loadNotices();
+    announcementRevision.addListener(_loadNotices);
+  }
+
+  @override
+  void dispose() {
+    announcementRevision.removeListener(_loadNotices);
+    super.dispose();
   }
 
   Future<void> _loadNotices() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+    String? loadError;
     final items = <CampusWallNotice>[];
 
     // 1. Resolve repository (either passed in or constructed from session)
@@ -90,7 +124,11 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
     if (repo != null) {
       try {
         final repoAnnouncements = await repo.announcements();
-        for (final item in repoAnnouncements) {
+        // Pending and rejected posts are moderation states; the wall shows
+        // what has been published.
+        for (final item in repoAnnouncements.where(
+          (a) => a.status.toLowerCase() == 'approved',
+        )) {
           final authorDisplay = _resolveAuthor(item);
           items.add(
             CampusWallNotice(
@@ -100,6 +138,7 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
               content: item.message,
               author: authorDisplay,
               date: item.announcementDate,
+              postedAt: item.createdAt,
               attachmentName: item.attachmentName,
               attachmentUrl: item.attachmentUrl,
               isUrgent: item.type.toLowerCase().contains('urgent') ||
@@ -109,16 +148,18 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
         }
       } catch (e) {
         debugPrint('Failed to load campus announcements: $e');
+        loadError = 'Couldn''t load announcements. Check your connection and try again.';
       }
     }
 
     // Sort newest first
-    items.sort((a, b) => b.date.compareTo(a.date));
+    items.sort((a, b) => b.postedAt.compareTo(a.postedAt));
 
     if (mounted) {
       setState(() {
         _notices = items;
         _isLoading = false;
+        _loadError = loadError;
       });
     }
   }
@@ -347,30 +388,51 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
             else if (_filteredNotices.isEmpty)
               SliverFillRemaining(
                 child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.feed_outlined,
-                        size: 48,
-                        color: mutedColor,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'No announcements found',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: textColor,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _loadError != null
+                              ? Icons.cloud_off_rounded
+                              : Icons.feed_outlined,
+                          size: 48,
+                          color: mutedColor,
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Official notices and circulars published by admin@mec.local will appear here',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 13, color: mutedColor),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        Text(
+                          _loadError != null
+                              ? 'Announcements didn’t load'
+                              : 'No announcements yet',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: textColor,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _loadError ??
+                              'Notices and circulars from your institution will appear here.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 13, color: mutedColor),
+                        ),
+                        if (_loadError != null) ...[
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            onPressed: _loadNotices,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: context.palette.brand,
+                              foregroundColor: context.palette.onBrand,
+                              minimumSize: const Size(0, 44),
+                            ),
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: const Text('Try again'),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
               )
@@ -399,8 +461,14 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
       bottomNavigationBar: DashboardNavBar(
         selectedId: 'wall',
         onSelect: _handleNavSelect,
+        onHome: _goHome,
       ),
     );
+  }
+
+  void _goHome() {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    widget.onGoHome?.call();
   }
 
   void _handleNavSelect(String id) {
@@ -420,6 +488,10 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
                 session: widget.session!,
                 onOpenModule: widget.onOpenModule,
                 announcementRepository: widget.announcementRepository,
+                onGoHome: widget.onGoHome,
+                baseUrl: widget.baseUrl,
+                accessTokenProvider: widget.accessTokenProvider,
+                permissions: widget.permissions,
               ),
             ),
           );
@@ -489,7 +561,7 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
                   ),
                   const Spacer(),
                   Text(
-                    _formatDate(notice.date),
+                    _formatDate(notice.postedAt),
                     style: TextStyle(
                       fontSize: 12,
                       color: isDark
@@ -747,7 +819,7 @@ class _NoticeCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            _CampusWallScreenState._formatDate(notice.date),
+                            _CampusWallScreenState._formatDate(notice.postedAt),
                             style: TextStyle(
                               fontSize: 11,
                               color: mutedColor,

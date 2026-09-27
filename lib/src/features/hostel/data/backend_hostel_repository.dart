@@ -24,6 +24,15 @@ class BackendHostelRepository implements HostelRepository {
   final String studentName;
   final String studentCode;
 
+  /// The caller's own academic and residency summary (`data.student` of the
+  /// hostel overview): programme, academicYear, residency, hostel, block,
+  /// room. Answers for day scholars too, with no hostel fields.
+  Future<Map<String, dynamic>> loadStudentSummary() async => _map(
+    _data(
+      await _request('GET', '/api/v1/operations/hostel/overview'),
+    )['student'],
+  );
+
   @override
   Future<HostelStore> loadStore() async {
     final hostel = _data(

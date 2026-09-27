@@ -379,6 +379,7 @@ class CanteenStore {
     this.laundryPricePerKg = 0,
     this.laundryCharges = const [],
     this.hasPin = false,
+    this.hasPinHint = false,
   });
 
   final CanteenUser user;
@@ -400,6 +401,10 @@ class CanteenStore {
   /// Whether the user has set a 4-digit transaction PIN.
   final bool hasPin;
 
+  /// Whether a recovery word is stored for the PIN, so "Use recovery word"
+  /// can be offered when changing it.
+  final bool hasPinHint;
+
   CanteenStore copyWith({
     Map<String, double>? walletBalances,
     List<CanteenOrder>? orders,
@@ -412,6 +417,7 @@ class CanteenStore {
     double? laundryPricePerKg,
     List<LaundryCharge>? laundryCharges,
     bool? hasPin,
+    bool? hasPinHint,
   }) {
     return CanteenStore(
       user: user,
@@ -428,6 +434,7 @@ class CanteenStore {
       laundryPricePerKg: laundryPricePerKg ?? this.laundryPricePerKg,
       laundryCharges: laundryCharges ?? this.laundryCharges,
       hasPin: hasPin ?? this.hasPin,
+      hasPinHint: hasPinHint ?? this.hasPinHint,
     );
   }
 }

@@ -7,6 +7,9 @@ import '../../../../core/access/portal_module_presentation.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/auth_repository.dart';
 import '../../../insights/data/insight.dart';
+import '../../../settings/data/support_repository.dart';
+import '../../../settings/presentation/help_center_page.dart';
+import '../../../settings/presentation/profile_details_page.dart';
 
 /// Shared chrome: rounded top, grab handle, title.
 Future<T?> showHomeSheet<T>({
@@ -462,314 +465,34 @@ class ProfileSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (session.role == UserRole.student) {
-      return ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-        children: _buildStudentDetailActions(context, session),
-      );
-    }
-
     final modules = portalModules(session, permissions);
 
+    // Only real account data. Parent, emergency, medical and document
+    // records are not held by the platform, so none are shown or invented.
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
         _ProfileIdentityCard(session: session, modules: modules.length),
         const SizedBox(height: 16),
-        ..._buildDetailActions(context, session),
-      ],
-    );
-  }
-}
-
-List<Widget> _buildStudentDetailActions(
-  BuildContext context,
-  UserSession session,
-) => [
-  _StudentProfileCard(
-    icon: Icons.folder_copy_outlined,
-    title: 'Documents & Certificates',
-    subtitle: 'Submitted documents and verified certificates',
-    onTap: () => _openProfileDetail(
-      context,
-      title: 'Documents & Certificates',
-      icon: Icons.folder_copy_outlined,
-      items: const [
-        _ProfileDetailItem('Bonafide Certificate', 'Available to generate'),
-        _ProfileDetailItem('Transfer Certificate', 'Verified'),
-        _ProfileDetailItem('Semester 5 Marksheet', 'Verified'),
-        _ProfileDetailItem('Student ID Proof', 'Verified'),
-      ],
-    ),
-  ),
-  _StudentProfileCard(
-    icon: Icons.contact_emergency_outlined,
-    title: 'Emergency Contacts',
-    subtitle: 'People to contact in an emergency',
-    onTap: () => _openProfileDetail(
-      context,
-      title: 'Emergency Contacts',
-      icon: Icons.contact_emergency_outlined,
-      items: const [
-        _ProfileDetailItem('Primary Contact', 'Robert Johnson'),
-        _ProfileDetailItem('Relationship', 'Parent'),
-        _ProfileDetailItem('Phone', '+91 98765 43210'),
-        _ProfileDetailItem('Address', 'Bengaluru, Karnataka'),
-      ],
-    ),
-  ),
-  _StudentProfileCard(
-    icon: Icons.medical_information_outlined,
-    title: 'Medical Information',
-    subtitle: 'Health details and emergency medical notes',
-    onTap: () => _openProfileDetail(
-      context,
-      title: 'Medical Information',
-      icon: Icons.medical_information_outlined,
-      items: const [
-        _ProfileDetailItem('Blood Group', 'O positive'),
-        _ProfileDetailItem('Allergies', 'None reported'),
-        _ProfileDetailItem('Insurance', 'Campus coverage active'),
-        _ProfileDetailItem('Emergency Note', 'No special instructions'),
-      ],
-    ),
-  ),
-  _StudentProfileCard(
-    icon: Icons.family_restroom_outlined,
-    title: 'Parent Details',
-    subtitle: 'Parent and guardian contact details',
-    onTap: () => _openProfileDetail(
-      context,
-      title: 'Parent Details',
-      icon: Icons.family_restroom_outlined,
-      items: const [
-        _ProfileDetailItem('Parent / Guardian', 'Robert Johnson'),
-        _ProfileDetailItem('Email', 'robert.johnson@example.com'),
-        _ProfileDetailItem('Mobile', '+91 98765 43210'),
-        _ProfileDetailItem('Portal Access', 'Enabled'),
-      ],
-    ),
-  ),
-];
-
-class _StudentProfileCard extends StatelessWidget {
-  const _StudentProfileCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF222226) : Colors.white;
-    final borderColor = isDark
-        ? const Color(0xFF2C2C30)
-        : const Color(0xFFE5E7EB);
-    final textColor = isDark ? Colors.white : const Color(0xFF1F2937);
-    final subtextColor = isDark
-        ? const Color(0xFF9CA3AF)
-        : const Color(0xFF6B7280);
-    final iconBgColor = isDark
-        ? const Color(0xFF2C2C32)
-        : const Color(0xFFF3F4F6);
-    final iconColor = isDark ? Colors.white70 : const Color(0xFF374151);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: borderColor),
-              boxShadow: isDark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: iconBgColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: iconColor, size: 22),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: textColor,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle,
-                        style: TextStyle(fontSize: 12, color: subtextColor),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: isDark ? Colors.white38 : const Color(0xFF9CA3AF),
-                  size: 20,
-                ),
-              ],
+        _ProfileAction(
+          icon: Icons.badge_outlined,
+          title: 'Digital ID card',
+          subtitle: 'Your campus identity',
+          onTap: () => showDigitalIdCard(context, session: session),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+          child: Text(
+            institutionKeepsRecordsNote,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: context.palette.inkSecondary,
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
-
-List<Widget> _buildDetailActions(BuildContext context, UserSession session) => [
-      _ProfileAction(
-        icon: Icons.badge_outlined,
-        title: 'Digital ID card',
-        subtitle: 'Your campus identity and credentials',
-        onTap: () => _openProfileDetail(
-          context,
-          title: 'Digital ID card',
-          icon: Icons.badge_outlined,
-          identitySession: session,
-          items: [
-            _ProfileDetailItem('Name', session.displayName),
-            _ProfileDetailItem('Student ID', session.idNumber ?? 'SC2600142'),
-            _ProfileDetailItem('Email', session.email),
-            _ProfileDetailItem(
-              'Department',
-              session.departmentOrWard ?? 'Computer Science',
-            ),
-            const _ProfileDetailItem('Status', 'Active student'),
-          ],
-        ),
-      ),
-      _ProfileAction(
-        icon: Icons.school_outlined,
-        title: 'Academic history',
-        subtitle: 'Programme, semester and performance',
-        onTap: () => _openProfileDetail(
-          context,
-          title: 'Academic history',
-          icon: Icons.school_outlined,
-          items: const [
-            _ProfileDetailItem('Programme', 'B.Tech Computer Science'),
-            _ProfileDetailItem('Current semester', 'Semester 6'),
-            _ProfileDetailItem('Section', 'CS-3A'),
-            _ProfileDetailItem('Academic year', '2025-2026'),
-            _ProfileDetailItem('Current CGPA', '8.42'),
-          ],
-        ),
-      ),
-      _ProfileAction(
-        icon: Icons.folder_copy_outlined,
-        title: 'Documents and certificates',
-        subtitle: 'Submitted documents and generated certificates',
-        onTap: () => _openProfileDetail(
-          context,
-          title: 'Documents and certificates',
-          icon: Icons.folder_copy_outlined,
-          items: const [
-            _ProfileDetailItem('Bonafide certificate', 'Available to generate'),
-            _ProfileDetailItem('Transfer certificate', 'Verified'),
-            _ProfileDetailItem('Semester 5 marksheet', 'Verified'),
-            _ProfileDetailItem('Student ID proof', 'Verified'),
-          ],
-        ),
-      ),
-      _ProfileAction(
-        icon: Icons.contact_emergency_outlined,
-        title: 'Emergency contacts',
-        subtitle: 'People to contact in an emergency',
-        onTap: () => _openProfileDetail(
-          context,
-          title: 'Emergency contacts',
-          icon: Icons.contact_emergency_outlined,
-          items: const [
-            _ProfileDetailItem('Primary contact', 'Robert Johnson'),
-            _ProfileDetailItem('Relationship', 'Parent'),
-            _ProfileDetailItem('Phone', '+91 98765 43210'),
-            _ProfileDetailItem('Address', 'Bengaluru, Karnataka'),
-          ],
-        ),
-      ),
-      _ProfileAction(
-        icon: Icons.family_restroom_outlined,
-        title: 'Parents details',
-        subtitle: 'Parent and guardian information',
-        onTap: () => _openProfileDetail(
-          context,
-          title: 'Parents details',
-          icon: Icons.family_restroom_outlined,
-          items: const [
-            _ProfileDetailItem('Parent / guardian', 'Robert Johnson'),
-            _ProfileDetailItem('Email', 'robert.johnson@example.com'),
-            _ProfileDetailItem('Mobile', '+91 98765 43210'),
-            _ProfileDetailItem('Portal access', 'Enabled'),
-          ],
-        ),
-      ),
-      _ProfileAction(
-        icon: Icons.medical_information_outlined,
-        title: 'Medical information',
-        subtitle: 'Health details shared with the institution',
-        onTap: () => _openProfileDetail(
-          context,
-          title: 'Medical information',
-          icon: Icons.medical_information_outlined,
-          items: const [
-            _ProfileDetailItem('Blood group', 'O positive'),
-            _ProfileDetailItem('Allergies', 'None reported'),
-            _ProfileDetailItem('Insurance', 'Campus coverage active'),
-            _ProfileDetailItem('Emergency note', 'No special instructions'),
-          ],
-        ),
-      ),
-      _ProfileAction(
-        icon: Icons.history,
-        title: 'Activity history',
-        subtitle: 'Recent module access and updates',
-        onTap: () => _openProfileDetail(
-          context,
-          title: 'Activity history',
-          icon: Icons.history,
-          items: const [
-            _ProfileDetailItem('Today', 'Library pass created'),
-            _ProfileDetailItem('Yesterday', 'Shop order placed'),
-            _ProfileDetailItem('08 Aug 2026', 'Gatepass request submitted'),
-          ],
-        ),
-      ),
-];
 
 class SettingsSheet extends StatelessWidget {
   const SettingsSheet({
@@ -952,8 +675,7 @@ class _PrivacySecuritySheet extends StatelessWidget {
       _SecurityRow(
         icon: Icons.password_outlined,
         title: 'Password',
-        subtitle: 'Change your account password',
-        onTap: () => _showUnavailableMessage(context, 'Password changes'),
+        subtitle: 'Change it from Settings → Password',
       ),
       _SecurityRow(
         icon: Icons.devices_outlined,
@@ -1210,235 +932,19 @@ void _openThemePicker(
   );
 }
 
-void _openHelpdesk(BuildContext context) => showHomeSheet(
-  context: context,
-  title: 'Helpdesk',
-  expand: true,
-  child: const _HelpdeskSheet(),
+void _openHelpdesk(BuildContext context) => openHelpdesk(context);
+
+/// Opens Help & support. Without a [repository] (no signed-in API access)
+/// only the FAQ and the SuperCampus contact links are shown.
+Future<void> openHelpdesk(
+  BuildContext context, {
+  SupportRepository? repository,
+  UserSession? session,
+}) => Navigator.of(context).push<void>(
+  MaterialPageRoute(
+    builder: (_) => HelpCenterPage(repository: repository, session: session),
+  ),
 );
-
-void openHelpdesk(BuildContext context) => _openHelpdesk(context);
-
-class _SupportTicket {
-  const _SupportTicket(
-    this.category,
-    this.subject,
-    this.description,
-    this.status,
-  );
-  final String category;
-  final String subject;
-  final String description;
-  final String status;
-}
-
-class _HelpdeskSheet extends StatefulWidget {
-  const _HelpdeskSheet();
-
-  @override
-  State<_HelpdeskSheet> createState() => _HelpdeskSheetState();
-}
-
-class _HelpdeskSheetState extends State<_HelpdeskSheet> {
-  final _tickets = <_SupportTicket>[
-    const _SupportTicket(
-      'Library access',
-      'QR pass not appearing',
-      'My booked library pass was delayed.',
-      'In review',
-    ),
-    const _SupportTicket(
-      'Shops and payments',
-      'Wallet top-up query',
-      'Please verify a wallet transaction.',
-      'Resolved',
-    ),
-  ];
-
-  Future<void> _createTicket() async {
-    final ticket = await showModalBottomSheet<_SupportTicket>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (_) => const _CreateSupportTicketSheet(),
-    );
-    if (ticket != null && mounted) setState(() => _tickets.insert(0, ticket));
-  }
-
-  @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-    children: [
-      FilledButton.icon(
-        onPressed: _createTicket,
-        icon: const Icon(Icons.add),
-        label: const Text('Create support ticket'),
-      ),
-      const SizedBox(height: 18),
-      Text(
-        'MY TICKETS',
-        style: TextStyle(
-          color: context.palette.inkSecondary,
-          letterSpacing: 1.2,
-          fontSize: 11,
-        ),
-      ),
-      const SizedBox(height: 10),
-      for (final ticket in _tickets) ...[
-        _SupportTicketCard(ticket: ticket),
-        const SizedBox(height: 10),
-      ],
-    ],
-  );
-}
-
-class _SupportTicketCard extends StatelessWidget {
-  const _SupportTicketCard({required this.ticket});
-  final _SupportTicket ticket;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = ticket.status == 'Resolved'
-        ? context.palette.success
-        : context.adaptive(
-            light: const Color(0xFFB77500),
-            dark: const Color(0xFFF0B84D),
-          );
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        border: Border.all(color: context.palette.border),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  ticket.subject,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              Chip(
-                label: Text(ticket.status),
-                labelStyle: TextStyle(color: color, fontSize: 11),
-                backgroundColor: color.withValues(alpha: .1),
-                side: BorderSide.none,
-              ),
-            ],
-          ),
-          Text(ticket.category, style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 4),
-          Text(
-            ticket.description,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CreateSupportTicketSheet extends StatefulWidget {
-  const _CreateSupportTicketSheet();
-
-  @override
-  State<_CreateSupportTicketSheet> createState() =>
-      _CreateSupportTicketSheetState();
-}
-
-class _CreateSupportTicketSheetState extends State<_CreateSupportTicketSheet> {
-  final _subject = TextEditingController();
-  final _description = TextEditingController();
-  var _category = 'Technical support';
-
-  @override
-  void dispose() {
-    _subject.dispose();
-    _description.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    if (_subject.text.trim().isEmpty || _description.text.trim().isEmpty) {
-      return;
-    }
-    Navigator.of(context).pop(
-      _SupportTicket(
-        _category,
-        _subject.text.trim(),
-        _description.text.trim(),
-        'Submitted',
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) => SafeArea(
-    child: Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        20,
-        20,
-        MediaQuery.viewInsetsOf(context).bottom + 20,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'New support ticket',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: _category,
-              decoration: const InputDecoration(labelText: 'Category'),
-              items: const [
-                DropdownMenuItem(
-                  value: 'Technical support',
-                  child: Text('Technical support'),
-                ),
-                DropdownMenuItem(
-                  value: 'Library access',
-                  child: Text('Library access'),
-                ),
-                DropdownMenuItem(
-                  value: 'Shops and payments',
-                  child: Text('Shops and payments'),
-                ),
-                DropdownMenuItem(
-                  value: 'ID card and documents',
-                  child: Text('ID card and documents'),
-                ),
-              ],
-              onChanged: (value) =>
-                  setState(() => _category = value ?? _category),
-            ),
-            TextField(
-              controller: _subject,
-              decoration: const InputDecoration(labelText: 'Subject'),
-            ),
-            TextField(
-              controller: _description,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Describe the issue',
-              ),
-            ),
-            const SizedBox(height: 18),
-            FilledButton(
-              onPressed: _submit,
-              child: const Text('Submit ticket'),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
 
 void _openLeaveApplications(BuildContext context) => showHomeSheet(
   context: context,
@@ -1685,134 +1191,6 @@ class _CreateLeaveSheetState extends State<_CreateLeaveSheet> {
       '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
 }
 
-void _openProfileDetail(
-  BuildContext context, {
-  required String title,
-  required IconData icon,
-  required List<_ProfileDetailItem> items,
-  UserSession? identitySession,
-}) {
-  showHomeSheet(
-    context: context,
-    title: title,
-    expand: true,
-    child: _ProfileDetailSheet(
-      icon: icon,
-      items: items,
-      identitySession: identitySession,
-    ),
-  );
-}
-
-class _ProfileDetailItem {
-  const _ProfileDetailItem(this.label, this.value);
-
-  final String label;
-  final String value;
-}
-
-class _ProfileDetailSheet extends StatelessWidget {
-  const _ProfileDetailSheet({
-    required this.icon,
-    required this.items,
-    this.identitySession,
-  });
-
-  final IconData icon;
-  final List<_ProfileDetailItem> items;
-  final UserSession? identitySession;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasIdentity = identitySession != null;
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-      itemCount: items.length + (hasIdentity ? 1 : 0),
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        if (hasIdentity && index == 0) {
-          return _DigitalIdPortrait(session: identitySession!);
-        }
-        final item = items[index - (hasIdentity ? 1 : 0)];
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Theme.of(context).dividerColor),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                color: Theme.of(context).colorScheme.primary,
-                size: 22,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.label,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      item.value,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _DigitalIdPortrait extends StatelessWidget {
-  const _DigitalIdPortrait({required this.session});
-
-  final UserSession session;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Theme.of(context).dividerColor),
-    ),
-    child: Column(
-      children: [
-        _StudentPhoto(
-          key: const ValueKey('digital-id-photo'),
-          session: session,
-          size: 104,
-          borderColor: Theme.of(context).colorScheme.primary,
-          borderWidth: 3,
-        ),
-        const SizedBox(height: 12),
-        Text(
-          session.displayName,
-          style: Theme.of(context).textTheme.titleLarge,
-          textAlign: TextAlign.center,
-        ),
-        if (session.idNumber != null) ...[
-          const SizedBox(height: 2),
-          Text(
-            session.idNumber!,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ],
-      ],
-    ),
-  );
-}
-
 class _ProfileIdentityCard extends StatelessWidget {
   const _ProfileIdentityCard({required this.session, required this.modules});
 
@@ -1840,7 +1218,7 @@ class _ProfileIdentityCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _StudentPhoto(
+              StudentPhoto(
                 key: const ValueKey('profile-card-photo'),
                 session: session,
                 size: 74,
@@ -1970,8 +1348,9 @@ class _ProfileMetric extends StatelessWidget {
   );
 }
 
-class _StudentPhoto extends StatelessWidget {
-  const _StudentPhoto({
+/// A person's photo from `session.photoUrl`, falling back to initials.
+class StudentPhoto extends StatelessWidget {
+  const StudentPhoto({
     super.key,
     required this.session,
     required this.size,

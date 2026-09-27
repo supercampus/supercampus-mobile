@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,7 +9,15 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/auth_repository.dart';
 import '../../../canteen/data/backend_canteen_repository.dart';
 import '../../../canteen/data/canteen_models.dart';
+import '../../../canteen/data/wallet_pin_repository.dart';
 import '../../../canteen/presentation/transaction_pin_sheet.dart';
+import '../../../settings/data/account_repository.dart';
+import '../../../settings/data/support_repository.dart';
+import '../../../settings/presentation/about_page.dart';
+import '../../../settings/presentation/change_password_page.dart';
+import '../../../settings/presentation/help_center_page.dart';
+import '../../../settings/presentation/help_inbox_page.dart';
+import '../../../settings/presentation/profile_details_page.dart';
 import 'home_sheets.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -25,6 +34,10 @@ class SettingsPage extends StatefulWidget {
     this.accessTokenProvider,
     this.currentCanteenMode,
     this.onCanteenModeChanged,
+    this.apiBaseUrl,
+    this.accountRepository,
+    this.supportRepository,
+    this.walletPinRepository,
   });
 
   final UserSession session;
@@ -39,6 +52,16 @@ class SettingsPage extends StatefulWidget {
   final CanteenStaffMode? currentCanteenMode;
   final ValueChanged<CanteenStaffMode>? onCanteenModeChanged;
 
+  /// The resolved backend (app.dart `_resolvedBackendBaseUrl`). Null in mock
+  /// builds, where the account features explain they are unavailable.
+  final String? apiBaseUrl;
+
+  /// Overrides for tests; built from [apiBaseUrl] and [accessTokenProvider]
+  /// when absent.
+  final AccountRepository? accountRepository;
+  final SupportRepository? supportRepository;
+  final WalletPinRepository? walletPinRepository;
+
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
@@ -49,6 +72,50 @@ class _SettingsPageState extends State<SettingsPage> {
   ThemeMode _currentThemeMode = ThemeMode.light;
   late CanteenStaffMode _canteenMode =
       widget.currentCanteenMode ?? CanteenStaffMode.work;
+
+  late final AccountRepository? _accountRepository =
+      widget.accountRepository ??
+      _withBackend(
+        (baseUrl, tokens) => BackendAccountRepository(
+          baseUrl: baseUrl,
+          accessTokenProvider: tokens,
+        ),
+      );
+  late final SupportRepository? _supportRepository =
+      widget.supportRepository ??
+      _withBackend(
+        (baseUrl, tokens) => BackendSupportRepository(
+          baseUrl: baseUrl,
+          accessTokenProvider: tokens,
+        ),
+      );
+  late final WalletPinRepository? _walletPinRepository =
+      widget.walletPinRepository ??
+      _withBackend(
+        (baseUrl, tokens) => BackendCanteenRepository(
+          baseUrl: baseUrl,
+          accessTokenProvider: tokens,
+        ),
+      );
+
+  T? _withBackend<T>(T Function(String baseUrl, AccessTokenProvider) build) {
+    final baseUrl = widget.apiBaseUrl?.trim() ?? '';
+    final tokens = widget.accessTokenProvider;
+    if (baseUrl.isEmpty || tokens == null) return null;
+    try {
+      return build(baseUrl, tokens);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _showUnavailable(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature needs a connection to your campus server.'),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -153,7 +220,10 @@ class _SettingsPageState extends State<SettingsPage> {
             color: cardColor,
             shadowColor: shadowColor,
             child: widget.session.role == UserRole.student
-                ? Padding(
+                ? InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () => _openProfile(context),
+                  child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 14,
@@ -203,8 +273,14 @@ class _SettingsPageState extends State<SettingsPage> {
                             ],
                           ),
                         ),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Color(0xFFC7C7CC),
+                          size: 22,
+                        ),
                       ],
                     ),
+                  ),
                   )
                 : InkWell(
                     borderRadius: BorderRadius.circular(18),
@@ -304,7 +380,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: 'Password',
                   textColor: textColor,
                   isDark: isDark,
-                  onTap: () => openPrivacySecurity(context),
+                  onTap: () => _openChangePassword(context),
                 ),
                 _buildDivider(dividerColor),
                 _SettingsTile(
@@ -411,17 +487,36 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: 'About application',
                   textColor: textColor,
                   isDark: isDark,
-                  onTap: () =>
-                      _openAbout(context, isDark, textColor, mutedColor),
+                  onTap: () => _openAbout(context),
                 ),
                 _buildDivider(dividerColor),
                 _SettingsTile(
                   icon: Icons.chat_bubble_outline_rounded,
-                  title: 'Help/FAQ',
+                  title: 'Help & support',
                   textColor: textColor,
                   isDark: isDark,
-                  onTap: () => openHelpdesk(context),
+                  onTap: () => openHelpdesk(
+                    context,
+                    repository: _supportRepository,
+                    session: widget.session,
+                  ),
                 ),
+                if (_supportRepository != null &&
+                    receivesHelpRequests(widget.session)) ...[
+                  _buildDivider(dividerColor),
+                  _SettingsTile(
+                    icon: Icons.inbox_outlined,
+                    title: 'Help requests inbox',
+                    textColor: textColor,
+                    isDark: isDark,
+                    onTap: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            HelpInboxPage(repository: _supportRepository),
+                      ),
+                    ),
+                  ),
+                ],
                 if (widget.session.role != UserRole.student) ...[
                   _buildDivider(dividerColor),
                   _SettingsTile(
@@ -811,150 +906,47 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _openProfile(BuildContext context) {
-    showHomeSheet(
-      context: context,
-      title: widget.session.role == UserRole.student
-          ? 'Profile Details'
-          : 'Profile',
-      expand: true,
-      child: ProfileSheet(
-        session: widget.session,
-        permissions: widget.permissions,
-        onOpenModule: widget.onOpenModule,
-        onSignOut: widget.onSignOut,
-        onThemeModeChanged: widget.onThemeModeChanged,
-        moduleOrder: widget.moduleOrder,
-        onModuleOrderChanged: widget.onModuleOrderChanged,
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => ProfileDetailsPage(
+          session: widget.session,
+          accountRepository: _accountRepository,
+        ),
+      ),
+    );
+  }
+
+  void _openChangePassword(BuildContext context) {
+    final repository = _accountRepository;
+    if (repository == null) {
+      _showUnavailable('Changing your password');
+      return;
+    }
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => ChangePasswordPage(
+          repository: repository,
+          email: widget.session.email,
+        ),
       ),
     );
   }
 
   Future<void> _openChangePinPage(BuildContext context) async {
-    final provider = widget.accessTokenProvider;
-    if (provider == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PIN change is not available')),
-      );
+    final repository = _walletPinRepository;
+    if (repository == null) {
+      _showUnavailable('Your transaction PIN');
       return;
     }
-    const baseUrl = String.fromEnvironment(
-      'SUPERCAMPUS_API_BASE_URL',
-      defaultValue: 'https://api.supercampus.ai',
-    );
-    final repo = BackendCanteenRepository(
-      baseUrl: baseUrl,
-      accessTokenProvider: provider,
-    );
-
-    // Show change PIN sheet; hasHint = false for now (we don't track it here).
-    if (!context.mounted) return;
-    final result = await showChangePinSheet(context, hasHint: true);
-    if (result == null || !context.mounted) return;
-
-    try {
-      await repo.changeWalletPin(
-        newPinHash: result.newPinHash,
-        method: result.method,
-        currentPinHash: result.currentPinHash,
-        hint: result.hint,
-        password: result.password,
-      );
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Transaction PIN updated')),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
-      }
-    }
+    // The sheet loads hasPin / hasPinHint itself, then offers Set PIN or
+    // Change PIN and reports every server refusal inline.
+    await showWalletPinSheet(context, repository: repository);
   }
 
-
-  void _openAbout(
-    BuildContext context,
-    bool isDark,
-    Color textColor,
-    Color mutedColor,
-  ) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: isDark ? const Color(0xFF222226) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 30),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF38383E) : Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6366F1).withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.school_rounded,
-                  size: 34,
-                  color: isDark
-                      ? const Color(0xFFA5B4FC)
-                      : const Color(0xFF6366F1),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'SuperCampus',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Version 1.0.0 (Build 2026.09)',
-                style: TextStyle(fontSize: 13, color: mutedColor),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Unified Campus Operating System for Academics, Services & Student Life.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: mutedColor, height: 1.4),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF6366F1),
-                    foregroundColor: isDark ? Colors.white : null,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: const Text('Close'),
-                ),
-              ),
-            ],
-          ),
-        ),
+  void _openAbout(BuildContext context) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => AboutAppPage(accountRepository: _accountRepository),
       ),
     );
   }
@@ -995,14 +987,27 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  /// Opens a supercampus.ai page. `canLaunchUrl` is deliberately not used as a
+  /// gate: it reports false in several mobile browsers and installed web apps
+  /// even though the launch itself works, which made these links do nothing.
   Future<void> _openWebUrl(String url) async {
     final uri = Uri.parse(url);
+    var opened = false;
     try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
+      opened = await launchUrl(
+        uri,
+        mode: kIsWeb
+            ? LaunchMode.platformDefault
+            : LaunchMode.externalApplication,
+        webOnlyWindowName: '_blank',
+      );
     } catch (_) {
-      // Ignored or handled gracefully
+      opened = false;
+    }
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Couldn’t open ${uri.host}${uri.path}')),
+      );
     }
   }
 }

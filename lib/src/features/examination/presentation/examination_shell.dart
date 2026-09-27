@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/access/effective_permissions.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../authentication/data/auth_repository.dart';
@@ -25,6 +26,9 @@ class ExaminationShell extends StatefulWidget {
     required this.onSignOut,
     this.initialAction,
     this.marksRepository,
+    this.permissions,
+    this.reportsBaseUrl,
+    this.accessTokenProvider,
   });
 
   final UserSession session;
@@ -32,6 +36,12 @@ class ExaminationShell extends StatefulWidget {
   final VoidCallback onSignOut;
   final String? initialAction;
   final MarksBatchRepository? marksRepository;
+
+  /// What the Reports view reads and which of its sections exist. A null URL
+  /// or token provider leaves the report's sections marked unavailable.
+  final EffectivePermissions? permissions;
+  final String? reportsBaseUrl;
+  final AccessTokenProvider? accessTokenProvider;
 
   @override
   State<ExaminationShell> createState() => _ExaminationShellState();
@@ -205,6 +215,9 @@ class _ExaminationShellState extends State<ExaminationShell> {
           return StudentReportsAnalyticsScreen(
             session: widget.session,
             isParent: false,
+            permissions: widget.permissions,
+            baseUrl: widget.reportsBaseUrl,
+            accessTokenProvider: widget.accessTokenProvider,
           );
         default:
           return StudentExaminationDashboard(
@@ -223,6 +236,9 @@ class _ExaminationShellState extends State<ExaminationShell> {
           return StudentReportsAnalyticsScreen(
             session: widget.session,
             isParent: true,
+            permissions: widget.permissions,
+            baseUrl: widget.reportsBaseUrl,
+            accessTokenProvider: widget.accessTokenProvider,
           );
         default:
           return ParentExaminationDashboard(

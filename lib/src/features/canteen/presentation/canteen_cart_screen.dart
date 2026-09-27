@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/transaction_result_overlay.dart';
 import '../data/canteen_models.dart';
+import '../data/canteen_repository.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
 import 'widgets/quantity_control.dart';
@@ -87,7 +88,13 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
         } catch (e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Could not save PIN: $e')),
+              SnackBar(
+                content: Text(
+                  e is CanteenException
+                      ? e.message
+                      : 'Your PIN could not be saved. Try again.',
+                ),
+              ),
             );
           }
           return;
