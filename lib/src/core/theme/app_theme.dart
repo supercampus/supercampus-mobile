@@ -64,6 +64,10 @@ abstract final class AppTheme {
       extensions: const [AppPalette.light],
       scaffoldBackgroundColor: AppColors.canvas,
       appBarTheme: const AppBarTheme(
+        // Page titles sit left-aligned beside the back button on every
+        // platform (Material centres them on iOS by default).
+        centerTitle: false,
+        titleSpacing: NavigationToolbar.kMiddleSpacing,
         backgroundColor: Colors.white,
         foregroundColor: AppColors.ink,
         elevation: 0,
@@ -225,6 +229,10 @@ abstract final class AppTheme {
       dividerColor: p.divider,
       dividerTheme: DividerThemeData(color: p.divider, thickness: 1),
       appBarTheme: AppBarTheme(
+        // Page titles sit left-aligned beside the back button on every
+        // platform (Material centres them on iOS by default).
+        centerTitle: false,
+        titleSpacing: NavigationToolbar.kMiddleSpacing,
         backgroundColor: p.surface,
         foregroundColor: p.ink,
         elevation: 0,

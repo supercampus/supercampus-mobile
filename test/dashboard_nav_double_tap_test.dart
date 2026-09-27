@@ -81,13 +81,44 @@ void main() {
     expect(selected, ['wall', 'wall']);
   });
 
-  testWidgets('double taps on Academics or Gatepass do not go home', (tester) async {
+  for (final (tooltip, id) in [('Academics', 'acads'), ('Gatepass', 'gatepass')]) {
+    testWidgets('a double tap on $tooltip returns home', (tester) async {
+      await pumpBar(tester, selectedId: id);
+      await tester.tap(tab(tooltip));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(tab(tooltip));
+      await tester.pump();
+      expect(homes, 1);
+      expect(selected, [id]);
+    });
+  }
+
+  testWidgets('a second tap landing on the home bar does not reopen the module', (tester) async {
+    // First tap on the open module's bar closes it (host behaviour)…
+    await pumpBar(tester, selectedId: 'gatepass');
+    await tester.tap(tab('Gatepass'));
+    await tester.pump(const Duration(milliseconds: 100));
+    // …so the second lands on the home screen's bar, which has no onHome.
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          bottomNavigationBar: DashboardNavBar(selectedId: '', onSelect: selected.add),
+        ),
+      ),
+    );
+    await tester.tap(tab('Gatepass'));
+    await tester.pump();
+    expect(selected, ['gatepass'], reason: 'only the first tap selects');
+  });
+
+  testWidgets('taps on two different tabs are not a double tap', (tester) async {
     await pumpBar(tester);
     await tester.tap(tab('Academics'));
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.tap(tab('Academics'));
+    await tester.tap(tab('Gatepass'));
     await tester.pump();
     expect(homes, 0);
-    expect(selected, ['acads', 'acads']);
+    expect(selected, ['acads', 'gatepass']);
   });
 }

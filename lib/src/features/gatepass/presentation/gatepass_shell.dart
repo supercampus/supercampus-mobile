@@ -336,9 +336,16 @@ class _GatepassShellState extends State<GatepassShell> {
             ? null
             : AppBar(
                 leading: ModuleBackButton(onPressed: _handleBack),
+                // Title sits left, right beside the back button.
+                centerTitle: false,
+                titleSpacing: 0,
                 title: Text(
                   titles[_selectedIndex],
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                    letterSpacing: -0.3,
+                  ),
                 ),
               ),
         body: IndexedStack(index: _selectedIndex, children: pages),

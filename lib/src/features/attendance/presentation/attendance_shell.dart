@@ -378,6 +378,7 @@ class _AttendanceShellState extends State<AttendanceShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: 0,
         leading: ModuleBackButton(onPressed: widget.onExitModule),
         title: const Text('Attendance', style: TextStyle(fontWeight: FontWeight.w600)),
       ),

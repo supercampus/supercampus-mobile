@@ -21,6 +21,7 @@ class HostelRoomChangeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: onBack != null ? 0 : null,
         leading: onBack != null ? BackButton(onPressed: onBack) : null,
         title: const Text('Request Room Change'),
       ),

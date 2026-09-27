@@ -55,6 +55,7 @@ class _AdminPortalShellState extends State<AdminPortalShell> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: widget.onExitModule != null
           ? AppBar(
+              titleSpacing: 0,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: widget.onExitModule,

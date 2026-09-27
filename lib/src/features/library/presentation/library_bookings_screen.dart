@@ -167,6 +167,7 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
     return Scaffold(
       backgroundColor: context.palette.canvas,
       appBar: AppBar(
+        titleSpacing: 0,
         leading: ModuleBackButton(
           onPressed: widget.onExitModule,
         ),
@@ -310,6 +311,7 @@ class _BookingHistoryScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: context.palette.canvas,
       appBar: AppBar(
+        titleSpacing: 0,
         leading: ModuleBackButton(
           onPressed: () => Navigator.of(context).pop(),
         ),

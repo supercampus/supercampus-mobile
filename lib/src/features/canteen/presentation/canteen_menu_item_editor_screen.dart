@@ -186,6 +186,7 @@ class _CanteenMenuItemEditorScreenState
 
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: 0,
         leading: ModuleBackButton(
           onPressed: () => Navigator.of(context).pop(),
         ),

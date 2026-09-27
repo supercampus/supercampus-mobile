@@ -83,6 +83,7 @@ class _TimetableShellState extends State<TimetableShell> {
     return Scaffold(
       backgroundColor: context.timetableCanvas,
       appBar: AppBar(
+        titleSpacing: widget.onExitModule != null ? 0 : null,
         leading: widget.onExitModule != null
             ? ModuleBackButton(
                 onPressed: widget.onExitModule!,

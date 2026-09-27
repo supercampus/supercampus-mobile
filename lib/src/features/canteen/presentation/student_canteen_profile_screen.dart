@@ -42,6 +42,7 @@ class _StudentCanteenProfileScreenState
     final user = widget.store.user;
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: 0,
         title: const Text('Profile & settings'),
         leading: IconButton(
           tooltip: 'Back',

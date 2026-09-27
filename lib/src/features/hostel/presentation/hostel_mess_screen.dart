@@ -37,6 +37,7 @@ class HostelMessScreen extends StatelessWidget {
         activeResidency?.residencyStatus == ResidencyStatus.active;
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: onBack != null ? 0 : null,
         leading: onBack != null ? BackButton(onPressed: onBack) : null,
         title: const Text('Food & meal access'),
       ),

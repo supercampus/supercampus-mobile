@@ -29,6 +29,7 @@ class _HostelInventoryScreenState extends State<HostelInventoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: widget.onBack != null ? 0 : null,
         leading: widget.onBack != null ? BackButton(onPressed: widget.onBack) : null,
         title: const Text('Hostel Inventory & Beds'),
       ),

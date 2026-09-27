@@ -166,6 +166,7 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: 0,
         title: const Text('Your cart'),
         leading: IconButton(
           tooltip: 'Back',

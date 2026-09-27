@@ -124,6 +124,7 @@ class _ExaminationShellState extends State<ExaminationShell> {
             dark: const Color(0xFF0E0F13),
           ),
           appBar: AppBar(
+            titleSpacing: _activeFeatureIndex != null || widget.onExitModule != null ? 0 : null,
             leading: _activeFeatureIndex != null
                 ? ModuleBackButton(
                     onPressed: () => setState(() => _activeFeatureIndex = null),

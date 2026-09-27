@@ -148,7 +148,8 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
         }
       } catch (e) {
         debugPrint('Failed to load campus announcements: $e');
-        loadError = 'Couldn''t load announcements. Check your connection and try again.';
+        loadError =
+            "Couldn't load announcements. Check your connection and try again.";
       }
     }
 
@@ -234,7 +235,9 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        centerTitle: true,
+        centerTitle: false,
+        titleSpacing: 4,
+        leadingWidth: 58,
         leading: Padding(
           padding: const EdgeInsets.only(left: 16),
           child: Center(
@@ -261,6 +264,7 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
           ),
         ),
         title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Campus Wall',

@@ -313,6 +313,7 @@ class _InviteVisitorSheetState extends State<InviteVisitorSheet> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        centerTitle: false,
         title: const Text('Invite visitor'),
         actions: [
           IconButton(

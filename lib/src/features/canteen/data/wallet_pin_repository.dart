@@ -35,6 +35,16 @@ abstract interface class WalletPinRepository {
   /// `POST /api/v1/operations/canteen/wallet-pin` — first PIN only.
   Future<void> setWalletPin(String pinHash, {String? hint});
 
+  /// `POST /api/v1/operations/canteen/wallet-pin/verify` — checks the proof
+  /// before the user picks a new PIN. Throws with the server's message
+  /// ("That PIN is incorrect.") when it doesn't match.
+  Future<void> verifyWalletOwner({
+    required WalletPinVerification method,
+    String? currentPinHash,
+    String? hint,
+    String? password,
+  });
+
   /// `PUT /api/v1/operations/canteen/wallet-pin`. Returns whether a recovery
   /// word is stored after the change.
   ///

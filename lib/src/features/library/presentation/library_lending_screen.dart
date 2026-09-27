@@ -193,6 +193,7 @@ class _LibraryLendingScreenState extends State<LibraryLendingScreen> {
     final colors = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: 0,
         leading: ModuleBackButton(onPressed: widget.onExitModule),
         title: const Text('Library'),
       ),

@@ -284,6 +284,7 @@ class _HostelShellState extends State<HostelShell> {
       child: Scaffold(
         appBar: _selectedIndex == 0
             ? AppBar(
+                titleSpacing: 0,
                 leading: ModuleBackButton(onPressed: _handleBack),
                 title: Text(isStaff ? 'Hostel Operations' : 'My Hostel'),
               )

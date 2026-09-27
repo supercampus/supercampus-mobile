@@ -164,6 +164,29 @@ class BackendCanteenRepository
     _checkedData(response);
   }
 
+  @override
+  Future<void> verifyWalletOwner({
+    required WalletPinVerification method,
+    String? currentPinHash,
+    String? hint,
+    String? password,
+  }) async {
+    final response = await _authorizedRequest(
+      (headers) => _client.post(
+        _uri('/api/v1/operations/canteen/wallet-pin/verify'),
+        headers: headers,
+        body: jsonEncode({
+          'method': method.wireValue,
+          if (currentPinHash != null) 'currentPinHash': currentPinHash,
+          if (hint != null) 'hint': hint,
+          if (password != null) 'password': password,
+        }),
+      ),
+      json: true,
+    );
+    _checkedData(response);
+  }
+
   /// Change the wallet PIN after verifying with one of three methods.
   @override
   Future<bool> changeWalletPin({

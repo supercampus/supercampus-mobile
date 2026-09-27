@@ -183,6 +183,7 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
         (double.tryParse(_quantity.text) ?? 0) * widget.store.laundryPricePerKg;
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: 0,
         leading: ModuleBackButton(onPressed: widget.onExitModule),
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,

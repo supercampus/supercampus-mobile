@@ -794,6 +794,7 @@ class _CustomizationPageState extends State<_CustomizationPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
+      titleSpacing: 0,
       leading: IconButton(
         tooltip: 'Back',
         onPressed: () => Navigator.of(context).pop(),

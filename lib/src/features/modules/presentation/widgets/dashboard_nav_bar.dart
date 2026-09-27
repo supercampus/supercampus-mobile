@@ -13,11 +13,11 @@ class DashboardNavBar extends StatelessWidget {
   final String selectedId;
   final ValueChanged<String>? onSelect;
 
-  /// Returns to the home screen. Fired by a double tap on Wall or Reports.
+  /// Returns to the home screen. Fired by a double tap on any tab.
   final VoidCallback? onHome;
 
   /// Tabs whose double tap goes home.
-  static const _homeOnDoubleTap = {'wall', 'analysis'};
+  static const _homeOnDoubleTap = {'acads', 'gatepass', 'wall', 'analysis'};
   static const _doubleTapWindow = Duration(milliseconds: 450);
 
   // Static on purpose: the first tap usually pushes a new page, so the second
@@ -40,9 +40,12 @@ class DashboardNavBar extends StatelessWidget {
         now.difference(lastAt) <= _doubleTapWindow;
     _lastTapId = id;
     _lastTapAt = now;
-    if (isDoubleTap && _homeOnDoubleTap.contains(id) && onHome != null) {
+    if (isDoubleTap && _homeOnDoubleTap.contains(id)) {
       resetTapMemory();
-      onHome!();
+      // A bar without onHome is the home screen's own: the first tap already
+      // brought the user here (tapping an open module closes it), so the
+      // second must not open the module again.
+      onHome?.call();
       return;
     }
     onSelect?.call(id);

@@ -378,12 +378,13 @@ class _WalletPinSheetState extends State<WalletPinSheet> {
     await Future<void>.delayed(const Duration(milliseconds: 150));
     if (!mounted) return;
     final value = _entry;
+    if (_step == _PinFlowStep.verify) {
+      await _checkProof(currentPinHash: pinSha256(value));
+      return;
+    }
     setState(() {
       _entry = '';
       switch (_step) {
-        case _PinFlowStep.verify:
-          _verifyPinHash = pinSha256(value);
-          _afterVerified();
         case _PinFlowStep.newPin:
           _firstNewPin = value;
           _step = _PinFlowStep.confirmPin;
@@ -425,14 +426,67 @@ class _WalletPinSheetState extends State<WalletPinSheet> {
       );
       return;
     }
-    setState(() {
-      _error = null;
-      _afterVerified();
-    });
+    _checkProof(
+      hint: _method == WalletPinVerification.recoveryWord ? value : null,
+      password: _method == WalletPinVerification.password ? value : null,
+    );
   }
 
-  /// The server checks the verification together with the new PIN. When the
-  /// user is re-verifying after a refusal, the new PIN is already chosen.
+  /// Asks the server whether the current PIN, recovery word or password is
+  /// right before moving on, so a wrong one is caught on this step. The change
+  /// itself checks it again.
+  Future<void> _checkProof({
+    String? currentPinHash,
+    String? hint,
+    String? password,
+  }) async {
+    final method = _method;
+    if (method == null || _submitting) return;
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      await widget.repository.verifyWalletOwner(
+        method: method,
+        currentPinHash: currentPinHash,
+        hint: hint,
+        password: password,
+      );
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _entry = '';
+        _verifyPinHash = currentPinHash;
+        _afterVerified();
+      });
+    } on CanteenException catch (error) {
+      if (!mounted) return;
+      final noRecoveryWord =
+          error.message.toLowerCase().contains('no recovery word');
+      setState(() {
+        _submitting = false;
+        _entry = '';
+        _error = error.message;
+        _verifyPinHash = null;
+        if (method != WalletPinVerification.password) _verifyText.clear();
+        if (noRecoveryWord) {
+          _status = WalletPinStatus(hasPin: true, hasPinHint: false);
+          _step = _PinFlowStep.method;
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _entry = '';
+        _error = 'Something went wrong. Check your connection and try again.';
+      });
+    }
+  }
+
+  /// When the user is re-verifying after a refusal, the new PIN is already
+  /// chosen.
   void _afterVerified() {
     _step = _newPinHash == null ? _PinFlowStep.newPin : _PinFlowStep.review;
   }
@@ -885,7 +939,12 @@ class _WalletPinSheetState extends State<WalletPinSheet> {
         ),
         _errorLine(context),
         const SizedBox(height: 12),
-        _primaryButton(context, 'Continue', _continueTextVerify),
+        _primaryButton(
+          context,
+          'Continue',
+          _continueTextVerify,
+          busy: _submitting,
+        ),
       ],
     );
   }
@@ -913,7 +972,30 @@ class _WalletPinSheetState extends State<WalletPinSheet> {
       ),
       const SizedBox(height: 18),
       _PinDots(filledCount: _entry.length),
-      _errorLine(context),
+      if (_submitting)
+        Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Checking…',
+                style: TextStyle(
+                  color: context.palette.inkSecondary,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        )
+      else
+        _errorLine(context),
       const SizedBox(height: 8),
       _Numpad(onDigit: _digit, onDelete: _deleteDigit),
     ],

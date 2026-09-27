@@ -21,16 +21,35 @@ class FakeWalletPinRepository implements WalletPinRepository {
     required this.status,
     this.changeError,
     this.setError,
+    this.verifyError,
   });
 
   WalletPinStatus status;
   Exception? changeError;
   Exception? setError;
+  Exception? verifyError;
   final changeCalls = <Map<String, Object?>>[];
   final setCalls = <Map<String, Object?>>[];
+  final verifyCalls = <Map<String, Object?>>[];
 
   @override
   Future<WalletPinStatus> loadPinStatus() async => status;
+
+  @override
+  Future<void> verifyWalletOwner({
+    required WalletPinVerification method,
+    String? currentPinHash,
+    String? hint,
+    String? password,
+  }) async {
+    verifyCalls.add({
+      'method': method,
+      'currentPinHash': currentPinHash,
+      'hint': hint,
+      'password': password,
+    });
+    if (verifyError case final error?) throw error;
+  }
 
   @override
   Future<void> setWalletPin(String pinHash, {String? hint}) async {
@@ -257,6 +276,54 @@ void main() {
       await tester.pumpAndSettle();
       expect(repository.changeCalls.last['currentPinHash'], pinSha256('1234'));
       expect(find.text('Your transaction PIN has been changed.'), findsOneWidget);
+    });
+
+    testWidgets('a wrong current PIN is refused before a new PIN is asked for', (
+      tester,
+    ) async {
+      useTallScreen(tester);
+      final repository = FakeWalletPinRepository(
+        status: const WalletPinStatus(hasPin: true, hasPinHint: false),
+        verifyError: const CanteenException('That PIN is incorrect.'),
+      );
+      await openPinSheet(tester, repository);
+      await tester.tap(find.text('Enter current PIN'));
+      await tester.pumpAndSettle();
+      await enterPin(tester, '9999');
+
+      expect(repository.verifyCalls.single['currentPinHash'], pinSha256('9999'));
+      expect(find.text('That PIN is incorrect.'), findsOneWidget);
+      expect(find.text('Enter new PIN'), findsNothing);
+      expect(find.text('Enter current PIN'), findsOneWidget);
+
+      repository.verifyError = null;
+      await enterPin(tester, '1234');
+      expect(find.text('Enter new PIN'), findsOneWidget);
+    });
+
+    testWidgets('a wrong account password is refused on its own step', (
+      tester,
+    ) async {
+      useTallScreen(tester);
+      final repository = FakeWalletPinRepository(
+        status: const WalletPinStatus(hasPin: true, hasPinHint: false),
+        verifyError: const CanteenException(
+          'Your account password is incorrect.',
+        ),
+      );
+      await openPinSheet(tester, repository);
+      await tester.tap(find.text('Use account password'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('wallet-pin-verify-field')),
+        'wrong-password',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+      await tester.pumpAndSettle();
+
+      expect(repository.verifyCalls.single['password'], 'wrong-password');
+      expect(find.text('Your account password is incorrect.'), findsOneWidget);
+      expect(find.text('Enter new PIN'), findsNothing);
     });
 
     testWidgets('a mismatched confirmation restarts both new-PIN steps', (

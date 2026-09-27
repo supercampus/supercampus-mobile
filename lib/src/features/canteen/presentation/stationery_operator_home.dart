@@ -153,6 +153,7 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
 
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: widget.isMainHome ? null : 0,
         leading: widget.isMainHome
             ? null
             : ModuleBackButton(onPressed: widget.onExitModule),

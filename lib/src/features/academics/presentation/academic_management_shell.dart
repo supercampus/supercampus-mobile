@@ -42,6 +42,7 @@ class _AcademicManagementShellState extends State<AcademicManagementShell> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        titleSpacing: 0,
         leading: ModuleBackButton(
           onPressed: widget.onExitModule,
         ),

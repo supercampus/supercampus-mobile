@@ -1,273 +1,41 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../data/canteen_models.dart';
 import 'widgets/order_delivered_view.dart';
 
-/// Palette theme definitions derived from the attached brand guidelines:
-/// - Pantone 381 C: Lime Green (#C6FF00)
-/// - Pantone 2665 C: Neon Violet / Purple (#7B42F6)
-/// - Pantone 212 C: Hot Pink (#FF2D95)
-/// - Pantone 1495 C: Radiant Orange (#FF6F20)
-/// - Pantone 7442 C: Vivid Violet (#9D4EDD)
-/// - Neon Violet (#9D4EDD) & Electric Cyan (#00F5D4)
-/// - Radiant Rush: Hot Pink (#FF2D95), Bright Orange (#FF6F20), Electric Yellow (#FFEA00)
-/// - Minimalist White and Deep Charcoal/Black backgrounds from mockup 1 & 3
+/// The pickup screen is always drawn on white — the brightest, most reliable
+/// background for a counter scanner — and only the QR colour changes. Every
+/// colour here keeps enough contrast against white to scan.
 class OrderPlacedTheme {
-  const OrderPlacedTheme({
-    required this.name,
-    required this.backgroundColor,
-    required this.qrColor,
-    required this.accentColor,
-    required this.textColor,
-    required this.subtextColor,
-    required this.cardBackgroundColor,
-    required this.cardBorderColor,
-    required this.buttonColor,
-    required this.buttonTextColor,
-    this.isDark = false,
-  });
+  const OrderPlacedTheme({required this.name, required this.qrColor});
 
   final String name;
-  final Color backgroundColor;
   final Color qrColor;
-  final Color accentColor;
-  final Color textColor;
-  final Color subtextColor;
-  final Color cardBackgroundColor;
-  final Color cardBorderColor;
-  final Color buttonColor;
-  final Color buttonTextColor;
-  final bool isDark;
+
+  Color get backgroundColor => Colors.white;
+  Color get accentColor => qrColor;
+  Color get textColor => const Color(0xFF18171D);
+  Color get subtextColor => const Color(0xFF6B7280);
+  Color get cardBackgroundColor => qrColor.withValues(alpha: 0.06);
+  Color get cardBorderColor => qrColor.withValues(alpha: 0.18);
+  Color get buttonColor => qrColor;
+  Color get buttonTextColor => Colors.white;
 
   static const List<OrderPlacedTheme> palette = [
-    // 1. Classic Light - Neon Violet (Mockup 1 & 2 from user image)
-    OrderPlacedTheme(
-      name: 'Classic Violet Light',
-      backgroundColor: Colors.white,
-      qrColor: Color(0xFF7B42F6),
-      accentColor: Color(0xFF7B42F6),
-      textColor: Color(0xFF18171D),
-      subtextColor: Color(0xFF6B7280),
-      cardBackgroundColor: Color(0xFFF7F7F8),
-      cardBorderColor: Color(0xFFE5E7EB),
-      buttonColor: Color(0xFF7B42F6),
-      buttonTextColor: Colors.white,
-      isDark: false,
-    ),
-    // 2. Midnight Dark - Neon Violet (Mockup 3 & 4 from user image)
-    OrderPlacedTheme(
-      name: 'Neon Violet Dark',
-      backgroundColor: Color(0xFF000000),
-      qrColor: Color(0xFF9D4EDD),
-      accentColor: Color(0xFF9D4EDD),
-      textColor: Colors.white,
-      subtextColor: Color(0xFF9CA3AF),
-      cardBackgroundColor: Color(0xFF18181C),
-      cardBorderColor: Color(0xFF27272A),
-      buttonColor: Color(0xFF7B42F6),
-      buttonTextColor: Colors.white,
-      isDark: true,
-    ),
-    // 3. Electric Cyan Dark (Image 4 #00F5D4)
-    OrderPlacedTheme(
-      name: 'Electric Cyan Dark',
-      backgroundColor: Color(0xFF0D0D12),
-      qrColor: Color(0xFF00F5D4),
-      accentColor: Color(0xFF00F5D4),
-      textColor: Colors.white,
-      subtextColor: Color(0xFFA1A1AA),
-      cardBackgroundColor: Color(0xFF1E1E24),
-      cardBorderColor: Color(0xFF2D2D36),
-      buttonColor: Color(0xFF00F5D4),
-      buttonTextColor: Color(0xFF0D0D12),
-      isDark: true,
-    ),
-    // 4. Hot Pink Light (Image 2 & 5 #FF2D95)
-    OrderPlacedTheme(
-      name: 'Hot Pink Light',
-      backgroundColor: Colors.white,
-      qrColor: Color(0xFFFF2D95),
-      accentColor: Color(0xFFFF2D95),
-      textColor: Color(0xFF18171D),
-      subtextColor: Color(0xFF6B7280),
-      cardBackgroundColor: Color(0xFFFFF1F7),
-      cardBorderColor: Color(0xFFFFD6E7),
-      buttonColor: Color(0xFFFF2D95),
-      buttonTextColor: Colors.white,
-      isDark: false,
-    ),
-    // 5. Hot Pink Dark (Image 2 & 5 #FF2D95)
-    OrderPlacedTheme(
-      name: 'Hot Pink Dark',
-      backgroundColor: Color(0xFF0F080C),
-      qrColor: Color(0xFFFF2D95),
-      accentColor: Color(0xFFFF2D95),
-      textColor: Colors.white,
-      subtextColor: Color(0xFFA1A1AA),
-      cardBackgroundColor: Color(0xFF22121B),
-      cardBorderColor: Color(0xFF381B2B),
-      buttonColor: Color(0xFFFF2D95),
-      buttonTextColor: Colors.white,
-      isDark: true,
-    ),
-    // 6. Lime Green Dark (Image 2 & 3 #C6FF00)
-    OrderPlacedTheme(
-      name: 'Lime Green Dark',
-      backgroundColor: Color(0xFF0A0E0A),
-      qrColor: Color(0xFFC6FF00),
-      accentColor: Color(0xFFC6FF00),
-      textColor: Colors.white,
-      subtextColor: Color(0xFFA1A1AA),
-      cardBackgroundColor: Color(0xFF161E16),
-      cardBorderColor: Color(0xFF273827),
-      buttonColor: Color(0xFFC6FF00),
-      buttonTextColor: Color(0xFF0A0E0A),
-      isDark: true,
-    ),
-    // 7. Radiant Orange Light (Image 2 & 5 #FF6F20)
-    OrderPlacedTheme(
-      name: 'Radiant Orange Light',
-      backgroundColor: Colors.white,
-      qrColor: Color(0xFFFF6F20),
-      accentColor: Color(0xFFFF6F20),
-      textColor: Color(0xFF18171D),
-      subtextColor: Color(0xFF6B7280),
-      cardBackgroundColor: Color(0xFFFFF7F2),
-      cardBorderColor: Color(0xFFFFE2D1),
-      buttonColor: Color(0xFFFF6F20),
-      buttonTextColor: Colors.white,
-      isDark: false,
-    ),
-    // 8. Radiant Orange Dark (Image 2 & 5 #FF6F20)
-    OrderPlacedTheme(
-      name: 'Radiant Orange Dark',
-      backgroundColor: Color(0xFF120B07),
-      qrColor: Color(0xFFFF6F20),
-      accentColor: Color(0xFFFF6F20),
-      textColor: Colors.white,
-      subtextColor: Color(0xFFA1A1AA),
-      cardBackgroundColor: Color(0xFF22160F),
-      cardBorderColor: Color(0xFF3B2317),
-      buttonColor: Color(0xFFFF6F20),
-      buttonTextColor: Colors.white,
-      isDark: true,
-    ),
-    // 9. Electric Yellow Dark (Image 5 #FFEA00)
-    OrderPlacedTheme(
-      name: 'Electric Yellow Dark',
-      backgroundColor: Color(0xFF0F0F08),
-      qrColor: Color(0xFFFFEA00),
-      accentColor: Color(0xFFFFEA00),
-      textColor: Colors.white,
-      subtextColor: Color(0xFFA1A1AA),
-      cardBackgroundColor: Color(0xFF212112),
-      cardBorderColor: Color(0xFF3B3B1F),
-      buttonColor: Color(0xFFFFEA00),
-      buttonTextColor: Color(0xFF0F0F08),
-      isDark: true,
-    ),
-    // 10. Neon Violet Surface + Electric Cyan QR (Image 4 pair)
-    OrderPlacedTheme(
-      name: 'Neon Violet & Cyan Pop',
-      backgroundColor: Color(0xFF6E3FF3),
-      qrColor: Color(0xFF00F5D4),
-      accentColor: Color(0xFF00F5D4),
-      textColor: Colors.white,
-      subtextColor: Color(0xFFE0E7FF),
-      cardBackgroundColor: Color(0x33000000),
-      cardBorderColor: Color(0x33FFFFFF),
-      buttonColor: Color(0xFF00F5D4),
-      buttonTextColor: Color(0xFF18171D),
-      isDark: true,
-    ),
-    // 11. Lime Pop Surface + Deep Purple QR (Image 2 pair)
-    OrderPlacedTheme(
-      name: 'Lime Pop & Deep Purple',
-      backgroundColor: Color(0xFFC6FF00),
-      qrColor: Color(0xFF4C1D95),
-      accentColor: Color(0xFF4C1D95),
-      textColor: Color(0xFF18171D),
-      subtextColor: Color(0xFF374151),
-      cardBackgroundColor: Color(0x1F000000),
-      cardBorderColor: Color(0x28000000),
-      buttonColor: Color(0xFF4C1D95),
-      buttonTextColor: Colors.white,
-      isDark: false,
-    ),
-    // 12. Hot Pink Surface + Electric Yellow QR (Image 5 Radiant Rush)
-    OrderPlacedTheme(
-      name: 'Radiant Rush Pop',
-      backgroundColor: Color(0xFFFF2D95),
-      qrColor: Color(0xFFFFEA00),
-      accentColor: Color(0xFFFFEA00),
-      textColor: Colors.white,
-      subtextColor: Color(0xFFFFF0F5),
-      cardBackgroundColor: Color(0x33000000),
-      cardBorderColor: Color(0x44FFFFFF),
-      buttonColor: Color(0xFFFFEA00),
-      buttonTextColor: Color(0xFF18171D),
-      isDark: true,
-    ),
-    // 13. Electric Cyan Surface + Deep Indigo QR (Image 4 pair)
-    OrderPlacedTheme(
-      name: 'Electric Cyan & Deep Indigo',
-      backgroundColor: Color(0xFF00F5D4),
-      qrColor: Color(0xFF3B0764),
-      accentColor: Color(0xFF3B0764),
-      textColor: Color(0xFF18171D),
-      subtextColor: Color(0xFF1F2937),
-      cardBackgroundColor: Color(0x1F000000),
-      cardBorderColor: Color(0x25000000),
-      buttonColor: Color(0xFF3B0764),
-      buttonTextColor: Colors.white,
-      isDark: false,
-    ),
+    OrderPlacedTheme(name: 'Neon Violet', qrColor: Color(0xFF7B42F6)),
+    OrderPlacedTheme(name: 'Hot Pink', qrColor: Color(0xFFFF2D95)),
+    OrderPlacedTheme(name: 'Radiant Orange', qrColor: Color(0xFFF2600C)),
+    OrderPlacedTheme(name: 'Deep Purple', qrColor: Color(0xFF4C1D95)),
+    OrderPlacedTheme(name: 'Deep Indigo', qrColor: Color(0xFF3B0764)),
+    OrderPlacedTheme(name: 'Vivid Violet', qrColor: Color(0xFF9D4EDD)),
+    OrderPlacedTheme(name: 'Deep Teal', qrColor: Color(0xFF00796B)),
+    OrderPlacedTheme(name: 'Royal Blue', qrColor: Color(0xFF1400FF)),
+    OrderPlacedTheme(name: 'Charcoal', qrColor: Color(0xFF18171D)),
   ];
-
-  /// The theme as drawn under the app's current brightness. Light presets
-  /// (white page) keep their accent but move onto the dark raised surface in
-  /// dark mode, and the pure-black preset lifts to the dark canvas; coloured
-  /// "pop" presets and the other dark presets are unchanged.
-  OrderPlacedTheme resolve(BuildContext context) {
-    if (!context.isDarkTheme) return this;
-    final p = context.palette;
-    if (backgroundColor == Colors.white) {
-      return OrderPlacedTheme(
-        name: name,
-        backgroundColor: p.surfaceRaised,
-        qrColor: qrColor,
-        accentColor: accentColor,
-        textColor: p.ink,
-        subtextColor: p.inkSecondary,
-        cardBackgroundColor: accentColor.withValues(alpha: 0.12),
-        cardBorderColor: accentColor.withValues(alpha: 0.24),
-        buttonColor: buttonColor,
-        buttonTextColor: buttonTextColor,
-        isDark: true,
-      );
-    }
-    if (backgroundColor == const Color(0xFF000000)) {
-      return OrderPlacedTheme(
-        name: name,
-        backgroundColor: p.canvas,
-        qrColor: qrColor,
-        accentColor: accentColor,
-        textColor: textColor,
-        subtextColor: subtextColor,
-        cardBackgroundColor: cardBackgroundColor,
-        cardBorderColor: cardBorderColor,
-        buttonColor: buttonColor,
-        buttonTextColor: buttonTextColor,
-        isDark: isDark,
-      );
-    }
-    return this;
-  }
 
   static OrderPlacedTheme random({String? seed}) {
     if (seed != null && seed.isNotEmpty) {
@@ -348,18 +116,19 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
     super.dispose();
   }
 
+  /// Four digits, like the home status card: #0057.
   String get _formattedToken {
     if (_order.tokenNumber != null) {
-      return '#${_order.tokenNumber.toString().padLeft(3, '0')}';
+      return '#${_order.tokenNumber.toString().padLeft(4, '0')}';
     }
     final digits = _order.displayId.replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.isNotEmpty) {
-      final sub = digits.length > 3
-          ? digits.substring(digits.length - 3)
-          : digits.padLeft(3, '0');
+      final sub = digits.length > 4
+          ? digits.substring(digits.length - 4)
+          : digits.padLeft(4, '0');
       return '#$sub';
     }
-    return '#001';
+    return '#0001';
   }
 
   String get _formattedOrderId {
@@ -369,7 +138,10 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = _theme.resolve(context);
+    final theme = _theme;
+    // As large as the screen comfortably allows, so it scans from a distance.
+    final qrSize =
+        (MediaQuery.sizeOf(context).width - 72).clamp(220.0, 300.0).toDouble();
     if (_order.status == CanteenOrderStatus.completed) {
       return SafeArea(
         child: Container(
@@ -416,7 +188,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                   ),
                   IconButton(
                     onPressed: _shuffleTheme,
-                    tooltip: 'Shuffle color theme',
+                    tooltip: 'Change QR colour',
                     icon: Icon(
                       Icons.palette_outlined,
                       size: 20,
@@ -439,7 +211,8 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                           padding: const EdgeInsets.all(8),
                           child: QrImageView(
                             data: _order.qrPayload ?? _order.id,
-                            size: 220,
+                            size: qrSize,
+                            backgroundColor: Colors.white,
                             padding: EdgeInsets.zero,
                             eyeStyle: QrEyeStyle(
                               eyeShape: QrEyeShape.circle,
@@ -453,7 +226,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
                         ),
                         const SizedBox(height: 18),
 
-                        // Large bold token number (#001)
+                        // Large bold token number (#0057)
                         Text(
                           _formattedToken,
                           textAlign: TextAlign.center,

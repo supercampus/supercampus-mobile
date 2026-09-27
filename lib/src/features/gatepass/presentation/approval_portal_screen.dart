@@ -326,6 +326,8 @@ class _ApprovalPortalScreenState extends State<ApprovalPortalScreen> {
         dark: context.palette.canvas,
       ),
       appBar: AppBar(
+        centerTitle: false,
+        titleSpacing: Navigator.of(context).canPop() ? 0 : null,
         title: Text(_portalTitle),
       ),
       body: _body(),

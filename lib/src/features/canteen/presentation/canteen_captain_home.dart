@@ -180,6 +180,7 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
 
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: widget.isMainHome ? null : 0,
         leading: widget.isMainHome ? null : ModuleBackButton(onPressed: widget.onExitModule),
         automaticallyImplyLeading: !widget.isMainHome,
         title: Column(

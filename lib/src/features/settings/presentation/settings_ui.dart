@@ -33,7 +33,8 @@ class SettingsPageScaffold extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        centerTitle: true,
+        centerTitle: false,
+        titleSpacing: 0,
         leading: IconButton(
           tooltip: 'Back',
           icon: Icon(Icons.chevron_left_rounded, color: palette.ink, size: 30),

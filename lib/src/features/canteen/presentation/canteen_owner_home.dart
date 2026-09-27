@@ -114,6 +114,7 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
     if (shopKey == null) {
       return Scaffold(
         appBar: AppBar(
+          titleSpacing: 0,
           leading: ModuleBackButton(onPressed: widget.onExitModule),
           title: const Text('Shop operations'),
         ),
@@ -183,6 +184,7 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
 
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: widget.isMainHome ? null : 0,
         leading: widget.isMainHome
             ? null
             : ModuleBackButton(onPressed: widget.onExitModule),

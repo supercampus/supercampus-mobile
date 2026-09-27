@@ -178,6 +178,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
     return Scaffold(
       backgroundColor: context.adaptive(light: const Color(0xFFF4F6FA), dark: context.palette.canvas),
       appBar: AppBar(
+        titleSpacing: widget.onExitModule != null ? 0 : null,
         leading: widget.onExitModule != null
             ? ModuleBackButton(
                 onPressed: widget.onExitModule!,

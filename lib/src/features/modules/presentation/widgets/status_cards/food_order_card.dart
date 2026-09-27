@@ -7,7 +7,7 @@ import 'status_card_models.dart';
 /// - "your order #XXXX is" in amber/yellow typography
 /// - Status-specific pill badge (orange, yellow, purple-blue, green)
 /// - State-dependent progress message
-/// - Circular food dish image on the right
+/// - The ordered item's picture on the right, without a background
 class FoodOrderCard extends StatelessWidget {
   const FoodOrderCard({
     super.key,
@@ -150,7 +150,7 @@ class FoodOrderCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Right food plate circle
+              // Ordered item picture
               _FoodPlateArt(
                 imageUrl: data.imageUrl,
                 itemName: data.itemName,
@@ -171,68 +171,34 @@ class _FoodPlateArt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const size = 76.0;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
+    const size = 84.0;
+    // Just the item itself — no plate, ring or shadow behind it.
+    return SizedBox(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color(0xFFFFFBEB),
-        border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-          width: 2.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: (imageUrl != null && imageUrl!.isNotEmpty)
-            ? Image.network(
-                imageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _DefaultDishPainterArt(),
-              )
-            : const _DefaultDishPainterArt(),
-      ),
+      child: (imageUrl != null && imageUrl!.isNotEmpty)
+          ? Image.network(
+              imageUrl!,
+              fit: BoxFit.contain,
+              semanticLabel: itemName,
+              errorBuilder: (_, __, ___) => const _DefaultDishArt(),
+            )
+          : const _DefaultDishArt(),
     );
   }
 }
 
-/// Fallback stylized golden-brown roti/dosa plate matching the reference screenshot
-class _DefaultDishPainterArt extends StatelessWidget {
-  const _DefaultDishPainterArt();
+/// Shown when the item has no picture.
+class _DefaultDishArt extends StatelessWidget {
+  const _DefaultDishArt();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFFDE68A),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Inner plate rim
-          Container(
-            width: 66,
-            height: 66,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFFFEF3C7),
-              border: Border.all(color: const Color(0xFFD97706), width: 1.5),
-            ),
-          ),
-          // Food icon / layered rotis
-          const Icon(
-            Icons.restaurant_rounded,
-            size: 32,
-            color: Color(0xFFB45309),
-          ),
-        ],
+    return const Center(
+      child: Icon(
+        Icons.restaurant_rounded,
+        size: 40,
+        color: Color(0xFFB45309),
       ),
     );
   }

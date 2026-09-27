@@ -161,6 +161,7 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        centerTitle: false,
         backgroundColor: context.palette.surface,
         foregroundColor: context.palette.ink,
         elevation: 0,
