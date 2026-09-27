@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 const privacyPolicyUrl = 'https://supercampus.ai/privacy';
 const termsUrl = 'https://supercampus.ai/terms';
 const contactSupportUrl = 'https://supercampus.ai/contact';
-const supportEmail = 'support@supercampus.ai';
+const supportEmail = 'dev@supercampus.ai';
 
 /// Opens [url] outside the app. `canLaunchUrl` is deliberately not used as a
 /// gate: it reports false in several mobile browsers and installed web apps

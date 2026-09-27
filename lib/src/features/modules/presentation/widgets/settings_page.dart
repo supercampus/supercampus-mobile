@@ -572,22 +572,22 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   onTap: () => _openWebUrl('https://supercampus.ai/terms'),
                 ),
-                if (widget.session.role != UserRole.student) ...[
-                  _buildDivider(dividerColor),
-                  _SettingsTile(
-                    icon: Icons.person_remove_outlined,
-                    title: 'Delete Account (Web Request)',
-                    textColor: textColor,
-                    isDark: isDark,
-                    trailing: const Icon(
-                      Icons.open_in_new_rounded,
-                      color: Color(0xFFC7C7CC),
-                      size: 18,
-                    ),
-                    onTap: () =>
-                        _openWebUrl('https://supercampus.ai/delete-account'),
+                // Every user, students included, must be able to find how to
+                // delete their account from inside the app (Google Play policy).
+                _buildDivider(dividerColor),
+                _SettingsTile(
+                  icon: Icons.person_remove_outlined,
+                  title: 'Delete Account',
+                  textColor: textColor,
+                  isDark: isDark,
+                  trailing: const Icon(
+                    Icons.open_in_new_rounded,
+                    color: Color(0xFFC7C7CC),
+                    size: 18,
                   ),
-                ],
+                  onTap: () =>
+                      _openWebUrl('https://supercampus.ai/delete-account'),
+                ),
                 _buildDivider(dividerColor),
                 _SettingsTile(
                   icon: Icons.support_agent_rounded,
