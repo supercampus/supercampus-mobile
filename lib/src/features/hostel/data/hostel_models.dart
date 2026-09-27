@@ -41,7 +41,7 @@ extension PresenceStatusX on PresenceStatus {
   Color get color => switch (this) {
     PresenceStatus.insideHostel => const Color(0xFF2E7D32),
     PresenceStatus.outsideHostel => const Color(0xFFEF6C00),
-    PresenceStatus.away => const Color(0xFF1565C0),
+    PresenceStatus.away => const Color(0xFF7B42F6),
   };
 }
 

@@ -23,7 +23,7 @@ class QuantityControl extends StatelessWidget {
     final double width =
         isZero ? (compact ? 44.0 : 46.0) : (compact ? 96.0 : 108.0);
     final double iconButtonSize = compact ? 32.0 : 36.0;
-    final stepperInk = context.palette.info;
+    final stepperInk = context.palette.brandInk;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 280),
@@ -32,25 +32,25 @@ class QuantityControl extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         color: isZero
-            ? const Color(0xFF2563EB)
+            ? AppColors.brandPurple
             : context.adaptive(
-                light: const Color(0xFFE7F3EC),
-                dark: const Color(0x2E2E7D52),
+                light: const Color(0xFFEFE8FE),
+                dark: const Color(0x2E7B42F6),
               ),
         borderRadius: BorderRadius.circular(isZero ? (height / 2) : 8.0),
         border: Border.all(
           color: isZero
               ? Colors.transparent
               : context.adaptive(
-                  light: const Color(0xFFBBD9C6),
-                  dark: const Color(0x662E7D52),
+                  light: const Color(0xFFD9C6FC),
+                  dark: const Color(0x667B42F6),
                 ),
           width: 1.2,
         ),
         boxShadow: isZero
             ? [
                 BoxShadow(
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.25),
+                  color: AppColors.brandPurple.withValues(alpha: 0.25),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),

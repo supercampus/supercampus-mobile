@@ -137,7 +137,7 @@ void showExamDetailModal(BuildContext context, TimetableEntry exam) {
                     _buildModalDetailRow(
                       context: ctx,
                       icon: Icons.account_balance_rounded,
-                      iconColor: const Color(0xFF0284C7).inkOn(ctx),
+                      iconColor: const Color(0xFF007A70).inkOn(ctx),
                       title: 'Assigned Venue & Desk',
                       value: '$hall  •  $seat',
                     ),
@@ -163,7 +163,7 @@ void showExamDetailModal(BuildContext context, TimetableEntry exam) {
                         Icon(
                           Icons.menu_book_rounded,
                           size: 18,
-                          color: const Color(0xFF7C3AED).inkOn(ctx),
+                          color: const Color(0xFF9B1FE8).inkOn(ctx),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -284,13 +284,13 @@ void showClassDetailModal(
                     ),
                     decoration: BoxDecoration(
                       color: entry.isLab
-                          ? Colors.purple.shade50.tintOn(ctx)
-                          : Colors.indigo.shade50.tintOn(ctx),
+                          ? const Color(0xFFFFE6F2).tintOn(ctx)
+                          : const Color(0xFFF3E6FD).tintOn(ctx),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: entry.isLab
-                            ? Colors.purple.shade200.tintOn(ctx, alpha: .45)
-                            : Colors.indigo.shade200.tintOn(ctx, alpha: .45),
+                            ? const Color(0xFFFF9CCB).tintOn(ctx, alpha: .45)
+                            : const Color(0xFFD9A5F7).tintOn(ctx, alpha: .45),
                       ),
                     ),
                     child: Text(
@@ -301,8 +301,8 @@ void showClassDetailModal(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: entry.isLab
-                            ? Colors.purple.shade800.inkOn(ctx)
-                            : Colors.indigo.shade800.inkOn(ctx),
+                            ? const Color(0xFFA80052).inkOn(ctx)
+                            : const Color(0xFF7A12C4).inkOn(ctx),
                       ),
                     ),
                   ),
@@ -363,7 +363,7 @@ void showClassDetailModal(
               child: FilledButton(
                 onPressed: () => Navigator.of(ctx).pop(),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF3730A3),
+                  backgroundColor: const Color(0xFF4B1FB8),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

@@ -10,8 +10,8 @@ import '../data/mock_faculty_repository.dart';
 
 /// Faculty purple used as text or icon colour: exact in light, lifted in dark.
 Color _purpleInk(BuildContext context) => context.adaptive(
-      light: const Color(0xFF6A1B9A),
-      dark: const Color(0xFFCE93D8),
+      light: const Color(0xFFA80052),
+      dark: const Color(0xFFFF9CCB),
     );
 
 class FacultyPortalScreen extends StatefulWidget {
@@ -82,7 +82,7 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Announcement published to the portal.'),
-        backgroundColor: Color(0xFF6A1B9A),
+        backgroundColor: Color(0xFFA80052),
       ),
     );
   }
@@ -203,12 +203,12 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF6A1B9A)
+                          ? const Color(0xFFA80052)
                           : context.palette.surface,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
-                            ? const Color(0xFF6A1B9A)
+                            ? const Color(0xFFA80052)
                             : context.adaptive(light: Colors.grey.shade300, dark: const Color(0xFF3A3B44)),
                       ),
                     ),
@@ -302,7 +302,7 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
         const SizedBox(height: 20),
         FilledButton.icon(
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF4A148C),
+            backgroundColor: const Color(0xFF7A003D),
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
           onPressed: () {
@@ -311,7 +311,7 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                 content: Text(
                   'Attendance submitted for $_selectedCourseCode! ($presentCount Present, $absentCount Absent, $odCount OD)',
                 ),
-                backgroundColor: const Color(0xFF4A148C),
+                backgroundColor: const Color(0xFF7A003D),
               ),
             );
           },
@@ -440,7 +440,7 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                         Expanded(
                           child: FilledButton(
                             style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFF6A1B9A),
+                              backgroundColor: const Color(0xFFA80052),
                             ),
                             onPressed: () {
                               _repository.reviewLeave(req.id, true);
@@ -448,7 +448,7 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Duty leave approved!'),
-                                  backgroundColor: Color(0xFF6A1B9A),
+                                  backgroundColor: Color(0xFFA80052),
                                 ),
                               );
                             },
@@ -489,7 +489,7 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
             ),
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF6A1B9A),
+                backgroundColor: const Color(0xFFA80052),
               ),
               onPressed: _createNoticeDialog,
               icon: const Icon(Icons.add),
@@ -608,7 +608,7 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
             ),
             child: ListTile(
               leading: CircleAvatar(
-                backgroundColor: context.adaptive(light: const Color(0xFFF3E5F5), dark: const Color(0x2E9C27B0)),
+                backgroundColor: context.adaptive(light: const Color(0xFFF3E5F5), dark: const Color(0x2ED6006B)),
                 child: Text(
                   st.studentName.substring(0, 1),
                   style: TextStyle(

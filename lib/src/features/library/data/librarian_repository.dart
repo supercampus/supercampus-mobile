@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 
 import '../../authentication/data/auth_http_client.dart';
@@ -74,6 +75,14 @@ class LibraryAnnouncement {
   final String? attachmentUrl;
   final String? decisionNote;
   final String? createdByEmail;
+}
+
+/// A refused library request, with the HTTP status for diagnostics. Still a
+/// [StateError], so existing handlers keep working.
+class LibrarianRequestError extends StateError {
+  LibrarianRequestError(super.message, this.statusCode);
+
+  final int statusCode;
 }
 
 class LibrarianRepository {
@@ -180,10 +189,16 @@ class LibrarianRepository {
     );
     final values = _data(response)['announcements'];
     if (values is! List) return const [];
-    return values
-        .whereType<Map>()
-        .map((value) => _announcement(Map<String, dynamic>.from(value)))
-        .toList(growable: false);
+    // One malformed row must not hide every other announcement.
+    final announcements = <LibraryAnnouncement>[];
+    for (final value in values.whereType<Map>()) {
+      try {
+        announcements.add(_announcement(Map<String, dynamic>.from(value)));
+      } catch (error) {
+        debugPrint('Skipped an unreadable announcement: $error');
+      }
+    }
+    return announcements;
   }
 
   Future<LibraryAnnouncement> createAnnouncement({
@@ -260,9 +275,17 @@ class LibrarianRepository {
   };
 
   Map<String, dynamic> _data(http.Response response) {
-    final decoded = response.body.isEmpty
-        ? <String, dynamic>{}
-        : jsonDecode(response.body) as Map<String, dynamic>;
+    Map<String, dynamic> decoded;
+    try {
+      final body = response.body.isEmpty ? null : jsonDecode(response.body);
+      decoded = body is Map<String, dynamic> ? body : <String, dynamic>{};
+    } on FormatException {
+      // A proxy error page (HTML) rather than the API's JSON.
+      throw StateError(
+        'The server returned an unexpected response '
+        '(HTTP ${response.statusCode}).',
+      );
+    }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final error = decoded['error'];
       final message = error is Map && error['message'] is String
@@ -274,7 +297,7 @@ class LibrarianRepository {
                   : response.body.trim().isNotEmpty
                       ? response.body.trim()
                       : 'Library request failed (${response.statusCode}).';
-      throw StateError(message);
+      throw LibrarianRequestError(message, response.statusCode);
     }
     final data = decoded['data'];
     return data is Map<String, dynamic> ? data : <String, dynamic>{};
@@ -297,7 +320,7 @@ class LibrarianRepository {
 
   LibraryAnnouncement _announcement(Map<String, dynamic> value) =>
       LibraryAnnouncement(
-        id: value['id'] as String,
+        id: '${value['id']}',
         type: value['announcementType'] as String? ?? 'Announcement',
         announcementDate:
             _dateOrNull(value['announcementDate']) ?? DateTime.now(),

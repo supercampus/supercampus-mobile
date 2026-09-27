@@ -327,6 +327,8 @@ class WalletTransaction {
     required this.amount,
     required this.description,
     required this.createdAt,
+    this.kind,
+    this.referenceId,
   });
 
   final String id;
@@ -335,6 +337,14 @@ class WalletTransaction {
   final double amount;
   final String description;
   final DateTime createdAt;
+
+  /// The ledger's own kind (`order_debit`, `online_top_up`, `manual_top_up`,
+  /// `refund`), when the source reports it.
+  final String? kind;
+
+  /// What the movement was for: the order or laundry charge it paid, the order
+  /// a refund returned, or the gateway order of an online top-up.
+  final String? referenceId;
 
   double get signedAmount =>
       type == WalletTransactionType.credit ? amount : -amount;

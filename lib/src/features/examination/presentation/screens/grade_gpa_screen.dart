@@ -176,7 +176,7 @@ class _GradeGpaScreenState extends State<GradeGpaScreen> {
     Color standingColor = Colors.green;
     if (gpa < 9.0 && gpa >= 7.5) {
       standing = 'First Class';
-      standingColor = Colors.blue;
+      standingColor = AppColors.brandPurple;
     } else if (gpa < 7.5 && gpa >= 6.0) {
       standing = 'Second Class';
       standingColor = Colors.orange;

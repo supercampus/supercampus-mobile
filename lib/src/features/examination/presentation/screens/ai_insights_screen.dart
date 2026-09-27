@@ -127,7 +127,7 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
             '72.4',
             'Std: 11.2',
             Icons.analytics,
-            Colors.blue,
+            AppColors.brandPurple,
           ),
           _buildInsightMiniCard(
             'Anomalies',
@@ -162,7 +162,7 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
           '72.4 / 100',
           'Std Dev: 11.2',
           Icons.analytics,
-          Colors.blue,
+          AppColors.brandPurple,
         ),
         const SizedBox(width: 12),
         _buildInsightMiniCard(
@@ -324,7 +324,7 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.auto_awesome, color: Colors.purple, size: 18),
+              Icon(Icons.auto_awesome, color: AppColors.hotPinkInk, size: 18),
               SizedBox(width: 6),
               Text(
                 'AI Anomaly Signals',
@@ -340,7 +340,7 @@ class _AiInsightsScreenState extends State<AiInsightsScreen> {
           const Divider(),
           _buildAnomalyItem(
             'Evaluator Prof. K. Patel section has strict marking (-1.8σ). Scaling advised.',
-            Colors.purple,
+            AppColors.hotPinkInk,
           ),
         ],
       ),

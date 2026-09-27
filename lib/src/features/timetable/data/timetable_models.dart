@@ -23,10 +23,10 @@ extension TimetableStatusExtension on TimetableStatus {
 
   Color get color => switch (this) {
     TimetableStatus.draft => Colors.grey.shade700,
-    TimetableStatus.generated => Colors.blue.shade700,
+    TimetableStatus.generated => const Color(0xFF5A24D6),
     TimetableStatus.validated => Colors.amber.shade800,
-    TimetableStatus.underReview => Colors.purple.shade700,
-    TimetableStatus.approved => Colors.teal.shade700,
+    TimetableStatus.underReview => const Color(0xFFC20060),
+    TimetableStatus.approved => const Color(0xFF00665E),
     TimetableStatus.published => const Color(0xFF2E7D32),
     TimetableStatus.archived => Colors.brown.shade600,
   };
@@ -142,7 +142,7 @@ class TimetableEntry {
     required this.timeSlot,
     required this.periodIndex,
     this.isLab = false,
-    this.categoryColorValue = 0xFF1976D2,
+    this.categoryColorValue = 0xFF7B42F6,
     this.periodType = PeriodType.classType,
     this.examTitle,
     this.maxMarks,
@@ -435,8 +435,8 @@ extension PeriodAttendanceStatusExtension on PeriodAttendanceStatus {
   Color get color => switch (this) {
     PeriodAttendanceStatus.present => const Color(0xFF2E7D32),
     PeriodAttendanceStatus.absent => const Color(0xFFC62828),
-    PeriodAttendanceStatus.onDuty => const Color(0xFF6A1B9A),
-    PeriodAttendanceStatus.upcoming => const Color(0xFF1565C0),
+    PeriodAttendanceStatus.onDuty => const Color(0xFFA80052),
+    PeriodAttendanceStatus.upcoming => const Color(0xFF7B42F6),
     PeriodAttendanceStatus.cancelled => Colors.grey.shade600,
   };
 }

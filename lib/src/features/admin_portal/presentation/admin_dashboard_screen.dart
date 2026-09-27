@@ -65,15 +65,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   EffectivePermissions get permissions => widget.permissions;
 
   Color _roleColor() {
-    if (session.isAdmin) return const Color(0xFF4F46E5);
-    if (session.isCanteenOwner) return const Color(0xFF059669);
-    if (session.isCaptain) return const Color(0xFF059669);
-    if (session.isAccountant) return const Color(0xFF4F46E5);
-    if (session.isStationeryOwner) return const Color(0xFF0891B2);
-    if (session.isFaculty) return const Color(0xFF2563EB);
-    if (session.isSecurityStaff) return const Color(0xFF0284C7);
-    if (session.isLibrarian) return const Color(0xFF9333EA);
-    if (session.isHostelWarden) return const Color(0xFFD97706);
+    if (session.isAdmin) return const Color(0xFF7B42F6);
+    if (session.isCanteenOwner) return const Color(0xFFC24700);
+    if (session.isCaptain) return const Color(0xFFC24700);
+    if (session.isAccountant) return const Color(0xFFD6006B);
+    if (session.isStationeryOwner) return const Color(0xFF007A70);
+    if (session.isFaculty) return const Color(0xFF9B1FE8);
+    if (session.isSecurityStaff) return const Color(0xFF007A70);
+    if (session.isLibrarian) return const Color(0xFF9D4EDD);
+    if (session.isHostelWarden) return const Color(0xFFC24700);
     return const Color(0xFF475569);
   }
 
@@ -150,7 +150,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           'Advisee Students',
                           'Student mentorship & academic tracking',
                           Icons.people_outline_rounded,
-                          const Color(0xFF4F46E5),
+                          const Color(0xFF7B42F6),
                         ),
                         const SizedBox(height: 10),
                         AdvisorStudentsSection(source: widget.advisorStudentsSource!),
@@ -161,7 +161,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           "Today's Schedule & Roll",
                           'Assigned lecture periods & attendance status',
                           Icons.calendar_today_rounded,
-                          const Color(0xFF0284C7),
+                          const Color(0xFF007A70),
                         ),
                         const SizedBox(height: 10),
                         TodayGlance(
@@ -478,19 +478,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         _buildActionPill(
           icon: Icons.admin_panel_settings_rounded,
           label: 'Admin Desk',
-          color: const Color(0xFF4F46E5),
+          color: const Color(0xFF7B42F6),
           onTap: () => widget.onOpenModule(ModuleCatalog.administration),
         ),
         _buildActionPill(
           icon: Icons.school_rounded,
           label: 'Student Directory',
-          color: const Color(0xFF2563EB),
+          color: const Color(0xFF7B42F6),
           onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'students'),
         ),
         _buildActionPill(
           icon: Icons.manage_accounts_rounded,
           label: 'Users & Roles',
-          color: const Color(0xFF7C3AED),
+          color: const Color(0xFF9B1FE8),
           onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'access_control'),
         ),
         _buildActionPill(
@@ -509,7 +509,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           _buildActionPill(
             icon: Icons.qr_code_scanner_rounded,
             label: 'Scan QR',
-            color: const Color(0xFF0891B2),
+            color: const Color(0xFF007A70),
             onTap: () => widget.onScan!(context),
           ),
       ]);
@@ -525,13 +525,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           _buildActionPill(
             icon: Icons.qr_code_scanner_rounded,
             label: 'Scan Token',
-            color: const Color(0xFF0891B2),
+            color: const Color(0xFF007A70),
             onTap: () => widget.onScan!(context),
           ),
         _buildActionPill(
           icon: Icons.history_rounded,
           label: 'History',
-          color: const Color(0xFF6366F1),
+          color: const Color(0xFF7B42F6),
           onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'order_history'),
         ),
       ]);
@@ -540,13 +540,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         _buildActionPill(
           icon: Icons.account_balance_wallet_rounded,
           label: 'Recharge Wallets',
-          color: const Color(0xFF4F46E5),
+          color: const Color(0xFF7B42F6),
           onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'wallet'),
         ),
         _buildActionPill(
           icon: Icons.receipt_long_rounded,
           label: 'Transactions',
-          color: const Color(0xFF0284C7),
+          color: const Color(0xFF007A70),
           onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'transactions'),
         ),
         _buildActionPill(
@@ -561,7 +561,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         _buildActionPill(
           icon: Icons.menu_book_rounded,
           label: 'Item Catalog',
-          color: const Color(0xFF0891B2),
+          color: const Color(0xFF007A70),
           onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'menu'),
         ),
         _buildActionPill(
@@ -576,13 +576,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         _buildActionPill(
           icon: Icons.fact_check_outlined,
           label: 'Take Roll Call',
-          color: const Color(0xFF2563EB),
+          color: const Color(0xFF7B42F6),
           onTap: () => widget.onOpenModule(ModuleCatalog.attendance, 'mark'),
         ),
         _buildActionPill(
           icon: Icons.schedule_rounded,
           label: 'My Schedule',
-          color: const Color(0xFF8B5CF6),
+          color: const Color(0xFF9D4EDD),
           onTap: () => widget.onOpenModule(ModuleCatalog.timetable, 'schedule'),
         ),
       ]);
@@ -592,7 +592,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           _buildActionPill(
             icon: Icons.qr_code_scanner_rounded,
             label: 'Scan Pass QR',
-            color: const Color(0xFF0284C7),
+            color: const Color(0xFF007A70),
             onTap: () => widget.onScan!(context),
           ),
         _buildActionPill(
@@ -674,7 +674,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               value: 'Admin Desk',
               badge: 'Users & Roles',
               icon: Icons.admin_panel_settings_rounded,
-              color: const Color(0xFF4F46E5),
+              color: const Color(0xFF7B42F6),
               onTap: () => widget.onOpenModule(ModuleCatalog.administration),
             ),
           ),
@@ -685,7 +685,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               value: 'Students',
               badge: 'Residency & Info',
               icon: Icons.school_rounded,
-              color: const Color(0xFF2563EB),
+              color: const Color(0xFF7B42F6),
               onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'students'),
             ),
           ),
@@ -717,7 +717,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               value: 'Scan Token',
               badge: 'Fast QR',
               icon: Icons.qr_code_scanner_rounded,
-              color: const Color(0xFF0891B2),
+              color: const Color(0xFF007A70),
               onTap: widget.onScan != null ? () => widget.onScan!(context) : () => widget.onOpenModule(ModuleCatalog.canteen, 'orders'),
             ),
           ),
@@ -734,7 +734,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               value: 'Recharge Directory',
               badge: 'Balances',
               icon: Icons.account_balance_wallet_rounded,
-              color: const Color(0xFF4F46E5),
+              color: const Color(0xFF7B42F6),
               onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'wallet'),
             ),
           ),
@@ -745,7 +745,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               value: 'Transactions',
               badge: 'Recent Audit',
               icon: Icons.receipt_long_rounded,
-              color: const Color(0xFF0284C7),
+              color: const Color(0xFF007A70),
               onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'transactions'),
             ),
           ),
@@ -762,7 +762,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               value: 'Items & Prices',
               badge: 'Stock Active',
               icon: Icons.menu_book_rounded,
-              color: const Color(0xFF0891B2),
+              color: const Color(0xFF007A70),
               onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'menu'),
             ),
           ),
@@ -790,7 +790,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               value: 'Roll Call',
               badge: "Today's Mark",
               icon: Icons.fact_check_outlined,
-              color: const Color(0xFF2563EB),
+              color: const Color(0xFF7B42F6),
               onTap: () => widget.onOpenModule(ModuleCatalog.attendance, 'mark'),
             ),
           ),
@@ -801,7 +801,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               value: 'Lectures',
               badge: 'Schedule',
               icon: Icons.schedule_rounded,
-              color: const Color(0xFF8B5CF6),
+              color: const Color(0xFF9D4EDD),
               onTap: () => widget.onOpenModule(ModuleCatalog.timetable),
             ),
           ),
@@ -818,7 +818,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               value: 'Scan Outpass',
               badge: 'Verification',
               icon: Icons.qr_code_scanner_rounded,
-              color: const Color(0xFF0284C7),
+              color: const Color(0xFF007A70),
               onTap: widget.onScan != null ? () => widget.onScan!(context) : () => widget.onOpenModule(ModuleCatalog.gatepass, 'scan'),
             ),
           ),
@@ -1058,7 +1058,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     return Material(
       color: isSelected
-          ? const Color(0xFF4F46E5)
+          ? const Color(0xFF7B42F6)
           : isDark
               ? const Color(0xFF17181D)
               : Colors.white,
@@ -1072,7 +1072,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isSelected
-                  ? const Color(0xFF4F46E5)
+                  ? const Color(0xFF7B42F6)
                   : isDark
                       ? const Color(0xFF2B2C34)
                       : const Color(0xFFE2E8F0),
@@ -1114,21 +1114,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: 'Admin Desk',
         tag: 'Control & Access',
         icon: Icons.admin_panel_settings_rounded,
-        color: const Color(0xFF4F46E5),
+        color: const Color(0xFF7B42F6),
         onTap: () => widget.onOpenModule(ModuleCatalog.administration),
       ));
       tiles.add(_buildAppTile(
         title: 'Student Directory',
         tag: 'Registry & Residency',
         icon: Icons.school_rounded,
-        color: const Color(0xFF2563EB),
+        color: const Color(0xFF7B42F6),
         onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'students'),
       ));
       tiles.add(_buildAppTile(
         title: 'User Accounts',
         tag: 'Roles & Credentials',
         icon: Icons.manage_accounts_rounded,
-        color: const Color(0xFF7C3AED),
+        color: const Color(0xFF9B1FE8),
         onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'access_control'),
       ));
       tiles.add(_buildAppTile(
@@ -1155,7 +1155,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           title: 'Student Wallets',
           tag: 'Recharges',
           icon: Icons.account_balance_wallet_rounded,
-          color: const Color(0xFF4F46E5),
+          color: const Color(0xFF7B42F6),
           onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'wallet'),
         ));
       } else if (session.isStationeryOwner) {
@@ -1163,7 +1163,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           title: 'Stationery Catalog',
           tag: 'Store & Stock',
           icon: Icons.edit_note_rounded,
-          color: const Color(0xFF0891B2),
+          color: const Color(0xFF007A70),
           onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'menu'),
         ));
       } else {
@@ -1182,7 +1182,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: 'Tuition & Fees',
         tag: 'Invoices & Dues',
         icon: Icons.receipt_long_rounded,
-        color: const Color(0xFF0284C7),
+        color: const Color(0xFF007A70),
         onTap: () => widget.onOpenModule(ModuleCatalog.tuitionFee),
       ));
     }
@@ -1192,7 +1192,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: 'Student Wallets',
         tag: 'Recharges',
         icon: Icons.account_balance_wallet_rounded,
-        color: const Color(0xFF4F46E5),
+        color: const Color(0xFF7B42F6),
         onTap: () => widget.onOpenModule(ModuleCatalog.canteen, 'wallet'),
       ));
     }
@@ -1213,7 +1213,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: 'Attendance Desk',
         tag: 'Roll & Rosters',
         icon: Icons.fact_check_outlined,
-        color: const Color(0xFF2563EB),
+        color: const Color(0xFF7B42F6),
         onTap: () => widget.onOpenModule(ModuleCatalog.attendance),
       ));
     }
@@ -1223,7 +1223,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: 'Timetable',
         tag: 'Master Schedule',
         icon: Icons.schedule_rounded,
-        color: const Color(0xFF8B5CF6),
+        color: const Color(0xFF9D4EDD),
         onTap: () => widget.onOpenModule(ModuleCatalog.timetable),
       ));
     }
@@ -1233,7 +1233,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: 'Curriculum & Depts',
         tag: 'Programmes',
         icon: Icons.auto_stories_outlined,
-        color: const Color(0xFF3B82F6),
+        color: const Color(0xFF7B42F6),
         onTap: () => widget.onOpenModule(ModuleCatalog.academics),
       ));
     }
@@ -1243,7 +1243,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: 'Examinations',
         tag: 'Marks & Results',
         icon: Icons.assignment_outlined,
-        color: const Color(0xFF9333EA),
+        color: const Color(0xFF9B1FE8),
         onTap: () => widget.onOpenModule(ModuleCatalog.examination),
       ));
     }
@@ -1254,7 +1254,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: 'Gate Security',
         tag: 'Passes & Checkpoint',
         icon: Icons.qr_code_scanner_rounded,
-        color: const Color(0xFF0891B2),
+        color: const Color(0xFF007A70),
         onTap: () => widget.onOpenModule(ModuleCatalog.gatepass),
       ));
     }
@@ -1264,7 +1264,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         title: 'Central Library',
         tag: 'Catalog & Lending',
         icon: Icons.local_library_outlined,
-        color: const Color(0xFF9333EA),
+        color: const Color(0xFF9B1FE8),
         onTap: () => widget.onOpenModule(ModuleCatalog.library),
       ));
     }

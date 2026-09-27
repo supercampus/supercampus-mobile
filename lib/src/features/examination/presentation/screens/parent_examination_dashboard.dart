@@ -56,8 +56,8 @@ class ParentExaminationDashboard extends StatelessWidget {
                     subtitle: 'Timetable, Venue & Seats',
                     icon: Icons.calendar_month_outlined,
                     color: context.adaptive(
-                      light: const Color(0xFF1976D2),
-                      dark: const Color(0xFF64B5F6),
+                      light: const Color(0xFF7B42F6),
+                      dark: const Color(0xFFB57BFF),
                     ),
                     badgeText: 'Autumn 2026',
                     onTap: () => onNavigateToFeature(0),
@@ -68,8 +68,8 @@ class ParentExaminationDashboard extends StatelessWidget {
                     subtitle: 'Semester Grades & GPA',
                     icon: Icons.grade_outlined,
                     color: context.adaptive(
-                      light: const Color(0xFF7B1FA2),
-                      dark: const Color(0xFFCE93D8),
+                      light: const Color(0xFFC20060),
+                      dark: const Color(0xFFFF9CCB),
                     ),
                     badgeText: 'Published',
                     onTap: () => onNavigateToFeature(1),
@@ -103,14 +103,14 @@ class ParentExaminationDashboard extends StatelessWidget {
       padding: EdgeInsets.all(isMobile ? 16 : 20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1565C0), Color(0xFF1976D2)],
+          colors: [Color(0xFF7B42F6), Color(0xFF9B1FE8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1565C0).withValues(alpha: 0.2),
+            color: const Color(0xFF7B42F6).withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

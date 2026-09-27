@@ -7,9 +7,9 @@ import '../../authentication/data/auth_repository.dart';
 import '../../scanner/presentation/scan_qr_screen.dart';
 import '../data/security_gate_repository.dart';
 
-const _brandBlue = Color(0xFF1400FF);
-const _brandPurple = Color(0xFFA600FF);
-const _softPurple = Color(0xFF776CF5);
+const _brandPrimary = Color(0xFF7B42F6);
+const _brandSecondary = Color(0xFFD6006B);
+const _softPurple = Color(0xFF9D4EDD);
 
 class SecurityPortalScreen extends StatefulWidget {
   const SecurityPortalScreen({
@@ -224,12 +224,12 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [_brandBlue, _brandPurple],
+                colors: [_brandPrimary, _brandSecondary],
               ),
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: _brandPurple.withValues(alpha: 0.2),
+                  color: _brandSecondary.withValues(alpha: 0.2),
                   blurRadius: 24,
                   offset: const Offset(0, 10),
                 ),
@@ -267,7 +267,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
                   initialValue: _checkpoint,
-                  dropdownColor: const Color(0xFF2D12B7),
+                  dropdownColor: const Color(0xFF4B1FB8),
                   iconEnabledColor: Colors.white,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
@@ -312,7 +312,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(58),
                     backgroundColor: Colors.white,
-                    foregroundColor: _brandBlue,
+                    foregroundColor: _brandPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
@@ -433,7 +433,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
       style: ButtonStyle(
         foregroundColor: WidgetStateProperty.resolveWith(
           (states) =>
-              states.contains(WidgetState.selected) ? _brandBlue : Colors.white,
+              states.contains(WidgetState.selected) ? _brandPrimary : Colors.white,
         ),
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
@@ -464,7 +464,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
               color: _softPurple.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: context.adaptive(light: _brandBlue, dark: context.palette.brandInk)),
+            child: Icon(icon, color: context.adaptive(light: _brandPrimary, dark: context.palette.brandInk)),
           ),
           const SizedBox(width: 12),
           Column(
@@ -507,7 +507,7 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(36),
-                child: CircularProgressIndicator(color: _brandPurple),
+                child: CircularProgressIndicator(color: _brandSecondary),
               ),
             )
           else if (_historyError != null)
@@ -546,14 +546,14 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: (isEntry ? _brandBlue : _brandPurple).withValues(
+              color: (isEntry ? _brandPrimary : _brandSecondary).withValues(
                 alpha: .1,
               ),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               isEntry ? Icons.login_rounded : Icons.logout_rounded,
-              color: isEntry ? context.adaptive(light: _brandBlue, dark: context.palette.brandInk) : context.adaptive(light: _brandPurple, dark: const Color(0xFFD38CFF)),
+              color: isEntry ? context.adaptive(light: _brandPrimary, dark: context.palette.brandInk) : context.adaptive(light: _brandSecondary, dark: const Color(0xFFFF7AB8)),
             ),
           ),
           const SizedBox(width: 12),
@@ -640,10 +640,10 @@ class _ScanResultSheet extends StatelessWidget {
     // Strong fill for the action button (white label) and a legible ink for
     // the icon: identical in light, lifted ink in dark.
     final color = accepted
-        ? context.adaptive(light: _brandBlue, dark: p.brand)
+        ? context.adaptive(light: _brandPrimary, dark: p.brand)
         : const Color(0xFFE53935);
     final ink = accepted
-        ? context.adaptive(light: _brandBlue, dark: p.brandInk)
+        ? context.adaptive(light: _brandPrimary, dark: p.brandInk)
         : context.adaptive(light: const Color(0xFFE53935), dark: p.danger);
     return Container(
       margin: const EdgeInsets.all(12),

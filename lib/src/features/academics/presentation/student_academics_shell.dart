@@ -345,14 +345,14 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                 height: 44,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                    colors: [Color(0xFF7B42F6), Color(0xFF9B1FE8)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF4F46E5).withValues(alpha: 0.25),
+                      color: const Color(0xFF7B42F6).withValues(alpha: 0.25),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -383,7 +383,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            color: context.adaptive(light: const Color(0xFFEEF2FF), dark: const Color(0x2E6366F1)),
+                            color: context.adaptive(light: const Color(0xFFEFE8FE), dark: const Color(0x2E7B42F6)),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
@@ -391,7 +391,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w600,
-                              color: context.adaptive(light: const Color(0xFF4F46E5), dark: const Color(0xFF818CF8)),
+                              color: context.adaptive(light: const Color(0xFF7B42F6), dark: const Color(0xFFB57BFF)),
                             ),
                           ),
                         ),
@@ -1342,12 +1342,12 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: Colors.deepPurple.withValues(alpha: .1),
+                color: AppColors.neonViolet.withValues(alpha: .1),
                 borderRadius: BorderRadius.circular(13),
               ),
               child: Icon(
                 Icons.assessment_outlined,
-                color: context.adaptive(light: Colors.deepPurple, dark: const Color(0xFFB39DDB)),
+                color: context.adaptive(light: AppColors.neonViolet, dark: const Color(0xFFC9A7FF)),
               ),
             ),
             const SizedBox(width: 13),
@@ -1430,9 +1430,9 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
   );
 
   Color _assessmentColor(StudentAssessmentKind kind) => switch (kind) {
-    StudentAssessmentKind.semester => context.adaptive(light: const Color(0xFF4A4E9C), dark: const Color(0xFFA5B4FC)),
+    StudentAssessmentKind.semester => context.adaptive(light: const Color(0xFF4B1FB8), dark: const Color(0xFFB57BFF)),
     StudentAssessmentKind.internal => context.adaptive(light: Colors.green, dark: const Color(0xFF81C784)),
-    StudentAssessmentKind.test => context.adaptive(light: Colors.deepPurple, dark: const Color(0xFFB39DDB)),
+    StudentAssessmentKind.test => context.adaptive(light: AppColors.neonViolet, dark: const Color(0xFFC9A7FF)),
   };
 
   IconData _assessmentIcon(StudentAssessmentKind kind) => switch (kind) {
@@ -1593,7 +1593,7 @@ class _StudentAcademicsShellState extends State<StudentAcademicsShell> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          Icon(icon, color: context.adaptive(light: const Color(0xFF4A4E9C), dark: const Color(0xFFA5B4FC)), size: 34),
+          Icon(icon, color: context.adaptive(light: const Color(0xFF4B1FB8), dark: const Color(0xFFB57BFF)), size: 34),
           const SizedBox(height: 10),
           Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),

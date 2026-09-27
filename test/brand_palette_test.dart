@@ -5,17 +5,22 @@ import 'package:supercampus_mobile/src/core/theme/app_theme.dart';
 
 void main() {
   test('SuperCampus uses the approved permanent brand palette', () {
-    expect(AppColors.brandBlue, const Color(0xFF1400FF));
-    expect(AppColors.brandMagenta, const Color(0xFFA600FF));
-    expect(AppColors.brandLavender, const Color(0xFF776CF5));
+    expect(AppColors.brandPurple, const Color(0xFF7B42F6));
+    expect(AppColors.brandPink, const Color(0xFFFF2D95));
+    expect(AppColors.brandViolet, const Color(0xFF9B1FE8));
+    expect(AppColors.primary, AppColors.brandPurple);
     expect(AppColors.violetGradient.colors, const [
-      Color(0xFF1400FF),
-      Color(0xFFA600FF),
+      Color(0xFF7B42F6),
+      Color(0xFFFF2D95),
     ]);
   });
 
   test('module identity colours stay inside the approved brand palette', () {
-    final approved = {Color(0xFF1400FF), Color(0xFFA600FF), Color(0xFF776CF5)};
+    final approved = {
+      AppColors.brandPurple,
+      AppColors.hotPinkInk,
+      AppColors.brandViolet,
+    };
 
     for (final module in ModuleCatalog.all) {
       expect(

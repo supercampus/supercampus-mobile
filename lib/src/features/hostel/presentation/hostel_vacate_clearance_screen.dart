@@ -79,17 +79,17 @@ class _HostelVacateClearanceScreenState
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isCompleted ? context.adaptive(light: Colors.grey.shade100, dark: const Color(0xFF1C1D23)) : context.adaptive(light: Colors.blue.shade50, dark: Colors.blue.withValues(alpha: 0.18)),
+                color: isCompleted ? context.adaptive(light: Colors.grey.shade100, dark: const Color(0xFF1C1D23)) : context.adaptive(light: const Color(0xFFEFE8FE), dark: AppColors.brandPurple.withValues(alpha: 0.18)),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isCompleted ? context.adaptive(light: Colors.grey.shade300, dark: const Color(0xFF3A3B44)) : context.adaptive(light: Colors.blue.shade300, dark: Colors.blue.withValues(alpha: 0.45)),
+                  color: isCompleted ? context.adaptive(light: Colors.grey.shade300, dark: const Color(0xFF3A3B44)) : context.adaptive(light: const Color(0xFFB57BFF), dark: AppColors.brandPurple.withValues(alpha: 0.45)),
                 ),
               ),
               child: Row(
                 children: [
                   Icon(
                     isCompleted ? Icons.check_circle : Icons.assignment_turned_in,
-                    color: isCompleted ? context.adaptive(light: Colors.grey.shade700, dark: const Color(0xFFA3A5B0)) : context.adaptive(light: Colors.blue.shade800, dark: Colors.blue.shade200),
+                    color: isCompleted ? context.adaptive(light: Colors.grey.shade700, dark: const Color(0xFFA3A5B0)) : context.adaptive(light: const Color(0xFF4B1FB8), dark: const Color(0xFFC9A7FF)),
                     size: 32,
                   ),
                   const SizedBox(width: 12),
@@ -105,7 +105,7 @@ class _HostelVacateClearanceScreenState
                             fontWeight: FontWeight.bold,
                             color: isCompleted
                                 ? context.adaptive(light: Colors.grey.shade900, dark: const Color(0xFFE0E1E6))
-                                : context.adaptive(light: Colors.blue.shade900, dark: Colors.blue.shade200),
+                                : context.adaptive(light: const Color(0xFF2A1260), dark: const Color(0xFFC9A7FF)),
                           ),
                         ),
                         Text(

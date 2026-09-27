@@ -90,12 +90,12 @@ class CampusNavBar extends StatefulWidget {
 }
 
 // Colours sampled from the board.
-const _scanFrom = Color(0xFF4400FF);
-const _scanTo = Color(0xFF9000FF);
-const _iconPurple = Color(0xFF5900FF);
+const _scanFrom = Color(0xFF7B42F6);
+const _scanTo = Color(0xFFFF2D95);
+const _iconPurple = Color(0xFF7B42F6);
 
 /// What the label turns on each pulse.
-const _pulseMagenta = Color(0xFFDC00FF);
+const _pulseMagenta = Color(0xFFFF2D95);
 
 // Horizontal placement, as a fraction of the bar's width.
 const _scanLeftX = 592 / 942;

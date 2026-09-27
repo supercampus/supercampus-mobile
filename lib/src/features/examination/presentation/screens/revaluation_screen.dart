@@ -114,18 +114,18 @@ class _RevaluationScreenState extends State<RevaluationScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: context.adaptive(
-          light: Colors.blue.shade50,
-          dark: const Color(0x2E2196F3),
+          light: const Color(0xFFEFE8FE),
+          dark: const Color(0x2E7B42F6),
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.adaptive(
-            light: Colors.blue.shade200,
-            dark: const Color(0x662196F3),
+            light: const Color(0xFFC9A7FF),
+            dark: const Color(0x667B42F6),
           )),
       ),
       child: const Row(
         children: [
-          Icon(Icons.gavel, color: Colors.blue, size: 18),
+          Icon(Icons.gavel, color: AppColors.brandPurple, size: 18),
           SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -133,7 +133,7 @@ class _RevaluationScreenState extends State<RevaluationScreen> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: Colors.blue,
+                color: AppColors.brandPurple,
               ),
             ),
           ),

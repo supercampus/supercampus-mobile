@@ -18,7 +18,7 @@ class OrderPlacedTheme {
 
   Color get backgroundColor => Colors.white;
   Color get accentColor => qrColor;
-  Color get textColor => const Color(0xFF18171D);
+  Color get textColor => const Color(0xFF0A0A12);
   Color get subtextColor => const Color(0xFF6B7280);
   Color get cardBackgroundColor => qrColor.withValues(alpha: 0.06);
   Color get cardBorderColor => qrColor.withValues(alpha: 0.18);
@@ -26,15 +26,17 @@ class OrderPlacedTheme {
   Color get buttonTextColor => Colors.white;
 
   static const List<OrderPlacedTheme> palette = [
-    OrderPlacedTheme(name: 'Neon Violet', qrColor: Color(0xFF7B42F6)),
-    OrderPlacedTheme(name: 'Hot Pink', qrColor: Color(0xFFFF2D95)),
-    OrderPlacedTheme(name: 'Radiant Orange', qrColor: Color(0xFFF2600C)),
-    OrderPlacedTheme(name: 'Deep Purple', qrColor: Color(0xFF4C1D95)),
-    OrderPlacedTheme(name: 'Deep Indigo', qrColor: Color(0xFF3B0764)),
-    OrderPlacedTheme(name: 'Vivid Violet', qrColor: Color(0xFF9D4EDD)),
-    OrderPlacedTheme(name: 'Deep Teal', qrColor: Color(0xFF00796B)),
-    OrderPlacedTheme(name: 'Royal Blue', qrColor: Color(0xFF1400FF)),
-    OrderPlacedTheme(name: 'Charcoal', qrColor: Color(0xFF18171D)),
+    // The app accent palette, each stop darkened just enough to hold at
+    // least 4.5:1 on white (QR scan + white button text).
+    OrderPlacedTheme(name: 'Electric Purple', qrColor: Color(0xFF7B42F6)),
+    OrderPlacedTheme(name: 'Hot Pink', qrColor: Color(0xFFD6006B)),
+    OrderPlacedTheme(name: 'Radiant Orange', qrColor: Color(0xFFC24700)),
+    OrderPlacedTheme(name: 'Deep Purple', qrColor: Color(0xFF4B1FB8)),
+    OrderPlacedTheme(name: 'Deep Magenta', qrColor: Color(0xFFB8005C)),
+    OrderPlacedTheme(name: 'Neon Violet', qrColor: Color(0xFF9D4EDD)),
+    OrderPlacedTheme(name: 'Deep Cyan', qrColor: Color(0xFF007A70)),
+    OrderPlacedTheme(name: 'Electric Violet', qrColor: Color(0xFF9B1FE8)),
+    OrderPlacedTheme(name: 'Deep Void', qrColor: Color(0xFF0A0A12)),
   ];
 
   static OrderPlacedTheme random({String? seed}) {

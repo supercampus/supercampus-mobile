@@ -129,8 +129,8 @@ class _StudentEligibilityScreenState extends State<StudentEligibilityScreen> {
               runSpacing: 6,
               children: [
                 _buildRuleTag('Attendance', '≥ 75%', Colors.green),
-                _buildRuleTag('Fee Clearance', 'Cleared', Colors.blue),
-                _buildRuleTag('Disciplinary', 'Clean', Colors.purple),
+                _buildRuleTag('Fee Clearance', 'Cleared', AppColors.brandPurple),
+                _buildRuleTag('Disciplinary', 'Clean', AppColors.hotPinkInk),
               ],
             ),
           ],

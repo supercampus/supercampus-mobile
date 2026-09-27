@@ -410,15 +410,15 @@ class _ActivityRow extends StatelessWidget {
       StudentActivityKind.canteen => (
         Icons.restaurant_outlined,
         context.adaptive(
-          light: const Color(0xFF5B35D5),
-          dark: const Color(0xFFB4A2F5),
+          light: const Color(0xFF5A24D6),
+          dark: const Color(0xFFC9A7FF),
         ),
       ),
       StudentActivityKind.gatepass => (
         Icons.directions_walk_outlined,
         context.adaptive(
-          light: const Color(0xFF3558D4),
-          dark: const Color(0xFF93B0F5),
+          light: const Color(0xFF7B42F6),
+          dark: const Color(0xFFC9A7FF),
         ),
       ),
       StudentActivityKind.library => (

@@ -926,7 +926,7 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
                   errorBuilder: (_, _, _) => ColoredBox(
                     color: context.adaptive(
                       light: const Color(0xFFF0EDF8),
-                      dark: const Color(0x2E776CF5),
+                      dark: const Color(0x2E9D4EDD),
                     ),
                     child: const Center(
                       child: Icon(Icons.broken_image_outlined),
@@ -996,7 +996,7 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
         ? const Color(0xFF292431)
         : const Color(0xFFE3E5E8);
     final selectedDotColor = isDark
-        ? const Color(0xFFB8AEFF)
+        ? const Color(0xFFB57BFF)
         : const Color(0xFF666A70);
     final idleDotColor = isDark
         ? const Color(0xFF514A5D)
@@ -1137,7 +1137,7 @@ class _DashboardNoticeContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final accent = isDark ? const Color(0xFFB8AEFF) : AppColors.brandLavender;
+    final accent = isDark ? const Color(0xFFC98BFF) : AppColors.brandViolet;
 
     return Material(
       color: Colors.transparent,

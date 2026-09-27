@@ -170,7 +170,7 @@ class _HostelInventoryScreenState extends State<HostelInventoryScreen> {
       RoomStatus.partiallyOccupied => Colors.orange,
       RoomStatus.full => Colors.red,
       RoomStatus.maintenance => Colors.grey,
-      RoomStatus.blocked => Colors.purple,
+      RoomStatus.blocked => AppColors.hotPinkInk,
     };
 
     return Container(

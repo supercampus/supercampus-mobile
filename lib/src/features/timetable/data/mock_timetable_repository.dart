@@ -260,7 +260,7 @@ class MockTimetableRepository implements TimetableRepository {
         dayOfWeek: 'Monday',
         timeSlot: '08:30 - 09:20 AM',
         periodIndex: 1,
-        categoryColorValue: 0xFF1E88E5,
+        categoryColorValue: 0xFF7B42F6,
       ),
       const TimetableEntry(
         id: 'ENT-02',
@@ -296,7 +296,7 @@ class MockTimetableRepository implements TimetableRepository {
         dayOfWeek: 'Monday',
         timeSlot: '11:30 - 12:20 PM',
         periodIndex: 4,
-        categoryColorValue: 0xFF8E24AA,
+        categoryColorValue: 0xFFD6006B,
       ),
       const TimetableEntry(
         id: 'ENT-05',
@@ -321,7 +321,7 @@ class MockTimetableRepository implements TimetableRepository {
         dayOfWeek: 'Monday',
         timeSlot: '02:50 - 03:40 PM',
         periodIndex: 6,
-        categoryColorValue: 0xFF3949AB,
+        categoryColorValue: 0xFF7B42F6,
       ),
       const TimetableEntry(
         id: 'ENT-07',
@@ -970,13 +970,13 @@ class MockTimetableRepository implements TimetableRepository {
 
   int _subjectColor(String subjectCode) {
     const colors = [
-      0xFF1E88E5,
+      0xFF7B42F6,
       0xFF43A047,
       0xFFFB8C00,
-      0xFF8E24AA,
+      0xFFD6006B,
       0xFFD81B60,
       0xFF00ACC1,
-      0xFF3949AB,
+      0xFF7B42F6,
     ];
     return colors[subjectCode.hashCode.abs() % colors.length];
   }

@@ -120,8 +120,8 @@ class _LoginScreenState extends State<LoginScreen> {
           icon: Icon(
             Icons.devices_rounded,
             color: context.adaptive(
-              light: const Color(0xFF5B21FF),
-              dark: const Color(0xFFA29BFF),
+              light: const Color(0xFF7B42F6),
+              dark: const Color(0xFFB57BFF),
             ),
           ),
           title: const Text('Signed out on this device'),
@@ -412,9 +412,9 @@ class _LoginSuccessSplashState extends State<_LoginSuccessSplash>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color(0xFF4200FF),
-                      Color(0xFF7000FF),
-                      Color(0xFF9600FF),
+                      Color(0xFF7B42F6),
+                      Color(0xFF7B42F6),
+                      Color(0xFF9B1FE8),
                     ],
                   ),
                 ),
@@ -1239,7 +1239,7 @@ class _PasswordResetCompletionScreenState
                             border: Border.all(color: context.palette.border),
                             boxShadow: const [
                               BoxShadow(
-                                color: Color(0x120E00B8),
+                                color: Color(0x124B1FB8),
                                 blurRadius: 30,
                                 offset: Offset(0, 14),
                               ),
@@ -1736,9 +1736,9 @@ extension on BuildContext {
   Color get _authLine =>
       adaptive(light: const Color(0xFFE4E4E7), dark: const Color(0xFF2B2C34));
   Color get _authFocus =>
-      adaptive(light: const Color(0xFF6366F1), dark: const Color(0xFFA5B4FC));
+      adaptive(light: const Color(0xFF7B42F6), dark: const Color(0xFFB57BFF));
   Color get _authLink =>
-      adaptive(light: const Color(0xFF4F46E5), dark: const Color(0xFFA5B4FC));
+      adaptive(light: const Color(0xFF7B42F6), dark: const Color(0xFFB57BFF));
   Color get _authBackFill =>
       adaptive(light: const Color(0xFFD9D9D9), dark: const Color(0xFF3A3B44));
 

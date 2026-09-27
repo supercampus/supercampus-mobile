@@ -32,7 +32,7 @@ class GatepassTicketCard extends StatelessWidget {
       ApprovalStatus.approved => (const Color(0xFF22C55E), 'approved'),
       ApprovalStatus.pending => (const Color(0xFFF97316), 'pending'),
       ApprovalStatus.rejected => (const Color(0xFFEF4444), 'rejected'),
-      ApprovalStatus.completed => (const Color(0xFF3B82F6), 'completed'),
+      ApprovalStatus.completed => (const Color(0xFF7B42F6), 'completed'),
       ApprovalStatus.cancelled => (const Color(0xFF6B7280), 'cancelled'),
     };
 

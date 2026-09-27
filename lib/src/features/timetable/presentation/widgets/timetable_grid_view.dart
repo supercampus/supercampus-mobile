@@ -196,7 +196,7 @@ class _TimetableGridViewState extends State<TimetableGridView> {
               border: Border.all(color: context.examLine, width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF3730A3).withValues(alpha: 0.04),
+                  color: const Color(0xFF4B1FB8).withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -445,11 +445,11 @@ class _TimetableGridViewState extends State<TimetableGridView> {
       case PeriodStatus.present:
         return const Color(0xFF4CAF50);
       case PeriodStatus.onDuty:
-        return const Color(0xFF9C27B0);
+        return const Color(0xFFD6006B);
       case PeriodStatus.absent:
         return const Color(0xFFF44336);
       case PeriodStatus.upcoming:
-        return const Color(0xFF2196F3);
+        return const Color(0xFF7B42F6);
       case PeriodStatus.ongoing:
         return const Color(0xFFFF9800);
       case PeriodStatus.cancelled:

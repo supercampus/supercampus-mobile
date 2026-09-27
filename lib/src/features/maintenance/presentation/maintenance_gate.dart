@@ -77,7 +77,7 @@ class _MaintenanceGateState extends State<MaintenanceGate> {
                 decoration: BoxDecoration(
                   color: context.adaptive(
                     light: const Color(0xFFEDE7FF),
-                    dark: const Color(0xFF231F4A),
+                    dark: const Color(0xFF2A1D4A),
                   ),
                   borderRadius: BorderRadius.circular(34),
                 ),

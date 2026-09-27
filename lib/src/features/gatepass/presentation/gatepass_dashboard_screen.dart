@@ -508,7 +508,7 @@ class _ApplyActions extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         shape: shape,
         backgroundColor: context.adaptive(
-          light: const Color(0xFFEEF0FF),
+          light: const Color(0xFFEFE8FE),
           dark: context.palette.brandSoft,
         ),
         foregroundColor: context.palette.brandInk,
@@ -830,7 +830,7 @@ class _ActionRow extends StatelessWidget {
               height: 34,
               decoration: BoxDecoration(
                 color: context.adaptive(
-                  light: const Color(0xFFEEF0FF),
+                  light: const Color(0xFFEFE8FE),
                   dark: p.brandSoft,
                 ),
                 borderRadius: BorderRadius.circular(10),

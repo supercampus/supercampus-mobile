@@ -94,8 +94,8 @@ class _Fallback extends StatelessWidget {
     };
     return Container(
       color: context.adaptive(
-        light: const Color(0xFFDDE7FB),
-        dark: const Color(0x2E2563EB),
+        light: const Color(0xFFEFE8FE),
+        dark: const Color(0x2E7B42F6),
       ),
       alignment: Alignment.center,
       child: Icon(icon, size: size * 0.42, color: context.palette.info),

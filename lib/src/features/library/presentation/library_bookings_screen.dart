@@ -598,8 +598,8 @@ class _BookingCard extends StatelessWidget {
         ? pass.status.badgeBackgroundDark
         : pass.status.badgeBackground;
     final accentInk = context.adaptive(
-      light: const Color(0xFF6D357F),
-      dark: const Color(0xFFD8A5E8),
+      light: const Color(0xFF7A12C4),
+      dark: const Color(0xFFD9A5F7),
     );
     final dangerInk = context.adaptive(
       light: const Color(0xFFB71C1C),
@@ -803,7 +803,7 @@ class _BookingCard extends StatelessWidget {
                               child: FilledButton.icon(
                                 onPressed: onShowQr,
                                 style: FilledButton.styleFrom(
-                                  backgroundColor: const Color(0xFF6D357F),
+                                  backgroundColor: const Color(0xFF7A12C4),
                                   minimumSize: const Size(0, 46),
                                 ),
                                 icon: const Icon(Icons.qr_code_2, size: 18),

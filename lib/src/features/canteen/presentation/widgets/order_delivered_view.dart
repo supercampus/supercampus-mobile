@@ -159,7 +159,7 @@ class OrderDeliveredView extends StatelessWidget {
                         Text(
                           '${line.quantity}×',
                           style: const TextStyle(
-                            color: Color(0xFF93C5FD),
+                            color: Color(0xFFB57BFF),
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),

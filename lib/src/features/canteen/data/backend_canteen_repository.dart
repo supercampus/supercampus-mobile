@@ -8,9 +8,13 @@ import '../../authentication/data/auth_repository.dart';
 import 'canteen_models.dart';
 import 'canteen_repository.dart';
 import 'wallet_pin_repository.dart';
+import 'wallet_transaction_detail.dart';
 
 class BackendCanteenRepository
-    implements CanteenRepository, WalletPinRepository {
+    implements
+        CanteenRepository,
+        WalletPinRepository,
+        WalletTransactionDetailRepository {
   BackendCanteenRepository({
     required String baseUrl,
     String? accessToken,
@@ -721,7 +725,29 @@ class BackendCanteenRepository
       amount: amount.abs(),
       description: _text(value['description'], fallback: 'Wallet activity'),
       createdAt: _date(value['createdAt']),
+      kind: _text(value['transactionType']).isEmpty
+          ? null
+          : _text(value['transactionType']),
+      referenceId: _text(value['referenceId']).isEmpty
+          ? null
+          : _text(value['referenceId']),
     );
+  }
+
+  @override
+  Future<WalletTransactionDetail> loadWalletTransaction(
+    String transactionId,
+  ) async {
+    final response = await _authorizedRequest(
+      (headers) => _client.get(
+        _uri(
+          '/api/v1/operations/canteen/wallet-transactions/'
+          '${Uri.encodeComponent(transactionId)}',
+        ),
+        headers: headers,
+      ),
+    );
+    return WalletTransactionDetail.fromJson(_map(_data(response)['transaction']));
   }
 
   Map<String, dynamic> _data(http.Response response) {

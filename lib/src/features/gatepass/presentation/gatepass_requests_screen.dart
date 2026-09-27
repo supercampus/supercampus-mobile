@@ -200,7 +200,7 @@ class _NewPassButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: context.adaptive(
-            light: const Color(0xFFEEF0FF),
+            light: const Color(0xFFEFE8FE),
             dark: context.palette.brandSoft,
           ),
           borderRadius: BorderRadius.circular(999),

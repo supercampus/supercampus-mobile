@@ -22,10 +22,10 @@ class TimetableScheduleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF0F7FF);
-    final borderColor = isDark ? const Color(0xFF1E3A8A) : const Color(0xFFBFDBFE);
-    final primaryBlue = isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF);
+    final borderColor = isDark ? const Color(0xFF4B1FB8) : const Color(0xFFE2D5FD);
+    final primaryBlue = isDark ? const Color(0xFFB57BFF) : const Color(0xFF4B1FB8);
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF3B82F6);
+    final subColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF7B42F6);
 
     final statusTag = data.isCompletedToday
         ? 'DAY COMPLETE'
@@ -35,10 +35,10 @@ class TimetableScheduleCard extends StatelessWidget {
 
     final tagBg = data.isOngoing
         ? const Color(0xFF22C55E)
-        : (isDark ? const Color(0xFF1E3A8A) : const Color(0xFFDBEAFE));
+        : (isDark ? const Color(0xFF4B1FB8) : const Color(0xFFEFE8FE));
     final tagText = data.isOngoing
         ? Colors.white
-        : (isDark ? const Color(0xFF93C5FD) : const Color(0xFF1E40AF));
+        : (isDark ? const Color(0xFFB57BFF) : const Color(0xFF4B1FB8));
 
     return Material(
       color: Colors.transparent,
@@ -53,7 +53,7 @@ class TimetableScheduleCard extends StatelessWidget {
             border: Border.all(color: borderColor, width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF3B82F6).withValues(alpha: isDark ? 0.2 : 0.08),
+                color: const Color(0xFF7B42F6).withValues(alpha: isDark ? 0.2 : 0.08),
                 blurRadius: 12,
                 offset: const Offset(0, 3),
               ),
@@ -105,7 +105,7 @@ class TimetableScheduleCard extends StatelessWidget {
                         color: isDark ? const Color(0xFF1E293B) : Colors.white,
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: isDark ? const Color(0xFF334155) : const Color(0xFFBFDBFE),
+                          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2D5FD),
                         ),
                       ),
                       child: Text(
@@ -157,7 +157,7 @@ class TimetableScheduleCard extends StatelessWidget {
                     height: 38,
                     width: 1,
                     margin: const EdgeInsets.symmetric(horizontal: 14),
-                    color: isDark ? const Color(0xFF1E3A8A) : const Color(0xFFDBEAFE),
+                    color: isDark ? const Color(0xFF4B1FB8) : const Color(0xFFEFE8FE),
                   ),
 
                   // Subject and faculty
@@ -206,7 +206,7 @@ class TimetableScheduleCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: (i == 1 && data.isOngoing)
                             ? const Color(0xFF22C55E)
-                            : (i == 0 ? primaryBlue : (isDark ? const Color(0xFF1E293B) : const Color(0xFFDBEAFE))),
+                            : (i == 0 ? primaryBlue : (isDark ? const Color(0xFF1E293B) : const Color(0xFFEFE8FE))),
                         borderRadius: BorderRadius.circular(1.5),
                       ),
                     ),

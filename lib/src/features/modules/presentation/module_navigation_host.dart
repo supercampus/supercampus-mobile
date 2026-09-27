@@ -60,6 +60,13 @@ class ModuleNavigationHost extends StatelessWidget {
 
       return Stack(
         children: [
+          // The strip reserved for the floating bar shows the page background,
+          // not the bare (black) window behind the module.
+          Positioned.fill(
+            child: ColoredBox(
+              color: Theme.of(context).scaffoldBackgroundColor,
+            ),
+          ),
           Positioned.fill(bottom: reservedBottom, child: child),
           Positioned(
             left: 0,

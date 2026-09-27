@@ -65,8 +65,8 @@ class AdminExaminationDashboard extends StatelessWidget {
                     subtitle: 'Eligibility, Fees & Tickets',
                     icon: Icons.school_outlined,
                     color: context.adaptive(
-                      light: const Color(0xFF1565C0),
-                      dark: const Color(0xFF90CAF9),
+                      light: const Color(0xFF7B42F6),
+                      dark: const Color(0xFFB57BFF),
                     ),
                     badgeText: '1,420 Checked',
                     onTap: () => onNavigateToFeature(1),
@@ -77,8 +77,8 @@ class AdminExaminationDashboard extends StatelessWidget {
                     subtitle: 'Entry, Moderation & GPA',
                     icon: Icons.edit_note_outlined,
                     color: context.adaptive(
-                      light: const Color(0xFF6A1B9A),
-                      dark: const Color(0xFFCE93D8),
+                      light: const Color(0xFFA80052),
+                      dark: const Color(0xFFFF9CCB),
                     ),
                     badgeText: '08 Pending',
                     onTap: () => onNavigateToFeature(2),

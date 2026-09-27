@@ -37,7 +37,7 @@ class FoodOrderCard extends StatelessWidget {
         'please wait until your order is ready to serve',
       ),
       CanteenOrderStatus.ready => (
-        const Color(0xFF7C3AED), // Purple-blue gradient/color
+        const Color(0xFF9B1FE8), // Purple-blue gradient/color
         'ready to serve',
         'please wait until your order is delivered',
       ),

@@ -206,7 +206,7 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
                       : _openAssignment,
                   style: FilledButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: AppColors.brandBlue,
+                    foregroundColor: AppColors.brandPurple,
                   ),
                   icon: const Icon(Icons.add_card_rounded),
                   label: const Text('Assign fee to student'),
@@ -830,7 +830,7 @@ class _FeeAccountState extends State<_FeeAccount> {
         Text(
           'Student fee account',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppColors.brandLavender,
+            color: AppColors.brandViolet,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.2,
           ),
@@ -890,7 +890,7 @@ class _FeeAccountState extends State<_FeeAccount> {
                         : () => _payOutstanding(outstanding),
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: AppColors.brandBlue,
+                      foregroundColor: AppColors.brandPurple,
                     ),
                     icon: _paying
                         ? const SizedBox.square(

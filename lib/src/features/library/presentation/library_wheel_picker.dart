@@ -74,7 +74,7 @@ class _LibraryWheelPickerState extends State<LibraryWheelPicker> {
               decoration: BoxDecoration(
                 color: isDark
                     ? Colors.white.withValues(alpha: 0.06)
-                    : const Color(0xFF6D357F).withValues(alpha: 0.06),
+                    : const Color(0xFF7A12C4).withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -176,8 +176,8 @@ class SegmentedPill extends StatelessWidget {
     final fillColor = context.adaptive(light: Colors.white, dark: p.surfaceSunken);
     final borderColor = isActive
         ? context.adaptive(
-            light: const Color(0xFF6D357F),
-            dark: const Color(0xFFD8A5E8),
+            light: const Color(0xFF7A12C4),
+            dark: const Color(0xFFD9A5F7),
           )
         : context.adaptive(light: const Color(0xFFE1E5E3), dark: p.border);
     final textColor = p.ink;

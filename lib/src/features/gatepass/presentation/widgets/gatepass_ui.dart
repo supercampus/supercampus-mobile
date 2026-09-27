@@ -237,7 +237,7 @@ class GatepassSectionHeader extends StatelessWidget {
     ),
     GatepassPassPhase.upcoming => (
       p.brandInk,
-      context.adaptive(light: const Color(0xFFEEF0FF), dark: p.brandSoft),
+      context.adaptive(light: const Color(0xFFEFE8FE), dark: p.brandSoft),
     ),
     GatepassPassPhase.pending => (
       context.adaptive(

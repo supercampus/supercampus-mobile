@@ -744,7 +744,7 @@ class _ApprovalCard extends StatelessWidget {
       ),
       'pending_warden' => (
         'Warden review',
-        tone(const Color(0xFF3558D4), const Color(0xFFA5B4FC)),
+        tone(const Color(0xFF7B42F6), const Color(0xFFB57BFF)),
       ),
       'approved' => (
         'Approved ✓',

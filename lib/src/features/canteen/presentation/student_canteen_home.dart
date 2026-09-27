@@ -366,7 +366,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
             height: 38,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: ShapeDecoration(
-              color: context.adaptive(light: const Color(0xFFEAF1FE), dark: const Color(0x2E2563EB)),
+              color: context.adaptive(light: const Color(0xFFEFE8FE), dark: const Color(0x2E7B42F6)),
               shape: StadiumBorder(),
             ),
             child: Row(
@@ -683,7 +683,7 @@ class _LaundryStudentPanel extends StatelessWidget {
                   icon: const Icon(Icons.qr_code_scanner_rounded),
                   label: const Text('Scan laundry QR'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: const Color(0xFF7B42F6),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 12,
@@ -733,7 +733,7 @@ class _LaundryStudentPanel extends StatelessWidget {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: context.adaptive(light: const Color(0xFFEFE9FF), dark: const Color(0x2E5B22FF)),
+                          color: context.adaptive(light: const Color(0xFFEFE9FF), dark: const Color(0x2E7B42F6)),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(

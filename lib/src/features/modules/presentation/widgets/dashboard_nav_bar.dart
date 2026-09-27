@@ -151,7 +151,7 @@ class _NavItem extends StatelessWidget {
         decoration: isSelected
             ? BoxDecoration(
                 color: context.adaptive(
-                  light: const Color(0xFF1400FF).withValues(alpha: 0.1),
+                  light: const Color(0xFF7B42F6).withValues(alpha: 0.1),
                   dark: context.palette.brandSoft,
                 ),
                 borderRadius: BorderRadius.circular(12),

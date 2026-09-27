@@ -185,32 +185,34 @@ class _CardPalette {
   Color tile(int i) => tiles[i % tiles.length];
 }
 
-/// 13.png, 14.png, 15.png.
+/// 13.png, 14.png, 15.png — recoloured to the neon accent palette
+/// (purple / violet / hot pink / orange). Every fill here carries white text,
+/// so each stop keeps at least 4.5:1 against white.
 const _boardPalettes = <String, _CardPalette>{
   ModuleCatalog.attendance: _CardPalette(
-    from: Color(0xFF4200FF),
-    to: Color(0xFF9600FF),
-    hero: Color(0xFF30258D),
-    plate: Color(0xFF776CF5),
-    tiles: [Color(0xFF776CF5), Color(0xFF4200FF), Color(0xFF9600FF)],
+    from: Color(0xFF7B42F6),
+    to: Color(0xFF9B1FE8),
+    hero: Color(0xFF3D1A8C),
+    plate: Color(0xFF9D4EDD),
+    tiles: [Color(0xFF9D4EDD), Color(0xFF7B42F6), Color(0xFF9B1FE8)],
   ),
   ModuleCatalog.gatepass: _CardPalette(
-    from: Color(0xFF4200FF),
-    to: Color(0xFF9600FF),
-    hero: Color(0xFF4E35EE),
-    plate: Color(0xFF776CF5),
-    tiles: [Color(0xFF4200FF), Color(0xFF776CF5), Color(0xFF9600FF)],
+    from: Color(0xFF7B42F6),
+    to: Color(0xFFD6006B),
+    hero: Color(0xFF4E1FB0),
+    plate: Color(0xFF9D4EDD),
+    tiles: [Color(0xFF7B42F6), Color(0xFF9D4EDD), Color(0xFFD6006B)],
   ),
   ModuleCatalog.canteen: _CardPalette(
-    from: Color(0xFF4200FF),
-    to: Color(0xFF9600FF),
-    hero: Color(0xFF30258D),
-    plate: Color(0xFF776CF5),
+    from: Color(0xFFD6006B),
+    to: Color(0xFFC24700),
+    hero: Color(0xFF7A003D),
+    plate: Color(0xFFFF2D95),
     tiles: [
-      Color(0xFF776CF5),
-      Color(0xFF9600FF),
-      Color(0xFF594DE5),
-      Color(0xFF4200FF),
+      Color(0xFFD6006B),
+      Color(0xFFC24700),
+      Color(0xFF9B1FE8),
+      Color(0xFF7B42F6),
     ],
   ),
 };
@@ -220,11 +222,11 @@ const _boardPalettes = <String, _CardPalette>{
 /// A brighter brand gradient distinguishes the operational staff surface from
 /// the calmer learner streak card without leaving the SuperCampus palette.
 const _staffAttendancePalette = _CardPalette(
-  from: Color(0xFF4200FF),
-  to: Color(0xFF9600FF),
-  hero: Color(0xFF30258D),
-  plate: Color(0xFF776CF5),
-  tiles: [Color(0xFF776CF5), Color(0xFF4200FF), Color(0xFF9600FF)],
+  from: Color(0xFF7B42F6),
+  to: Color(0xFFD6006B),
+  hero: Color(0xFF3D1A8C),
+  plate: Color(0xFF9D4EDD),
+  tiles: [Color(0xFF9D4EDD), Color(0xFF7B42F6), Color(0xFFD6006B)],
 );
 
 /// Everything the boards did not draw is built from the module's own catalog
@@ -263,67 +265,67 @@ _CardPalette _paletteFromSeed(ModuleDescriptor module) {
       );
     case ModuleCatalog.examination:
       return const _CardPalette(
-        from: Color(0xFF1E40AF),
-        to: Color(0xFF3B82F6),
-        hero: Color(0xFF172554),
-        plate: Color(0xFF2563EB),
+        from: Color(0xFF5A24D6),
+        to: Color(0xFF7B42F6),
+        hero: Color(0xFF2E1270),
+        plate: Color(0xFF7B42F6),
         tiles: [
-          Color(0xFF2563EB),
-          Color(0xFF3B82F6),
-          Color(0xFF60A5FA),
-          Color(0xFF1D4ED8),
+          Color(0xFF7B42F6),
+          Color(0xFF9D4EDD),
+          Color(0xFF9B1FE8),
+          Color(0xFF5A24D6),
         ],
       );
     case ModuleCatalog.timetable:
       return const _CardPalette(
-        from: Color(0xFF5B21B6),
-        to: Color(0xFF7C3AED),
-        hero: Color(0xFF4C1D95),
-        plate: Color(0xFF6D28D9),
+        from: Color(0xFF7A12C4),
+        to: Color(0xFF9B1FE8),
+        hero: Color(0xFF4A0A80),
+        plate: Color(0xFF9D4EDD),
         tiles: [
-          Color(0xFF7C3AED),
-          Color(0xFF8B5CF6),
-          Color(0xFF6D28D9),
-          Color(0xFF5B21B6),
+          Color(0xFF9B1FE8),
+          Color(0xFF9D4EDD),
+          Color(0xFF7A12C4),
+          Color(0xFF5A24D6),
         ],
       );
     case ModuleCatalog.canteen:
       return const _CardPalette(
-        from: Color(0xFF9A3412),
-        to: Color(0xFFC2410C),
-        hero: Color(0xFF7C2D12),
-        plate: Color(0xFFEA580C),
+        from: Color(0xFFA83A00),
+        to: Color(0xFFD14900),
+        hero: Color(0xFF6E2400),
+        plate: Color(0xFFFF6F20),
         tiles: [
-          Color(0xFFEA580C),
-          Color(0xFFF97316),
-          Color(0xFFC2410C),
-          Color(0xFF9A3412),
+          Color(0xFFD14900),
+          Color(0xFFC24700),
+          Color(0xFFD6006B),
+          Color(0xFFA83A00),
         ],
       );
     case ModuleCatalog.tuitionFee:
       return const _CardPalette(
-        from: Color(0xFF0F766E),
-        to: Color(0xFF0D9488),
-        hero: Color(0xFF134E4A),
-        plate: Color(0xFF14B8A6),
+        from: Color(0xFF006B62),
+        to: Color(0xFF00857A),
+        hero: Color(0xFF00423C),
+        plate: Color(0xFF00B8A0),
         tiles: [
-          Color(0xFF0D9488),
-          Color(0xFF14B8A6),
-          Color(0xFF2DD4BF),
-          Color(0xFF0F766E),
+          Color(0xFF00857A),
+          Color(0xFF007A70),
+          Color(0xFF7B42F6),
+          Color(0xFF00574F),
         ],
       );
     case ModuleCatalog.library:
       return const _CardPalette(
-        from: Color(0xFF6B21A8),
-        to: Color(0xFF9333EA),
-        hero: Color(0xFF581C87),
-        plate: Color(0xFF7E22CE),
+        from: Color(0xFFB8005C),
+        to: Color(0xFFD6006B),
+        hero: Color(0xFF7A003D),
+        plate: Color(0xFFFF2D95),
         tiles: [
-          Color(0xFF9333EA),
-          Color(0xFFA855F7),
-          Color(0xFF7E22CE),
-          Color(0xFF6B21A8),
+          Color(0xFFD6006B),
+          Color(0xFF9B1FE8),
+          Color(0xFFC20060),
+          Color(0xFFA80052),
         ],
       );
     case ModuleCatalog.hostel:
@@ -341,28 +343,28 @@ _CardPalette _paletteFromSeed(ModuleDescriptor module) {
       );
     case ModuleCatalog.academics:
       return const _CardPalette(
-        from: Color(0xFF1E3A8A),
-        to: Color(0xFF1D4ED8),
-        hero: Color(0xFF172554),
-        plate: Color(0xFF2563EB),
+        from: Color(0xFF4B1FB8),
+        to: Color(0xFF7B42F6),
+        hero: Color(0xFF2A1260),
+        plate: Color(0xFF7B42F6),
         tiles: [
-          Color(0xFF2563EB),
-          Color(0xFF3B82F6),
-          Color(0xFF1D4ED8),
-          Color(0xFF1E3A8A),
+          Color(0xFF7B42F6),
+          Color(0xFF9D4EDD),
+          Color(0xFF5A24D6),
+          Color(0xFF4B1FB8),
         ],
       );
     default:
       return const _CardPalette(
-        from: Color(0xFF2563EB),
-        to: Color(0xFF4F46E5),
-        hero: Color(0xFF1E40AF),
-        plate: Color(0xFF3B82F6),
+        from: Color(0xFF7B42F6),
+        to: Color(0xFF9B1FE8),
+        hero: Color(0xFF4B1FB8),
+        plate: Color(0xFF9D4EDD),
         tiles: [
-          Color(0xFF3B82F6),
-          Color(0xFF4F46E5),
-          Color(0xFF6366F1),
-          Color(0xFF2563EB),
+          Color(0xFF9D4EDD),
+          Color(0xFF7B42F6),
+          Color(0xFF9B1FE8),
+          Color(0xFF5A24D6),
         ],
       );
   }
@@ -1085,7 +1087,7 @@ class _ModuleCardState extends State<_ModuleCard> {
                       child: _labelledRow(
                         label: headline.label.toLowerCase(),
                         icon: headline.icon,
-                        fill: const Color(0xFF3C3CFF),
+                        fill: const Color(0xFF7B42F6),
                       ),
                     ),
                   ),

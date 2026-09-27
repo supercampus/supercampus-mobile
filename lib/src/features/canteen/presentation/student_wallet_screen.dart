@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/transaction_result_overlay.dart';
 import '../data/canteen_models.dart';
+import 'wallet_transaction_details_screen.dart';
 
 /// Which history the wallet is showing.
 enum WalletHistory { orders, transactions }
@@ -21,12 +22,17 @@ class StudentWalletSheet extends StatefulWidget {
     required this.onTopUp,
     this.shopKey = 'mec-canteen',
     this.topUpSettings = WalletTopUpSettings.defaults,
+    this.loadTransactionDetail,
   });
 
   final CanteenStore store;
   final String shopKey;
   final Future<WalletTopUpResult> Function(double amount) onTopUp;
   final WalletTopUpSettings topUpSettings;
+
+  /// Fetches a transaction's full server record for its details page. Without
+  /// it the page shows what the wallet already holds.
+  final WalletTransactionDetailLoader? loadTransactionDetail;
 
   @override
   State<StudentWalletSheet> createState() => _StudentWalletSheetState();
@@ -36,13 +42,28 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
   WalletHistory _history = WalletHistory.orders;
 
   CanteenStore get store => widget.store;
-  
+
   List<WalletTransaction> get _transactions => store.walletTransactions
       .where((t) => t.shopKey == widget.shopKey)
       .toList();
 
   Future<WalletTopUpResult> Function(double amount) get onTopUp =>
       widget.onTopUp;
+
+  Future<void> _openTransaction(
+    BuildContext context,
+    WalletTransaction transaction,
+  ) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => WalletTransactionDetailsScreen(
+          transaction: transaction,
+          store: store,
+          loadDetail: widget.loadTransactionDetail,
+        ),
+      ),
+    );
+  }
 
   Future<void> _openTopUp(BuildContext context) async {
     final result = await showModalBottomSheet<WalletTopUpResult>(
@@ -118,9 +139,11 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
             Container(
               padding: const EdgeInsets.all(17),
               decoration: BoxDecoration(
-                color: context.adaptive(light: const Color(0xFFE7F3EC), dark: const Color(0x2E2E7D52)),
+                color: context.palette.brandSoft,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: context.adaptive(light: const Color(0xFFBBD9C6), dark: const Color(0x662E7D52))),
+                border: Border.all(
+                  color: context.palette.brand.withValues(alpha: 0.24),
+                ),
               ),
               child: Row(
                 children: [
@@ -147,9 +170,11 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
                           style: TextStyle(color: context.palette.inkSecondary),
                         ),
                         const SizedBox(height: 2),
-                          Text(
-                            formatCurrency(store.walletBalances[widget.shopKey] ?? 0.0),
-                            style: TextStyle(
+                        Text(
+                          formatCurrency(
+                            store.walletBalances[widget.shopKey] ?? 0.0,
+                          ),
+                          style: TextStyle(
                             color: context.palette.brandInk,
                             fontSize: 25,
                             fontWeight: FontWeight.w500,
@@ -188,82 +213,113 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
             const SizedBox(height: 12),
             if (_history == WalletHistory.orders)
               Flexible(child: _OrderHistory(orders: store.orders))
-              else
-                Flexible(
-                  child: _transactions.isEmpty
-                      ? const _EmptyHistory(
-                          icon: Icons.swap_vert,
-                          message: 'No transactions yet.',
-                        )
-                      : ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: _transactions.length,
-                          separatorBuilder: (_, _) =>
-                              const Divider(height: 1, indent: 56),
-                          itemBuilder: (context, index) {
-                            final transaction = _transactions[index];
-                            final isCredit =
+            else
+              Flexible(
+                child: _transactions.isEmpty
+                    ? const _EmptyHistory(
+                        icon: Icons.swap_vert,
+                        message: 'No transactions yet.',
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: _transactions.length,
+                        separatorBuilder: (_, _) =>
+                            const Divider(height: 1, indent: 56),
+                        itemBuilder: (context, index) {
+                          final transaction = _transactions[index];
+                          final isCredit =
                               transaction.type == WalletTransactionType.credit;
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 42,
-                                  height: 42,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: isCredit
-                                        ? context.adaptive(light: const Color(0xFFE7F3EC), dark: const Color(0x2E2E7D52))
-                                        : context.adaptive(light: const Color(0xFFFDEBE9), dark: const Color(0x2EC43B31)),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    isCredit
-                                        ? Icons.south_west
-                                        : Icons.north_east,
-                                    color: isCredit
-                                        ? context.palette.success
-                                        : context.adaptive(light: const Color(0xFFC43B31), dark: const Color(0xFFFCA5A5)),
-                                  ),
+                          return Material(
+                            type: MaterialType.transparency,
+                            child: InkWell(
+                              key: ValueKey(
+                                'wallet-transaction-${transaction.id}',
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () =>
+                                  _openTransaction(context, transaction),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        transaction.description,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.titleMedium,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 42,
+                                      height: 42,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: isCredit
+                                            ? context.adaptive(
+                                                light: const Color(0xFFE7F3EC),
+                                                dark: const Color(0x2E2E7D52),
+                                              )
+                                            : context.adaptive(
+                                                light: const Color(0xFFFDEBE9),
+                                                dark: const Color(0x2EC43B31),
+                                              ),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        '${formatShortDate(transaction.createdAt)} · ${formatTime(transaction.createdAt)}',
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodyMedium,
+                                      child: Icon(
+                                        isCredit
+                                            ? Icons.south_west
+                                            : Icons.north_east,
+                                        color: isCredit
+                                            ? context.palette.success
+                                            : context.adaptive(
+                                                light: const Color(0xFFC43B31),
+                                                dark: const Color(0xFFFCA5A5),
+                                              ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            transaction.description,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.titleMedium,
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            '${formatShortDate(transaction.createdAt)} · ${formatTime(transaction.createdAt)}',
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodyMedium,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      formatCurrency(
+                                        transaction.signedAmount,
+                                        signed: true,
+                                      ),
+                                      style: TextStyle(
+                                        color: isCredit
+                                            ? context.palette.success
+                                            : context.adaptive(
+                                                light: const Color(0xFFC43B31),
+                                                dark: const Color(0xFFFCA5A5),
+                                              ),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.chevron_right_rounded,
+                                      size: 20,
+                                      color: context.palette.inkTertiary,
+                                    ),
+                                  ],
                                 ),
-                                Text(
-                                  formatCurrency(
-                                    transaction.signedAmount,
-                                    signed: true,
-                                  ),
-                                  style: TextStyle(
-                                    color: isCredit
-                                        ? context.palette.success
-                                        : context.adaptive(light: const Color(0xFFC43B31), dark: const Color(0xFFFCA5A5)),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           );
                         },
@@ -314,14 +370,22 @@ class _OrderHistory extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: settled
-                      ? context.adaptive(light: const Color(0xFFF1F2F4), dark: const Color(0xFF1C1D23))
-                      : context.adaptive(light: const Color(0xFFEAF1FE), dark: const Color(0x2E2563EB)),
+                      ? context.adaptive(
+                          light: const Color(0xFFF1F2F4),
+                          dark: const Color(0xFF1C1D23),
+                        )
+                      : context.adaptive(
+                          light: const Color(0xFFEFE8FE),
+                          dark: const Color(0x2E7B42F6),
+                        ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   settled ? Icons.check_rounded : Icons.schedule,
                   size: 20,
-                  color: settled ? context.palette.inkSecondary : context.palette.info,
+                  color: settled
+                      ? context.palette.inkSecondary
+                      : context.palette.info,
                 ),
               ),
               const SizedBox(width: 12),

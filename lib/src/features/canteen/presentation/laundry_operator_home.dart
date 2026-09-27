@@ -200,11 +200,11 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 130),
         children: [
           CanteenSurface(
-            color: context.adaptive(light: const Color(0xFFEFE9FF), dark: const Color(0x2E5B22FF)),
+            color: context.adaptive(light: const Color(0xFFEFE9FF), dark: const Color(0x2E7B42F6)),
             child: Row(
               children: [
                 const CircleAvatar(
-                  backgroundColor: Color(0xFF5B22FF),
+                  backgroundColor: Color(0xFF7B42F6),
                   child: Icon(Icons.local_laundry_service, color: Colors.white),
                 ),
                 const SizedBox(width: 12),

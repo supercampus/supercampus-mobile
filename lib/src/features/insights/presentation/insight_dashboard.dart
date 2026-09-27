@@ -226,7 +226,7 @@ class _InsightCard extends StatelessWidget {
     InsightTone.positive => const Color(0xFF44D07B),
     InsightTone.caution => const Color(0xFFFFB84D),
     InsightTone.urgent => const Color(0xFFFF6B6B),
-    InsightTone.neutral => const Color(0xFF6FD3FF),
+    InsightTone.neutral => const Color(0xFF00F5D4),
   };
 }
 

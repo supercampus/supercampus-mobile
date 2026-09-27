@@ -151,7 +151,7 @@ class _StudentCanteenProfileScreenState
                         height: 38,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: context.adaptive(light: const Color(0xFFE7F0FC), dark: const Color(0x2E2563A9)),
+                          color: context.adaptive(light: const Color(0xFFEFE8FE), dark: const Color(0x2E7B42F6)),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -159,7 +159,7 @@ class _StudentCanteenProfileScreenState
                               ? Icons.storefront_outlined
                               : Icons.restaurant_outlined,
                           size: 20,
-                          color: context.adaptive(light: const Color(0xFF2563A9), dark: const Color(0xFF93C5FD)),
+                          color: context.adaptive(light: const Color(0xFF7B42F6), dark: const Color(0xFFB57BFF)),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -263,10 +263,10 @@ class _StudentCanteenProfileScreenState
                       height: 42,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: context.adaptive(light: const Color(0xFFE7F0FC), dark: const Color(0x2E2563A9)),
+                        color: context.adaptive(light: const Color(0xFFEFE8FE), dark: const Color(0x2E7B42F6)),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(setting.$1, color: context.adaptive(light: const Color(0xFF2563A9), dark: const Color(0xFF93C5FD))),
+                      child: Icon(setting.$1, color: context.adaptive(light: const Color(0xFF7B42F6), dark: const Color(0xFFB57BFF))),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

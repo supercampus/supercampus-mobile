@@ -768,10 +768,10 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                   title: 'PLATFORM ORDERS',
                   iconWidget: Icon(
                     Icons.shopping_bag_outlined,
-                    color: context.adaptive(light: const Color(0xFF4F46E5), dark: const Color(0xFFA5B4FC)),
+                    color: context.adaptive(light: const Color(0xFF7B42F6), dark: const Color(0xFFB57BFF)),
                     size: 18,
                   ),
-                  iconBg: context.adaptive(light: const Color(0xFFEEF2FF), dark: const Color(0x2E4F46E5)),
+                  iconBg: context.adaptive(light: const Color(0xFFEFE8FE), dark: const Color(0x2E7B42F6)),
                   value: _formatIndianNumber(kpi.platformOrders),
                   trendText: kpi.ordersTodayTrend,
                   trendColor: const Color(0xFF10B981),
@@ -797,10 +797,10 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                   title: 'MONTHLY REVENUE',
                   iconWidget: Icon(
                     Icons.bar_chart_rounded,
-                    color: context.adaptive(light: const Color(0xFF0891B2), dark: const Color(0xFF67E8F9)),
+                    color: context.adaptive(light: const Color(0xFF007A70), dark: const Color(0xFF67E8F9)),
                     size: 18,
                   ),
-                  iconBg: context.adaptive(light: const Color(0xFFECFEFF), dark: const Color(0x2E0891B2)),
+                  iconBg: context.adaptive(light: const Color(0xFFECFEFF), dark: const Color(0x2E007A70)),
                   value: '₹${_formatIndianNumber(kpi.monthlyRevenue)}',
                   trendText: kpi.weeklyRevenueTrend,
                   trendColor: const Color(0xFF10B981),
@@ -810,10 +810,10 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                   title: 'TODAY ONLINE PAYMENTS',
                   iconWidget: Icon(
                     Icons.credit_card_rounded,
-                    color: context.adaptive(light: const Color(0xFF9333EA), dark: const Color(0xFFD8B4FE)),
+                    color: context.adaptive(light: const Color(0xFF9B1FE8), dark: const Color(0xFFD8B4FE)),
                     size: 18,
                   ),
-                  iconBg: context.adaptive(light: const Color(0xFFFAF5FF), dark: const Color(0x2E9333EA)),
+                  iconBg: context.adaptive(light: const Color(0xFFFAF5FF), dark: const Color(0x2E9B1FE8)),
                   value: '₹${_formatIndianNumber(kpi.todayOnlinePayments)}',
                   trendText: kpi.onlinePaymentsTrend,
                   trendColor: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0)),
@@ -953,7 +953,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                                   if (adhocFlex > 0)
                                     Expanded(
                                       flex: adhocFlex,
-                                      child: Container(color: const Color(0xFF7C3AED)),
+                                      child: Container(color: const Color(0xFF9B1FE8)),
                                     ),
                                 ],
                               ),
@@ -981,7 +981,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                                 width: 10,
                                 height: 10,
                                 decoration: const BoxDecoration(
-                                  color: Color(0xFF7C3AED),
+                                  color: Color(0xFF9B1FE8),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -1019,7 +1019,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.pie_chart_outline_rounded, size: 18, color: context.adaptive(light: const Color(0xFF0284C7), dark: const Color(0xFF7DD3FC))),
+                      Icon(Icons.pie_chart_outline_rounded, size: 18, color: context.adaptive(light: const Color(0xFF007A70), dark: const Color(0xFF00F5D4))),
                       const SizedBox(width: 8),
                       const Text(
                         'Order Status Distribution',

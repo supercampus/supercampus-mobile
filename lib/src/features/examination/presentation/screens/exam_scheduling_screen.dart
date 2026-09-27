@@ -226,18 +226,18 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: context.adaptive(
-          light: Colors.blue.shade50,
-          dark: const Color(0x2E2196F3),
+          light: const Color(0xFFEFE8FE),
+          dark: const Color(0x2E7B42F6),
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.adaptive(
-            light: Colors.blue.shade200,
-            dark: const Color(0x662196F3),
+            light: const Color(0xFFC9A7FF),
+            dark: const Color(0x667B42F6),
           )),
       ),
       child: const Row(
         children: [
-          Icon(Icons.info_outline, color: Colors.blue, size: 20),
+          Icon(Icons.info_outline, color: AppColors.brandPurple, size: 20),
           SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -245,7 +245,7 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: Colors.blue,
+                color: AppColors.brandPurple,
               ),
             ),
           ),
@@ -511,14 +511,14 @@ class _ExamSchedulingScreenState extends State<ExamSchedulingScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: c['auto'] == 'Yes'
-                        ? Colors.blue.withValues(alpha: 0.1)
+                        ? AppColors.brandPurple.withValues(alpha: 0.1)
                         : Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     'Auto: ${c['auto']}',
                     style: TextStyle(
-                      color: c['auto'] == 'Yes' ? Colors.blue : Colors.orange,
+                      color: c['auto'] == 'Yes' ? AppColors.brandPurple : Colors.orange,
                       fontWeight: FontWeight.bold,
                       fontSize: 10,
                     ),

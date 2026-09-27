@@ -193,7 +193,7 @@ class _OwnerCaptainSalesAnalyticsState
                   subtitle:
                       '${totalOrders > 0 ? ((deliveredOrders / totalOrders) * 100).toInt() : 0}% fulfilled · ${formatCurrency(aov)} avg',
                   icon: Icons.check_circle_rounded,
-                  color: const Color(0xFF8B5CF6),
+                  color: const Color(0xFF9D4EDD),
                 ),
               ),
             ],

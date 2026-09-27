@@ -50,27 +50,27 @@ extension TimetableHue on Color {
 extension TimetableExamTones on BuildContext {
   /// Exam text, icons and accents (#3730A3).
   Color get examInk =>
-      adaptive(light: const Color(0xFF3730A3), dark: const Color(0xFFA5B4FC));
+      adaptive(light: const Color(0xFF4B1FB8), dark: const Color(0xFFB57BFF));
 
   /// Secondary exam icon accent (#4F46E5).
   Color get examAccent =>
-      adaptive(light: const Color(0xFF4F46E5), dark: const Color(0xFF818CF8));
+      adaptive(light: const Color(0xFF7B42F6), dark: const Color(0xFFB57BFF));
 
   /// Exam headings (#1E1B4B).
   Color get examHeading =>
-      adaptive(light: const Color(0xFF1E1B4B), dark: palette.ink);
+      adaptive(light: const Color(0xFF2A1260), dark: palette.ink);
 
   /// Exam card and chip outlines (#C7D2FE).
   Color get examLine =>
-      adaptive(light: const Color(0xFFC7D2FE), dark: const Color(0x596366F1));
+      adaptive(light: const Color(0xFFE2D5FD), dark: const Color(0x597B42F6));
 
   /// Exam category chips and dividers (#E0E7FF).
   Color get examSoft =>
-      adaptive(light: const Color(0xFFE0E7FF), dark: const Color(0x2E6366F1));
+      adaptive(light: const Color(0xFFEFE8FE), dark: const Color(0x2E7B42F6));
 
   /// Exam card fill (#F8F9FE).
   Color get examCard =>
-      adaptive(light: const Color(0xFFF8F9FE), dark: const Color(0x146366F1));
+      adaptive(light: const Color(0xFFF8F9FE), dark: const Color(0x147B42F6));
 
   /// "Alert set" green text and icons (#15803D).
   Color get examAlertGreen =>

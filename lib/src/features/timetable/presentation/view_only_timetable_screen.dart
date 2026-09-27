@@ -174,14 +174,14 @@ class _ViewOnlyTimetableScreenState extends State<ViewOnlyTimetableScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
                         color: _viewMode == 1
-                            ? const Color(0xFF3730A3)
+                            ? const Color(0xFF4B1FB8)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(9),
                         boxShadow: _viewMode == 1
                             ? [
                                 BoxShadow(
                                   color: const Color(
-                                    0xFF3730A3,
+                                    0xFF4B1FB8,
                                   ).withValues(alpha: 0.25),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),

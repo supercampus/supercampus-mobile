@@ -76,6 +76,10 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
   String _searchQuery = '';
   bool _isLoading = false;
   String? _loadError;
+
+  /// The underlying reason, shown small under the message so a failure can
+  /// be diagnosed from a screenshot.
+  String? _loadErrorDetail;
   List<CampusWallNotice> _notices = [];
 
   final List<String> _filters = const [
@@ -107,6 +111,7 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
       _loadError = null;
     });
     String? loadError;
+    String? loadErrorDetail;
     final items = <CampusWallNotice>[];
 
     // 1. Resolve repository (either passed in or constructed from session)
@@ -150,6 +155,12 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
         debugPrint('Failed to load campus announcements: $e');
         loadError =
             "Couldn't load announcements. Check your connection and try again.";
+        loadErrorDetail = switch (e) {
+          LibrarianRequestError(:final statusCode, :final message) =>
+            '$message (HTTP $statusCode)',
+          StateError(:final message) => message,
+          _ => e.toString(),
+        };
       }
     }
 
@@ -161,6 +172,7 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
         _notices = items;
         _isLoading = false;
         _loadError = loadError;
+        _loadErrorDetail = loadErrorDetail;
       });
     }
   }
@@ -356,13 +368,13 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
                               ),
                             ),
                             selected: isSelected,
-                            selectedColor: const Color(0xFF4F46E5),
+                            selectedColor: context.palette.brand,
                             backgroundColor: isDark
                                 ? const Color(0xFF222226)
                                 : Colors.white,
                             side: BorderSide(
                               color: isSelected
-                                  ? const Color(0xFF4F46E5)
+                                  ? context.palette.brand
                                   : (isDark
                                       ? const Color(0xFF2C2C30)
                                       : const Color(0xFFE5E7EB)),
@@ -422,6 +434,15 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 13, color: mutedColor),
                         ),
+                        if (_loadError != null && _loadErrorDetail != null) ...[
+                          const SizedBox(height: 8),
+                          SelectableText(
+                            _loadErrorDetail!,
+                            key: const ValueKey('campus-wall-error-detail'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 11.5, color: mutedColor),
+                          ),
+                        ],
                         if (_loadError != null) ...[
                           const SizedBox(height: 16),
                           FilledButton.icon(
@@ -713,30 +734,31 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
 
   static Color _categoryColor(String category, {bool dark = false}) {
     switch (category.toLowerCase()) {
+      // SuperCampus palette, as legible ink on white / lifted tones on dark.
       case 'circulars':
         return dark
-            ? const Color(0xFF60A5FA)
-            : const Color(0xFF2563EB); // Blue
+            ? const Color(0xFFB57BFF)
+            : const Color(0xFF7B42F6); // Electric purple
       case 'announcements':
         return dark
-            ? const Color(0xFFC4B5FD)
-            : const Color(0xFF7C3AED); // Purple
+            ? const Color(0xFFFF5CAD)
+            : const Color(0xFFD6006B); // Hot pink
       case 'examinations':
         return dark
-            ? const Color(0xFFFCA5A5)
-            : const Color(0xFFDC2626); // Red
+            ? const Color(0xFFFF5C7A)
+            : const Color(0xFFE5003D); // Magenta red
       case 'events':
         return dark
-            ? const Color(0xFFFBBF24)
-            : const Color(0xFFD97706); // Amber
+            ? const Color(0xFFFFD000)
+            : const Color(0xFFC24700); // Radiant orange
       case 'academics':
         return dark
-            ? const Color(0xFF6EE7B7)
-            : const Color(0xFF059669); // Emerald
+            ? const Color(0xFF00F5D4)
+            : const Color(0xFF007A70); // Electric cyan
       default:
         return dark
-            ? const Color(0xFFA5B4FC)
-            : const Color(0xFF4F46E5); // Indigo
+            ? const Color(0xFFC9A7FF)
+            : const Color(0xFF9B1FE8); // Vivid violet
     }
   }
 

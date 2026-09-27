@@ -5,28 +5,61 @@ import 'app_palette.dart';
 export 'app_palette.dart';
 
 abstract final class AppColors {
-  /// Canonical SuperCampus brand palette. Keep every non-semantic product
-  /// surface inside these three colours unless the product theme is changed.
-  static const brandBlue = Color(0xFF1400FF);
-  static const brandMagenta = Color(0xFFA600FF);
-  static const brandLavender = Color(0xFF776CF5);
+  /// Canonical SuperCampus accent palette ("neon on white"). Page backgrounds,
+  /// cards and surfaces stay white / near-white; only accents come from here.
+  ///
+  /// Contrast rules: [brandPurple], [brandViolet], [hotPinkInk] and
+  /// [orangeInk] are legible as text on white. [hotPink] and [electricOrange]
+  /// are fills (white text only when bold / large). [lime], [acidGreen],
+  /// [electricCyan], [neonGold] and [electricYellow] are fills or soft tints
+  /// only, always with [deepVoid] text on top — never text on white.
+  static const brandPurple = Color(0xFF7B42F6); // Pantone 2665 C
+  static const brandPink = Color(0xFFFF2D95); // Radiant Rush hot pink
+  static const brandViolet = Color(0xFF9B1FE8); // Pantone 7442 C
 
-  static const primary = brandBlue;
-  static const primaryDark = Color(0xFF0E00B8);
-  static const amber = Color(0xFFF5A623);
-  static const amberSoft = Color(0xFFFFF3D9);
-  static const accent = gateLavender;
+  /// Legacy names kept so older call sites resolve to the new palette.
+  static const brandBlue = brandPurple;
+  static const brandMagenta = brandPink;
+  static const brandLavender = brandViolet;
+
+  static const neonViolet = Color(0xFF9D4EDD);
+  static const hotPink = brandPink;
+  static const hotPinkInk = Color(0xFFD6006B); // hot pink, legible on white
+  static const hotMagenta = Color(0xFFFF007F);
+  static const electricOrange = Color(0xFFFF6F20);
+  static const orangeInk = Color(0xFFC24700); // orange, legible on white
+  static const pantoneOrange = Color(0xFFFF8200); // Pantone 1495 C
+  static const lime = Color(0xFFC6FF00); // Pantone 381 C
+  static const acidGreen = Color(0xFFA8E000);
+  static const electricCyan = Color(0xFF00F5D4);
+  static const infoInk = Color(0xFF007A70); // cyan, legible on white
+  static const neonGold = Color(0xFFFFD000);
+  static const electricYellow = Color(0xFFFFEA00);
+  static const deepVoid = Color(0xFF0A0A12);
+
+  /// Radiant Rush: hot pink -> orange -> electric yellow.
+  static const radiantRush = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [brandPink, electricOrange, electricYellow],
+  );
+
+  static const primary = brandPurple;
+  static const primaryDark = Color(0xFF5A24D6);
+  static const amber = pantoneOrange;
+  static const amberSoft = Color(0xFFFFF6D1);
+  static const accent = brandPink;
   static const success = Color(0xFF2E7D52);
   static const ink = Color(0xFF1C1C1E);
   static const muted = Color(0xFF6B7280);
 
   /// Near-white lavender blush used behind light-mode content.
   static const canvas = Color(0xFFFCF8FF);
-  static const border = Color(0xFFE3E0FF);
-  static const gateBlue = brandBlue;
-  static const gateMagenta = brandMagenta;
-  static const gateLavender = brandLavender;
-  static const gateLime = Color(0xFFDFFF00);
+  static const border = Color(0xFFE6DFFC);
+  static const gateBlue = brandPurple;
+  static const gateMagenta = hotPinkInk;
+  static const gateLavender = brandViolet;
+  static const gateLime = lime;
 
   /// The violet the student home is built on. Same two stops as the gate
   /// colours — the home screen and the QR surfaces read as one family.
@@ -35,15 +68,17 @@ abstract final class AppColors {
 
   /// The single accent the module list is built on. A wall of per-module
   /// gradients reads as noise, so hierarchy is carried by lightness inside one
-  /// violet: [moduleSoft] for a resting bar, [moduleAccent] for the open card.
+  /// purple: [moduleSoft] for a resting bar, [moduleAccent] for the open card.
   static const moduleAccent = gateLavender;
   static const moduleAccentDeep = gateBlue;
-  static const moduleSoft = Color(0xFFE8E5FF);
+
+  /// Brand purple at ~12% on white.
+  static const moduleSoft = Color(0xFFEFE8FE);
 
   static const violetGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [violet, violetBright],
+    colors: [brandPurple, brandPink],
   );
 }
 
@@ -53,7 +88,10 @@ abstract final class AppTheme {
       seedColor: AppColors.primary,
       brightness: Brightness.light,
       primary: AppColors.primary,
+      onPrimary: Colors.white,
       secondary: AppColors.accent,
+      onSecondary: Colors.white,
+      error: AppPalette.light.danger,
       surface: Colors.white,
     );
 
@@ -197,11 +235,12 @@ abstract final class AppTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       brightness: Brightness.dark,
-      // Brand blue #1400FF is too dark to read as text on near-black, so the
+      // Brand purple #7B42F6 is too dark to read as text on near-black, so the
       // scheme uses the lifted brand ink; filled buttons pair it with dark text.
       primary: p.brandInk,
       onPrimary: p.inkInverse,
-      secondary: AppColors.gateLavender,
+      secondary: const Color(0xFFFF5CAD),
+      onSecondary: p.inkInverse,
       error: p.danger,
       surface: p.surface,
       onSurface: p.ink,

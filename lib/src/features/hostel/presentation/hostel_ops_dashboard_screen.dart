@@ -87,13 +87,13 @@ class HostelOpsDashboardScreen extends StatelessWidget {
         title: 'On Approved Leave',
         value: '184',
         icon: Icons.flight_takeoff_rounded,
-        color: context.adaptive(light: Colors.blue.shade700, dark: Colors.blue.shade200),
+        color: context.adaptive(light: const Color(0xFF5A24D6), dark: const Color(0xFFC9A7FF)),
       ),
       _MetricTile(
         title: 'Available Beds',
         value: '127',
         icon: Icons.single_bed_outlined,
-        color: context.adaptive(light: Colors.teal.shade700, dark: Colors.teal.shade200),
+        color: context.adaptive(light: const Color(0xFF00665E), dark: const Color(0xFF00F5D4)),
       ),
       _MetricTile(
         title: 'Open Complaints',
@@ -169,7 +169,7 @@ class HostelOpsDashboardScreen extends StatelessWidget {
         title: 'Room Change Requests',
         count: '${store.roomChangeRequests.length} Requests',
         icon: Icons.swap_horiz_rounded,
-        color: context.adaptive(light: Colors.purple.shade800, dark: Colors.purple.shade200),
+        color: context.adaptive(light: const Color(0xFFA80052), dark: const Color(0xFFFF9CCB)),
         onTap: onOpenRoomChanges,
       ),
       _QueueRow(
@@ -183,7 +183,7 @@ class HostelOpsDashboardScreen extends StatelessWidget {
         title: 'Pending Hostel Clearances',
         count: '5 Pending',
         icon: Icons.fact_check_outlined,
-        color: context.adaptive(light: Colors.indigo.shade800, dark: Colors.indigo.shade200),
+        color: context.adaptive(light: const Color(0xFF7A12C4), dark: const Color(0xFFD9A5F7)),
         onTap: onOpenClearance,
       ),
     ];

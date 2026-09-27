@@ -261,7 +261,7 @@ class _ExamConfigurationScreenState extends State<ExamConfigurationScreen> {
                   min: 0,
                   max: 100,
                   divisions: 20,
-                  activeColor: Colors.teal,
+                  activeColor: AppColors.infoInk,
                   onChanged: (val) {
                     setState(() {
                       _externalWeightage = val;
@@ -312,7 +312,7 @@ class _ExamConfigurationScreenState extends State<ExamConfigurationScreen> {
                         min: 0,
                         max: 100,
                         divisions: 20,
-                        activeColor: Colors.teal,
+                        activeColor: AppColors.infoInk,
                         onChanged: (val) {
                           setState(() {
                             _externalWeightage = val;

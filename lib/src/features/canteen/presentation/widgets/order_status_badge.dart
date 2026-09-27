@@ -21,7 +21,7 @@ class OrderStatusGradients {
   );
 
   static const LinearGradient ready = LinearGradient(
-    colors: [Color(0xFFA855F7), Color(0xFF7C3AED)],
+    colors: [Color(0xFF9D4EDD), Color(0xFF9B1FE8)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

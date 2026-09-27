@@ -737,8 +737,8 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                     decoration: BoxDecoration(
                       color: student.residency ==
                               ManagedStudentResidency.dayScholar
-                          ? Colors.teal.withValues(alpha: 0.12)
-                          : Colors.indigo.withValues(alpha: 0.12),
+                          ? AppColors.infoInk.withValues(alpha: 0.12)
+                          : AppColors.brandViolet.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -752,8 +752,8 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                           size: 13,
                           color: student.residency ==
                                   ManagedStudentResidency.dayScholar
-                              ? context.adaptive(light: Colors.teal, dark: Colors.teal.shade200)
-                              : context.adaptive(light: Colors.indigo, dark: Colors.indigo.shade200),
+                              ? context.adaptive(light: AppColors.infoInk, dark: const Color(0xFF00F5D4))
+                              : context.adaptive(light: AppColors.brandViolet, dark: const Color(0xFFD9A5F7)),
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -763,8 +763,8 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                             fontWeight: FontWeight.w600,
                             color: student.residency ==
                                     ManagedStudentResidency.dayScholar
-                                ? context.adaptive(light: Colors.teal, dark: Colors.teal.shade200)
-                                : context.adaptive(light: Colors.indigo, dark: Colors.indigo.shade200),
+                                ? context.adaptive(light: AppColors.infoInk, dark: const Color(0xFF00F5D4))
+                                : context.adaptive(light: AppColors.brandViolet, dark: const Color(0xFFD9A5F7)),
                           ),
                         ),
                       ],
@@ -1875,7 +1875,7 @@ class _AdminMaintenancePageState extends State<_AdminMaintenancePage> {
                   decoration: BoxDecoration(
                     color: _enabled
                         ? context.adaptive(light: const Color(0xFFFFECEC), dark: const Color(0x2EE53935))
-                        : context.adaptive(light: const Color(0xFFF0ECFF), dark: const Color(0x2E776CF5)),
+                        : context.adaptive(light: const Color(0xFFF0ECFF), dark: const Color(0x2E9D4EDD)),
                     borderRadius: BorderRadius.circular(22),
                   ),
                   child: SwitchListTile.adaptive(

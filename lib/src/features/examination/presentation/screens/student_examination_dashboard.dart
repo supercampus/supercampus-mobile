@@ -54,8 +54,8 @@ class StudentExaminationDashboard extends StatelessWidget {
                     subtitle: 'Published timetable, venue and seat',
                     icon: Icons.calendar_month_outlined,
                     color: context.adaptive(
-                      light: const Color(0xFF1976D2),
-                      dark: const Color(0xFF64B5F6),
+                      light: const Color(0xFF7B42F6),
+                      dark: const Color(0xFFB57BFF),
                     ),
                     badgeText: 'Published',
                     onTap: () => onNavigateToFeature(0),
@@ -66,8 +66,8 @@ class StudentExaminationDashboard extends StatelessWidget {
                     subtitle: 'Semester marks, grade and GPA breakdown',
                     icon: Icons.grade_outlined,
                     color: context.adaptive(
-                      light: const Color(0xFF7B1FA2),
-                      dark: const Color(0xFFCE93D8),
+                      light: const Color(0xFFC20060),
+                      dark: const Color(0xFFFF9CCB),
                     ),
                     badgeText: 'Published',
                     onTap: () => onNavigateToFeature(1),

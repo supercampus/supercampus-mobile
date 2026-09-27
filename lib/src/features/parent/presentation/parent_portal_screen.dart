@@ -252,13 +252,13 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                   children: [
                     CircleAvatar(
                       radius: 30,
-                      backgroundColor: context.adaptive(light: const Color(0xFFD8F3DC), dark: const Color(0x2E2D6A4F)),
+                      backgroundColor: context.adaptive(light: const Color(0xFFEFE8FE), dark: const Color(0x2E7B42F6)),
                       child: Text(
                         _ward.name.substring(0, 1),
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w500,
-                          color: context.adaptive(light: const Color(0xFF1B4332), dark: const Color(0xFF95D5B2)),
+                          color: context.adaptive(light: const Color(0xFF2A1260), dark: const Color(0xFFC9A7FF)),
                         ),
                       ),
                     ),
@@ -319,7 +319,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                                color: context.adaptive(light: const Color(0xFF2D6A4F), dark: const Color(0xFF95D5B2)),
+                                color: context.adaptive(light: const Color(0xFF5A24D6), dark: const Color(0xFFC9A7FF)),
                               ),
                             ),
                           ],
@@ -331,7 +331,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: context.adaptive(light: const Color(0xFFF3E5F5), dark: const Color(0x2E9C27B0)),
+                          color: context.adaptive(light: const Color(0xFFFFE6F2), dark: const Color(0x2EFF2D95)),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Column(
@@ -350,7 +350,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: context.adaptive(light: const Color(0xFF6A1B9A), dark: const Color(0xFFCE93D8)),
+                                color: context.adaptive(light: const Color(0xFFA80052), dark: const Color(0xFFFF9CCB)),
                               ),
                             ),
                           ],
@@ -444,7 +444,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                         decoration: BoxDecoration(
                           color: isPending
                               ? context.adaptive(light: Colors.amber.shade100, dark: const Color(0x2EFFC107))
-                              : context.adaptive(light: const Color(0xFFD8F3DC), dark: const Color(0x2E2D6A4F)),
+                              : context.adaptive(light: const Color(0xFFEFE8FE), dark: const Color(0x2E7B42F6)),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -454,7 +454,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                             fontWeight: FontWeight.w500,
                             color: isPending
                                 ? context.adaptive(light: Colors.amber.shade900, dark: Colors.amber.shade200)
-                                : context.adaptive(light: const Color(0xFF1B4332), dark: const Color(0xFF95D5B2)),
+                                : context.adaptive(light: const Color(0xFF2A1260), dark: const Color(0xFFC9A7FF)),
                           ),
                         ),
                       ),
@@ -493,7 +493,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                       width: double.infinity,
                       child: FilledButton.icon(
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF2D6A4F),
+                          backgroundColor: const Color(0xFF5A24D6),
                         ),
                         onPressed: () => _reviewPassDialog(req),
                         icon: const Icon(Icons.rate_review_outlined),
@@ -516,7 +516,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
       children: [
         Card(
           elevation: 0,
-          color: const Color(0xFF1B4332),
+          color: const Color(0xFF2A1260),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -551,8 +551,8 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                 ),
                 FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: context.adaptive(light: Colors.white, dark: const Color(0xFFD8F3DC)),
-                    foregroundColor: const Color(0xFF1B4332),
+                    backgroundColor: context.adaptive(light: Colors.white, dark: const Color(0xFFEFE8FE)),
+                    foregroundColor: const Color(0xFF2A1260),
                   ),
                   onPressed: _topupWalletDialog,
                   child: const Text('Top Up'),
@@ -595,7 +595,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
                     )
                   : FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF1B4332),
+                        backgroundColor: const Color(0xFF2A1260),
                       ),
                       onPressed: () {
                         _repository.payFee(fee.id);

@@ -121,8 +121,8 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
       dark: p.surfaceRaised,
     );
     final accentInk = context.adaptive(
-      light: const Color(0xFF6D357F),
-      dark: const Color(0xFFD8A5E8),
+      light: const Color(0xFF7A12C4),
+      dark: const Color(0xFFD9A5F7),
     );
     final dangerInk = context.adaptive(
       light: const Color(0xFFB71C1C),
@@ -417,7 +417,7 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
                 FilledButton.icon(
                   onPressed: canBook ? _confirm : null,
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF6D357F),
+                    backgroundColor: const Color(0xFF7A12C4),
                     disabledBackgroundColor: isDark
                         ? Colors.white12
                         : const Color(0xFFE0E0E0),

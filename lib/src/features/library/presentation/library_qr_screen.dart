@@ -61,8 +61,8 @@ class LibraryQrScreen extends StatelessWidget {
                             Icon(
                               Icons.local_library_outlined,
                               color: context.adaptive(
-                                light: const Color(0xFF6D357F),
-                                dark: const Color(0xFFD8A5E8),
+                                light: const Color(0xFF7A12C4),
+                                dark: const Color(0xFFD9A5F7),
                               ),
                               size: 22,
                             ),
@@ -281,7 +281,7 @@ class LibraryQrScreen extends StatelessWidget {
                               Navigator.of(context).pop('checked_out');
                             },
                             style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFF6D357F),
+                              backgroundColor: const Color(0xFF7A12C4),
                               minimumSize: const Size(0, 50),
                             ),
                             icon: const Icon(Icons.logout, size: 18),

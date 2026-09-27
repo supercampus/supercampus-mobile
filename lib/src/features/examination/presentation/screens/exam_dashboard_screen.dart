@@ -130,7 +130,7 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
         '14',
         'Scheduled & In Progress',
         Icons.event_note,
-        Colors.blue,
+        AppColors.brandPurple,
         2,
       ),
       _KpiItem(
@@ -146,7 +146,7 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
         '03',
         'Outliers & grace marks review',
         Icons.fact_check,
-        Colors.purple,
+        AppColors.hotPinkInk,
         6,
       ),
       _KpiItem(
@@ -154,7 +154,7 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
         '1,420',
         'Eligible students verified',
         Icons.qr_code,
-        Colors.teal,
+        AppColors.infoInk,
         3,
       ),
       _KpiItem(
@@ -292,7 +292,7 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
         'Approve Autumn 2026 Semester 5 Result Release',
         'Controller Level Approval Pending',
         'Gating Action',
-        Colors.blue,
+        AppColors.brandPurple,
         9,
       ),
     ];
@@ -401,13 +401,13 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
         'Hall Tickets generated for 450 CS Students',
         '10 mins ago',
         Icons.qr_code,
-        Colors.teal,
+        AppColors.infoInk,
       ),
       _Activity(
         'Marks locked for Subject EE201 Electrical Eng',
         '45 mins ago',
         Icons.lock,
-        Colors.purple,
+        AppColors.hotPinkInk,
       ),
       _Activity(
         'Incident reported in Room 204 during CS101 exam',
@@ -419,7 +419,7 @@ class _ExamDashboardScreenState extends State<ExamDashboardScreen> {
         'Schedule Published for End-Sem Autumn 2026',
         'Yesterday',
         Icons.publish,
-        Colors.blue,
+        AppColors.brandPurple,
       ),
     ];
 

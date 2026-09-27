@@ -250,10 +250,10 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
         child: FilledButton(
           onPressed: pending == null || _busy ? null : _confirm,
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF3730A3),
+            backgroundColor: const Color(0xFF4B1FB8),
             foregroundColor: Colors.white,
             disabledBackgroundColor: context.adaptive(
-              light: const Color(0xFFC7D2FE),
+              light: const Color(0xFFE2D5FD),
               dark: _p.surfaceMuted,
             ),
             shape: RoundedRectangleBorder(
@@ -282,10 +282,10 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF3730A3) : _p.surface,
+          color: selected ? const Color(0xFF4B1FB8) : _p.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? const Color(0xFF3730A3) : context.examLine,
+            color: selected ? const Color(0xFF4B1FB8) : context.examLine,
           ),
         ),
         child: Text(
@@ -298,7 +298,7 @@ class _ExamAlertSectionState extends State<ExamAlertSection> {
                 : enabled
                 ? context.examInk
                 : context.adaptive(
-                    light: const Color(0xFFA5B4FC),
+                    light: const Color(0xFFB57BFF),
                     dark: _p.inkDisabled,
                   ),
           ),

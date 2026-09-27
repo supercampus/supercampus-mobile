@@ -71,7 +71,7 @@ class HostelStudentHomeScreen extends StatelessWidget {
       title: 'Leave & outpass',
       subtitle: 'Apply and show your QR',
       icon: Icons.logout_rounded,
-      color: const Color(0xFF2455A4),
+      color: const Color(0xFF7B42F6),
       onTap: onOpenOutpass,
     ),
     _ServiceItem(
@@ -92,7 +92,7 @@ class HostelStudentHomeScreen extends StatelessWidget {
       title: 'Room change',
       subtitle: 'Request a room or bed move',
       icon: Icons.swap_horiz_rounded,
-      color: const Color(0xFF7357C8),
+      color: const Color(0xFF9D4EDD),
       onTap: onOpenRoomChange,
     ),
     if (onOpenVisitors != null)

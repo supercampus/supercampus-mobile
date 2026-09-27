@@ -740,8 +740,13 @@ class _SupercampusAppState extends State<SupercampusApp>
     Map<String, dynamic>? brand,
     Brightness brightness,
   ) {
-    final primary = _parseBrandColor(brand?['primary']) ?? AppColors.primary;
-    final secondary = _parseBrandColor(brand?['secondary']) ?? AppColors.accent;
+    // The app's accent colours are the SuperCampus palette (purple / hot pink
+    // and friends) for every institution. A tenant's stored colours used to
+    // override it — MEC's green primary and mint surface tinted buttons and
+    // cards — so they are no longer applied; the tenant still supplies its
+    // name and logo.
+    const primary = AppColors.primary;
+    const secondary = AppColors.accent;
     final isDark = brightness == Brightness.dark;
     final palette = isDark ? AppPalette.dark : AppPalette.light;
     // Dark keeps AppTheme.dark's layered surfaces and swaps in the tenant
@@ -763,9 +768,7 @@ class _SupercampusAppState extends State<SupercampusApp>
       extensions: [palette],
       pageTransitionsTheme: AppMotion.pageTransitions,
       primaryColor: isDark ? AppPalette.liftForDark(primary) : primary,
-      cardColor: isDark
-          ? theme.cardColor
-          : (_parseBrandColor(brand?['surface']) ?? theme.cardColor),
+      cardColor: theme.cardColor,
       dividerColor: isDark ? palette.divider : primary.withValues(alpha: 0.22),
       scaffoldBackgroundColor: isDark
           ? palette.canvas
@@ -789,14 +792,6 @@ class _SupercampusAppState extends State<SupercampusApp>
         ),
       ),
     );
-  }
-
-  Color? _parseBrandColor(Object? value) {
-    if (value is! String) return null;
-    final hex = value.replaceFirst('#', '');
-    if (hex.length != 6) return null;
-    final parsed = int.tryParse('FF$hex', radix: 16);
-    return parsed == null ? null : Color(parsed);
   }
 
   Widget _buildHome() {

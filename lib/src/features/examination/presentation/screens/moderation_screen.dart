@@ -128,7 +128,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildLevelBadge('L1 — Faculty', 'Self Entry', Colors.blue),
+                _buildLevelBadge('L1 — Faculty', 'Self Entry', AppColors.brandPurple),
                 Icon(
                   Icons.arrow_forward,
                   size: 14,
@@ -137,7 +137,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
                 _buildLevelBadge(
                   'L2 — Department',
                   'HoD Review',
-                  context.adaptive(light: Colors.indigo, dark: Colors.indigo.shade200),
+                  context.adaptive(light: AppColors.brandViolet, dark: const Color(0xFFD9A5F7)),
                 ),
                 Icon(
                   Icons.arrow_forward,
@@ -147,7 +147,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
                 _buildLevelBadge(
                   'L3 — Exam Office',
                   'Compliance',
-                  Colors.purple,
+                  AppColors.hotPinkInk,
                 ),
                 Icon(
                   Icons.arrow_forward,
@@ -381,12 +381,12 @@ class _ModerationScreenState extends State<ModerationScreen> {
                           ),
                           Chip(
                             label: Text('${q['outliersCount']} Outliers'),
-                            backgroundColor: Colors.purple.withValues(
+                            backgroundColor: AppColors.hotPinkInk.withValues(
                               alpha: 0.1,
                             ),
                             side: BorderSide.none,
                             labelStyle: const TextStyle(
-                              color: Colors.purple,
+                              color: AppColors.hotPinkInk,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
@@ -446,7 +446,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
                       DataCell(
                         Text(
                           q['l2Status'],
-                          style: TextStyle(color: context.adaptive(light: Colors.indigo, dark: Colors.indigo.shade200)),
+                          style: TextStyle(color: context.adaptive(light: AppColors.brandViolet, dark: const Color(0xFFD9A5F7))),
                         ),
                       ),
                       DataCell(Text(q['l3Status'])),
@@ -459,7 +459,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
                       DataCell(
                         Chip(
                           label: Text('${q['outliersCount']} Outliers'),
-                          backgroundColor: Colors.purple.withValues(alpha: 0.1),
+                          backgroundColor: AppColors.hotPinkInk.withValues(alpha: 0.1),
                           side: BorderSide.none,
                         ),
                       ),

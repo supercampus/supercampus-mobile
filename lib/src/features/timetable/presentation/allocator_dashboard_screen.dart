@@ -619,7 +619,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.purple.shade50.tintOn(
+                                        color: const Color(0xFFFFE6F2).tintOn(
                                           context,
                                         ),
                                         borderRadius: BorderRadius.circular(6),
@@ -629,7 +629,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.purple.shade800.inkOn(
+                                          color: const Color(0xFFA80052).inkOn(
                                             context,
                                           ),
                                         ),
@@ -814,7 +814,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
               children: [
                 FilledButton.icon(
                   style: FilledButton.styleFrom(
-                    backgroundColor: Colors.purple.shade700,
+                    backgroundColor: const Color(0xFFC20060),
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () => _onGenerateTimetablePressed(context),
@@ -890,10 +890,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.purple.shade50.tintOn(context),
+              color: const Color(0xFFFFE6F2).tintOn(context),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: Colors.purple.shade300.tintOn(context, alpha: .45),
+                color: const Color(0xFFFF7AB8).tintOn(context, alpha: .45),
               ),
             ),
             child: Wrap(
@@ -906,7 +906,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   'AI Candidate Timetable Preview Ready',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.purple.inkOn(context),
+                    color: AppColors.hotPinkInk.inkOn(context),
                   ),
                 ),
                 Wrap(
@@ -1499,7 +1499,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     ),
                     Chip(
                       label: Text('${facultyList.length} Teachers'),
-                      backgroundColor: Colors.blue.shade50.tintOn(context),
+                      backgroundColor: const Color(0xFFEFE8FE).tintOn(context),
                     ),
                   ],
                 ),
@@ -1925,7 +1925,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                     timeSlot: timeSlotCtrl.text.trim(),
                     periodIndex: int.tryParse(periodCtrl.text) ?? 1,
                     isLab: isLab,
-                    categoryColorValue: isLab ? 0xFF00ACC1 : 0xFF1E88E5,
+                    categoryColorValue: isLab ? 0xFF00ACC1 : 0xFF7B42F6,
                   );
 
                   setState(() {
@@ -2010,7 +2010,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
       builder: (ctx) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.auto_awesome, color: Colors.purple.inkOn(context)),
+            Icon(Icons.auto_awesome, color: AppColors.hotPinkInk.inkOn(context)),
             SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -2035,10 +2035,10 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.purple.shade50.tintOn(context),
+                    color: const Color(0xFFFFE6F2).tintOn(context),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: Colors.purple.shade200.tintOn(context, alpha: .45),
+                      color: const Color(0xFFFF9CCB).tintOn(context, alpha: .45),
                     ),
                   ),
                   child: Column(
@@ -2064,7 +2064,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.purple.shade100.tintOn(context),
+                                color: const Color(0xFFFFD0E6).tintOn(context),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -2072,7 +2072,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.purple.shade900.inkOn(context),
+                                  color: const Color(0xFF7A003D).inkOn(context),
                                 ),
                               ),
                             ),
@@ -2106,7 +2106,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
           ),
           FilledButton.icon(
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.purple.shade700,
+              backgroundColor: const Color(0xFFC20060),
               foregroundColor: Colors.white,
             ),
             onPressed: () {
@@ -2123,7 +2123,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
                   content: Text(
                     'Random timetable generated. Review it before assigning staff.',
                   ),
-                  backgroundColor: Colors.purple,
+                  backgroundColor: AppColors.hotPinkInk,
                 ),
               );
             },
@@ -2553,7 +2553,7 @@ class _AllocatorDashboardScreenState extends State<AllocatorDashboardScreen> {
             'Odd Sem 2026-27 Initial Published Draft by Dr. Marcus Vance',
         'time': 'Yesterday',
         'icon': Icons.publish,
-        'color': Colors.blue,
+        'color': AppColors.brandPurple,
       },
     ];
 

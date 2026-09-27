@@ -206,7 +206,7 @@ class _NotificationsAlertsScreenState extends State<NotificationsAlertsScreen> {
                 leading: const Icon(
                   Icons.send_outlined,
                   size: 16,
-                  color: Colors.blue,
+                  color: AppColors.brandPurple,
                 ),
                 title: Text(
                   log['event'],

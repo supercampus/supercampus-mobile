@@ -341,7 +341,7 @@ class HostelOutpassScreen extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: context.adaptive(light: Colors.blue.shade50, dark: Colors.blue.withValues(alpha: 0.18)),
+                  color: context.adaptive(light: const Color(0xFFEFE8FE), dark: AppColors.brandPurple.withValues(alpha: 0.18)),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -349,7 +349,7 @@ class HostelOutpassScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: context.adaptive(light: Colors.blue.shade800, dark: Colors.blue.shade200),
+                    color: context.adaptive(light: const Color(0xFF4B1FB8), dark: const Color(0xFFC9A7FF)),
                   ),
                 ),
               ),

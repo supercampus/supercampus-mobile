@@ -118,8 +118,8 @@ void main() {
       await tester.pumpAndSettle();
 
       final gradient = cardGradient(tester);
-      expect(gradient.colors.first, const Color(0xFF4200FF));
-      expect(gradient.colors.last, const Color(0xFF9600FF));
+      expect(gradient.colors.first, const Color(0xFF7B42F6));
+      expect(gradient.colors.last, const Color(0xFF9B1FE8));
     });
 
     testWidgets('draws every mark grey until the standing lands', (
@@ -207,8 +207,8 @@ void main() {
       await tester.pumpAndSettle();
 
       final gradient = cardGradient(tester);
-      expect(gradient.colors.first, const Color(0xFF4200FF));
-      expect(gradient.colors.last, const Color(0xFF9600FF));
+      expect(gradient.colors.first, const Color(0xFF7B42F6));
+      expect(gradient.colors.last, const Color(0xFFD6006B));
     });
   });
 
@@ -306,8 +306,8 @@ void main() {
       expect(find.text('Tuition Fee'), findsOneWidget);
       expect(find.byKey(const ValueKey('quick-action-dues')), findsOneWidget);
       final gradient = cardGradient(tester);
-      expect(gradient.colors.first, const Color(0xFF4200FF));
-      expect(gradient.colors.last, const Color(0xFF9600FF));
+      expect(gradient.colors.first, const Color(0xFF7B42F6));
+      expect(gradient.colors.last, const Color(0xFF9B1FE8));
     });
 
     testWidgets('administration has an access-controlled action set', (

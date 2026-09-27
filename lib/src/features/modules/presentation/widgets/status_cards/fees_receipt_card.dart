@@ -21,14 +21,14 @@ class FeesReceiptCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1E1B2E) : const Color(0xFFFAF8FF);
-    final borderColor = isDark ? const Color(0xFF3B2D54) : const Color(0xFFDDD6FE);
-    final purpleAccent = isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED);
+    final borderColor = isDark ? const Color(0xFF3B2D54) : const Color(0xFFE2D5FD);
+    final purpleAccent = isDark ? const Color(0xFFB57BFF) : const Color(0xFF9B1FE8);
     final statusColor = data.isOverdue
         ? (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFEF4444))
         : purpleAccent;
     final statusBg = data.isOverdue
         ? (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2))
-        : (isDark ? const Color(0xFF2E1065) : const Color(0xFFEDE9FE));
+        : (isDark ? const Color(0xFF2A1260) : const Color(0xFFEDE9FE));
 
     final amountFormatted = data.pendingAmount.truncateToDouble() == data.pendingAmount
         ? data.pendingAmount.toInt().toString()
@@ -47,7 +47,7 @@ class FeesReceiptCard extends StatelessWidget {
             border: Border.all(color: borderColor, width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF7C3AED).withValues(alpha: isDark ? 0.2 : 0.07),
+                color: const Color(0xFF9B1FE8).withValues(alpha: isDark ? 0.2 : 0.07),
                 blurRadius: 12,
                 offset: const Offset(0, 3),
               ),
@@ -120,7 +120,7 @@ class FeesReceiptCard extends StatelessWidget {
                             fontFamily: 'Poppins',
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : const Color(0xFF1E1B4B),
+                            color: isDark ? Colors.white : const Color(0xFF2A1260),
                             height: 1.15,
                           ),
                           maxLines: 1,

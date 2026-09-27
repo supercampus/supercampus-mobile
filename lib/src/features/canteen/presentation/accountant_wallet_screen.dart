@@ -273,7 +273,7 @@ class _AccountantModuleStack extends StatelessWidget {
         subtitle: 'Find a student and add credits',
         icon: Icons.account_balance_wallet_rounded,
         from: const Color(0xFFF0EBFF),
-        to: const Color(0xFF5A2AE6),
+        to: AppColors.brandPurple,
         metric: '$studentCount',
         metricLabel: 'student wallets',
         actionLabel: 'Browse A–Z',
@@ -284,8 +284,8 @@ class _AccountantModuleStack extends StatelessWidget {
         title: 'Wallet Activity',
         subtitle: 'Review every credit transaction',
         icon: Icons.receipt_long_rounded,
-        from: const Color(0xFFEAF2FF),
-        to: const Color(0xFF315EB8),
+        from: const Color(0xFFFFE8F3),
+        to: AppColors.hotPinkInk,
         metric: '$transactionCount',
         metricLabel: 'recent transactions',
         actionLabel: 'View ledger',
@@ -965,7 +965,7 @@ class _TransactionCard extends StatelessWidget {
     color: context.palette.surface,
     child: ListTile(
       leading: CircleAvatar(
-        backgroundColor: AppColors.brandLavender,
+        backgroundColor: AppColors.brandViolet,
         foregroundColor: context.palette.brand,
         child: Icon(
           transaction.isCredit
@@ -1072,7 +1072,7 @@ class _StudentWalletAvatar extends StatelessWidget {
     final photoUrl = wallet.photoUrl?.trim();
     final fallback = Container(
       alignment: Alignment.center,
-      color: context.adaptive(light: const Color(0xFFE8E2FF), dark: const Color(0xFF231F4A)),
+      color: context.adaptive(light: const Color(0xFFEFE8FE), dark: const Color(0xFF2A1D4A)),
       child: Text(
         _initials(wallet.studentName),
         style: TextStyle(

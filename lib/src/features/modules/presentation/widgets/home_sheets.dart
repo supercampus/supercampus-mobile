@@ -1207,7 +1207,7 @@ class _ProfileIdentityCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: AppColors.brandBlue.withValues(alpha: 0.2),
+            color: AppColors.brandPurple.withValues(alpha: 0.2),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -1436,8 +1436,8 @@ class _ProfileAction extends StatelessWidget {
         ? theme.colorScheme.surfaceContainerHigh
         : AppColors.moduleSoft.withValues(alpha: 0.62);
     final actionBorder = isDark
-        ? AppColors.brandLavender.withValues(alpha: 0.4)
-        : AppColors.brandLavender.withValues(alpha: 0.2);
+        ? AppColors.brandViolet.withValues(alpha: 0.4)
+        : AppColors.brandViolet.withValues(alpha: 0.2);
 
     return Padding(
       padding: EdgeInsets.only(top: destructive ? 6 : 0, bottom: 10),

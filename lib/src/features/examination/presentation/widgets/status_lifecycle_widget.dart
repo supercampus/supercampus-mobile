@@ -4,14 +4,14 @@ import '../../../../core/theme/app_theme.dart';
 /// Canonical examination statuses as per specification Section 22.
 enum ExamCanonicalStatus {
   draft('Draft', 'Initial creation, incomplete config', Colors.grey),
-  configured('Configured', 'Parameters set, pending approval', Colors.blue),
-  approved('Approved', 'Configuration validated & approved', Colors.indigo),
-  scheduled('Scheduled', 'Dates, halls & invigilators assigned', Colors.teal),
-  published('Published', 'Schedule visible to students', Colors.cyan),
+  configured('Configured', 'Parameters set, pending approval', AppColors.brandPurple),
+  approved('Approved', 'Configuration validated & approved', AppColors.brandViolet),
+  scheduled('Scheduled', 'Dates, halls & invigilators assigned', AppColors.infoInk),
+  published('Published', 'Schedule visible to students', AppColors.infoInk),
   conducted('Conducted', 'Exam completed, scripts collected', Colors.amber),
   marksSubmitted('Marks Submitted', 'Faculty submitted marks', Colors.orange),
   verified('Verified', 'Department verification complete', Colors.deepOrange),
-  moderated('Moderated', 'Moderation rules applied', Colors.purple),
+  moderated('Moderated', 'Moderation rules applied', AppColors.hotPinkInk),
   locked('Locked', 'Marks frozen, immutable state', Colors.blueGrey),
   resultApproved(
     'Result Approved',

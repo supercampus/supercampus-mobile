@@ -329,14 +329,14 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                          colors: [Color(0xFF7B42F6), Color(0xFF9B1FE8)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF1D4ED8).withValues(alpha: 0.25),
+                            color: const Color(0xFF7B42F6).withValues(alpha: 0.25),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -1201,7 +1201,7 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
   );
 
   Widget _imagePlaceholder() => ColoredBox(
-    color: context.adaptive(light: const Color(0xFFE5ECFA), dark: const Color(0x2E1400FF)),
+    color: context.adaptive(light: const Color(0xFFEFE8FE), dark: const Color(0x2E7B42F6)),
     child: Icon(Icons.inventory_2_outlined, color: context.palette.brandInk, size: 34),
   );
 

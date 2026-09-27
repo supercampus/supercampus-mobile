@@ -108,7 +108,7 @@ class HostelRoomChangeScreen extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: context.adaptive(light: Colors.purple.shade50, dark: Colors.purple.withValues(alpha: 0.18)),
+                    color: context.adaptive(light: const Color(0xFFFFE6F2), dark: AppColors.hotPinkInk.withValues(alpha: 0.18)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -116,7 +116,7 @@ class HostelRoomChangeScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: context.adaptive(light: Colors.purple.shade800, dark: Colors.purple.shade200),
+                      color: context.adaptive(light: const Color(0xFFA80052), dark: const Color(0xFFFF9CCB)),
                     ),
                   ),
                 ),

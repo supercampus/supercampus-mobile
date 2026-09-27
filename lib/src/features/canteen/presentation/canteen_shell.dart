@@ -13,6 +13,7 @@ import '../data/canteen_models.dart';
 import '../data/canteen_repository.dart';
 import '../data/mock_canteen_repository.dart';
 import '../data/wallet_pin_repository.dart';
+import '../data/wallet_transaction_detail.dart';
 import '../../scanner/presentation/scan_qr_screen.dart';
 import 'canteen_cart_screen.dart';
 import 'canteen_captain_home.dart';
@@ -502,6 +503,11 @@ class _CanteenShellState extends State<CanteenShell> {
           onTopUp: (amount) => _topUpWallet(amount, shopKey ?? 'mec-canteen'),
           shopKey: shopKey ?? 'mec-canteen',
           topUpSettings: settings,
+          loadTransactionDetail: switch (_repository) {
+            final WalletTransactionDetailRepository repository =>
+              repository.loadWalletTransaction,
+            _ => null,
+          },
         ),
       ),
     );
