@@ -64,8 +64,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   UserSession get session => widget.session;
   EffectivePermissions get permissions => widget.permissions;
 
+  /// Whether this viewer runs the institution's Admin Desk (users, roles,
+  /// announcements). Decided by grants, never by portal family or role name:
+  /// the backend also places finance and operations staff in the admin
+  /// family, and they must not be shown controls they cannot open.
+  bool get _administers =>
+      permissions.canSeeModule(ModuleCatalog.administration);
+
   Color _roleColor() {
-    if (session.isAdmin) return const Color(0xFF7B42F6);
+    if (_administers) return const Color(0xFF7B42F6);
     if (session.isCanteenOwner) return const Color(0xFFC24700);
     if (session.isCaptain) return const Color(0xFFC24700);
     if (session.isAccountant) return const Color(0xFFD6006B);
@@ -85,7 +92,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           : color;
 
   IconData _roleIcon() {
-    if (session.isAdmin) return Icons.admin_panel_settings_rounded;
+    if (_administers) return Icons.admin_panel_settings_rounded;
     if (session.isCanteenOwner) return Icons.storefront_rounded;
     if (session.isCaptain) return Icons.restaurant_rounded;
     if (session.isAccountant) return Icons.account_balance_wallet_rounded;
@@ -98,7 +105,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   String _primaryModuleId() {
-    if (session.isAdmin) return ModuleCatalog.administration;
+    if (_administers) return ModuleCatalog.administration;
     if (session.isCanteenOwner) return ModuleCatalog.canteen;
     if (session.isCaptain) return ModuleCatalog.canteen;
     if (session.isAccountant) return ModuleCatalog.canteen;
@@ -139,7 +146,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       const SizedBox(height: 14),
                       _buildKpiBentoGrid(context),
                       const SizedBox(height: 18),
-                      if (session.isAdmin) ...[
+                      if (_administers) ...[
                         _buildCategoryFilterBar(context),
                         const SizedBox(height: 14),
                       ],
@@ -177,7 +184,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     final canScan = session.canScanQr;
                     final List<CampusNavItem>? roleItems;
                     if (!canScan) {
-                      if (session.isAdmin) {
+                      if (_administers) {
                         roleItems = [
                           CampusNavItem(
                             id: 'home',
@@ -327,7 +334,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final roleColor = _roleColor();
     final roleIcon = _roleIcon();
-    final roleBadge = session.roleBadgeText;
+    final roleBadge = session.roleBadgeTextFor(administers: _administers);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -398,7 +405,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ],
                 ),
                 Text(
-                  session.email.isNotEmpty ? session.email : session.roleDisplayTitle,
+                  session.email.isNotEmpty
+                      ? session.email
+                      : session.roleDisplayTitleFor(administers: _administers),
                   style: TextStyle(
                     fontSize: 11.5,
                     color: isDark ? const Color(0xFFA3A5B0) : const Color(0xFF64748B),
@@ -473,7 +482,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildQuickActionShortcuts(BuildContext context) {
     final List<Widget> shortcuts = [];
 
-    if (session.isAdmin) {
+    if (_administers) {
       shortcuts.addAll([
         _buildActionPill(
           icon: Icons.admin_panel_settings_rounded,
@@ -665,7 +674,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // 3. OPERATIONAL KPI CARD (Real metrics, zero fluff)
   // ===========================================================================
   Widget _buildKpiBentoGrid(BuildContext context) {
-    if (session.isAdmin) {
+    if (_administers) {
       return Row(
         children: [
           Expanded(

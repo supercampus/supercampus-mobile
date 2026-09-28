@@ -7,7 +7,7 @@ void main() {
     expect(parseStudentYear('Year II'), 2);
   });
 
-  test('students without a year join the second-year group', () {
+  test('students without a year are grouped last, not as 2nd year', () {
     final groups = groupStudentsByYear<String>(const [
       'legacy',
       'first-year',
@@ -15,12 +15,14 @@ void main() {
 
     expect(groups.map((group) => group.label), [
       '1st year students',
-      '2nd year students',
+      'Year not set',
     ]);
     expect(groups.last.students, ['legacy']);
   });
 
-  test('the removed unassigned label is never returned', () {
-    expect(studentYearLabel(null), '2nd year students');
+  test('an academic session is not a year of study', () {
+    expect(parseStudentYear('2026-27'), isNull);
+    expect(studentYearLabel(null), 'Year not set');
+    expect(studentYearLabel(2), '2nd year students');
   });
 }

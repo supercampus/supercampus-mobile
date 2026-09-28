@@ -12,6 +12,7 @@ import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
 import 'widgets/order_status_badge.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 /// A stationery-only workspace. It deliberately does not reuse the food
 /// captain labels or screens: inventory is the primary job at this counter.
@@ -90,7 +91,7 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error.toString().replaceFirst('Exception: ', '')),
+            content: Text(userFacingError(error)),
           ),
         );
       }
@@ -1277,7 +1278,7 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
         setState(() => _imageBytes = null);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error.toString().replaceFirst('Exception: ', '')),
+            content: Text(userFacingError(error)),
           ),
         );
       }

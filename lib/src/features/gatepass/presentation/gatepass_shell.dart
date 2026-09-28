@@ -15,6 +15,7 @@ import 'gatepass_access_screen.dart';
 import 'gatepass_dashboard_screen.dart';
 import 'gatepass_requests_screen.dart';
 import 'gatepass_visitors_screen.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 class GatepassShell extends StatefulWidget {
   const GatepassShell({
@@ -207,7 +208,7 @@ class _GatepassShellState extends State<GatepassShell> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      ).showSnackBar(SnackBar(content: Text(userFacingError(error))));
     }
   }
 

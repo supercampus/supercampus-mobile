@@ -299,11 +299,19 @@ class UserSession {
       isSecurityStaff;
 
   /// High-visibility short role badge text for institutional portal headers.
-  String get roleBadgeText {
-    if (isAdmin) return 'ADMIN';
+  ///
+  /// Prefer [roleBadgeTextFor] where effective permissions are known: the
+  /// portal family alone (which the backend also gives finance and operations
+  /// staff) must not label someone an administrator.
+  String get roleBadgeText => roleBadgeTextFor(administers: isAdmin);
+
+  /// Badge text when the caller has already decided — from permissions —
+  /// whether this user administers the institution.
+  String roleBadgeTextFor({required bool administers}) {
+    if (administers) return 'ADMIN';
     if (isCanteenOwner) return 'OWNER';
     if (isCaptain) return 'CAPTAIN';
-    if (isAccountant) return 'ACCOUNTS';
+    if (isAccountant) return 'ACCOUNTANT';
     if (isStationeryOwner) return 'STATIONERY';
     if (isLaundryOwner) return 'LAUNDRY';
     final roles = <String>{
@@ -321,8 +329,10 @@ class UserSession {
   }
 
   /// Human-readable descriptive title for the user's role on campus.
-  String get roleDisplayTitle {
-    if (isAdmin) return 'Central Administration & Institutional Desk';
+  String get roleDisplayTitle => roleDisplayTitleFor(administers: isAdmin);
+
+  String roleDisplayTitleFor({required bool administers}) {
+    if (administers) return 'Central Administration & Institutional Desk';
     if (isCanteenOwner) return 'Canteen & Food Court Owner Workspace';
     if (isCaptain) return 'Canteen Counter & Real-Time Orders';
     if (isAccountant) return 'Campus Accounts & Student Wallets';

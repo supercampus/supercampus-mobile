@@ -14,6 +14,7 @@ import '../../scanner/presentation/scan_qr_screen.dart';
 import '../data/librarian_repository.dart';
 import '../data/library_lending_repository.dart';
 import 'librarian_lending_screen.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 class LibrarianPortalScreen extends StatefulWidget {
   const LibrarianPortalScreen({
@@ -637,7 +638,7 @@ class _LibrarianPortalScreenState extends State<LibrarianPortalScreen> {
 
   String _stamp(DateTime value) => DateFormat('d MMM, h:mm a').format(value);
   String _message(Object error) =>
-      error.toString().replaceFirst('Bad state: ', '');
+      userFacingError(error);
   String _html(String value) => const HtmlEscape().convert(value);
   void _snack(String message, {bool error = false}) =>
       ScaffoldMessenger.of(context).showSnackBar(

@@ -113,4 +113,59 @@ void main() {
       await client.dispose();
     },
   );
+
+  test('resuming right after a poll does not read the feed again', () async {
+    var requests = 0;
+    var now = DateTime(2026, 9, 28, 10);
+    final client = RealtimeClient(
+      baseUrl: 'https://api.test',
+      accessTokenProvider: ({bool forceRefresh = false}) async => 'token',
+      preferPolling: true,
+      clock: () => now,
+      httpClient: MockClient((request) async {
+        requests++;
+        return http.Response(
+          jsonEncode({
+            'data': {'changes': []},
+          }),
+          200,
+        );
+      }),
+    );
+
+    await client.start();
+    expect(requests, 1);
+
+    // A browser fires pause/resume on every focus change.
+    for (var i = 0; i < 5; i++) {
+      await client.pause();
+      now = now.add(const Duration(seconds: 1));
+      await client.resume();
+    }
+    expect(requests, 1, reason: 'focus churn must not multiply feed reads');
+
+    await client.pause();
+    now = now.add(RealtimeClient.defaultPollInterval);
+    await client.resume();
+    expect(requests, 2);
+
+    await client.dispose();
+  });
+
+  test('failed polls back off up to the ceiling', () {
+    final client = RealtimeClient(
+      baseUrl: 'https://api.test',
+      accessTokenProvider: ({bool forceRefresh = false}) async => 'token',
+      preferPolling: true,
+      httpClient: MockClient((_) async => http.Response('', 500)),
+    );
+    expect(client.nextPollDelay(0), RealtimeClient.defaultPollInterval);
+    expect(client.nextPollDelay(1), const Duration(seconds: 30));
+    expect(client.nextPollDelay(5), RealtimeClient.defaultMaxPollInterval);
+    expect(
+      RealtimeClient.defaultPollInterval,
+      greaterThanOrEqualTo(const Duration(seconds: 10)),
+    );
+    unawaited(client.dispose());
+  });
 }

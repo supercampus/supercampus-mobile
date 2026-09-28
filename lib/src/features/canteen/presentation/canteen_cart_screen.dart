@@ -10,6 +10,7 @@ import 'widgets/menu_item_art.dart';
 import 'widgets/quantity_control.dart';
 import 'order_pickup_sheet.dart';
 import 'transaction_pin_sheet.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 class CanteenCartScreen extends StatefulWidget {
   const CanteenCartScreen({
@@ -143,7 +144,7 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
     } catch (error) {
       if (mounted) {
         final message = error is Exception
-            ? error.toString().replaceFirst('Exception: ', '')
+            ? userFacingError(error)
             : 'Order could not be placed. Try again.';
         await showTransactionResult(
           context,

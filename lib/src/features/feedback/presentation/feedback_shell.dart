@@ -8,6 +8,7 @@ import '../../authentication/data/auth_repository.dart';
 import '../data/feedback_models.dart';
 import '../data/feedback_repository.dart';
 import '../data/mock_feedback_repository.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 class FeedbackShell extends StatefulWidget {
   const FeedbackShell({
@@ -267,7 +268,7 @@ class _FeedbackCreateSheetState extends State<_FeedbackCreateSheet> {
       setState(() => _submitting = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      ).showSnackBar(SnackBar(content: Text(userFacingError(error))));
     }
   }
 

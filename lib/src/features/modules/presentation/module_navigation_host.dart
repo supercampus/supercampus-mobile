@@ -90,7 +90,8 @@ class ModuleNavigationHost extends StatelessWidget {
     final List<CampusNavItem>? roleItems;
 
     if (!canScan) {
-      if (session.isAdmin) {
+      // Grants decide the Admin Desk tab, not the portal family.
+      if (permissions.canSeeModule(ModuleCatalog.administration)) {
         roleItems = [
           CampusNavItem(
             id: 'home',

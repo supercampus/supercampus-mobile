@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../data/gatepass_models.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 class ApplyOutpassSheet extends StatefulWidget {
   const ApplyOutpassSheet({
@@ -146,7 +147,7 @@ class _ApplyOutpassSheetState extends State<ApplyOutpassSheet> {
       );
       if (mounted) Navigator.of(context).pop(request);
     } catch (error) {
-      if (mounted) setState(() => _error = error.toString());
+      if (mounted) setState(() => _error = userFacingError(error));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

@@ -89,6 +89,124 @@ void main() {
     expect(find.text('Change password'), findsOneWidget);
   });
 
+  testWidgets('offers deactivation with a confirmation, never on oneself', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: AdminUsersPage(
+          repository: repository,
+          currentUserEmail: 'admin@mec.local',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Manage Vishnu S'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deactivate user'));
+    await tester.pumpAndSettle();
+    expect(find.text('Deactivate user?'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Deactivate'));
+    await tester.pumpAndSettle();
+    final statusRequest = requests.lastWhere(
+      (request) => request.url.path.endsWith('/status'),
+    );
+    expect(statusRequest.method, 'PUT');
+    expect(
+      statusRequest.url.path,
+      endsWith('/authorization/users/user-1/status'),
+    );
+    expect(jsonDecode(statusRequest.body), {'active': false});
+
+    // The same account seen by itself has no deactivate action.
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: AdminUsersPage(
+          key: const ValueKey('self'),
+          repository: repository,
+          currentUserEmail: 'vsnu4education@gmail.com',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Manage Vishnu S'));
+    await tester.pumpAndSettle();
+    expect(find.text('Deactivate user'), findsNothing);
+  });
+
+  testWidgets('never offers a role the administrator cannot grant', (
+    tester,
+  ) async {
+    final privileged = AdminStudentRepository(
+      baseUrl: 'https://api.supercampus.ai',
+      accessTokenProvider: ({bool forceRefresh = false}) async => 'token',
+      client: MockClient((request) async {
+        if (request.url.path.endsWith('/authorization/users')) {
+          return http.Response(
+            jsonEncode({
+              'data': [
+                {
+                  'id': 'user-1',
+                  'name': 'Vishnu S',
+                  'email': 'vsnu4education@gmail.com',
+                  'active': false,
+                  'roles': [
+                    {'id': 'role-1', 'key': 'student', 'name': 'Student'},
+                  ],
+                },
+              ],
+            }),
+            200,
+          );
+        }
+        if (request.url.path.endsWith('/authorization/roles')) {
+          return http.Response(
+            jsonEncode({
+              'data': [
+                {'id': 'role-1', 'key': 'student', 'name': 'Student'},
+                {
+                  'id': 'role-9',
+                  'key': 'superadmin',
+                  'name': 'Super Administrator',
+                  'assignable': false,
+                },
+              ],
+            }),
+            200,
+          );
+        }
+        return http.Response(jsonEncode({'data': {}}), 200);
+      }),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: AdminUsersPage(repository: privileged),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Inactive accounts stay listed, marked, and can be brought back.
+    expect(find.text('Inactive'), findsOneWidget);
+    await tester.tap(find.byTooltip('Manage Vishnu S'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reactivate user'), findsOneWidget);
+    await tester.tap(find.text('Edit roles'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Super Administrator'),
+      ),
+      findsNothing,
+    );
+  });
+
   test(
     'sends role and password changes to the tenant user endpoints',
     () async {

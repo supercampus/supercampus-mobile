@@ -13,6 +13,7 @@ import 'widgets/menu_item_art.dart';
 import 'widgets/order_status_badge.dart';
 import 'widgets/owner_captain_sales_analytics.dart';
 import 'canteen_menu_item_editor_screen.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 class CanteenOwnerHome extends StatefulWidget {
   const CanteenOwnerHome({
@@ -99,7 +100,7 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error.toString().replaceFirst('Exception: ', '')),
+            content: Text(userFacingError(error)),
           ),
         );
       }
@@ -151,9 +152,13 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
               order.lines.any((line) => line.item.effectiveShopKey == shopKey),
         )
         .toList();
+    // The server's analytics span every store this account can see. The tiles
+    // sit above one store's queue, so they are recounted from that store's
+    // orders; otherwise "2 pending" shows over an empty queue.
     final scopedStore = widget.store.copyWith(
       menu: scopedMenu,
       orders: scopedOrders,
+      analytics: analyticsForOrders(scopedOrders),
     );
     final pages = [
       _OwnerOrders(
@@ -1151,4 +1156,38 @@ class _SectionTabs extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Today's figures for [orders], counted the way the server counts them:
+/// orders placed today, revenue from today's completed orders, and every
+/// order still in the queue as pending.
+@visibleForTesting
+CanteenAnalytics analyticsForOrders(
+  Iterable<CanteenOrder> orders, {
+  DateTime? now,
+}) {
+  final today = now ?? DateTime.now();
+  bool placedToday(CanteenOrder order) {
+    final created = order.createdAt.toLocal();
+    return created.year == today.year &&
+        created.month == today.month &&
+        created.day == today.day;
+  }
+
+  var ordersToday = 0;
+  var revenueToday = 0.0;
+  var pending = 0;
+  for (final order in orders) {
+    if (order.status.isActive) pending++;
+    if (!placedToday(order)) continue;
+    ordersToday++;
+    if (order.status == CanteenOrderStatus.completed) {
+      revenueToday += order.total;
+    }
+  }
+  return CanteenAnalytics(
+    ordersToday: ordersToday,
+    revenueToday: revenueToday,
+    pending: pending,
+  );
 }

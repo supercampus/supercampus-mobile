@@ -30,6 +30,7 @@ Future<AnnouncementDraft?> showAnnouncementComposer(
   String submitLabel = 'Save announcement',
   String? supportingText,
   bool coverImageOnly = false,
+  AnnouncementDraft? initial,
 }) {
   return showModalBottomSheet<AnnouncementDraft>(
     context: context,
@@ -40,6 +41,7 @@ Future<AnnouncementDraft?> showAnnouncementComposer(
       submitLabel: submitLabel,
       supportingText: supportingText,
       coverImageOnly: coverImageOnly,
+      initial: initial,
     ),
   );
 }
@@ -50,12 +52,16 @@ class _AnnouncementComposer extends StatefulWidget {
     required this.submitLabel,
     this.supportingText,
     this.coverImageOnly = false,
+    this.initial,
   });
 
   final String heading;
   final String submitLabel;
   final String? supportingText;
   final bool coverImageOnly;
+
+  /// Prefills the form when editing an existing announcement.
+  final AnnouncementDraft? initial;
 
   @override
   State<_AnnouncementComposer> createState() => _AnnouncementComposerState();
@@ -70,6 +76,20 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
   String? _attachmentName;
   String? _attachmentUrl;
   bool _uploading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial;
+    if (initial != null) {
+      _type.text = initial.type;
+      _title.text = initial.title;
+      _description.text = initial.description;
+      _date = initial.date;
+      _attachmentName = initial.attachmentName;
+      _attachmentUrl = initial.attachmentUrl;
+    }
+  }
 
   @override
   void dispose() {

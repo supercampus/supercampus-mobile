@@ -9,6 +9,7 @@ import '../../../library/data/librarian_repository.dart';
 import '../../data/announcement_events.dart';
 import 'dashboard_nav_bar.dart';
 import 'student_reports_page.dart';
+import '../../../../core/utils/user_facing_error.dart';
 
 class CampusWallNotice {
   const CampusWallNotice({
@@ -159,7 +160,7 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
           LibrarianRequestError(:final statusCode, :final message) =>
             '$message (HTTP $statusCode)',
           StateError(:final message) => message,
-          _ => e.toString(),
+          _ => userFacingError(e),
         };
       }
     }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/library_repository.dart';
 import 'library_wheel_picker.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 /// Bottom sheet for booking a new library slot with segmented wheel pickers.
 class LibraryBookSlotSheet extends StatefulWidget {
@@ -103,7 +104,7 @@ class _LibraryBookSlotSheetState extends State<LibraryBookSlotSheet> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error.toString().replaceFirst('Bad state: ', '')),
+          content: Text(userFacingError(error)),
         ),
       );
     }

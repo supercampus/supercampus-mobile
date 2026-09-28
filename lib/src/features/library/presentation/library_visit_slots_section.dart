@@ -5,6 +5,7 @@ import '../data/library_models.dart';
 import '../data/library_repository.dart';
 import 'library_book_slot_sheet.dart';
 import 'library_qr_screen.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 /// The complete student visit-slot workflow embedded in the Library page.
 class LibraryVisitSlotsSection extends StatefulWidget {
@@ -53,7 +54,7 @@ class _LibraryVisitSlotsSectionState extends State<LibraryVisitSlotsSection> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = error.toString().replaceFirst('Bad state: ', '');
+        _error = userFacingError(error);
       });
     }
   }
@@ -101,7 +102,7 @@ class _LibraryVisitSlotsSectionState extends State<LibraryVisitSlotsSection> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error.toString().replaceFirst('Bad state: ', '')),
+          content: Text(userFacingError(error)),
         ),
       );
     }

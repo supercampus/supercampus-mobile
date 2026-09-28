@@ -9,6 +9,7 @@ import '../../authentication/data/auth_repository.dart';
 import '../../library/data/librarian_repository.dart';
 import '../../modules/presentation/today_glance.dart';
 import '../data/backend_canteen_repository.dart';
+import '../data/canteen_events.dart';
 import '../data/canteen_models.dart';
 import '../data/canteen_repository.dart';
 import '../data/mock_canteen_repository.dart';
@@ -115,6 +116,9 @@ class _CanteenShellState extends State<CanteenShell> {
           _store?.canManage == true &&
           _store!.assignedShopKeys.contains('mec-laundry'));
 
+  /// Whether the launching 'wallet' action has already opened the wallet.
+  bool _walletActionHandled = false;
+
   @override
   void initState() {
     super.initState();
@@ -133,11 +137,9 @@ class _CanteenShellState extends State<CanteenShell> {
         ? true
         : widget.initialStaffMode == CanteenStaffMode.work;
     _loadStore();
+    canteenRevision.addListener(_onCanteenChanged);
     if (widget.repository != null) {
-      _refreshTimer = Timer.periodic(
-        const Duration(seconds: 3),
-        (_) => _loadStore(silent: true),
-      );
+      _refreshTimer = Timer.periodic(_fallbackRefresh, (_) => _loadStore(silent: true));
     }
   }
 
@@ -147,6 +149,10 @@ class _CanteenShellState extends State<CanteenShell> {
     if (widget.initialStaffMode != null &&
         widget.initialStaffMode != oldWidget.initialStaffMode) {
       _ownerWorkMode = widget.initialStaffMode == CanteenStaffMode.work;
+    }
+    if (widget.initialAction != oldWidget.initialAction) {
+      // A new launching action may open the wallet again, once.
+      _walletActionHandled = false;
     }
     if (widget.initialAction != null &&
         oldWidget.initialAction != widget.initialAction) {
@@ -170,16 +176,23 @@ class _CanteenShellState extends State<CanteenShell> {
           );
       _loadStore(silent: _store != null);
       if (widget.repository != null) {
-        _refreshTimer = Timer.periodic(
-          const Duration(seconds: 3),
-          (_) => _loadStore(silent: true),
-        );
+        _refreshTimer = Timer.periodic(_fallbackRefresh, (_) => _loadStore(silent: true));
       }
     }
   }
 
+  /// Realtime `canteen.*` events reload the store as soon as something
+  /// changes; this timer is only the fallback. It used to be the sole source
+  /// and ran every 3 s, which was hundreds of requests per session.
+  static const _fallbackRefresh = Duration(seconds: 15);
+
+  void _onCanteenChanged() {
+    if (mounted) _loadStore(silent: true);
+  }
+
   @override
   void dispose() {
+    canteenRevision.removeListener(_onCanteenChanged);
     _refreshTimer?.cancel();
     super.dispose();
   }
@@ -192,7 +205,12 @@ class _CanteenShellState extends State<CanteenShell> {
       final store = await _repository.loadStore();
       if (mounted) {
         setState(() => _store = store);
-        if (widget.initialAction == 'wallet') {
+        // Open the wallet once for the action that launched the module. The
+        // store also reloads silently in the background; replaying the action
+        // on every reload stacked a new wallet sheet each time, so closing it
+        // appeared to do nothing.
+        if (widget.initialAction == 'wallet' && !_walletActionHandled) {
+          _walletActionHandled = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _openWallet(context);
           });

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../scanner/presentation/scan_qr_screen.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 class CanteenScannerScreen extends StatelessWidget {
   const CanteenScannerScreen({super.key, required this.onScan});
@@ -20,7 +21,7 @@ class CanteenScannerScreen extends StatelessWidget {
       );
     } catch (error) {
       if (!context.mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text(error.toString())));
+      messenger.showSnackBar(SnackBar(content: Text(userFacingError(error))));
     }
   }
 

@@ -12,6 +12,7 @@ import '../../library/data/librarian_repository.dart';
 import '../../maintenance/data/maintenance_repository.dart';
 import '../data/admin_student_repository.dart';
 import 'admin_users_page.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 /// Focused admin surface for student management and pending approvals.
 class AdminPortalShell extends StatefulWidget {
@@ -22,6 +23,7 @@ class AdminPortalShell extends StatefulWidget {
     required this.maintenanceRepository,
     this.initialSection = 0,
     this.onExitModule,
+    this.currentUserEmail,
   });
 
   final LibrarianRepository libraryRepository;
@@ -29,6 +31,9 @@ class AdminPortalShell extends StatefulWidget {
   final MaintenanceRepository maintenanceRepository;
   final int initialSection;
   final VoidCallback? onExitModule;
+
+  /// The signed-in administrator; their own account cannot be deactivated.
+  final String? currentUserEmail;
 
   @override
   State<AdminPortalShell> createState() => _AdminPortalShellState();
@@ -46,7 +51,10 @@ class _AdminPortalShellState extends State<AdminPortalShell> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      AdminUsersPage(repository: widget.studentRepository),
+      AdminUsersPage(
+        repository: widget.studentRepository,
+        currentUserEmail: widget.currentUserEmail,
+      ),
       _AdminStudentsPage(repository: widget.studentRepository),
       _AdminAnnouncementsPage(repository: widget.libraryRepository),
       _AdminMaintenancePage(repository: widget.maintenanceRepository),
@@ -124,7 +132,7 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
       final students = await widget.repository.listStudents();
       if (mounted) setState(() => _students = students);
     } catch (error) {
-      if (mounted) setState(() => _error = error.toString());
+      if (mounted) setState(() => _error = userFacingError(error));
     }
   }
 
@@ -153,7 +161,7 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
+        ).showSnackBar(SnackBar(content: Text(userFacingError(error))));
       }
     } finally {
       if (mounted) setState(() => _savingId = null);
@@ -228,7 +236,7 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
             if (mounted) {
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(SnackBar(content: Text(error.toString())));
+              ).showSnackBar(SnackBar(content: Text(userFacingError(error))));
             }
           }
         },
@@ -244,11 +252,13 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
     final query = _query.trim().toLowerCase();
     final allStudents = _students ?? const <ManagedStudent>[];
 
+    // 0 stands for "Year not set" in the filter; it sorts last. Unknown years
+    // used to be counted as 2nd year.
     final distinctYears = allStudents
-        .map((s) => s.yearOfStudy ?? 2)
+        .map((s) => s.yearOfStudy ?? 0)
         .toSet()
         .toList()
-      ..sort();
+      ..sort((a, b) => a == 0 ? 1 : b == 0 ? -1 : a.compareTo(b));
 
     final distinctDepartments = allStudents
         .map((s) => s.department.trim())
@@ -261,7 +271,7 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
       if (_residencyFilter != null && student.residency != _residencyFilter) {
         return false;
       }
-      if (_selectedYear != null && (student.yearOfStudy ?? 2) != _selectedYear) {
+      if (_selectedYear != null && (student.yearOfStudy ?? 0) != _selectedYear) {
         return false;
       }
       if (_selectedDepartment != null &&
@@ -356,7 +366,7 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
                               DropdownMenuItem<int?>(
                                 value: year,
                                 child: Text(
-                                  '${studentYearLabel(year)} (${allStudents.where((s) => (s.yearOfStudy ?? 2) == year).length})',
+                                  '${studentYearLabel(year == 0 ? null : year)} (${allStudents.where((s) => (s.yearOfStudy ?? 0) == year).length})',
                                   style: const TextStyle(fontSize: 13),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1116,7 +1126,9 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
   late final TextEditingController _guardianName;
   late final TextEditingController _guardianPhone;
   late final TextEditingController _guardianRelationship;
-  late int _year;
+  /// Null when the record has no year yet; the admin must choose one rather
+  /// than the form silently saving "2nd year".
+  int? _year;
   late String _status;
   late ManagedStudentResidency _residency;
   late String _selectedProgramme;
@@ -1140,7 +1152,7 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
     _guardianRelationship = TextEditingController(
       text: student.guardianRelationship,
     );
-    _year = student.yearOfStudy ?? 2;
+    _year = student.yearOfStudy;
     const statuses = {
       'active',
       'inactive',
@@ -1224,7 +1236,7 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
       );
       if (mounted) Navigator.of(context).pop(saved);
     } catch (error) {
-      if (mounted) setState(() => _error = error.toString());
+      if (mounted) setState(() => _error = userFacingError(error));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1378,6 +1390,9 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
                     child: DropdownButtonFormField<int>(
                       initialValue: _year,
                       decoration: const InputDecoration(labelText: 'Year'),
+                      hint: const Text('Select year'),
+                      validator: (value) =>
+                          value == null ? 'Choose the year of study' : null,
                       items: [
                         for (var year = 1; year <= 6; year++)
                           DropdownMenuItem(
@@ -1563,12 +1578,12 @@ class _AdminAnnouncementsPageState extends State<_AdminAnnouncementsPage> {
   }
 
   Future<void> _decide(LibraryAnnouncement item, String decision) async {
-    await widget.repository.decideAnnouncement(item.id, decision);
-    await _load();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Library announcement $decision.')),
-      );
+    try {
+      await widget.repository.decideAnnouncement(item.id, decision);
+      await _load();
+      _snack('Library announcement $decision.');
+    } catch (error) {
+      _snack(userFacingError(error));
     }
   }
 
@@ -1601,8 +1616,86 @@ class _AdminAnnouncementsPageState extends State<_AdminAnnouncementsPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
+        ).showSnackBar(SnackBar(content: Text(userFacingError(error))));
       }
+    }
+  }
+
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _editAnnouncement(LibraryAnnouncement item) async {
+    final draft = await showAnnouncementComposer(
+      context,
+      heading: 'Edit announcement',
+      submitLabel: 'Save changes',
+      supportingText: 'Changes appear on the Campus Wall right away.',
+      coverImageOnly: false,
+      initial: AnnouncementDraft(
+        type: item.type,
+        date: item.announcementDate,
+        title: item.title,
+        description: item.message,
+        attachmentName: item.attachmentName,
+        attachmentUrl: item.attachmentUrl,
+      ),
+    );
+    if (draft == null) return;
+    try {
+      await widget.repository.updateAnnouncement(
+        item.id,
+        type: draft.type,
+        announcementDate: draft.date,
+        title: draft.title,
+        message: draft.description,
+        bookTitle: item.bookTitle,
+        author: item.author,
+        attachmentName: draft.attachmentName,
+        attachmentUrl: draft.attachmentUrl,
+      );
+      await _load();
+      _snack('Announcement updated.');
+    } catch (error) {
+      _snack(userFacingError(error));
+    }
+  }
+
+  Future<void> _deleteAnnouncement(LibraryAnnouncement item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete announcement?'),
+        content: Text(
+          '"${item.title}" will be removed from the Campus Wall for everyone. '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await widget.repository.deleteAnnouncement(item.id);
+      await _load();
+      _snack('Announcement deleted.');
+    } catch (error) {
+      _snack(userFacingError(error));
     }
   }
 
@@ -1689,32 +1782,52 @@ class _AdminAnnouncementsPageState extends State<_AdminAnnouncementsPage> {
                     '${item.attachmentName != null ? ' · 📎 ${item.attachmentName}' : ''}',
                   ),
                   isThreeLine: true,
-                  trailing: item.status == 'pending'
-                      ? PopupMenuButton<String>(
-                          onSelected: (value) => _decide(item, value),
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(
-                              value: 'approved',
-                              child: Text('Approve'),
-                            ),
-                            PopupMenuItem(
-                              value: 'rejected',
-                              child: Text('Reject'),
-                            ),
-                          ],
-                        )
-                      : hasAttachment
-                      ? IconButton(
-                          tooltip: hasPdf ? 'Open PDF circular' : 'Open attachment',
-                          icon: Icon(
-                            hasPdf
-                                ? Icons.picture_as_pdf_outlined
-                                : Icons.open_in_new,
-                            color: hasPdf ? context.palette.danger : null,
+                  trailing: PopupMenuButton<String>(
+                    tooltip: 'Manage ${item.title}',
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'approved' || 'rejected':
+                          _decide(item, value);
+                        case 'open':
+                          _openAttachment(item.attachmentUrl!);
+                        case 'edit':
+                          _editAnnouncement(item);
+                        case 'delete':
+                          _deleteAnnouncement(item);
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      if (item.status == 'pending') ...const [
+                        PopupMenuItem(
+                          value: 'approved',
+                          child: Text('Approve'),
+                        ),
+                        PopupMenuItem(
+                          value: 'rejected',
+                          child: Text('Reject'),
+                        ),
+                        PopupMenuDivider(),
+                      ],
+                      if (hasAttachment)
+                        PopupMenuItem(
+                          value: 'open',
+                          child: Text(
+                            hasPdf ? 'Open PDF circular' : 'Open attachment',
                           ),
-                          onPressed: () => _openAttachment(item.attachmentUrl!),
-                        )
-                      : null,
+                        ),
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Text('Edit'),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text(
+                          'Delete',
+                          style: TextStyle(color: context.palette.danger),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
@@ -1780,7 +1893,7 @@ class _AdminMaintenancePageState extends State<_AdminMaintenancePage> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = error.toString();
+          _error = userFacingError(error);
         });
       }
     }
@@ -1853,7 +1966,7 @@ class _AdminMaintenancePageState extends State<_AdminMaintenancePage> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = error.toString();
+          _error = userFacingError(error);
         });
       }
     }

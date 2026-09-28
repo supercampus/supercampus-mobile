@@ -9,6 +9,7 @@ import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
 import 'widgets/order_status_badge.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 /// Order-only workspace for staff assigned to a canteen as captains.
 ///
@@ -59,7 +60,7 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error.toString().replaceFirst('Exception: ', '')),
+            content: Text(userFacingError(error)),
           ),
         );
       }

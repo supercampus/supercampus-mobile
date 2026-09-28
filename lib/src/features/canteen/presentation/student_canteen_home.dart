@@ -14,6 +14,7 @@ import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
 import 'widgets/quantity_control.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 class StudentCanteenHome extends StatefulWidget {
   const StudentCanteenHome({
@@ -645,7 +646,7 @@ class _LaundryStudentPanel extends StatelessWidget {
           context,
           result: TransactionResult.failure,
           title: 'Payment unsuccessful',
-          message: '$error'.replaceFirst('Exception: ', ''),
+          message: userFacingError(error),
           amount: formatCurrency(charge.total),
         );
       }

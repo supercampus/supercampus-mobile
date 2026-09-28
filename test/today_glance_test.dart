@@ -115,6 +115,24 @@ void main() {
       expect(dayShapeFor(captain), DayShape.counter);
     });
 
+    test('institution reach without attendance reads asks for no rolls', () {
+      // The accountant bundle: institution-scoped exam eligibility makes them
+      // academic staff, but the sessions endpoint would answer 403.
+      final accountant = grants(
+        {
+          'examination.eligibility.read',
+          'fees.records.read',
+          'students.directory.read',
+          'canteen.wallet.read',
+        },
+        scopes: {
+          'examination.eligibility.read': PermissionScope.institution,
+          ModuleCatalog.examination: PermissionScope.institution,
+        },
+      );
+      expect(dayShapeFor(accountant), DayShape.none);
+    });
+
     test('no grants worth a today shows nothing at all', () {
       expect(dayShapeFor(grants({'documents.records.read'})), DayShape.none);
     });

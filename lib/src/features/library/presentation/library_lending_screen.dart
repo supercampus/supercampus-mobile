@@ -7,6 +7,7 @@ import '../../authentication/data/auth_repository.dart';
 import '../data/library_lending_repository.dart';
 import '../data/library_repository.dart';
 import 'library_visit_slots_section.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 class LibraryLendingScreen extends StatefulWidget {
   const LibraryLendingScreen({
@@ -343,7 +344,7 @@ class _LibraryLendingScreenState extends State<LibraryLendingScreen> {
   }
 
   String _message(Object error) =>
-      error.toString().replaceFirst('Bad state: ', '');
+      userFacingError(error);
   String _money(double value) => value == value.roundToDouble()
       ? '${value.toInt()}'
       : value.toStringAsFixed(2);

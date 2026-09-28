@@ -57,10 +57,12 @@ import 'features/academics/presentation/academic_management_shell.dart';
 import 'features/academics/presentation/student_academics_shell.dart';
 import 'features/academics/data/student_assessments_repository.dart';
 import 'features/vendor_management/presentation/vendor_management_shell.dart';
+import 'core/utils/user_facing_error.dart';
 import 'features/vendor_management/data/vendor_repository.dart';
 import 'features/admin_portal/presentation/admin_portal_shell.dart';
 import 'features/admin_portal/data/admin_student_repository.dart';
 import 'features/modules/data/announcement_events.dart';
+import 'features/canteen/data/canteen_events.dart';
 import 'features/modules/data/glance_source.dart';
 import 'features/modules/data/student_activity_source.dart';
 import 'features/modules/presentation/module_dashboard_screen.dart';
@@ -433,6 +435,9 @@ class _SupercampusAppState extends State<SupercampusApp>
       announcementRevision.value++;
       return;
     }
+    // Store data changed: open canteen/stationery/laundry screens reload now.
+    // Order events also create notifications, handled below.
+    if (isCanteenEvent(event.type)) canteenRevision.value++;
     // The operations API publishes completed rolls as
     // `attendance.session.published_to_hod`. Keep the legacy event name for
     // compatibility with older deployments, but refresh on the canonical
@@ -919,9 +924,14 @@ class _SupercampusAppState extends State<SupercampusApp>
     );
   }
 
+  // One instance for the app's lifetime: the dashboard reloads the inbox
+  // whenever it receives a different repository, so building a fresh one on
+  // every rebuild fired a notifications request per frame.
+  NotificationRepository? _notificationRepositoryInstance;
+
   NotificationRepository? _notificationRepository() {
     if (_useMockData || _resolvedBackendBaseUrl.isEmpty) return null;
-    return NotificationRepository(
+    return _notificationRepositoryInstance ??= NotificationRepository(
       baseUrl: _resolvedBackendBaseUrl,
       accessTokenProvider: _provideAccessToken,
     );
@@ -961,7 +971,7 @@ class _SupercampusAppState extends State<SupercampusApp>
       } catch (error) {
         messenger?.showSnackBar(
           SnackBar(
-            content: Text('$error'),
+            content: Text(userFacingError(error)),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -989,7 +999,7 @@ class _SupercampusAppState extends State<SupercampusApp>
           if (!mounted) return;
           messenger?.showSnackBar(
             SnackBar(
-              content: Text(error.toString().replaceFirst('Exception: ', '')),
+              content: Text(userFacingError(error)),
               behavior: SnackBarBehavior.floating,
               backgroundColor: errorColor,
             ),
@@ -1190,6 +1200,7 @@ class _SupercampusAppState extends State<SupercampusApp>
           _ => 0,
         },
         onExitModule: exit,
+        currentUserEmail: session.email,
         maintenanceRepository: _maintenanceRepository,
         libraryRepository: LibrarianRepository(
           baseUrl: _resolvedBackendBaseUrl,
@@ -1229,7 +1240,12 @@ class _SupercampusAppState extends State<SupercampusApp>
               ),
       ),
       ModuleCatalog.canteen =>
-        isAccountant
+        // Accountants always, and admins holding the wallet top-up grant when
+        // they open the "Student Wallets" card, land on the recharge desk.
+        isAccountant ||
+                (isPortalAdmin &&
+                    _openModuleAction == 'wallet' &&
+                    (_permissions?.can('canteen', 'wallet', 'top_up') ?? false))
             ? AccountantWalletScreen(
                 repository: BackendAccountantWalletRepository(
                   baseUrl: _resolvedBackendBaseUrl,
@@ -1237,6 +1253,8 @@ class _SupercampusAppState extends State<SupercampusApp>
                 ),
                 accountantName: session.displayName,
                 onSignOut: _signOut,
+                onExitModule: exit,
+                initialAction: _openModuleAction,
               )
             : CanteenShell(
                 session: session,
@@ -1353,6 +1371,8 @@ class _SupercampusAppState extends State<SupercampusApp>
       ModuleCatalog.vendorManagement => VendorManagementShell(
         session: session,
         onExitModule: exit,
+        permissions: _permissions,
+        institutionName: _permissions?.tenantBrand['collegeName']?.toString(),
         repository: _useMockData
             ? null
             : BackendVendorRepository(

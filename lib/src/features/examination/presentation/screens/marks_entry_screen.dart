@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/data/auth_repository.dart';
 import '../../data/marks_batch_repository.dart';
+import '../../../../core/utils/user_facing_error.dart';
 
 enum _BatchStage { draft, advisor, hod, principal, published, returned }
 
@@ -107,7 +108,7 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
       }
     } on Exception catch (error) {
       if (mounted) {
-        _snack(error.toString().replaceFirst('Exception: ', ''), error: true);
+        _snack(userFacingError(error), error: true);
       }
     }
   }
@@ -337,7 +338,7 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
         );
         await _loadBatches();
       } on Exception catch (error) {
-        _snack(error.toString().replaceFirst('Exception: ', ''), error: true);
+        _snack(userFacingError(error), error: true);
         return;
       }
     }
@@ -358,7 +359,7 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
         await widget.repository!.review(batch['id'].toString(), 'approve');
         await _loadBatches();
       } on Exception catch (error) {
-        _snack(error.toString().replaceFirst('Exception: ', ''), error: true);
+        _snack(userFacingError(error), error: true);
         return;
       }
     }
@@ -384,7 +385,7 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
         );
         await _loadBatches();
       } on Exception catch (error) {
-        _snack(error.toString().replaceFirst('Exception: ', ''), error: true);
+        _snack(userFacingError(error), error: true);
         return;
       }
     }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart' hide Border;
 import '../data/admin_student_repository.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 const studentAccountHeaders = [
   'Name',
@@ -136,7 +137,7 @@ class _StudentAccountImportPageState extends State<StudentAccountImportPage> {
         ),
       );
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = userFacingError(e));
     }
   }
 
@@ -169,7 +170,7 @@ class _StudentAccountImportPageState extends State<StudentAccountImportPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = userFacingError(e);
           _rows = [];
         });
       }

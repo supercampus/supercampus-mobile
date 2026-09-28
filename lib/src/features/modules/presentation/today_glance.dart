@@ -59,11 +59,23 @@ DayShape dayShapeFor(EffectivePermissions permissions) {
   }
 
   return switch (academicPresentationFor(permissions)) {
-    AcademicPresentation.staff => DayShape.oversight,
+    // Oversight is a roll-review card, read from the attendance sessions
+    // endpoint. Institution-wide staff reach through another module (an
+    // accountant's exam eligibility, say) does not make that readable, and
+    // asking anyway is a 403 on every return home.
+    AcademicPresentation.staff =>
+      readsAttendanceSessions(permissions) ? DayShape.oversight : DayShape.none,
     AcademicPresentation.learner => DayShape.learner,
     AcademicPresentation.none => DayShape.none,
   };
 }
+
+/// Mirrors the grants `GET /operations/attendance/sessions` accepts.
+bool readsAttendanceSessions(EffectivePermissions permissions) =>
+    permissions.can(ModuleCatalog.attendance, 'roster', ModuleActions.read) ||
+    permissions.can(ModuleCatalog.attendance, 'records', ModuleActions.read) ||
+    permissions.can(ModuleCatalog.attendance, 'reports', ModuleActions.create) ||
+    permissions.can(ModuleCatalog.attendance, 'reports', ModuleActions.publish);
 
 /// The heading each shape carries. Direct and specific, because a name that
 /// says what is under it is what makes a screen predictable.

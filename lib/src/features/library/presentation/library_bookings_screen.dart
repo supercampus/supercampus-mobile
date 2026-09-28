@@ -8,6 +8,7 @@ import '../data/library_models.dart';
 import '../data/library_repository.dart';
 import 'library_book_slot_sheet.dart';
 import 'library_qr_screen.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 /// Landing page showing active library bookings with expandable detail cards.
 class LibraryBookingsScreen extends StatefulWidget {
@@ -47,7 +48,7 @@ class _LibraryBookingsScreenState extends State<LibraryBookingsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error.toString().replaceFirst('Bad state: ', '')),
+          content: Text(userFacingError(error)),
         ),
       );
     }

@@ -224,12 +224,10 @@ class SalesDashboardData {
       kpi: json['platformOrders'] != null
           ? SalesKpiMetrics.fromJson(json)
           : SalesKpiMetrics.defaults,
-      orderStatusDistribution: distJson is Map
-          ? distJson.map((k, v) => MapEntry(k.toString(), (v as num).toDouble()))
-          : {'completed': 99.0, 'cancelled': 1.0, 'pending': 0.5},
-      paymentSplit: splitJson is Map
-          ? splitJson.map((k, v) => MapEntry(k.toString(), (v as num).toDouble()))
-          : {'ordersPercentage': 96.0, 'adhocPercentage': 4.0},
+      // Missing figures read as zero. Inventing a split here would put numbers
+      // on screen that nothing measured.
+      orderStatusDistribution: _numberMap(distJson),
+      paymentSplit: _numberMap(splitJson),
       shops: shopsJson is List
           ? shopsJson
               .whereType<Map>()
@@ -245,6 +243,13 @@ class SalesDashboardData {
     );
   }
 
+  static Map<String, double> _numberMap(Object? json) => {
+    if (json is Map)
+      for (final entry in json.entries)
+        if (entry.value is num)
+          entry.key.toString(): (entry.value as num).toDouble(),
+  };
+
   static const defaults = SalesDashboardData(
     kpi: SalesKpiMetrics.defaults,
     orderStatusDistribution: {'completed': 0.0, 'cancelled': 0.0, 'pending': 0.0},
@@ -252,4 +257,81 @@ class SalesDashboardData {
     shops: [],
     recentOrders: [],
   );
+}
+
+/// Orders bucketed by outcome: completed, still in the queue, or ended without
+/// a sale (cancelled or rejected).
+///
+/// Current servers send the counts; older ones sent only percentages of all
+/// orders, so each bucket is then estimated from its own percentage, never by
+/// subtracting one bucket from the total (which files every open order under
+/// "cancelled").
+class OrderStatusBreakdown {
+  const OrderStatusBreakdown({
+    required this.completed,
+    required this.active,
+    required this.cancelled,
+  });
+
+  factory OrderStatusBreakdown.of(SalesDashboardData data) {
+    final dist = data.orderStatusDistribution;
+    final hasCounts =
+        dist.containsKey('completedCount') ||
+        dist.containsKey('pendingCount') ||
+        dist.containsKey('cancelledCount');
+    if (hasCounts) {
+      return OrderStatusBreakdown(
+        completed: (dist['completedCount'] ?? 0).round(),
+        active: (dist['pendingCount'] ?? 0).round(),
+        cancelled: (dist['cancelledCount'] ?? 0).round(),
+      );
+    }
+    final total = data.kpi.platformOrders;
+    int estimate(String key) =>
+        (total * ((dist[key] ?? 0) / 100.0)).round().clamp(0, total);
+    return OrderStatusBreakdown(
+      completed: estimate('completed'),
+      active: estimate('pending'),
+      cancelled: estimate('cancelled'),
+    );
+  }
+
+  final int completed;
+  final int active;
+  final int cancelled;
+
+  int get total => completed + active + cancelled;
+
+  /// Whole-number share of [count]; 0 when there are no orders at all.
+  int percentOf(int count) => total <= 0 ? 0 : ((count / total) * 100).round();
+}
+
+/// Completed sales split between food counters and the QR-paid stores.
+class RevenueSplit {
+  const RevenueSplit({required this.food, required this.other});
+
+  factory RevenueSplit.of(SalesDashboardData data) {
+    final split = data.paymentSplit;
+    if (split.containsKey('ordersRevenue') ||
+        split.containsKey('adhocRevenue')) {
+      return RevenueSplit(
+        food: split['ordersRevenue'] ?? 0,
+        other: split['adhocRevenue'] ?? 0,
+      );
+    }
+    final revenue = data.kpi.revenue;
+    return RevenueSplit(
+      food: revenue * ((split['ordersPercentage'] ?? 0) / 100.0),
+      other: revenue * ((split['adhocPercentage'] ?? 0) / 100.0),
+    );
+  }
+
+  final double food;
+  final double other;
+
+  double get total => food + other;
+  bool get isEmpty => total <= 0;
+
+  int get foodPercent => isEmpty ? 0 : ((food / total) * 100).round();
+  int get otherPercent => isEmpty ? 0 : 100 - foodPercent;
 }

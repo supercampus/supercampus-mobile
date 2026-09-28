@@ -24,10 +24,31 @@ class RealtimeClient {
     required RealtimeAccessTokenProvider accessTokenProvider,
     http.Client? httpClient,
     bool? preferPolling,
+    this.pollInterval = defaultPollInterval,
+    this.maxPollInterval = defaultMaxPollInterval,
+    DateTime Function()? clock,
   }) : _baseUri = _normalizeBaseUri(baseUrl),
        _accessTokenProvider = accessTokenProvider,
        _httpClient = httpClient ?? http.Client(),
-       _preferPolling = preferPolling ?? kIsWeb;
+       _preferPolling = preferPolling ?? kIsWeb,
+       _clock = clock ?? DateTime.now;
+
+  /// How often the change feed is read when polling replaces the socket.
+  /// Events are invalidation hints, so a few seconds of latency is fine; a
+  /// one-to-two-second cadence was hundreds of requests per session.
+  static const defaultPollInterval = Duration(seconds: 15);
+
+  /// Ceiling for the back-off after failed polls.
+  static const defaultMaxPollInterval = Duration(seconds: 60);
+
+  final Duration pollInterval;
+  final Duration maxPollInterval;
+  final DateTime Function() _clock;
+
+  /// When the last change-feed read started; paces reads across
+  /// pause/resume, which browsers fire on every focus change.
+  DateTime? _lastPollAt;
+  int _pollFailures = 0;
 
   final Uri _baseUri;
   final RealtimeAccessTokenProvider _accessTokenProvider;
@@ -85,6 +106,18 @@ class RealtimeClient {
     }
 
     if (_preferPolling) {
+      // Resuming (a browser tab regaining focus, say) must not read the feed
+      // again if it was read moments ago: wait out the rest of the interval.
+      final last = _lastPollAt;
+      if (last != null) {
+        final elapsed = _clock().difference(last);
+        if (elapsed < pollInterval) {
+          if (_pollTimer?.isActive != true) {
+            _schedulePoll(delay: pollInterval - elapsed);
+          }
+          return;
+        }
+      }
       await _pollChanges();
       return;
     }
@@ -139,6 +172,9 @@ class RealtimeClient {
     }
 
     _connecting = true;
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    _lastPollAt = _clock();
     _setStatus(RealtimeConnectionStatus.connecting);
     final generation = ++_generation;
     try {
@@ -181,9 +217,11 @@ class RealtimeClient {
         }
       }
       _attempt = 0;
+      _pollFailures = 0;
       _setStatus(RealtimeConnectionStatus.connected);
     } catch (_) {
       if (_isCurrent(generation)) {
+        _pollFailures++;
         _setStatus(RealtimeConnectionStatus.disconnected);
       }
     } finally {
@@ -212,13 +250,22 @@ class RealtimeClient {
       )
       .timeout(const Duration(seconds: 10));
 
-  void _schedulePoll() {
+  void _schedulePoll({Duration? delay}) {
     if (_disposed || !_shouldRun || !_foreground || !_preferPolling) return;
     _pollTimer?.cancel();
     _pollTimer = Timer(
-      const Duration(seconds: 5),
+      delay ?? nextPollDelay(_pollFailures),
       () => unawaited(_pollChanges()),
     );
+  }
+
+  /// The wait before the next read: the base interval, doubled for each
+  /// consecutive failure up to [maxPollInterval].
+  @visibleForTesting
+  Duration nextPollDelay(int failures) {
+    if (failures <= 0) return pollInterval;
+    final scaled = pollInterval * (1 << min(failures, 4));
+    return scaled > maxPollInterval ? maxPollInterval : scaled;
   }
 
   Future<String> _requestRealtimeToken(String accessToken) async {

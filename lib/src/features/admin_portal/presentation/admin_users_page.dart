@@ -5,11 +5,20 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/students/student_year.dart';
 import '../data/admin_student_repository.dart';
 import 'student_account_import_page.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 class AdminUsersPage extends StatefulWidget {
-  const AdminUsersPage({super.key, required this.repository});
+  const AdminUsersPage({
+    super.key,
+    required this.repository,
+    this.currentUserEmail,
+  });
 
   final AdminStudentRepository repository;
+
+  /// The signed-in administrator, who is never offered "Deactivate" on their
+  /// own account (the server refuses it as well).
+  final String? currentUserEmail;
 
   @override
   State<AdminUsersPage> createState() => _AdminUsersPageState();
@@ -41,7 +50,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
         _roles = values[1] as List<ManagedUserRole>;
       });
     } catch (error) {
-      if (mounted) setState(() => _error = error.toString());
+      if (mounted) setState(() => _error = userFacingError(error));
     }
   }
 
@@ -61,7 +70,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       await _load();
       if (mounted) _showMessage('${user.name}\'s roles were updated.');
     } catch (error) {
-      if (mounted) _showMessage(error.toString(), error: true);
+      if (mounted) _showMessage(userFacingError(error), error: true);
     }
   }
 
@@ -79,7 +88,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
         );
       }
     } catch (error) {
-      if (mounted) _showMessage(error.toString(), error: true);
+      if (mounted) _showMessage(userFacingError(error), error: true);
     }
   }
 
@@ -100,7 +109,61 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
         _showMessage('${updated.name}\'s profile was updated.');
       }
     } catch (error) {
-      if (mounted) _showMessage(error.toString(), error: true);
+      if (mounted) _showMessage(userFacingError(error), error: true);
+    }
+  }
+
+  bool _isSelf(ManagedTenantUser user) {
+    final me = widget.currentUserEmail?.trim().toLowerCase();
+    return me != null && me.isNotEmpty && user.email.trim().toLowerCase() == me;
+  }
+
+  Future<void> _setActive(ManagedTenantUser user, bool active) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(active ? 'Reactivate user?' : 'Deactivate user?'),
+        content: Text(
+          active
+              ? '${user.name} will be able to sign in again with their '
+                    'existing password.'
+              : '${user.name} will be signed out on every device and '
+                    "won't be able to sign in until you reactivate the "
+                    'account.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: active
+                ? null
+                : FilledButton.styleFrom(
+                    backgroundColor: Theme.of(dialogContext).colorScheme.error,
+                    foregroundColor: Theme.of(
+                      dialogContext,
+                    ).colorScheme.onError,
+                  ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(active ? 'Reactivate' : 'Deactivate'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await widget.repository.setUserActive(user.id, active: active);
+      await _load();
+      if (mounted) {
+        _showMessage(
+          active
+              ? '${user.name} was reactivated.'
+              : '${user.name} was deactivated and signed out.',
+        );
+      }
+    } catch (error) {
+      if (mounted) _showMessage(userFacingError(error), error: true);
     }
   }
 
@@ -146,7 +209,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       await _load();
       if (mounted) _showMessage('${request.name}\'s account was created.');
     } catch (error) {
-      if (mounted) _showMessage(error.toString(), error: true);
+      if (mounted) _showMessage(userFacingError(error), error: true);
     }
   }
 
@@ -334,6 +397,9 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                                     onEditUser: () => _editUser(user),
                                     onEditRoles: () => _editRoles(user),
                                     onChangePassword: () => _changePassword(user),
+                                    onSetActive: _isSelf(user)
+                                        ? null
+                                        : (active) => _setActive(user, active),
                                   ),
                                 ),
                             ],
@@ -352,6 +418,9 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                                   onEditUser: () => _editUser(user),
                                   onEditRoles: () => _editRoles(user),
                                   onChangePassword: () => _changePassword(user),
+                                  onSetActive: _isSelf(user)
+                                      ? null
+                                      : (active) => _setActive(user, active),
                                 ),
                               ),
                           ],
@@ -401,6 +470,7 @@ class _UserCard extends StatelessWidget {
     required this.onEditUser,
     required this.onEditRoles,
     required this.onChangePassword,
+    this.onSetActive,
   });
 
   final ManagedTenantUser user;
@@ -409,11 +479,15 @@ class _UserCard extends StatelessWidget {
   final VoidCallback onEditRoles;
   final VoidCallback onChangePassword;
 
+  /// Deactivate (false) or reactivate (true); null hides the action, as on
+  /// the administrator's own account.
+  final ValueChanged<bool>? onSetActive;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    return Card(
+    final card = Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -456,12 +530,14 @@ class _UserCard extends StatelessWidget {
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
-                      children: user.roles.isEmpty
-                          ? [const _RoleChip(label: 'No role assigned')]
-                          : [
-                              for (final role in user.roles)
-                                _RoleChip(label: role.name),
-                            ],
+                      children: [
+                        if (!user.active) const _InactiveChip(),
+                        if (user.roles.isEmpty)
+                          const _RoleChip(label: 'No role assigned')
+                        else
+                          for (final role in user.roles)
+                            _RoleChip(label: role.name),
+                      ],
                     ),
                   ],
                 ),
@@ -473,9 +549,11 @@ class _UserCard extends StatelessWidget {
                   if (value == 'edit') onEditUser();
                   if (value == 'roles') onEditRoles();
                   if (value == 'password') onChangePassword();
+                  if (value == 'deactivate') onSetActive?.call(false);
+                  if (value == 'reactivate') onSetActive?.call(true);
                 },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
                     value: 'profile',
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -483,7 +561,7 @@ class _UserCard extends StatelessWidget {
                       title: Text('View profile'),
                     ),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'edit',
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -491,7 +569,7 @@ class _UserCard extends StatelessWidget {
                       title: Text('Edit user'),
                     ),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'roles',
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -499,7 +577,7 @@ class _UserCard extends StatelessWidget {
                       title: Text('Edit roles'),
                     ),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'password',
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -507,6 +585,33 @@ class _UserCard extends StatelessWidget {
                       title: Text('Change password'),
                     ),
                   ),
+                  if (onSetActive != null) ...[
+                    const PopupMenuDivider(),
+                    if (user.active)
+                      PopupMenuItem(
+                        value: 'deactivate',
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.person_off_outlined,
+                            color: context.palette.danger,
+                          ),
+                          title: Text(
+                            'Deactivate user',
+                            style: TextStyle(color: context.palette.danger),
+                          ),
+                        ),
+                      )
+                    else
+                      const PopupMenuItem(
+                        value: 'reactivate',
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(Icons.person_add_alt_outlined),
+                          title: Text('Reactivate user'),
+                        ),
+                      ),
+                  ],
                 ],
               ),
             ],
@@ -514,7 +619,30 @@ class _UserCard extends StatelessWidget {
         ),
       ),
     );
+    // An inactive account reads as set aside, not gone: dimmed, still usable.
+    return user.active ? card : Opacity(opacity: 0.62, child: card);
   }
+}
+
+class _InactiveChip extends StatelessWidget {
+  const _InactiveChip();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+    decoration: BoxDecoration(
+      color: context.palette.danger.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(99),
+    ),
+    child: Text(
+      'Inactive',
+      style: TextStyle(
+        color: context.palette.danger,
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+  );
 }
 
 class _UserProfileSheet extends StatelessWidget {
@@ -734,19 +862,33 @@ class _RoleDialogState extends State<_RoleDialog> {
               child: Column(
                 children: [
                   for (final role in widget.roles)
-                    CheckboxListTile(
-                      value: _selected.contains(role.id),
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(role.name),
-                      subtitle: Text(role.key),
-                      onChanged: (checked) => setState(() {
-                        if (checked == true) {
-                          _selected.add(role.id);
-                        } else {
-                          _selected.remove(role.id);
-                        }
-                      }),
-                    ),
+                    // Roles above this administrator's authority are never
+                    // offered. One the user already holds stays visible but
+                    // locked, so saving other changes does not drop it.
+                    if (role.assignable)
+                      CheckboxListTile(
+                        value: _selected.contains(role.id),
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(role.name),
+                        subtitle: Text(role.key),
+                        onChanged: (checked) => setState(() {
+                          if (checked == true) {
+                            _selected.add(role.id);
+                          } else {
+                            _selected.remove(role.id);
+                          }
+                        }),
+                      )
+                    else if (widget.initialSelection.contains(role.id))
+                      CheckboxListTile(
+                        value: true,
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(role.name),
+                        subtitle: const Text(
+                          'Managed by a platform administrator',
+                        ),
+                        onChanged: null,
+                      ),
                 ],
               ),
             ),
@@ -1033,7 +1175,7 @@ class _CreateUserDialogState extends State<_CreateUserDialog> {
                 style: Theme.of(context).textTheme.titleSmall,
               ),
             ),
-            for (final role in widget.roles)
+            for (final role in widget.roles.where((role) => role.assignable))
               CheckboxListTile(
                 value: _selected.contains(role.id),
                 contentPadding: EdgeInsets.zero,

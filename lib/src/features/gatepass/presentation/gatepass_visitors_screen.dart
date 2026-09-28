@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../data/gatepass_models.dart';
 import 'widgets/gatepass_ui.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 class GatepassVisitorsScreen extends StatelessWidget {
   const GatepassVisitorsScreen({
@@ -302,7 +303,7 @@ class _InviteVisitorSheetState extends State<InviteVisitorSheet> {
       );
       if (mounted) Navigator.of(context).pop(invitation);
     } catch (error) {
-      if (mounted) setState(() => _error = error.toString());
+      if (mounted) setState(() => _error = userFacingError(error));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

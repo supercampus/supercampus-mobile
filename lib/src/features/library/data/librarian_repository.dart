@@ -233,6 +233,52 @@ class LibrarianRepository {
     return _announcement(_data(response));
   }
 
+  /// Replaces an announcement's content. Needs the approve grant; walls
+  /// refresh through the `announcement.updated` event.
+  Future<LibraryAnnouncement> updateAnnouncement(
+    String id, {
+    required String type,
+    required DateTime announcementDate,
+    required String title,
+    required String message,
+    String? bookTitle,
+    String? author,
+    String? attachmentName,
+    String? attachmentUrl,
+  }) async {
+    final response = await _request(
+      (headers) => _client.put(
+        _uri('/api/v1/operations/library/announcements/$id'),
+        headers: headers,
+        body: jsonEncode({
+          'announcementType': type.trim(),
+          'announcementDate': _dateOnly(announcementDate),
+          'title': title,
+          'message': message,
+          if (bookTitle?.trim().isNotEmpty == true) 'bookTitle': bookTitle,
+          if (author?.trim().isNotEmpty == true) 'author': author,
+          if (attachmentName?.trim().isNotEmpty == true)
+            'attachmentName': attachmentName,
+          if (attachmentUrl?.trim().isNotEmpty == true)
+            'attachmentUrl': attachmentUrl,
+        }),
+      ),
+      json: true,
+    );
+    return _announcement(_data(response));
+  }
+
+  /// Removes an announcement from every wall. Needs the approve grant.
+  Future<void> deleteAnnouncement(String id) async {
+    final response = await _request(
+      (headers) => _client.delete(
+        _uri('/api/v1/operations/library/announcements/$id'),
+        headers: headers,
+      ),
+    );
+    _data(response);
+  }
+
   Future<void> decideAnnouncement(
     String id,
     String decision, {

@@ -6,6 +6,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 class LaundryOperatorHome extends StatefulWidget {
   const LaundryOperatorHome({
@@ -95,7 +96,7 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('$error')));
+        ).showSnackBar(SnackBar(content: Text(userFacingError(error))));
       }
     }
   }
@@ -170,7 +171,7 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('$error')));
+        ).showSnackBar(SnackBar(content: Text(userFacingError(error))));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);

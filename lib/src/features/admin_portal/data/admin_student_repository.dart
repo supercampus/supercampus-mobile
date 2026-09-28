@@ -95,12 +95,27 @@ class ManagedUserRole {
     required this.key,
     required this.name,
     this.active = true,
+    this.assignable = true,
   });
 
   final String id;
   final String key;
   final String name;
   final bool active;
+
+  /// Whether the signed-in administrator may grant or remove this role. The
+  /// server enforces it; the app only uses it to not offer the choice.
+  final bool assignable;
+}
+
+/// Roles above a tenant administrator's authority: the platform's own and
+/// the tenant super administrator. Used when a server does not say which
+/// roles are assignable.
+bool isPrivilegedRoleKey(String key) {
+  final normalized = key.trim().toLowerCase();
+  return normalized == 'superadmin' ||
+      normalized == 'super_admin' ||
+      normalized.startsWith('platform_');
 }
 
 class ManagedTenantUser {
@@ -210,6 +225,20 @@ class AdminStudentRepository {
         ),
         headers: {...headers, 'content-type': 'application/json'},
         body: jsonEncode({'roleIds': roleIds}),
+      ),
+    );
+  }
+
+  /// Deactivates (signing the user out everywhere) or reactivates an account
+  /// in this tenant.
+  Future<void> setUserActive(String userId, {required bool active}) async {
+    await _request(
+      (headers) => _client.put(
+        _baseUri.resolve(
+          '/api/v1/authorization/users/${Uri.encodeComponent(userId)}/status',
+        ),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({'active': active}),
       ),
     );
   }
@@ -342,12 +371,19 @@ class AdminStudentRepository {
     photoUrl: value['photoUrl']?.toString(),
   );
 
-  ManagedUserRole _role(Map<String, dynamic> value) => ManagedUserRole(
-    id: value['id']?.toString() ?? '',
-    key: value['key']?.toString() ?? '',
-    name: value['name']?.toString() ?? 'Role',
-    active: value['active'] != false,
-  );
+  ManagedUserRole _role(Map<String, dynamic> value) {
+    final key = value['key']?.toString() ?? '';
+    return ManagedUserRole(
+      id: value['id']?.toString() ?? '',
+      key: key,
+      name: value['name']?.toString() ?? 'Role',
+      active: value['active'] != false,
+      assignable: switch (value['assignable']) {
+        final bool flag => flag,
+        _ => !isPrivilegedRoleKey(key),
+      },
+    );
+  }
 
   ManagedTenantUser _user(Map<String, dynamic> value) => ManagedTenantUser(
     id: value['id']?.toString() ?? '',

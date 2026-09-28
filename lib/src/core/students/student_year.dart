@@ -42,15 +42,18 @@ int? parseStudentYear(Object? value) {
   return null;
 }
 
+/// A student whose year of study is unknown is labelled as such. It used to be
+/// treated as 2nd year, which put every student with an unparseable year
+/// (for example an academic session like "2026-27") under "2nd year".
 String studentYearLabel(int? year) {
-  final assignedYear = year ?? 2;
-  final suffix = switch (assignedYear) {
+  if (year == null) return 'Year not set';
+  final suffix = switch (year) {
     1 => 'st',
     2 => 'nd',
     3 => 'rd',
     _ => 'th',
   };
-  return '$assignedYear$suffix year students';
+  return '$year$suffix year students';
 }
 
 List<StudentYearGroup<T>> groupStudentsByYear<T>(
@@ -59,7 +62,7 @@ List<StudentYearGroup<T>> groupStudentsByYear<T>(
 ) {
   final grouped = <int?, List<T>>{};
   for (final student in students) {
-    final year = yearOf(student) ?? 2;
+    final year = yearOf(student);
     grouped.putIfAbsent(year, () => <T>[]).add(student);
   }
   final years = grouped.keys.toList()

@@ -7,6 +7,7 @@ import '../../../core/utils/image_picker_helper.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 /// Full-page editor screen to add or update a canteen menu item.
 ///
@@ -135,7 +136,7 @@ class _CanteenMenuItemEditorScreenState
         setState(() => _imageBytes = null);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error.toString().replaceFirst('Exception: ', '')),
+            content: Text(userFacingError(error)),
           ),
         );
       }

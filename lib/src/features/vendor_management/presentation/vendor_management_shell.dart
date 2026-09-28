@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/access/effective_permissions.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/mock_vendor_repository.dart';
 import '../data/vendor_models.dart';
 import '../data/vendor_repository.dart';
+import '../../../core/utils/user_facing_error.dart';
 
 /// Vendor brown used as an icon or text colour: exact in light, lifted in dark.
 Color _brownInk(BuildContext context) => context.adaptive(
@@ -20,11 +22,20 @@ class VendorManagementShell extends StatefulWidget {
     required this.session,
     required this.onExitModule,
     this.repository,
+    this.permissions,
+    this.institutionName,
   });
 
   final UserSession session;
   final VoidCallback onExitModule;
   final VendorRepository? repository;
+
+  /// The viewer's grants. Decides which tabs exist; null (demo builds and
+  /// tests without a backend) shows everything.
+  final EffectivePermissions? permissions;
+
+  /// The tenant this dashboard describes, e.g. "Madras Engineering College".
+  final String? institutionName;
 
   @override
   State<VendorManagementShell> createState() => _VendorManagementShellState();
@@ -35,13 +46,44 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
   List<VendorShop>? _shops;
   SalesDashboardData? _dashboardData;
   String? _error;
+  String? _dashboardError;
   bool _loading = true;
   String _query = '';
   String _selectedCategory = 'all';
   String _selectedPeriod = 'Today';
   final Set<String> _togglingIds = {};
 
-  var _tab = 0;
+  var _tab = _VendorTab.dashboard;
+
+  EffectivePermissions? get _grants => widget.permissions;
+
+  /// The shop register (`/canteen/shops`) is vendor administration.
+  bool get _canReadShops =>
+      _grants == null ||
+      _grants!.can('vendor_management', 'vendors', 'read');
+
+  bool get _canCreateShops =>
+      _grants == null ||
+      _grants!.can('vendor_management', 'vendors', 'create');
+
+  /// Mirrors the grants `/canteen/sales-dashboard` accepts.
+  bool get _canReadSales =>
+      _grants == null ||
+      _grants!.can('vendor_management', 'vendors', 'read') ||
+      _grants!.can('canteen', 'analytics', 'read') ||
+      _grants!.can('canteen', 'orders', 'manage');
+
+  /// Payments and work orders have no backend yet; their pages only hold
+  /// sample records, which must never pass for real ones in a live build.
+  bool get _showsSampleLedgers => widget.repository == null;
+
+  List<_VendorTab> get _tabs => [
+    if (_canReadSales) _VendorTab.dashboard,
+    if (_canReadShops) _VendorTab.vendors,
+    if (_canReadSales) _VendorTab.orders,
+    if (_showsSampleLedgers) _VendorTab.payments,
+    if (_showsSampleLedgers) _VendorTab.workOrders,
+  ];
 
   @override
   void initState() {
@@ -54,23 +96,32 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
     setState(() {
       _loading = true;
       _error = null;
+      _dashboardError = null;
     });
-    try {
-      final shops = await repo.listVendors();
-      final dashboard = await repo.getSalesDashboard();
-      if (!mounted) return;
-      setState(() {
-        _shops = shops;
-        _dashboardData = dashboard;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+    // Each half loads on its own: an accountant may read sales but not the
+    // shop register, and one refusal must not blank the other page.
+    Future<void> loadShops() async {
+      if (!_canReadShops) return;
+      try {
+        final shops = await repo.listVendors();
+        if (mounted) setState(() => _shops = shops);
+      } catch (e) {
+        if (mounted) setState(() => _error = userFacingError(e));
+      }
     }
+
+    Future<void> loadDashboard() async {
+      if (!_canReadSales) return;
+      try {
+        final dashboard = await repo.getSalesDashboard();
+        if (mounted) setState(() => _dashboardData = dashboard);
+      } catch (e) {
+        if (mounted) setState(() => _dashboardError = userFacingError(e));
+      }
+    }
+
+    await Future.wait([loadShops(), loadDashboard()]);
+    if (mounted) setState(() => _loading = false);
   }
 
   Future<void> _addVendor() async {
@@ -106,7 +157,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text(userFacingError(e)),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -160,7 +211,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text(userFacingError(e)),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -195,7 +246,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text(userFacingError(e)),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -351,15 +402,21 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
     return set.toList();
   }
 
+  Widget _page(_VendorTab tab) => switch (tab) {
+    _VendorTab.dashboard => _salesDashboardView(),
+    _VendorTab.vendors => _vendorList(),
+    _VendorTab.orders => _orderList(),
+    _VendorTab.payments => _paymentList(),
+    _VendorTab.workOrders => _workOrderList(),
+  };
+
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      _salesDashboardView(),
-      _vendorList(),
-      _orderList(),
-      _paymentList(),
-      _workOrderList(),
-    ];
+    final tabs = _tabs;
+    final current = tabs.contains(_tab)
+        ? _tab
+        : (tabs.isEmpty ? null : tabs.first);
+    final index = current == null ? 0 : tabs.indexOf(current);
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -367,9 +424,13 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
         leading: ModuleBackButton(
           onPressed: widget.onExitModule,
         ),
-        title: Text(_tab == 0 ? 'Shops & Sales Dashboard' : 'Campus Commerce'),
+        title: Text(
+          current == _VendorTab.dashboard
+              ? 'Shops & Sales Dashboard'
+              : 'Campus Commerce',
+        ),
         actions: [
-          if (_tab == 1)
+          if (current == _VendorTab.vendors && _canCreateShops)
             IconButton(
               tooltip: 'Add vendor',
               onPressed: _addVendor,
@@ -377,38 +438,31 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
             ),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (v) => setState(() => _tab = v),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.analytics_outlined),
-            selectedIcon: Icon(Icons.analytics_rounded),
-            label: 'Dashboard',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.storefront_outlined),
-            selectedIcon: Icon(Icons.storefront_rounded),
-            label: 'Vendors',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.shopping_bag_outlined),
-            selectedIcon: Icon(Icons.shopping_bag_rounded),
-            label: 'Orders',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.payments_outlined),
-            selectedIcon: Icon(Icons.payments_rounded),
-            label: 'Payments',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.construction_outlined),
-            selectedIcon: Icon(Icons.construction_rounded),
-            label: 'Work Orders',
-          ),
-        ],
-      ),
-      body: IndexedStack(index: _tab, children: pages),
+      // A navigation bar needs two destinations; one page stands on its own.
+      bottomNavigationBar: tabs.length < 2
+          ? null
+          : NavigationBar(
+              selectedIndex: index,
+              onDestinationSelected: (v) => setState(() => _tab = tabs[v]),
+              destinations: [
+                for (final tab in tabs)
+                  NavigationDestination(
+                    icon: Icon(tab.icon),
+                    selectedIcon: Icon(tab.selectedIcon),
+                    label: tab.label,
+                  ),
+              ],
+            ),
+      body: current == null
+          ? const _NoAccessState(
+              message:
+                  "You don't have access to vendors or sales. Ask your "
+                  'administrator if you need it.',
+            )
+          : IndexedStack(
+              index: index,
+              children: [for (final tab in tabs) _page(tab)],
+            ),
     );
   }
 
@@ -417,6 +471,11 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
+      if (_error == accessDeniedMessage) {
+        return const _NoAccessState(
+          message: "You don't have access to the vendor register.",
+        );
+      }
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -591,6 +650,12 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
       );
     }
 
+    if (!_showsSampleLedgers) {
+      // Live build with nothing ordered yet: say so, rather than falling back
+      // to sample purchase orders that would read as real ones.
+      return const Center(child: Text('No customer orders yet.'));
+    }
+
     return _records('Purchase orders', [
       for (final item in _mockRepo.purchaseOrders)
         _RecordTile(
@@ -642,6 +707,33 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
     if (_loading && _dashboardData == null) {
       return const Center(child: CircularProgressIndicator());
     }
+    final dashboardError = _dashboardError;
+    if (dashboardError != null && _dashboardData == null) {
+      if (dashboardError == accessDeniedMessage) {
+        return const _NoAccessState(
+          message: "You don't have access to sales figures.",
+        );
+      }
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_outlined, size: 40),
+              const SizedBox(height: 12),
+              Text(dashboardError, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: _load,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     final data = _dashboardData ?? SalesDashboardData.defaults;
     final kpi = data.kpi;
@@ -667,7 +759,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
         children: [
-          // Header section matching the Superadmin / System Dashboard
+          // Header: names the institution this dashboard covers.
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             child: Row(
@@ -678,7 +770,9 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Superadmin / System Dashboard',
+                        widget.institutionName?.trim().isNotEmpty == true
+                            ? widget.institutionName!.trim()
+                            : 'Campus Commerce',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.outline,
                           fontSize: 11.5,
@@ -687,7 +781,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'System Dashboard',
+                        'Sales Dashboard',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
@@ -697,7 +791,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Platform-wide overview and real-time insights',
+                        'Campus shops, orders and sales at a glance',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.outline,
                           fontSize: 12,
@@ -765,7 +859,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
               clipBehavior: Clip.none,
               children: [
                 _buildKpiCard(
-                  title: 'PLATFORM ORDERS',
+                  title: 'TOTAL ORDERS',
                   iconWidget: Icon(
                     Icons.shopping_bag_outlined,
                     color: context.adaptive(light: const Color(0xFF7B42F6), dark: const Color(0xFFB57BFF)),
@@ -930,12 +1024,11 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                   const SizedBox(height: 14),
                   Builder(
                     builder: (context) {
-                      final ordersPct = (data.paymentSplit['ordersPercentage'] as num?)?.toDouble() ?? 100.0;
-                      final adhocPct = (data.paymentSplit['adhocPercentage'] as num?)?.toDouble() ?? 0.0;
-                      final ordersFlex = ordersPct > 0 ? ordersPct.round().clamp(1, 100) : (adhocPct > 0 ? 0 : 100);
-                      final adhocFlex = adhocPct > 0 ? adhocPct.round().clamp(1, 100) : 0;
-                      final foodRev = (kpi.revenue * (ordersPct / 100.0)).round();
-                      final qrRev = (kpi.revenue * (adhocPct / 100.0)).round();
+                      final split = RevenueSplit.of(data);
+                      final ordersPct = split.foodPercent;
+                      final adhocPct = split.otherPercent;
+                      final foodRev = split.food.round();
+                      final qrRev = split.other.round();
 
                       return Column(
                         children: [
@@ -943,20 +1036,32 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                             borderRadius: BorderRadius.circular(6),
                             child: SizedBox(
                               height: 14,
-                              child: Row(
-                                children: [
-                                  if (ordersFlex > 0)
-                                    Expanded(
-                                      flex: ordersFlex,
-                                      child: Container(color: const Color(0xFF059669)),
+                              child: split.isEmpty
+                                  // Nothing sold yet: an empty track, not a
+                                  // bar that claims 100% of nothing.
+                                  ? ColoredBox(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outlineVariant,
+                                    )
+                                  : Row(
+                                      children: [
+                                        if (split.food > 0)
+                                          Expanded(
+                                            flex: ordersPct.clamp(1, 100),
+                                            child: Container(
+                                              color: const Color(0xFF059669),
+                                            ),
+                                          ),
+                                        if (split.other > 0)
+                                          Expanded(
+                                            flex: adhocPct.clamp(1, 100),
+                                            child: Container(
+                                              color: const Color(0xFF9B1FE8),
+                                            ),
+                                          ),
+                                      ],
                                     ),
-                                  if (adhocFlex > 0)
-                                    Expanded(
-                                      flex: adhocFlex,
-                                      child: Container(color: const Color(0xFF9B1FE8)),
-                                    ),
-                                ],
-                              ),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -973,7 +1078,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  'Food Orders (${ordersPct.toStringAsFixed(0)}%): ₹${_formatIndianNumber(foodRev)}',
+                                  'Food Orders ($ordersPct%): ₹${_formatIndianNumber(foodRev)}',
                                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                                 ),
                               ),
@@ -987,7 +1092,7 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'QR Payments (${adhocPct.toStringAsFixed(0)}%): ₹${_formatIndianNumber(qrRev)}',
+                                'QR Payments ($adhocPct%): ₹${_formatIndianNumber(qrRev)}',
                                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                               ),
                             ],
@@ -1027,7 +1132,8 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                       ),
                       const Spacer(),
                       TextButton(
-                        onPressed: () => setState(() => _tab = 2),
+                        onPressed: () =>
+                            setState(() => _tab = _VendorTab.orders),
                         style: TextButton.styleFrom(
                           visualDensity: VisualDensity.compact,
                           padding: EdgeInsets.zero,
@@ -1044,14 +1150,24 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                   const SizedBox(height: 10),
                   Builder(
                     builder: (context) {
-                      final completedPct = (data.orderStatusDistribution['completed'] as num?)?.toDouble() ?? 100.0;
-                      final cancelledPct = (data.orderStatusDistribution['cancelled'] as num?)?.toDouble() ?? 0.0;
-                      final completedFlex = completedPct > 0 ? completedPct.round().clamp(1, 100) : (cancelledPct > 0 ? 0 : 100);
-                      final cancelledFlex = cancelledPct > 0 ? cancelledPct.round().clamp(1, 100) : 0;
-                      final completedCount = kpi.platformOrders > 0
-                          ? ((kpi.platformOrders * (completedPct / 100.0)).round()).clamp(0, kpi.platformOrders)
-                          : 0;
-                      final cancelledCount = (kpi.platformOrders - completedCount).clamp(0, kpi.platformOrders);
+                      final breakdown = OrderStatusBreakdown.of(data);
+                      final buckets = [
+                        (
+                          label: 'Completed',
+                          count: breakdown.completed,
+                          color: const Color(0xFF10B981),
+                        ),
+                        (
+                          label: 'In progress',
+                          count: breakdown.active,
+                          color: const Color(0xFFF59E0B),
+                        ),
+                        (
+                          label: 'Cancelled',
+                          count: breakdown.cancelled,
+                          color: const Color(0xFFEF4444),
+                        ),
+                      ];
 
                       return Column(
                         children: [
@@ -1059,60 +1175,53 @@ class _VendorManagementShellState extends State<VendorManagementShell> {
                             borderRadius: BorderRadius.circular(6),
                             child: SizedBox(
                               height: 12,
-                              child: Row(
-                                children: [
-                                  if (completedFlex > 0)
-                                    Expanded(
-                                      flex: completedFlex,
-                                      child: Container(color: const Color(0xFF10B981)),
+                              child: breakdown.total == 0
+                                  ? ColoredBox(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outlineVariant,
+                                    )
+                                  : Row(
+                                      children: [
+                                        for (final bucket in buckets)
+                                          if (bucket.count > 0)
+                                            Expanded(
+                                              flex: bucket.count,
+                                              child: Container(
+                                                color: bucket.color,
+                                              ),
+                                            ),
+                                      ],
                                     ),
-                                  if (cancelledFlex > 0)
-                                    Expanded(
-                                      flex: cancelledFlex,
-                                      child: Container(color: const Color(0xFFEF4444)),
-                                    ),
-                                ],
-                              ),
                             ),
                           ),
                           const SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Wrap(
+                            spacing: 14,
+                            runSpacing: 6,
                             children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF10B981),
-                                      shape: BoxShape.circle,
+                              for (final bucket in buckets)
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: bucket.color,
+                                        shape: BoxShape.circle,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    'Completed: ${_formatIndianNumber(completedCount)} (${completedPct.toStringAsFixed(0)}%)',
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFEF4444),
-                                      shape: BoxShape.circle,
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      '${bucket.label}: ${_formatIndianNumber(bucket.count)} (${breakdown.percentOf(bucket.count)}%)',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    'Cancelled: ${_formatIndianNumber(cancelledCount)} (${cancelledPct.toStringAsFixed(0)}%)',
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                                  ),
-                                ],
-                              ),
+                                  ],
+                                ),
                             ],
                           ),
                         ],
@@ -1929,4 +2038,55 @@ class _WorkTile extends StatelessWidget {
           ),
         ),
       );
+}
+
+enum _VendorTab {
+  dashboard('Dashboard', Icons.analytics_outlined, Icons.analytics_rounded),
+  vendors('Vendors', Icons.storefront_outlined, Icons.storefront_rounded),
+  orders('Orders', Icons.shopping_bag_outlined, Icons.shopping_bag_rounded),
+  payments('Payments', Icons.payments_outlined, Icons.payments_rounded),
+  workOrders(
+    'Work Orders',
+    Icons.construction_outlined,
+    Icons.construction_rounded,
+  );
+
+  const _VendorTab(this.label, this.icon, this.selectedIcon);
+
+  final String label;
+  final IconData icon;
+  final IconData selectedIcon;
+}
+
+/// A calm, explicit "not yours to see" page instead of a raw server refusal.
+class _NoAccessState extends StatelessWidget {
+  const _NoAccessState({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.lock_outline_rounded,
+              size: 40,
+              color: palette.inkTertiary,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: palette.inkSecondary, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -355,6 +355,10 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
     );
     final amountController = TextEditingController();
     FeeStudent? selectedStudent;
+    // Field errors live in the sheet, so a mistake keeps what was typed.
+    String? studentError;
+    String? titleError;
+    String? amountError;
     final submit = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -392,9 +396,10 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
                   key: const ValueKey('fee-student-selector'),
                   initialValue: selectedStudent,
                   isExpanded: true,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Student',
-                    prefixIcon: Icon(Icons.person_search_outlined),
+                    prefixIcon: const Icon(Icons.person_search_outlined),
+                    errorText: studentError,
                   ),
                   items: widget.data.students
                       .map(
@@ -407,13 +412,24 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
                         ),
                       )
                       .toList(growable: false),
-                  onChanged: (value) =>
-                      setSheetState(() => selectedStudent = value),
+                  onChanged: (value) => setSheetState(() {
+                    selectedStudent = value;
+                    studentError = null;
+                  }),
                 ),
                 const SizedBox(height: 12),
                 TextField(
+                  key: const ValueKey('fee-title-field'),
                   controller: titleController,
-                  decoration: const InputDecoration(labelText: 'Fee title'),
+                  onChanged: (_) {
+                    if (titleError != null) {
+                      setSheetState(() => titleError = null);
+                    }
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Fee title',
+                    errorText: titleError,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -429,16 +445,37 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(
+                  onChanged: (_) {
+                    if (amountError != null) {
+                      setSheetState(() => amountError = null);
+                    }
+                  },
+                  decoration: InputDecoration(
                     labelText: 'Amount',
                     prefixText: '₹ ',
+                    errorText: amountError,
                   ),
                 ),
                 const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: () => Navigator.pop(sheetContext, true),
+                    onPressed: () {
+                      final errors = validateFeeAssignment(
+                        hasStudent: selectedStudent != null,
+                        title: titleController.text,
+                        amount: amountController.text,
+                      );
+                      if (errors.isValid) {
+                        Navigator.pop(sheetContext, true);
+                        return;
+                      }
+                      setSheetState(() {
+                        studentError = errors.student;
+                        titleError = errors.title;
+                        amountError = errors.amount;
+                      });
+                    },
                     child: const Text('Assign fee'),
                   ),
                 ),
@@ -448,22 +485,9 @@ class _AdminFeeWorkspaceState extends State<_AdminFeeWorkspace> {
         ),
       ),
     );
-    if (submit != true) return;
+    // The sheet only closes with `true` once every field is valid.
     final amount = double.tryParse(amountController.text.trim());
-    if (selectedStudent == null ||
-        titleController.text.trim().isEmpty ||
-        amount == null ||
-        amount < 1) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Select a student and enter a valid fee title and amount.',
-          ),
-        ),
-      );
-      return;
-    }
+    if (submit != true || selectedStudent == null || amount == null) return;
     setState(() => _saving = true);
     try {
       await widget.repository.createFeeAssignment(
@@ -1245,4 +1269,34 @@ String _friendlyDate(Object? value) {
   final date = DateTime.tryParse(value?.toString() ?? '')?.toLocal();
   if (date == null) return _text(value);
   return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+}
+
+/// Field errors for the "Assign student fee" sheet; all null when valid.
+@visibleForTesting
+class FeeAssignmentErrors {
+  const FeeAssignmentErrors({this.student, this.title, this.amount});
+
+  final String? student;
+  final String? title;
+  final String? amount;
+
+  bool get isValid => student == null && title == null && amount == null;
+}
+
+@visibleForTesting
+FeeAssignmentErrors validateFeeAssignment({
+  required bool hasStudent,
+  required String title,
+  required String amount,
+}) {
+  final value = double.tryParse(amount.trim());
+  return FeeAssignmentErrors(
+    student: hasStudent ? null : 'Choose a student.',
+    title: title.trim().isEmpty ? 'Enter a fee title.' : null,
+    amount: amount.trim().isEmpty
+        ? 'Enter an amount.'
+        : (value == null || value < 1)
+        ? 'Enter an amount of at least ₹1.'
+        : null,
+  );
 }
