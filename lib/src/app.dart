@@ -986,13 +986,25 @@ class _SupercampusAppState extends State<SupercampusApp>
       return;
     }
 
+    // An order's pickup QR is its bare id. Counter staff scan it from the
+    // home bar as well as from inside the canteen, so any id-shaped code from
+    // someone who serves orders goes to the counter.
+    final isOrderCode = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(code.trim());
+    final servesOrders =
+        _permissions?.can('canteen', 'orders', 'manage') ?? false;
     if (_openModuleId == ModuleCatalog.canteen ||
         code.startsWith('QR-') ||
-        code.startsWith('supercampus://canteen/')) {
+        code.startsWith('supercampus://canteen/') ||
+        (isOrderCode && servesOrders)) {
       final repository = _resolvedCanteenRepository;
       if (repository != null) {
         try {
           final order = await repository.scanOrder(code);
+          // The queue on screen reloads now rather than waiting on the
+          // realtime event.
+          canteenRevision.value++;
           if (!mounted) return;
           messenger?.showSnackBar(
             SnackBar(

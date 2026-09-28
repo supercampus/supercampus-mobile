@@ -293,8 +293,13 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
           // instead of sliding underneath.
           MediaQuery(
             data: floatingNav
+                // Scaffold places floating toasts from the view padding, so
+                // that is the inset that has to include the bar.
                 ? media.copyWith(
                     padding: media.padding.copyWith(
+                      bottom: safeBottom + CampusNavBar.heightFor(context) + 10,
+                    ),
+                    viewPadding: media.viewPadding.copyWith(
                       bottom: safeBottom + CampusNavBar.heightFor(context) + 10,
                     ),
                   )
