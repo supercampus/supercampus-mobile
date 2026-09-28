@@ -220,13 +220,21 @@ class _CanteenShellState extends State<CanteenShell> {
     super.dispose();
   }
 
+  /// Bumped whenever the counter changes an order on screen ahead of the
+  /// server. A reload that started before such a change carries the old
+  /// state, so it is dropped and fetched again rather than flashing back.
+  var _localEdits = 0;
+
   Future<void> _loadStore({bool silent = false}) async {
     if (_loadInProgress) return;
     _loadInProgress = true;
     if (!silent) setState(() => _error = null);
+    var stale = false;
     try {
+      final edits = _localEdits;
       final store = await _repository.loadStore();
-      if (mounted) {
+      stale = edits != _localEdits;
+      if (mounted && !stale) {
         setState(() => _store = store);
         // Open the wallet once for the action that launched the module. The
         // store also reloads silently in the background; replaying the action
@@ -249,6 +257,7 @@ class _CanteenShellState extends State<CanteenShell> {
     } finally {
       _loadInProgress = false;
     }
+    if (stale && mounted) unawaited(_loadStore(silent: true));
   }
 
   /// Switches between Work and Shop. The screen answers at once; the stored
@@ -349,8 +358,43 @@ class _CanteenShellState extends State<CanteenShell> {
     CanteenOrderStatus status, {
     int? lineIndex,
   }) async {
-    await _repository.updateOrderStatus(orderId, status, lineIndex: lineIndex);
-    await _loadStore(silent: true);
+    // The card moves the moment it is swiped; the server confirms behind it.
+    // Waiting for the request and then a full store reload is what made a
+    // swipe take seconds to show.
+    final previous = _store;
+    if (previous != null) {
+      _localEdits++;
+      setState(() {
+        _store = previous.copyWith(
+          orders: [
+            for (final order in previous.orders)
+              if (order.id != orderId)
+                order
+              else if (lineIndex != null && lineIndex < order.lines.length)
+                order.withLineStatus(lineIndex, status)
+              else
+                order.copyWith(status: status),
+          ],
+        );
+      });
+    }
+    try {
+      await _repository.updateOrderStatus(
+        orderId,
+        status,
+        lineIndex: lineIndex,
+      );
+    } catch (_) {
+      // Put the card back where the server still has it.
+      if (mounted && previous != null) {
+        _localEdits++;
+        setState(() => _store = previous);
+      }
+      rethrow;
+    } finally {
+      _localEdits++;
+    }
+    unawaited(_loadStore(silent: true));
   }
 
   Future<void> _saveMenuItem(CanteenMenuItem item, bool create) async {
