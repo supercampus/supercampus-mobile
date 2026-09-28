@@ -261,7 +261,13 @@ void main() {
 
       // Work: the owner workspace with the counter's queue.
       expect(find.text('Owner workspace'), findsOneWidget);
-      await tester.tap(find.byTooltip('Counter controls'));
+      // Work / Shop lives in the profile.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byType(CircleAvatar),
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Shop'));
       await tester.pumpAndSettle();

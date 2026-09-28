@@ -1,23 +1,23 @@
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-/// The scan screen.
+/// The scan screen, shared by every scanner in the app.
 ///
-/// The camera lives inside one rounded card in the lower part of the screen and
-/// nowhere else. That is the whole point of the layout: the preview is clipped
-/// to the card, so a feed of any aspect fills it without ever bleeding over the
-/// title or the edges of the screen.
+/// The camera lives in one rounded square card in the centre of the screen,
+/// over a translucent, frosted backdrop, so the page it was opened from stays
+/// faintly visible behind it. The only text is the SuperCampus mark above
+/// the card. The preview is clipped to the card, so a feed of any aspect
+/// fills it without bleeding over the edges.
 ///
 /// Pops with the code that was read, or null if the screen was dismissed.
-///
-/// Measurements are fractions of the screen, taken off the design board, which
-/// draws the phone at 428 x 787.
 class ScanQrScreen extends StatefulWidget {
   const ScanQrScreen({super.key, this.title = 'Scan QR'});
 
+  /// What is being scanned. Not drawn: it names the screen for screen readers.
   final String title;
 
   @override
@@ -26,24 +26,16 @@ class ScanQrScreen extends StatefulWidget {
 
 const _purple = Color(0xFF6C00FF);
 
-// Off the board: the card, and the title above it.
-const _cardLeft = 14 / 428;
-const _cardWidth = 402 / 428;
-const _cardTop = 430 / 787;
-const _cardHeight = 295 / 787;
-const _cardRadius = 30 / 428;
+/// The card's side as a fraction of the screen's shorter side.
+const _cardSide = 0.84;
+const _cardRadius = 28.0;
 
-const _scriptCentreY = 171.5 / 787;
-const _scriptSize = 26 / 428;
-// The board stacks the two lines tight — the mark's box ends where the title's
-// begins — so the title needs no offset of its own.
-const _titleSize = 48 / 428;
+/// The mark sits this far above the card.
+const _markGap = 18.0;
+const _markSize = 30.0;
 
-// Controls inside the card.
-const _controlCentreY = 48 / 295;
-const _galleryCentreX = 44.5 / 402;
-const _closeCentreX = 361 / 402;
-const _controlSize = 29 / 402;
+const _controlInset = 14.0;
+const _controlSize = 22.0;
 
 class _ScanQrScreenState extends State<ScanQrScreen>
     with TickerProviderStateMixin {
@@ -180,87 +172,81 @@ class _ScanQrScreenState extends State<ScanQrScreen>
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _close();
       },
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            final w = constraints.maxWidth;
-            final h = constraints.maxHeight;
-            final cardWidth = _cardWidth * w;
-            final cardHeight = _cardHeight * h;
-
-            return Stack(
-              children: [
-                _title(w, h),
-                AnimatedBuilder(
-                  animation: _enter,
-                  builder: (context, child) {
-                    final t = Curves.easeOutCubic.transform(_enter.value);
-                    return Positioned(
-                      left: _cardLeft * w,
-                      // It rises the last of its own height into place, so the
-                      // move reads as the card coming from off the bottom of
-                      // the screen rather than fading in where it lands.
-                      top: _cardTop * h + (1 - t) * cardHeight * 0.55,
-                      width: cardWidth,
-                      height: cardHeight,
-                      child: Opacity(opacity: t, child: child),
+      child: Semantics(
+        label: widget.title,
+        scopesRoute: true,
+        explicitChildNodes: true,
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Tapping the frosted ground outside the card closes the scan.
+              GestureDetector(
+                key: const ValueKey('scan-backdrop'),
+                behavior: HitTestBehavior.opaque,
+                onTap: _close,
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.55),
+                  ),
+                ),
+              ),
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final side = (constraints.biggest.shortestSide * _cardSide)
+                        .clamp(220.0, 460.0);
+                    return Center(
+                      child: AnimatedBuilder(
+                        animation: _enter,
+                        builder: (context, child) {
+                          final t = Curves.easeOutCubic.transform(_enter.value);
+                          // It grows into place from slightly smaller, so it
+                          // reads as arriving rather than as a page swap.
+                          return Opacity(
+                            opacity: t,
+                            child: Transform.scale(
+                              scale: 0.92 + 0.08 * t,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'SuperCampus',
+                              style: TextStyle(
+                                fontFamily: 'Brittany',
+                                color: Colors.white,
+                                fontSize: _markSize,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: _markGap),
+                            SizedBox.square(
+                              dimension: side,
+                              child: _card(side, side),
+                            ),
+                          ],
+                        ),
+                      ),
                     );
                   },
-                  child: _card(cardWidth, cardHeight),
                 ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _title(double w, double h) {
-    return Positioned(
-      left: 0,
-      right: 0,
-      // The board centres the wordmark on this line; the block is laid out from
-      // its top, so back off by half the mark's own height.
-      top: _scriptCentreY * h - _scriptSize * w / 2,
-      child: FadeTransition(
-        opacity: CurvedAnimation(parent: _enter, curve: Curves.easeOut),
-        child: Column(
-          children: [
-            // The board sets the wordmark in a signature script. Poppins is
-            // what ships with the app, so it is italicised and spaced to read
-            // as a mark rather than as a second heading.
-            Text(
-              'SuperCampus',
-              style: TextStyle(
-                color: _purple,
-                fontSize: _scriptSize * w,
-                fontStyle: FontStyle.italic,
-                fontWeight: FontWeight.w300,
-                letterSpacing: -0.5,
-                height: 1,
               ),
-            ),
-            Text(
-              widget.title,
-              style: TextStyle(
-                color: _purple,
-                fontSize: _titleSize * w,
-                fontWeight: FontWeight.w500,
-                letterSpacing: -0.5,
-                height: 1.1,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _card(double cardWidth, double cardHeight) {
-    final radius = BorderRadius.circular(_cardRadius * cardWidth / _cardWidth);
-    final control = _controlSize * cardWidth;
+    final radius = BorderRadius.circular(_cardRadius);
+    const control = _controlSize;
 
     // No glow around it: the board gives the card a clean edge against the
     // black, and a halo on a dark ground only smears it.
@@ -293,9 +279,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
             ),
             _Sweep(progress: _sweep, quiet: _quiet),
             _control(
-              centreX: _galleryCentreX,
-              cardWidth: cardWidth,
-              cardHeight: cardHeight,
+              alignLeft: true,
               size: control,
               icon: Icons.image_rounded,
               tooltip: 'Scan a photo',
@@ -303,9 +287,7 @@ class _ScanQrScreenState extends State<ScanQrScreen>
               onTap: _fromGallery,
             ),
             _control(
-              centreX: _closeCentreX,
-              cardWidth: cardWidth,
-              cardHeight: cardHeight,
+              alignLeft: false,
               size: control,
               icon: Icons.close_rounded,
               tooltip: 'Close',
@@ -319,22 +301,21 @@ class _ScanQrScreenState extends State<ScanQrScreen>
   }
 
   Widget _control({
-    required double centreX,
-    required double cardWidth,
-    required double cardHeight,
+    required bool alignLeft,
     required double size,
     required IconData icon,
     required String tooltip,
     required String keyValue,
     required Future<void> Function() onTap,
   }) {
-    // The glyph is the board's size; the tap target around it is not, so it
-    // still clears a fingertip on a small phone.
-    final target = size * 1.8;
+    // The glyph stays small; the tap target around it still clears a
+    // fingertip. A dark translucent disc keeps it legible over any picture.
+    const target = 44.0;
 
     return Positioned(
-      left: centreX * cardWidth - target / 2,
-      top: _controlCentreY * cardHeight - target / 2,
+      left: alignLeft ? _controlInset : null,
+      right: alignLeft ? null : _controlInset,
+      top: _controlInset,
       width: target,
       height: target,
       child: Semantics(
@@ -342,12 +323,16 @@ class _ScanQrScreenState extends State<ScanQrScreen>
         label: tooltip,
         child: Tooltip(
           message: tooltip,
-          child: InkResponse(
-            key: ValueKey(keyValue),
-            onTap: () => onTap(),
-            radius: target / 2,
-            child: Center(
-              child: Icon(icon, size: size, color: const Color(0xFF1B1B1F)),
+          child: Material(
+            color: Colors.black.withValues(alpha: 0.38),
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              key: ValueKey(keyValue),
+              onTap: () => onTap(),
+              child: Center(
+                child: Icon(icon, size: size, color: Colors.white),
+              ),
             ),
           ),
         ),
@@ -491,8 +476,8 @@ class _Sweep extends StatelessWidget {
   }
 }
 
-/// Opens the scan screen. The black ground fades up while the card rides in, so
-/// the screen arrives as one movement rather than as a page swap.
+/// Opens the scan screen over the current page. The frosted ground fades up
+/// while the card grows in, so the screen arrives as one movement.
 /// Resolves with the code that was read, or null if the screen was dismissed.
 Future<String?> openScanQr(BuildContext context, {String title = 'Scan QR'}) {
   return Navigator.of(context).push<String>(

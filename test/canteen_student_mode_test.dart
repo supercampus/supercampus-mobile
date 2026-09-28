@@ -51,14 +51,18 @@ void main() {
 
     expect(find.text('Shop operations'), findsOneWidget);
 
-    // Work/Shop and the open toggle are occasional decisions, so they no longer
-    // take a strip off the top of the page — they open from the app bar.
+    // Work/Shop lives in the profile; the app bar carries no counter controls
+    // of its own any more.
     expect(find.text('Work'), findsNothing);
-    expect(find.byTooltip('Counter controls'), findsOneWidget);
+    expect(find.byTooltip('Counter controls'), findsNothing);
 
-    await tester.tap(find.byTooltip('Counter controls'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.byType(CircleAvatar),
+      ),
+    );
     await tester.pumpAndSettle();
-    expect(find.text('Counter controls'), findsOneWidget);
     expect(find.text('Work'), findsOneWidget);
     expect(find.text('Shop'), findsOneWidget);
   });
@@ -118,7 +122,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Stationery shop'), findsOneWidget);
-      expect(find.text('Stationery inventory'), findsOneWidget);
+      expect(find.text('Inventory'), findsWidgets);
       expect(find.text('2 items · 2 categories'), findsOneWidget);
       expect(find.text('A4 Notebook'), findsOneWidget);
       expect(find.text('Blue Ball Pen'), findsOneWidget);

@@ -9,7 +9,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/swipe_action_card.dart';
 import '../data/canteen_models.dart';
-import 'canteen_scanner_screen.dart';
+import '../../scanner/presentation/scan_qr_screen.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
 import 'widgets/order_status_badge.dart';
@@ -207,14 +207,6 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
           const SizedBox(width: 8),
         ],
       ),
-      floatingActionButton: _tab == StationeryTab.inventory
-          ? FloatingActionButton.extended(
-              key: const ValueKey('stationery-add-item-fab'),
-              onPressed: _addNewItem,
-              icon: const Icon(Icons.add),
-              label: const Text('Add item'),
-            )
-          : null,
       body: Column(
         children: [
           if (_busy) const LinearProgressIndicator(minHeight: 2),
@@ -250,9 +242,9 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                   onAdd: _addNewItem,
                   onEdit: _editItem,
                 ),
-                widget.onScanOrder == null
-                    ? const _ScanUnavailable()
-                    : CanteenScannerScreen(onScan: widget.onScanOrder!),
+                // QR Scan opens the scanner straight away; this slot only
+                // shows when this device cannot scan.
+                const _ScanUnavailable(),
               ],
             ),
           ),
@@ -264,8 +256,14 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
         backgroundColor: context.palette.surface,
         indicatorColor: context.palette.brandSoft,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        onDestinationSelected: (index) =>
-            setState(() => _tab = StationeryTab.values[index]),
+        onDestinationSelected: (index) {
+          final tab = StationeryTab.values[index];
+          if (tab == StationeryTab.scan && widget.onScanOrder != null) {
+            _scanPickup();
+            return;
+          }
+          setState(() => _tab = tab);
+        },
         destinations: [
           NavigationDestination(
             key: const ValueKey('stationery-nav-home'),
@@ -294,6 +292,22 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
         ],
       ),
     );
+  }
+
+  /// Opens the shared scanner over the current tab and hands the pickup QR
+  /// to the counter; the tab underneath stays where it was.
+  Future<void> _scanPickup() async {
+    if (_busy) return;
+    final payload = await openScanQr(context, title: 'Scan pickup QR');
+    if (payload == null || !mounted) return;
+    await _run(() async {
+      await widget.onScanOrder!(payload);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Order collected successfully.')),
+        );
+      }
+    });
   }
 
   Future<void> _addNewItem() async {
@@ -703,7 +717,7 @@ class _InventoryPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Stationery inventory',
+                      'Inventory',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 3),
@@ -728,25 +742,6 @@ class _InventoryPage extends StatelessWidget {
                 ),
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Add item'),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: context.palette.successSoft,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  'LIVE CATALOG',
-                  style: TextStyle(
-                    color: context.adaptive(light: const Color(0xFF087A53), dark: const Color(0xFF6EE7B7)),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
               ),
             ],
           ),

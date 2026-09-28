@@ -7,6 +7,7 @@ import '../../authentication/data/auth_http_client.dart';
 import '../../authentication/data/auth_repository.dart';
 import 'canteen_models.dart';
 import 'canteen_repository.dart';
+import 'shop_analytics.dart';
 import 'wallet_pin_repository.dart';
 import 'wallet_transaction_detail.dart';
 
@@ -14,7 +15,8 @@ class BackendCanteenRepository
     implements
         CanteenRepository,
         WalletPinRepository,
-        WalletTransactionDetailRepository {
+        WalletTransactionDetailRepository,
+        ShopAnalyticsRepository {
   BackendCanteenRepository({
     required String baseUrl,
     String? accessToken,
@@ -360,10 +362,12 @@ class BackendCanteenRepository
     String orderId,
     CanteenOrderStatus status, {
     String? reason,
+    int? lineIndex,
   }) async {
     final body = jsonEncode({
       'status': status.apiValue,
       if (reason != null) 'reason': reason,
+      if (lineIndex != null) 'lineIndex': lineIndex,
     });
     final response = await _authorizedRequest(
       (headers) => _client.put(
@@ -624,6 +628,21 @@ class BackendCanteenRepository
     return resolved.toString();
   }
 
+  static CanteenOrderStatus _orderStatus(String raw) =>
+      switch (raw.toLowerCase().trim()) {
+        'pending' || 'placed' || 'created' || 'paid' || 'order_placed' =>
+          CanteenOrderStatus.pending,
+        'accepted' || 'confirmed' => CanteenOrderStatus.accepted,
+        'preparing' || 'in_progress' || 'cooking' || 'packing' =>
+          CanteenOrderStatus.preparing,
+        'ready' || 'ready_for_pickup' || 'packed' => CanteenOrderStatus.ready,
+        'completed' || 'delivered' || 'served' || 'picked_up' =>
+          CanteenOrderStatus.completed,
+        'rejected' || 'declined' => CanteenOrderStatus.rejected,
+        'cancelled' || 'canceled' => CanteenOrderStatus.cancelled,
+        _ => CanteenOrderStatus.pending,
+      };
+
   CanteenOrder _order(
     Map<String, dynamic> value,
     Map<String, CanteenMenuItem> menu,
@@ -650,23 +669,15 @@ class BackendCanteenRepository
                 isVegetarian: line['isVegetarian'] != false,
                 isInstant: line['isInstant'] == true,
               );
-          return CartLine(item: item, quantity: _integer(line['quantity'], 1));
+          final lineStatus = _text(line['status']);
+          return CartLine(
+            item: item,
+            quantity: _integer(line['quantity'], 1),
+            status: lineStatus.isEmpty ? null : _orderStatus(lineStatus),
+          );
         })
         .toList(growable: false);
-    final rawStatus = _text(value['status']).toLowerCase().trim();
-    final status = switch (rawStatus) {
-      'pending' || 'placed' || 'created' || 'paid' || 'order_placed' =>
-        CanteenOrderStatus.pending,
-      'accepted' || 'confirmed' => CanteenOrderStatus.accepted,
-      'preparing' || 'in_progress' || 'cooking' || 'packing' =>
-        CanteenOrderStatus.preparing,
-      'ready' || 'ready_for_pickup' || 'packed' => CanteenOrderStatus.ready,
-      'completed' || 'delivered' || 'served' || 'picked_up' =>
-        CanteenOrderStatus.completed,
-      'rejected' || 'declined' => CanteenOrderStatus.rejected,
-      'cancelled' || 'canceled' => CanteenOrderStatus.cancelled,
-      _ => CanteenOrderStatus.pending,
-    };
+    final status = _orderStatus(_text(value['status']));
     return CanteenOrder(
       id: _text(value['id']),
       lines: lines,
@@ -740,6 +751,24 @@ class BackendCanteenRepository
           ? null
           : _text(value['referenceId']),
     );
+  }
+
+  @override
+  Future<ShopAnalyticsReport> loadShopAnalytics({
+    required String shopKey,
+    required AnalyticsDateRange range,
+  }) async {
+    final uri = _uri('/api/v1/operations/canteen/shop-analytics').replace(
+      queryParameters: {
+        'shop': shopKey,
+        'from': AnalyticsDateRange.wire(range.from),
+        'to': AnalyticsDateRange.wire(range.to),
+      },
+    );
+    final response = await _authorizedRequest(
+      (headers) => _client.get(uri, headers: headers),
+    );
+    return ShopAnalyticsReport.fromJson(_data(response), requested: range);
   }
 
   @override

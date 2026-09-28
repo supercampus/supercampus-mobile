@@ -26,7 +26,9 @@ import 'widgets/home_sheets.dart';
 import 'widgets/home_top_bar.dart';
 import '../../canteen/data/canteen_models.dart';
 import '../../canteen/data/canteen_repository.dart';
+import '../../canteen/presentation/canteen_owner_home.dart' show OwnerSection;
 import '../../canteen/presentation/canteen_shell.dart';
+import '../../canteen/presentation/owner_workspace_nav.dart';
 import '../../canteen/presentation/widgets/shop_mode_switch.dart';
 import 'widgets/dashboard_nav_bar.dart';
 import 'widgets/settings_page.dart';
@@ -117,6 +119,10 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
   int _unreadNotifications = 0;
   CanteenStaffMode _canteenStaffMode = CanteenStaffMode.work;
 
+  /// While a shop workspace with a menu is on screen, the bar's second tab
+  /// opens that menu instead of the Modules sheet.
+  final _ownerNav = OwnerWorkspaceNav();
+
   /// Whose home screen is the shop counter itself.
   bool get _shopIsHome =>
       widget.session.isCanteenOwner ||
@@ -156,6 +162,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
   @override
   void dispose() {
     announcementRevision.removeListener(_loadAnnouncements);
+    _ownerNav.dispose();
     super.dispose();
   }
 
@@ -290,6 +297,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
             initialStaffMode: _canteenStaffMode,
             onStaffModeChanged: (mode) =>
                 setState(() => _canteenStaffMode = mode),
+            ownerNav: _ownerNav,
           ),
           if (!(widget.session.isStationeryOwner &&
               _canteenStaffMode == CanteenStaffMode.work))
@@ -297,17 +305,45 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
             left: 0,
             right: 0,
             bottom: safeBottom + 10,
-            child: CampusNavBar(
-              selectedId: 'home',
-              showScan: widget.session.canScanQr,
-              initials: initialsOf(widget.session.displayName),
-              avatarUrl: widget.session.photoUrl,
-              onHome: () {},
-              onModules: _openModules,
-              onProfile: _openProfileSheet,
-              onScan: widget.session.canScanQr && widget.onScan != null
-                  ? () => widget.onScan!(context)
-                  : null,
+            child: ListenableBuilder(
+              listenable: _ownerNav,
+              builder: (context, _) {
+                // In a shop's workspace the second tab is its Menu; anywhere
+                // else (Shop mode, oversight without a menu) it stays Modules.
+                final menu = _ownerNav.menuAvailable;
+                final onMenu = _ownerNav.section == OwnerSection.menu;
+                return CampusNavBar(
+                  selectedId: menu && onMenu ? 'menu' : 'home',
+                  showScan: widget.session.canScanQr,
+                  initials: initialsOf(widget.session.displayName),
+                  avatarUrl: widget.session.photoUrl,
+                  items: menu
+                      ? [
+                          CampusNavItem(
+                            id: 'home',
+                            label: 'Home',
+                            icon: const Icon(Icons.home_outlined),
+                            selectedIcon: const Icon(Icons.home_rounded),
+                            onTap: () => _ownerNav.show(OwnerSection.orders),
+                          ),
+                          CampusNavItem(
+                            id: 'menu',
+                            label: 'Menu',
+                            icon: const Icon(Icons.restaurant_menu_outlined),
+                            selectedIcon:
+                                const Icon(Icons.restaurant_menu_rounded),
+                            onTap: () => _ownerNav.show(OwnerSection.menu),
+                          ),
+                        ]
+                      : null,
+                  onHome: () {},
+                  onModules: _openModules,
+                  onProfile: _openProfileSheet,
+                  onScan: widget.session.canScanQr && widget.onScan != null
+                      ? () => widget.onScan!(context)
+                      : null,
+                );
+              },
             ),
           ),
         ],

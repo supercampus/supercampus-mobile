@@ -136,10 +136,14 @@ class CanteenShop {
 }
 
 class CartLine {
-  const CartLine({required this.item, required this.quantity});
+  const CartLine({required this.item, required this.quantity, this.status});
 
   final CanteenMenuItem item;
   final int quantity;
+
+  /// The item's own place in the counter flow, once the counter has moved
+  /// it on its own. Null means it still follows its order.
+  final CanteenOrderStatus? status;
 
   double get total => item.price * quantity;
   double get costTotal => item.effectiveCost * quantity;
@@ -279,6 +283,73 @@ class CanteenOrder {
       CanteenOrderStatus.ready => CanteenOrderStatus.completed,
       _ => status.isActive ? CanteenOrderStatus.completed : null,
     };
+  }
+
+  /// Where one food item stands. Settled orders settle every item; an item
+  /// never moved on its own follows its order, except that instant food has
+  /// no kitchen stage to follow.
+  CanteenOrderStatus lineStatus(int index) {
+    if (!status.isActive) return status;
+    final line = lines[index];
+    if (line.status != null) return line.status!;
+    return switch (status) {
+      CanteenOrderStatus.preparing || CanteenOrderStatus.ready =>
+        line.item.isInstant ? CanteenOrderStatus.pending : status,
+      _ => CanteenOrderStatus.pending,
+    };
+  }
+
+  /// The next step for one food item: instant food is handed over straight
+  /// from pending; prepared food goes pending → preparing → ready → delivered.
+  CanteenOrderStatus? nextLineStep(int index) {
+    final current = lineStatus(index);
+    if (lines[index].item.isInstant) {
+      return current.isActive ? CanteenOrderStatus.completed : null;
+    }
+    return current.nextServiceStep;
+  }
+
+  /// The order after one item moves: every item is pinned to its own status
+  /// and the order's status summarises them, as the server does.
+  CanteenOrder withLineStatus(int index, CanteenOrderStatus next) {
+    final statuses = [
+      for (var i = 0; i < lines.length; i++) i == index ? next : lineStatus(i),
+    ];
+    final remaining =
+        statuses.where((s) => s != CanteenOrderStatus.completed).toList();
+    final CanteenOrderStatus summary;
+    if (remaining.isEmpty) {
+      summary = CanteenOrderStatus.completed;
+    } else if (remaining.contains(CanteenOrderStatus.preparing)) {
+      summary = CanteenOrderStatus.preparing;
+    } else if (remaining.every((s) => s == CanteenOrderStatus.ready)) {
+      summary = CanteenOrderStatus.ready;
+    } else if (statuses.any((s) => s != CanteenOrderStatus.pending)) {
+      summary = CanteenOrderStatus.accepted;
+    } else {
+      summary = status;
+    }
+    return CanteenOrder(
+      id: id,
+      lines: [
+        for (var i = 0; i < lines.length; i++)
+          CartLine(
+            item: lines[i].item,
+            quantity: lines[i].quantity,
+            status: statuses[i],
+          ),
+      ],
+      total: total,
+      status: summary,
+      fulfilmentMode: fulfilmentMode,
+      createdAt: createdAt,
+      tokenNumber: tokenNumber,
+      orderNumber: orderNumber,
+      customerName: customerName,
+      customerUserId: customerUserId,
+      qrPayload: qrPayload,
+      captainName: captainName,
+    );
   }
 
   /// Who handled the order at the counter. Orders the server does not

@@ -12,8 +12,10 @@ import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
 import 'widgets/order_status_badge.dart';
 import 'widgets/owner_captain_sales_analytics.dart';
-import 'widgets/shop_mode_switch.dart';
+import 'widgets/counter_open_tile.dart';
+import 'widgets/settled_orders_page.dart';
 import 'canteen_menu_item_editor_screen.dart';
+import 'owner_workspace_nav.dart';
 import '../../../core/utils/user_facing_error.dart';
 
 class CanteenOwnerHome extends StatefulWidget {
@@ -34,7 +36,16 @@ class CanteenOwnerHome extends StatefulWidget {
     this.photoUrl,
     this.displayName,
     this.email,
+    this.nav,
+    this.loadShopAnalytics,
   });
+
+  /// Loads the Sales & Profit tab's figures from the server for a date range;
+  /// without it the tab rolls up the orders already in [store].
+  final ShopAnalyticsLoader? loadShopAnalytics;
+
+  /// Lets the host's bottom bar open this workspace's sections.
+  final OwnerWorkspaceNav? nav;
 
   final CanteenStore store;
   final VoidCallback onExitModule;
@@ -42,7 +53,11 @@ class CanteenOwnerHome extends StatefulWidget {
   final Future<void> Function() onRefresh;
   final Future<void> Function(CanteenStaffMode mode) onModeChanged;
   final Future<void> Function(bool open) onShopOpenChanged;
-  final Future<void> Function(String orderId, CanteenOrderStatus status)
+  final Future<void> Function(
+    String orderId,
+    CanteenOrderStatus status, {
+    int? lineIndex,
+  })
   onOrderStatusChanged;
   final Future<void> Function(CanteenMenuItem item, bool create) onSaveMenuItem;
   final Future<void> Function(String itemId) onDeleteMenuItem;
@@ -109,12 +124,27 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
   void initState() {
     super.initState();
     _selectedShopKey = _activeShopKey;
+    widget.nav?.attach(_showSection);
   }
 
   @override
   void didUpdateWidget(covariant CanteenOwnerHome oldWidget) {
     super.didUpdateWidget(oldWidget);
     _selectedShopKey = _activeShopKey;
+    if (oldWidget.nav != widget.nav) {
+      oldWidget.nav?.detach(_showSection);
+      widget.nav?.attach(_showSection);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.nav?.detach(_showSection);
+    super.dispose();
+  }
+
+  void _showSection(OwnerSection section) {
+    if (mounted) setState(() => _section = section);
   }
 
   Future<void> _run(Future<void> Function() action) async {
@@ -194,13 +224,23 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
     final section = sections.contains(_section) ? _section : sections.first;
     final overseeing = widget.store.canConfigureShops &&
         widget.store.assignedShopKeys.isEmpty;
+    widget.nav?.report(
+      menuAvailable: sections.contains(OwnerSection.menu),
+      section: section,
+    );
     final pages = <OwnerSection, Widget>{
       OwnerSection.orders: _OwnerOrders(
         store: scopedStore,
         busy: _busy,
         onRefresh: () => _run(widget.onRefresh),
-        onStatus: (id, status) =>
-            _run(() => widget.onOrderStatusChanged(id, status)),
+        onStatus: (id, status, {lineIndex}) => _run(
+          () => widget.onOrderStatusChanged(id, status, lineIndex: lineIndex),
+        ),
+        // Opening and closing is the counter's call; someone overseeing the
+        // shops has no counter of their own.
+        onShopOpen: widget.store.assignedShopKeys.isEmpty
+            ? null
+            : (open) => _run(() => widget.onShopOpenChanged(open)),
       ),
       OwnerSection.menu: _OwnerMenu(
         items: scopedMenu,
@@ -218,6 +258,9 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
         store: scopedStore,
         busy: _busy,
         onRefresh: () => _run(widget.onRefresh),
+        shopKey: shopKey,
+        shopName: activeShop?.name,
+        loadAnalytics: widget.loadShopAnalytics,
       ),
     };
 
@@ -239,16 +282,14 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: 'Counter controls',
-            icon: const Icon(Icons.tune),
-            onPressed: _busy ? null : _openCounterControls,
-          ),
+          // Work / Shop lives in the profile, and opening the counter sits at
+          // the head of the Orders queue, so the app bar needs no controls of
+          // its own.
           Padding(
             padding: const EdgeInsets.only(right: 12, left: 4),
             child: InkWell(
               borderRadius: BorderRadius.circular(20),
-              onTap: widget.onProfileTap ?? _openCounterControls,
+              onTap: widget.onProfileTap,
               child: CircleAvatar(
                 radius: 17,
                 backgroundColor: context.palette.brandInk.withValues(alpha: 0.12),
@@ -318,59 +359,6 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
     );
   }
 
-  /// Working or eating, and whether the counter is taking orders. Both are
-  /// occasional decisions rather than things to read at a glance, so they live
-  /// one tap away instead of taking a strip off the top of every screen.
-  Future<void> _openCounterControls() async {
-    var state = widget.store.staffState;
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (sheetContext, setSheetState) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Counter controls',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                _OwnerControlBar(
-                  state: state,
-                  busy: _busy,
-                  // Opening and closing is the counter's call; someone
-                  // overseeing the shops has no counter of their own.
-                  showShopOpen: widget.store.assignedShopKeys.isNotEmpty,
-                  // The sheet answers immediately and the request follows, so a
-                  // toggle never sits looking unpressed while the round trip
-                  // completes.
-                  onMode: (mode) {
-                    // Shop replaces this workspace, so the sheet goes with it.
-                    Navigator.of(sheetContext).pop();
-                    _run(() => widget.onModeChanged(mode));
-                  },
-                  onShopOpen: (open) {
-                    setSheetState(
-                      () => state = CanteenStaffState(
-                        mode: state.mode,
-                        shopOpen: open,
-                      ),
-                    );
-                    _run(() => widget.onShopOpenChanged(open));
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _editItem(CanteenMenuItem? item) async {
     final result = await Navigator.of(context).push<CanteenMenuItem>(
       MaterialPageRoute(
@@ -425,78 +413,35 @@ class _AssignedShopSelector extends StatelessWidget {
   }
 }
 
-class _OwnerControlBar extends StatelessWidget {
-  const _OwnerControlBar({
-    required this.state,
-    required this.busy,
-    required this.onMode,
-    required this.onShopOpen,
-    this.showShopOpen = true,
-  });
-
-  final CanteenStaffState state;
-  final bool busy;
-  final bool showShopOpen;
-  final ValueChanged<CanteenStaffMode> onMode;
-  final ValueChanged<bool> onShopOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final open = state.shopOpen ?? true;
-    return Material(
-      color: context.palette.surface,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: ShopModeSwitch(
-                mode: state.mode,
-                enabled: !busy,
-                onChanged: onMode,
-              ),
-            ),
-            if (showShopOpen) ...[
-              const SizedBox(width: 12),
-              Tooltip(
-                message: open ? 'Shop open' : 'Shop closed',
-                child: Switch(value: open, onChanged: busy ? null : onShopOpen),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _OwnerOrders extends StatefulWidget {
   const _OwnerOrders({
     required this.store,
     required this.busy,
     required this.onRefresh,
     required this.onStatus,
+    this.onShopOpen,
   });
+
+  /// Opens or closes the counter; null when this account has no counter of
+  /// its own (someone overseeing the shops).
+  final ValueChanged<bool>? onShopOpen;
 
   final CanteenStore store;
   final bool busy;
   final VoidCallback onRefresh;
-  final void Function(String id, CanteenOrderStatus status) onStatus;
+  final void Function(String id, CanteenOrderStatus status, {int? lineIndex})
+  onStatus;
 
   @override
   State<_OwnerOrders> createState() => _OwnerOrdersState();
 }
 
 class _OwnerOrdersState extends State<_OwnerOrders> {
-  /// Settled orders stay folded away by default: the queue is the job, and
-  /// history is a question you ask occasionally.
-  bool _showSettled = false;
-
   CanteenStore get store => widget.store;
   bool get busy => widget.busy;
   VoidCallback get onRefresh => widget.onRefresh;
-  void Function(String id, CanteenOrderStatus status) get onStatus =>
-      widget.onStatus;
+  void Function(String id, CanteenOrderStatus status, {int? lineIndex})
+  get onStatus => widget.onStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -511,6 +456,13 @@ class _OwnerOrdersState extends State<_OwnerOrders> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
         children: [
+          if (widget.onShopOpen != null) ...[
+            CounterOpenTile(
+              open: store.staffState.shopOpen ?? true,
+              onChanged: busy ? null : widget.onShopOpen,
+            ),
+            const SizedBox(height: 12),
+          ],
           Row(
             children: [
               Expanded(
@@ -552,159 +504,26 @@ class _OwnerOrdersState extends State<_OwnerOrders> {
               ),
             )
           else
+            // One card per food item still at the counter, each carrying its
+            // order's number, so swiping moves only that item.
             for (final order in active)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _OwnerOrderCard(
-                  key: ValueKey('${order.id}_${order.status.name}'),
-                  order: order,
-                  busy: busy,
-                  onStatus: onStatus,
-                ),
-              ),
-          const SizedBox(height: 22),
-          _SettledSection(
-            orders: settled,
-            expanded: _showSettled,
-            onToggle: () => setState(() => _showSettled = !_showSettled),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Everything the counter has already finished with.
-///
-/// Delivered and rejected orders used to vanish from the workspace the moment
-/// they settled, which left no way to check what happened to an order or answer
-/// a student asking about one.
-class _SettledSection extends StatelessWidget {
-  const _SettledSection({
-    required this.orders,
-    required this.expanded,
-    required this.onToggle,
-  });
-
-  final List<CanteenOrder> orders;
-  final bool expanded;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: orders.isEmpty ? null : onToggle,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              children: [
-                Text(
-                  'Settled orders',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${orders.length}',
-                  style: TextStyle(
-                    color: context.palette.inkSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
-                if (orders.isNotEmpty)
-                  AnimatedRotation(
-                    turns: expanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 180),
-                    child: Icon(
-                      Icons.expand_more,
-                      color: context.palette.inkSecondary,
+              for (var i = 0; i < order.lines.length; i++)
+                if (order.lineStatus(i).isActive)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _OwnerOrderCard(
+                      key: ValueKey(
+                        '${order.id}_${i}_${order.lineStatus(i).name}',
+                      ),
+                      order: order,
+                      lineIndex: i,
+                      busy: busy,
+                      onStatus: onStatus,
                     ),
                   ),
-              ],
-            ),
-          ),
-        ),
-        if (orders.isEmpty)
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              'Nothing settled yet today.',
-              style: TextStyle(color: context.palette.inkSecondary),
-            ),
-          )
-        else if (expanded) ...[
-          const SizedBox(height: 6),
-          for (final order in orders)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _SettledOrderRow(order: order),
-            ),
-        ],
-      ],
-    );
-  }
-}
-
-class _SettledOrderRow extends StatelessWidget {
-  const _SettledOrderRow({required this.order});
-
-  final CanteenOrder order;
-
-  @override
-  Widget build(BuildContext context) {
-    final rejected =
-        order.status == CanteenOrderStatus.rejected ||
-        order.status == CanteenOrderStatus.cancelled;
-    return CanteenSurface(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            rejected ? Icons.close_rounded : Icons.check_rounded,
-            size: 18,
-            color: rejected ? context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)) : context.palette.success,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  order.lines
-                      .map(
-                        (line) => line.quantity > 1
-                            ? '${line.quantity} x ${line.item.name}'
-                            : line.item.name,
-                      )
-                      .join(', '),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.1,
-                    height: 1.25,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '#${order.displayId} · ${order.customerName ?? 'Campus user'} · ${order.status.label}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            formatCurrency(order.total),
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
+          const SizedBox(height: 22),
+          // Settled orders live on their own page; the queue keeps one row.
+          SettledOrdersLink(orders: settled),
         ],
       ),
     );
@@ -751,17 +570,33 @@ class _OwnerOrderCard extends StatelessWidget {
     required this.order,
     required this.busy,
     required this.onStatus,
+    this.lineIndex,
   });
 
   final CanteenOrder order;
+
+  /// When set, the card is this one food item of [order] and swiping moves
+  /// only that item.
+  final int? lineIndex;
   final bool busy;
-  final void Function(String id, CanteenOrderStatus status) onStatus;
+  final void Function(String id, CanteenOrderStatus status, {int? lineIndex})
+  onStatus;
+
+  List<CartLine> get _lines =>
+      lineIndex == null ? order.lines : [order.lines[lineIndex!]];
+
+  /// The order as this card sees it: an item card carries its item's status.
+  CanteenOrder get _shown => lineIndex == null
+      ? order
+      : order.copyWith(status: order.lineStatus(lineIndex!));
 
   /// How the next step should read. The state machine itself lives on the
   /// model, so it can be reasoned about without a widget.
   (CanteenOrderStatus, String, IconData)? get _advance {
-    final next = order.nextServiceStep ??
-        (order.status.isActive ? CanteenOrderStatus.completed : null);
+    final next = lineIndex != null
+        ? order.nextLineStep(lineIndex!)
+        : (order.nextServiceStep ??
+            (order.status.isActive ? CanteenOrderStatus.completed : null));
     if (next == null) return null;
     return switch (next) {
       CanteenOrderStatus.preparing => (
@@ -800,7 +635,8 @@ class _OwnerOrderCard extends StatelessWidget {
             : Colors.white)
         : Colors.white;
 
-    final firstItem = order.lines.firstOrNull?.item;
+    final lines = _lines;
+    final firstItem = lines.firstOrNull?.item;
 
     return SwipeActionCard(
       enabled: !busy,
@@ -813,12 +649,14 @@ class _OwnerOrderCard extends StatelessWidget {
               color: advanceGradient?.colors.first ?? context.palette.brand,
               gradient: advanceGradient,
               foreground: advanceForeground,
-              onCommit: () => onStatus(order.id, advance.$1),
+              onCommit: () =>
+                  onStatus(order.id, advance.$1, lineIndex: lineIndex),
             ),
       backward: !order.status.canReject
           ? null
           : SwipeAction(
-              label: 'Reject',
+              // Rejecting refunds the whole order, so it is named as such.
+              label: lineIndex != null ? 'Reject order' : 'Reject',
               icon: Icons.close_rounded,
               color: const Color(0xFFEF4444),
               gradient: OrderStatusGradients.rejected,
@@ -866,14 +704,14 @@ class _OwnerOrderCard extends StatelessWidget {
                   Text.rich(
                     TextSpan(
                       children: [
-                        for (int i = 0; i < order.lines.length; i++) ...[
+                        for (int i = 0; i < lines.length; i++) ...[
                           if (i > 0)
                             TextSpan(
                               text: ', ',
                               style: TextStyle(color: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0))),
                             ),
                           TextSpan(
-                            text: '${order.lines[i].quantity}× ',
+                            text: '${lines[i].quantity}× ',
                             style: TextStyle(
                               color: context.palette.brandInk,
                               fontWeight: FontWeight.w600,
@@ -881,7 +719,7 @@ class _OwnerOrderCard extends StatelessWidget {
                             ),
                           ),
                           TextSpan(
-                            text: order.lines[i].item.name,
+                            text: lines[i].item.name,
                             style: TextStyle(
                               color: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0)),
                               fontSize: 13,
@@ -897,7 +735,7 @@ class _OwnerOrderCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            OrderNumberStatusBadge(order: order),
+            OrderNumberStatusBadge(order: _shown),
           ],
         ),
       ),

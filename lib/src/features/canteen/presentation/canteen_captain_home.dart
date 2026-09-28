@@ -6,6 +6,7 @@ import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/swipe_action_card.dart';
 import '../../scanner/presentation/scan_qr_screen.dart';
 import '../data/canteen_models.dart';
+import 'widgets/canteen_order_detail_page.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/shop_mode_switch.dart';
 import 'widgets/menu_item_art.dart';
@@ -36,7 +37,11 @@ class CanteenCaptainHome extends StatefulWidget {
   final VoidCallback onSignOut;
   final Future<void> Function() onRefresh;
   final Future<void> Function(CanteenStaffMode mode) onModeChanged;
-  final Future<void> Function(String orderId, CanteenOrderStatus status)
+  final Future<void> Function(
+    String orderId,
+    CanteenOrderStatus status, {
+    int? lineIndex,
+  })
   onOrderStatusChanged;
   final Future<void> Function(String qrPayload)? onScanOrder;
   final VoidCallback? onProfileTap;
@@ -117,8 +122,9 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
         working: working,
         busy: _busy,
         onRefresh: () => _run(widget.onRefresh),
-        onStatus: (id, status) =>
-            _run(() => widget.onOrderStatusChanged(id, status)),
+        onStatus: (id, status, {lineIndex}) => _run(
+          () => widget.onOrderStatusChanged(id, status, lineIndex: lineIndex),
+        ),
         onSwitchToWork: () => _run(() => widget.onModeChanged(CanteenStaffMode.work)),
       ),
       _CaptainHistory(orders: history, onRefresh: () => _run(widget.onRefresh)),
@@ -242,7 +248,8 @@ class _CaptainQueue extends StatelessWidget {
   final bool working;
   final bool busy;
   final Future<void> Function() onRefresh;
-  final void Function(String id, CanteenOrderStatus status) onStatus;
+  final void Function(String id, CanteenOrderStatus status, {int? lineIndex})
+  onStatus;
   final VoidCallback? onSwitchToWork;
 
   @override
@@ -264,7 +271,7 @@ class _CaptainQueue extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${orders.length} waiting · tap a name to see items, swipe an item to update its order',
+                      '${orders.length} waiting · tap a name to see items, swipe an item to move just that item',
                       style: TextStyle(color: context.palette.inkSecondary),
                     ),
                   ],
@@ -317,10 +324,12 @@ class CustomerOrderGroup {
   final String customer;
   final List<CanteenOrder> orders;
 
-  /// Every food item across the orders, one entry per item line.
-  List<(CanteenOrder, CartLine)> get items => [
+  /// Every food item still at the counter across the orders, one entry per
+  /// item line with its index in the order. Delivered items drop out.
+  List<(CanteenOrder, CartLine, int)> get items => [
     for (final order in orders)
-      for (final line in order.lines) (order, line),
+      for (var i = 0; i < order.lines.length; i++)
+        if (order.lineStatus(i).isActive) (order, order.lines[i], i),
   ];
 }
 
@@ -341,8 +350,8 @@ List<CustomerOrderGroup> groupOrdersByCustomer(List<CanteenOrder> orders) {
 
 /// A dropdown per customer: the header shows how many orders they placed;
 /// opened, it lists every food item as its own card (scrollable), each
-/// carrying its order's number. Swiping an item card moves its whole order,
-/// so all items of that order share the status.
+/// carrying its order's number. Swiping an item card moves only that item;
+/// the order settles once every item is delivered.
 class _CustomerOrdersGroup extends StatefulWidget {
   const _CustomerOrdersGroup({
     super.key,
@@ -353,7 +362,8 @@ class _CustomerOrdersGroup extends StatefulWidget {
 
   final CustomerOrderGroup group;
   final bool enabled;
-  final void Function(String id, CanteenOrderStatus status) onStatus;
+  final void Function(String id, CanteenOrderStatus status, {int? lineIndex})
+  onStatus;
 
   @override
   State<_CustomerOrdersGroup> createState() => _CustomerOrdersGroupState();
@@ -470,15 +480,16 @@ class _CustomerOrdersGroupState extends State<_CustomerOrdersGroup> {
                 padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
                 itemCount: items.length,
                 itemBuilder: (context, index) {
-                  final (order, line) = items[index];
+                  final (order, line, lineIndex) = items[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: _CaptainOrderCard(
                       key: ValueKey(
-                        '${order.id}_${index}_${order.status.name}',
+                        '${order.id}_${lineIndex}_${order.lineStatus(lineIndex).name}',
                       ),
                       order: order,
                       line: line,
+                      lineIndex: lineIndex,
                       enabled: widget.enabled,
                       onStatus: widget.onStatus,
                     ),
@@ -499,18 +510,30 @@ class _CaptainOrderCard extends StatelessWidget {
     required this.enabled,
     required this.onStatus,
     this.line,
+    this.lineIndex,
   });
 
   final CanteenOrder order;
 
   /// When set, the card shows only this food item of [order].
   final CartLine? line;
+
+  /// The position of [line] in [order]; swiping then moves only that item.
+  final int? lineIndex;
+
+  /// The order as this card sees it: an item card carries its item's status.
+  CanteenOrder get _shown => lineIndex == null
+      ? order
+      : order.copyWith(status: order.lineStatus(lineIndex!));
   final bool enabled;
-  final void Function(String id, CanteenOrderStatus status) onStatus;
+  final void Function(String id, CanteenOrderStatus status, {int? lineIndex})
+  onStatus;
 
   (CanteenOrderStatus, String, IconData)? get _next {
-    final next = order.nextServiceStep ??
-        (order.status.isActive ? CanteenOrderStatus.completed : null);
+    final next = lineIndex != null
+        ? order.nextLineStep(lineIndex!)
+        : (order.nextServiceStep ??
+            (order.status.isActive ? CanteenOrderStatus.completed : null));
     if (next == null) return null;
     return switch (next) {
       CanteenOrderStatus.preparing => (
@@ -567,11 +590,13 @@ class _CaptainOrderCard extends StatelessWidget {
               color: nextGradient?.colors.first ?? context.palette.brand,
               gradient: nextGradient,
               foreground: nextForeground,
-              onCommit: () => onStatus(order.id, next.$1),
+              onCommit: () =>
+                  onStatus(order.id, next.$1, lineIndex: lineIndex),
             ),
       backward: order.status.canReject
           ? SwipeAction(
-              label: 'Reject',
+              // Rejecting refunds the whole order, so it is named as such.
+              label: lineIndex != null ? 'Reject order' : 'Reject',
               icon: Icons.close_rounded,
               color: const Color(0xFFEF4444),
               gradient: OrderStatusGradients.rejected,
@@ -653,7 +678,7 @@ class _CaptainOrderCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            OrderNumberStatusBadge(order: order),
+            OrderNumberStatusBadge(order: _shown),
           ],
         ),
       ),
@@ -696,7 +721,9 @@ class _CaptainHistory extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 9),
                 child: CanteenSurface(
+                  key: ValueKey('captain-history-${order.id}'),
                   padding: const EdgeInsets.all(13),
+                  onTap: () => openCanteenOrderDetail(context, order),
                   child: Row(
                     children: [
                       Icon(
@@ -738,6 +765,11 @@ class _CaptainHistory extends StatelessWidget {
                       Text(
                         formatCurrency(order.total),
                         style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: context.palette.inkTertiary,
                       ),
                     ],
                   ),

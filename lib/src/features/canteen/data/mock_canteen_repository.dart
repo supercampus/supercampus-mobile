@@ -79,9 +79,13 @@ class MockCanteenRepository implements CanteenRepository {
     String orderId,
     CanteenOrderStatus status, {
     String? reason,
+    int? lineIndex,
   }) async {
     final index = _orders.indexWhere((order) => order.id == orderId);
-    if (index >= 0) _orders[index] = _orders[index].copyWith(status: status);
+    if (index < 0) return;
+    _orders[index] = lineIndex == null
+        ? _orders[index].copyWith(status: status)
+        : _orders[index].withLineStatus(lineIndex, status);
   }
 
   @override

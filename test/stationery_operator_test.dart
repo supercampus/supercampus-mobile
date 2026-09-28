@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supercampus_mobile/src/features/scanner/presentation/scan_qr_screen.dart';
 import 'package:supercampus_mobile/src/features/authentication/data/auth_repository.dart';
 import 'package:supercampus_mobile/src/features/canteen/data/canteen_models.dart';
 import 'package:supercampus_mobile/src/features/canteen/presentation/stationery_operator_home.dart';
@@ -85,10 +86,18 @@ void main() {
     );
     expect(find.text('Profile'), findsNothing);
 
-    // QR Scan opens the pickup scanner.
+    // QR Scan opens the shared scanner straight away, with no page between.
     await tester.tap(find.text('QR Scan'));
-    await tester.pumpAndSettle();
-    expect(find.text('Scan pickup QR'), findsOneWidget);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byType(ScanQrScreen), findsOneWidget);
+    expect(find.text('SuperCampus'), findsOneWidget);
+    expect(find.text('Scan counter QR'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('scan-close')));
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(ScanQrScreen), findsNothing);
 
     // Verify top profile button exists on AppBar
     expect(find.byKey(const ValueKey('stationery-top-profile-btn')), findsOneWidget);
@@ -189,9 +198,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify Inventory header and buttons
-    expect(find.text('Stationery inventory'), findsOneWidget);
+    expect(find.text('Inventory'), findsWidgets);
     expect(find.byKey(const ValueKey('stationery-header-add-btn')), findsOneWidget);
-    expect(find.byKey(const ValueKey('stationery-add-item-fab')), findsOneWidget);
+    expect(find.byKey(const ValueKey('stationery-add-item-fab')), findsNothing);
+    expect(find.text('LIVE CATALOG'), findsNothing);
 
     // Tap the header "Add item" button
     await tester.tap(find.byKey(const ValueKey('stationery-header-add-btn')));

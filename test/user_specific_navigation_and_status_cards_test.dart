@@ -172,7 +172,7 @@ void main() {
               onRefresh: () async {},
               onModeChanged: (_) async {},
               onShopOpenChanged: (_) async {},
-              onOrderStatusChanged: (_, __) async {},
+              onOrderStatusChanged: (_, __, {lineIndex}) async {},
               onSaveMenuItem: (_, __) async {},
               onDeleteMenuItem: (_) async {},
               onUploadMedia: (_, __) async => '',
@@ -199,7 +199,7 @@ void main() {
               onRefresh: () async {},
               onModeChanged: (_) async {},
               onShopOpenChanged: (_) async {},
-              onOrderStatusChanged: (_, __) async {},
+              onOrderStatusChanged: (_, __, {lineIndex}) async {},
               onSaveMenuItem: (item, isNew) async {
                 updatedItem = item;
               },

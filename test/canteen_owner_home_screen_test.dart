@@ -74,12 +74,22 @@ void main() {
       expect(find.text('Owner workspace'), findsOneWidget);
       expect(find.text('Campus Canteen'), findsOneWidget);
       expect(find.text('Orders'), findsOneWidget);
-      expect(find.text('Menu'), findsOneWidget);
+      // The section tab, and the bottom bar's Menu in place of Modules.
+      expect(find.text('Menu'), findsNWidgets(2));
+      expect(find.text('Modules'), findsNothing);
       expect(find.text('Sales & Profit'), findsOneWidget);
       expect(find.text('Live order queue'), findsOneWidget);
 
       // Verify CampusNavBar is present at the bottom
       expect(find.byType(CampusNavBar), findsOneWidget);
+
+      // The bar's Menu opens the owner's menu management.
+      await tester.tap(find.byKey(const ValueKey('nav-menu')));
+      await tester.pumpAndSettle();
+      expect(find.text('Menu management'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('nav-home')));
+      await tester.pumpAndSettle();
+      expect(find.text('Live order queue'), findsOneWidget);
 
       // Verify faculty cards from Image 1 are NOT displayed
       expect(find.text('Take Roll Call'), findsNothing);

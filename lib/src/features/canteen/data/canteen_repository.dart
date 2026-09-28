@@ -16,6 +16,9 @@ abstract interface class CanteenRepository {
     String orderId,
     CanteenOrderStatus status, {
     String? reason,
+
+    /// Moves only this food item of the order; the order's status follows.
+    int? lineIndex,
   });
 
   Future<CanteenOrder> scanOrder(String qrPayload);

@@ -13,6 +13,7 @@ import '../data/canteen_events.dart';
 import '../data/canteen_models.dart';
 import '../data/canteen_repository.dart';
 import '../data/mock_canteen_repository.dart';
+import '../data/shop_analytics.dart';
 import '../data/wallet_pin_repository.dart';
 import '../data/wallet_transaction_detail.dart';
 import '../../scanner/presentation/scan_qr_screen.dart';
@@ -20,6 +21,7 @@ import 'canteen_cart_screen.dart';
 import 'canteen_captain_home.dart';
 import 'laundry_operator_home.dart';
 import 'canteen_owner_home.dart';
+import 'owner_workspace_nav.dart';
 import 'canteen_orders_screen.dart';
 import 'canteen_scanner_screen.dart';
 import 'stationery_operator_home.dart';
@@ -45,6 +47,7 @@ class CanteenShell extends StatefulWidget {
     this.onOpenModule,
     this.glance,
     this.announcements,
+    this.ownerNav,
   });
 
   final StudentSession session;
@@ -62,6 +65,9 @@ class CanteenShell extends StatefulWidget {
   final ValueChanged<String>? onOpenModule;
   final GlanceFacts? glance;
   final List<LibraryAnnouncement>? announcements;
+
+  /// Lets the host's bottom bar open the owner workspace's sections.
+  final OwnerWorkspaceNav? ownerNav;
 
   @override
   State<CanteenShell> createState() => _CanteenShellState();
@@ -340,9 +346,10 @@ class _CanteenShellState extends State<CanteenShell> {
 
   Future<void> _updateOrderStatus(
     String orderId,
-    CanteenOrderStatus status,
-  ) async {
-    await _repository.updateOrderStatus(orderId, status);
+    CanteenOrderStatus status, {
+    int? lineIndex,
+  }) async {
+    await _repository.updateOrderStatus(orderId, status, lineIndex: lineIndex);
     await _loadStore(silent: true);
   }
 
@@ -776,6 +783,13 @@ class _CanteenShellState extends State<CanteenShell> {
         photoUrl: widget.photoUrl ?? widget.session.photoUrl,
         displayName: widget.session.displayName,
         email: widget.session.email,
+        nav: widget.ownerNav,
+        loadShopAnalytics: switch (_repository) {
+          final ShopAnalyticsRepository analytics =>
+            (shopKey, range) =>
+                analytics.loadShopAnalytics(shopKey: shopKey, range: range),
+          _ => null,
+        },
       );
     }
 
