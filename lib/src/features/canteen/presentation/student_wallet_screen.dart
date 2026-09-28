@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/transaction_result_overlay.dart';
 import '../data/canteen_models.dart';
+import 'canteen_orders_screen.dart';
 import 'wallet_transaction_details_screen.dart';
 
 /// Which history the wallet is showing.
@@ -43,9 +44,35 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
 
   CanteenStore get store => widget.store;
 
-  List<WalletTransaction> get _transactions => store.walletTransactions
-      .where((t) => t.shopKey == widget.shopKey)
-      .toList();
+  /// Only this shop's wallet: another shop's rows never appear here, and
+  /// legacy store keys are mapped onto their shop before comparing.
+  List<WalletTransaction> get _transactions =>
+      store.walletTransactionsFor(widget.shopKey);
+
+  Future<void> _openOrder(BuildContext context, CanteenOrder order) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => FullScreenOrderQrScreen(
+          order: order,
+          latestOrderFinder: () {
+            for (final candidate in store.orders) {
+              if (candidate.id == order.id) return candidate;
+            }
+            return null;
+          },
+        ),
+      ),
+    );
+  }
+
+  /// A laundry charge's details are its payment's receipt.
+  WalletTransaction? _laundryPayment(LaundryCharge charge) {
+    for (final transaction in _transactions) {
+      if (transaction.referenceId == charge.id) return transaction;
+    }
+    return null;
+  }
 
   Future<WalletTopUpResult> Function(double amount) get onTopUp =>
       widget.onTopUp;
@@ -92,6 +119,7 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final shopName = store.walletShopFor(widget.shopKey)?.name.trim();
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -117,12 +145,16 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Wallet',
+                        shopName == null || shopName.isEmpty
+                            ? 'Wallet'
+                            : shopName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.headlineMedium,
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'Balance and transactions',
+                        'Wallet balance, orders and transactions',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -212,7 +244,18 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
             ),
             const SizedBox(height: 12),
             if (_history == WalletHistory.orders)
-              Flexible(child: _OrderHistory(orders: store.orders))
+              Flexible(
+                child: _OrderHistory(
+                  orders: store.walletOrdersFor(widget.shopKey),
+                  laundryCharges: store.walletLaundryChargesFor(widget.shopKey),
+                  onOpenOrder: (order) => _openOrder(context, order),
+                  onOpenLaundryCharge: (charge) {
+                    final payment = _laundryPayment(charge);
+                    if (payment == null) return null;
+                    return () => _openTransaction(context, payment);
+                  },
+                ),
+              )
             else
               Flexible(
                 child: _transactions.isEmpty
@@ -332,34 +375,126 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
   }
 }
 
-/// Past orders, newest first.
-///
-/// Items lead, because "what did I order?" is the question being asked; the
-/// order number and status follow in a quieter line.
+/// Past orders — or, for the laundry, its charges — newest first.
 class _OrderHistory extends StatelessWidget {
-  const _OrderHistory({required this.orders});
+  const _OrderHistory({
+    required this.orders,
+    required this.laundryCharges,
+    required this.onOpenOrder,
+    required this.onOpenLaundryCharge,
+  });
 
   final List<CanteenOrder> orders;
 
+  /// The laundry's orders: the charges this person claimed and paid.
+  final List<LaundryCharge> laundryCharges;
+  final ValueChanged<CanteenOrder> onOpenOrder;
+
+  /// The tap for a charge, or null when it has no payment to show yet.
+  final VoidCallback? Function(LaundryCharge charge) onOpenLaundryCharge;
+
   @override
   Widget build(BuildContext context) {
-    if (orders.isEmpty) {
+    final entries = <({DateTime at, Widget Function(BuildContext) build})>[
+      for (final order in orders)
+        (at: order.createdAt, build: (context) => _orderRow(context, order)),
+      for (final charge in laundryCharges)
+        (
+          at: charge.paidAt ?? charge.claimedAt ?? charge.createdAt,
+          build: (context) => _laundryRow(context, charge),
+        ),
+    ]..sort((a, b) => b.at.compareTo(a.at));
+
+    if (entries.isEmpty) {
       return const _EmptyHistory(
         icon: Icons.receipt_long_outlined,
         message: 'No orders yet.',
       );
     }
-    final sorted = [...orders]
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return ListView.separated(
       shrinkWrap: true,
-      itemCount: sorted.length,
+      itemCount: entries.length,
       separatorBuilder: (_, _) => const Divider(height: 1, indent: 56),
-      itemBuilder: (context, index) {
-        final order = sorted[index];
-        final settled = !order.status.isActive;
-        return Padding(
+      itemBuilder: (context, index) => entries[index].build(context),
+    );
+  }
+
+  Widget _orderRow(BuildContext context, CanteenOrder order) {
+    final settled = !order.status.isActive;
+    return _HistoryRow(
+      key: ValueKey('wallet-order-${order.id}'),
+      onTap: () => onOpenOrder(order),
+      icon: settled ? Icons.check_rounded : Icons.schedule,
+      highlighted: !settled,
+      title: order.lines
+          .map(
+            (line) => line.quantity > 1
+                ? '${line.quantity} x ${line.item.name}'
+                : line.item.name,
+          )
+          .join(', '),
+      subtitle:
+          '#${order.displayId} · ${formatShortDate(order.createdAt)} · ${order.status.label}',
+      amount: order.total,
+    );
+  }
+
+  Widget _laundryRow(BuildContext context, LaundryCharge charge) {
+    final paid = charge.status == LaundryChargeStatus.paid;
+    final status = switch (charge.status) {
+      LaundryChargeStatus.paid => 'Paid',
+      LaundryChargeStatus.claimed => 'Awaiting payment',
+      LaundryChargeStatus.cancelled => 'Cancelled',
+      LaundryChargeStatus.pending => 'Pending',
+    };
+    final quantity =
+        '${charge.quantity.toStringAsFixed(charge.unitLabel == 'kg' ? 1 : 0)} ${charge.unitLabel}';
+    return _HistoryRow(
+      key: ValueKey('wallet-laundry-${charge.id}'),
+      onTap: onOpenLaundryCharge(charge),
+      icon: charge.serviceType == LaundryServiceType.wash
+          ? Icons.local_laundry_service_outlined
+          : Icons.iron_outlined,
+      highlighted: !paid && charge.status != LaundryChargeStatus.cancelled,
+      title: charge.name,
+      subtitle:
+          '$quantity · ${formatShortDate(charge.paidAt ?? charge.createdAt)} · $status',
+      amount: charge.total,
+    );
+  }
+}
+
+/// One line of the wallet's order history: what, when, how much.
+///
+/// Items lead, because "what did I order?" is the question being asked; the
+/// number and status follow in a quieter line.
+class _HistoryRow extends StatelessWidget {
+  const _HistoryRow({
+    super.key,
+    required this.onTap,
+    required this.icon,
+    required this.highlighted,
+    required this.title,
+    required this.subtitle,
+    required this.amount,
+  });
+
+  final VoidCallback? onTap;
+  final IconData icon;
+  final bool highlighted;
+  final String title;
+  final String subtitle;
+  final double amount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,23 +504,23 @@ class _OrderHistory extends StatelessWidget {
                 height: 42,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: settled
+                  color: highlighted
                       ? context.adaptive(
-                          light: const Color(0xFFF1F2F4),
-                          dark: const Color(0xFF1C1D23),
-                        )
-                      : context.adaptive(
                           light: const Color(0xFFEFE8FE),
                           dark: const Color(0x2E7B42F6),
+                        )
+                      : context.adaptive(
+                          light: const Color(0xFFF1F2F4),
+                          dark: const Color(0xFF1C1D23),
                         ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  settled ? Icons.check_rounded : Icons.schedule,
+                  icon,
                   size: 20,
-                  color: settled
-                      ? context.palette.inkSecondary
-                      : context.palette.info,
+                  color: highlighted
+                      ? context.palette.info
+                      : context.palette.inkSecondary,
                 ),
               ),
               const SizedBox(width: 12),
@@ -394,13 +529,7 @@ class _OrderHistory extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      order.lines
-                          .map(
-                            (line) => line.quantity > 1
-                                ? '${line.quantity} x ${line.item.name}'
-                                : line.item.name,
-                          )
-                          .join(', '),
+                      title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -411,7 +540,7 @@ class _OrderHistory extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '#${order.displayId} · ${formatShortDate(order.createdAt)} · ${order.status.label}',
+                      subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyMedium,
@@ -421,13 +550,21 @@ class _OrderHistory extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                formatCurrency(order.total),
+                formatCurrency(amount),
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
+              if (onTap != null) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: context.palette.inkTertiary,
+                ),
+              ],
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

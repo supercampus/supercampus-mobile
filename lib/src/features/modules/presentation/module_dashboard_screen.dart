@@ -27,6 +27,7 @@ import 'widgets/home_top_bar.dart';
 import '../../canteen/data/canteen_models.dart';
 import '../../canteen/data/canteen_repository.dart';
 import '../../canteen/presentation/canteen_owner_home.dart' show OwnerSection;
+import '../../canteen/presentation/laundry_workspace_nav.dart';
 import '../../canteen/presentation/canteen_shell.dart';
 import '../../canteen/presentation/owner_workspace_nav.dart';
 import '../../canteen/presentation/widgets/shop_mode_switch.dart';
@@ -123,11 +124,16 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
   /// opens that menu instead of the Modules sheet.
   final _ownerNav = OwnerWorkspaceNav();
 
+  /// While the laundry counter is on screen, the bar's second tab opens its
+  /// charge History instead of the Modules sheet.
+  final _laundryNav = LaundryWorkspaceNav();
+
   /// Whose home screen is the shop counter itself.
   bool get _shopIsHome =>
       widget.session.isCanteenOwner ||
       widget.session.isCaptain ||
-      widget.session.isStationeryOwner;
+      widget.session.isStationeryOwner ||
+      widget.session.isLaundryOwner;
 
   /// Everyone with a job — staff, accountants, admins, owners and captains —
   /// can switch between Work and Shop. Shop makes them a customer of every
@@ -163,6 +169,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
   void dispose() {
     announcementRevision.removeListener(_loadAnnouncements);
     _ownerNav.dispose();
+    _laundryNav.dispose();
     super.dispose();
   }
 
@@ -280,7 +287,9 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       );
     }
 
-    if (widget.session.isCanteenOwner || widget.session.isStationeryOwner) {
+    if (widget.session.isCanteenOwner ||
+        widget.session.isStationeryOwner ||
+        widget.session.isLaundryOwner) {
       final safeBottom = MediaQuery.paddingOf(context).bottom;
       final floatingNav =
           !(widget.session.isStationeryOwner &&
@@ -316,6 +325,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
               onStaffModeChanged: (mode) =>
                   setState(() => _canteenStaffMode = mode),
               ownerNav: _ownerNav,
+              laundryNav: _laundryNav,
             ),
           ),
           if (floatingNav)
@@ -324,18 +334,46 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
               right: 0,
               bottom: safeBottom + 10,
               child: ListenableBuilder(
-                listenable: _ownerNav,
+                listenable: Listenable.merge([_ownerNav, _laundryNav]),
                 builder: (context, _) {
                   // In a shop's workspace the second tab is its Menu; anywhere
                   // else (Shop mode, oversight without a menu) it stays Modules.
                   final menu = _ownerNav.menuAvailable;
                   final onMenu = _ownerNav.section == OwnerSection.menu;
+                  // The laundry counter has no menu; its second tab is the
+                  // charge History.
+                  final laundry = _laundryNav.available;
+                  final onHistory =
+                      _laundryNav.section == LaundrySection.history;
                   return CampusNavBar(
-                    selectedId: menu && onMenu ? 'menu' : 'home',
+                    selectedId: laundry
+                        ? (onHistory ? 'history' : 'home')
+                        : menu && onMenu
+                        ? 'menu'
+                        : 'home',
                     showScan: widget.session.canScanQr,
                     initials: initialsOf(widget.session.displayName),
                     avatarUrl: widget.session.photoUrl,
-                    items: menu
+                    items: laundry
+                        ? [
+                            CampusNavItem(
+                              id: 'home',
+                              label: 'Home',
+                              icon: const Icon(Icons.home_outlined),
+                              selectedIcon: const Icon(Icons.home_rounded),
+                              onTap: () =>
+                                  _laundryNav.show(LaundrySection.home),
+                            ),
+                            CampusNavItem(
+                              id: 'history',
+                              label: 'History',
+                              icon: const Icon(Icons.history_outlined),
+                              selectedIcon: const Icon(Icons.history_rounded),
+                              onTap: () =>
+                                  _laundryNav.show(LaundrySection.history),
+                            ),
+                          ]
+                        : menu
                         ? [
                             CampusNavItem(
                               id: 'home',

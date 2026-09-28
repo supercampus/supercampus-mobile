@@ -20,6 +20,7 @@ import '../../scanner/presentation/scan_qr_screen.dart';
 import 'canteen_cart_screen.dart';
 import 'canteen_captain_home.dart';
 import 'laundry_operator_home.dart';
+import 'laundry_workspace_nav.dart';
 import 'canteen_owner_home.dart';
 import 'owner_workspace_nav.dart';
 import 'canteen_orders_screen.dart';
@@ -48,6 +49,7 @@ class CanteenShell extends StatefulWidget {
     this.glance,
     this.announcements,
     this.ownerNav,
+    this.laundryNav,
   });
 
   final StudentSession session;
@@ -68,6 +70,9 @@ class CanteenShell extends StatefulWidget {
 
   /// Lets the host's bottom bar open the owner workspace's sections.
   final OwnerWorkspaceNav? ownerNav;
+
+  /// Lets the host's bottom bar open the laundry counter's History.
+  final LaundryWorkspaceNav? laundryNav;
 
   @override
   State<CanteenShell> createState() => _CanteenShellState();
@@ -129,11 +134,19 @@ class _CanteenShellState extends State<CanteenShell> {
         roles.contains('stationary');
   }
 
-  bool get _isLaundryOperator =>
-      widget.session.email.trim().toLowerCase() == 'laundry@mec.local' ||
-      (!widget.session.isCanteenOwner &&
-          _store?.canManage == true &&
-          _store!.assignedShopKeys.contains('mec-laundry'));
+  bool get _isLaundryOperator {
+    if (widget.session.email.trim().toLowerCase() == 'laundry@mec.local' ||
+        widget.session.isLaundryOwner) {
+      return true;
+    }
+    final store = _store;
+    if (store == null || widget.session.isCanteenOwner) return false;
+    final assigned = store.assignedShopKeys;
+    // The laundry counter is whoever is assigned to it: either with counter
+    // rights, or with the laundry as their only shop.
+    return assigned.contains('mec-laundry') &&
+        (store.canManage || assigned.every((key) => key == 'mec-laundry'));
+  }
 
   /// Whether the launching 'wallet' action has already opened the wallet.
   bool _walletActionHandled = false;
@@ -431,8 +444,16 @@ class _CanteenShellState extends State<CanteenShell> {
     return charge;
   }
 
-  Future<void> _payLaundryCharge(LaundryCharge charge) async {
-    final result = await _repository.payLaundryCharge(charge.id);
+  Future<void> _cancelLaundryCharge(LaundryCharge charge) async {
+    await _repository.cancelLaundryCharge(charge.id);
+    await _loadStore(silent: true);
+  }
+
+  Future<void> _payLaundryCharge(LaundryCharge charge, String? pinHash) async {
+    final result = await _repository.payLaundryCharge(
+      charge.id,
+      pinHash: pinHash,
+    );
     if (!mounted || _store == null) return;
     setState(() {
       _store = _store!.copyWith(
@@ -768,6 +789,11 @@ class _CanteenShellState extends State<CanteenShell> {
         onRefresh: () => _loadStore(silent: true),
         onUpdatePrice: _updateLaundryPrice,
         onCreateCharge: _createLaundryCharge,
+        onCancelCharge: _cancelLaundryCharge,
+        isMainHome: widget.isMainHome,
+        onProfileTap: widget.onProfileTap ?? () => _openAccount(context),
+        photoUrl: widget.photoUrl ?? widget.session.photoUrl,
+        nav: widget.laundryNav,
       );
     }
 
@@ -880,6 +906,7 @@ class _CanteenShellState extends State<CanteenShell> {
             ? 'mec-laundry'
             : null,
         onPayLaundryCharge: _payLaundryCharge,
+        onSetupPin: (pinHash, {hint}) => _setupPin(pinHash, hint: hint),
         onWorkMode: _canUseWorkMode
             ? () => _updateOwnerMode(CanteenStaffMode.work)
             : null,

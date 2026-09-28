@@ -135,6 +135,47 @@ class CanteenShop {
   final bool isOpen;
 }
 
+/// The shop category a store key implies, by the server's own rule: anything
+/// naming laundry is laundry, anything naming station(ery) is stationery, and
+/// everything else — `classic`, `bites`, `mec-canteen` — is the canteen.
+String shopCategoryForStoreKey(String key) {
+  final value = key.trim().toLowerCase();
+  if (value.contains('laundry')) return 'laundry';
+  if (value.contains('station')) return 'stationery';
+  return 'canteen';
+}
+
+/// Maps a stored store key — possibly a legacy one like `classic` or
+/// `stationery` — onto the configured shop it belongs to.
+///
+/// Mirrors the platform API's resolver (`campus_ops.shops` joined on
+/// `shop_key = store OR category = <category of store>`): an exact key wins,
+/// otherwise the first active shop of the implied category. With no matching
+/// shop the category itself stands in, so two legacy keys of one kind still
+/// agree with each other.
+String resolveShopKey(String? raw, List<CanteenShop> shops) {
+  final key = (raw ?? '').trim();
+  for (final shop in shops) {
+    if (shop.isActive && shop.shopKey == key) return shop.shopKey;
+  }
+  final category = shopCategoryForStoreKey(key);
+  for (final shop in shops) {
+    if (shop.isActive && shop.category.trim().toLowerCase() == category) {
+      return shop.shopKey;
+    }
+  }
+  return 'category:$category';
+}
+
+/// Whether [rowKey] and [walletKey] name the same shop's wallet.
+bool sameShop(String? rowKey, String walletKey, List<CanteenShop> shops) {
+  if (rowKey == null || rowKey.trim().isEmpty) return false;
+  return resolveShopKey(rowKey, shops) == resolveShopKey(walletKey, shops);
+}
+
+/// Laundry charges are raised by the one laundry counter the API knows.
+const laundryChargeShopKey = 'mec-laundry';
+
 class CartLine {
   const CartLine({required this.item, required this.quantity, this.status});
 
@@ -230,9 +271,22 @@ class CanteenOrder {
     this.customerUserId,
     this.qrPayload,
     this.captainName,
+    this.shopKey,
   });
 
   final String id;
+
+  /// The shop the order was placed with, as the server resolved it. Older
+  /// payloads leave it out; [storeKey] then falls back to the lines.
+  final String? shopKey;
+
+  /// The raw store key this order belongs to — possibly a legacy one such as
+  /// `classic`; [resolveShopKey] maps it onto a configured shop.
+  String? get storeKey {
+    final key = shopKey?.trim();
+    if (key != null && key.isNotEmpty) return key;
+    return lines.isEmpty ? null : lines.first.item.effectiveShopKey;
+  }
 
   /// The account that placed the order, when the source reports it. Staff in
   /// Shop mode see only their own orders; their counter's queue stays in Work.
@@ -381,6 +435,7 @@ class CanteenOrder {
       customerUserId: customerUserId,
       qrPayload: qrPayload,
       captainName: captainName,
+      shopKey: shopKey,
     );
   }
 
@@ -411,6 +466,7 @@ class CanteenOrder {
         customerUserId: customerUserId,
         qrPayload: qrPayload,
         captainName: captainName ?? this.captainName,
+        shopKey: shopKey,
       );
 
   int get itemCount => lines.fold(0, (total, line) => total + line.quantity);
@@ -568,6 +624,54 @@ class CanteenStore {
   }
 }
 
+/// What one shop's wallet paid for and how its balance moved.
+///
+/// Every shop keeps its own prepaid wallet, so each wallet's history holds
+/// only that shop's rows — legacy store keys are mapped with
+/// [resolveShopKey], never guessed.
+extension CanteenStoreWalletScope on CanteenStore {
+  bool _isMine(String? ownerId) {
+    final me = user.id;
+    return ownerId == null || me == null || ownerId == me;
+  }
+
+  /// The signed-in person's own orders placed with [shopKey]'s shop. Staff
+  /// payloads also carry their counter's queue; those are not theirs.
+  List<CanteenOrder> walletOrdersFor(String shopKey) => [
+    for (final order in orders)
+      if (_isMine(order.customerUserId) &&
+          sameShop(order.storeKey, shopKey, shops))
+        order,
+  ];
+
+  List<WalletTransaction> walletTransactionsFor(String shopKey) => [
+    for (final transaction in walletTransactions)
+      if (sameShop(transaction.shopKey, shopKey, shops)) transaction,
+  ];
+
+  /// Laundry charges this person claimed, when [shopKey] is the laundry's
+  /// wallet. An operator's payload also lists unclaimed and others' charges.
+  List<LaundryCharge> walletLaundryChargesFor(String shopKey) {
+    if (!sameShop(laundryChargeShopKey, shopKey, shops)) return const [];
+    return [
+      for (final charge in laundryCharges)
+        if (charge.claimedBy == null
+            ? charge.status != LaundryChargeStatus.pending
+            : _isMine(charge.claimedBy))
+          charge,
+    ];
+  }
+
+  /// The configured shop behind [shopKey], when there is one.
+  CanteenShop? walletShopFor(String shopKey) {
+    final resolved = resolveShopKey(shopKey, shops);
+    for (final shop in shops) {
+      if (shop.shopKey == resolved) return shop;
+    }
+    return null;
+  }
+}
+
 enum LaundryServiceType { wash, ironing }
 
 enum LaundryChargeStatus { pending, claimed, paid, cancelled }
@@ -588,6 +692,7 @@ class LaundryCharge {
     this.claimedAt,
     this.paidAt,
     this.claimedBy,
+    this.cancelledAt,
   });
 
   final String id;
@@ -608,6 +713,15 @@ class LaundryCharge {
   final DateTime? claimedAt;
   final DateTime? paidAt;
 
+  /// When the counter voided the charge, if it did.
+  final DateTime? cancelledAt;
+
+  /// Whether the charge still waits on the student: the QR stays with the
+  /// counter until it is paid or cancelled.
+  bool get isOpen =>
+      status == LaundryChargeStatus.pending ||
+      status == LaundryChargeStatus.claimed;
+
   LaundryCharge copyWith({LaundryChargeStatus? status, DateTime? paidAt}) =>
       LaundryCharge(
         id: id,
@@ -624,6 +738,7 @@ class LaundryCharge {
         claimedAt: claimedAt,
         paidAt: paidAt ?? this.paidAt,
         claimedBy: claimedBy,
+        cancelledAt: cancelledAt,
       );
 }
 

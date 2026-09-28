@@ -176,11 +176,28 @@ class MockCanteenRepository implements CanteenRepository {
   }
 
   @override
+  Future<LaundryCharge> cancelLaundryCharge(String chargeId) async {
+    final index = _laundryCharges.indexWhere((charge) => charge.id == chargeId);
+    if (index < 0) throw const CanteenException('Laundry charge not found.');
+    if (!_laundryCharges[index].isOpen) {
+      throw const CanteenException('This laundry charge can no longer be cancelled.');
+    }
+    final charge = _laundryCharges[index].copyWith(
+      status: LaundryChargeStatus.cancelled,
+    );
+    _laundryCharges[index] = charge;
+    return charge;
+  }
+
+  @override
   Future<LaundryCharge> claimLaundryCharge(String qrPayload) async {
     final index = _laundryCharges.indexWhere(
       (charge) => charge.qrPayload == qrPayload,
     );
     if (index < 0) throw const CanteenException('Laundry QR is invalid.');
+    if (!_laundryCharges[index].isOpen) {
+      throw const CanteenException('This laundry QR is no longer payable.');
+    }
     final charge = _laundryCharges[index].copyWith(
       status: LaundryChargeStatus.claimed,
     );
@@ -189,10 +206,16 @@ class MockCanteenRepository implements CanteenRepository {
   }
 
   @override
-  Future<LaundryPaymentResult> payLaundryCharge(String chargeId) async {
+  Future<LaundryPaymentResult> payLaundryCharge(
+    String chargeId, {
+    String? pinHash,
+  }) async {
     final index = _laundryCharges.indexWhere((charge) => charge.id == chargeId);
     if (index < 0) throw const CanteenException('Laundry charge not found.');
     final charge = _laundryCharges[index];
+    if (charge.status != LaundryChargeStatus.claimed) {
+      throw const CanteenException('This laundry charge cannot be paid.');
+    }
     if (_balance < charge.total) {
       throw const CanteenException('Wallet balance is insufficient.');
     }
@@ -202,12 +225,15 @@ class MockCanteenRepository implements CanteenRepository {
       paidAt: DateTime.now(),
     );
     _laundryCharges[index] = paid;
-    final transaction = WalletTransaction(shopKey: 'mec-canteen', 
+    final transaction = WalletTransaction(
+      shopKey: laundryChargeShopKey,
       id: 'laundry-txn-${DateTime.now().microsecondsSinceEpoch}',
       type: WalletTransactionType.debit,
       amount: charge.total,
       description: 'Campus Laundry payment',
       createdAt: DateTime.now(),
+      kind: 'order_debit',
+      referenceId: charge.id,
     );
     _transactions.insert(0, transaction);
     return LaundryPaymentResult(
@@ -277,13 +303,17 @@ class MockCanteenRepository implements CanteenRepository {
         createdAt: timestamp,
         tokenNumber: 42 + _orders.length + sequence,
         qrPayload: 'QR-${timestamp.microsecondsSinceEpoch}-$sequence',
+        shopKey: entry.key,
       );
-      final transaction = WalletTransaction(shopKey: 'mec-canteen', 
+      final transaction = WalletTransaction(
+        shopKey: entry.key,
         id: 'txn-${timestamp.millisecondsSinceEpoch}-$sequence',
         type: WalletTransactionType.debit,
         amount: shopTotal,
         description: '${entry.key} order - ${order.id}',
         createdAt: timestamp,
+        kind: 'order_debit',
+        referenceId: order.id,
       );
 
       _orders.insert(0, order);

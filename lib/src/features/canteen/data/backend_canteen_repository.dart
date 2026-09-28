@@ -122,14 +122,24 @@ class BackendCanteenRepository
     final data = _data(response);
     final menu = {for (final line in lines) line.item.id: line.item};
     // The cart is split into one order per shop, so this comes back as a list.
+    final orders = _list(
+      data['orders'],
+    ).map((raw) => _order(_map(raw), menu)).toList(growable: false);
+    // Each debit paid one of those orders from that shop's wallet.
+    final orderShop = {
+      for (final order in orders)
+        if (order.storeKey != null) order.id: order.storeKey!,
+    };
     return OrderPlacementResult(
       balance: _number(data['balance']),
-      orders: _list(
-        data['orders'],
-      ).map((raw) => _order(_map(raw), menu)).toList(growable: false),
-      transactions: _list(
-        data['transactions'],
-      ).map((raw) => _transaction(_map(raw))).toList(growable: false),
+      orders: orders,
+      transactions: _list(data['transactions']).map((raw) {
+        final value = _map(raw);
+        final shop = orderShop[_text(value['referenceId'])];
+        return shop == null
+            ? _transaction(value)
+            : _transaction(value, fallbackShopKey: shop);
+      }).toList(growable: false),
     );
   }
 
@@ -533,19 +543,38 @@ class BackendCanteenRepository
   }
 
   @override
-  Future<LaundryPaymentResult> payLaundryCharge(String chargeId) async {
+  Future<LaundryPaymentResult> payLaundryCharge(
+    String chargeId, {
+    String? pinHash,
+  }) async {
     final response = await _authorizedRequest(
       (headers) => _client.post(
         _uri('/api/v1/operations/canteen/laundry/charges/$chargeId/pay'),
         headers: headers,
+        body: jsonEncode({if (pinHash != null) 'pinHash': pinHash}),
       ),
+      json: true,
     );
     final data = _data(response);
     return LaundryPaymentResult(
       balance: _number(data['balance']),
       charge: _laundryCharge(_map(data['charge'])),
-      transaction: _transaction(_map(data['transaction'])),
+      transaction: _transaction(
+        _map(data['transaction']),
+        fallbackShopKey: laundryChargeShopKey,
+      ),
     );
+  }
+
+  @override
+  Future<LaundryCharge> cancelLaundryCharge(String chargeId) async {
+    final response = await _authorizedRequest(
+      (headers) => _client.post(
+        _uri('/api/v1/operations/canteen/laundry/charges/$chargeId/cancel'),
+        headers: headers,
+      ),
+    );
+    return _laundryCharge(_data(response));
   }
 
   LaundryCharge _laundryCharge(Map<String, dynamic> value) => LaundryCharge(
@@ -574,6 +603,7 @@ class BackendCanteenRepository
     claimedBy: _text(value['claimedBy']).isEmpty
         ? null
         : _text(value['claimedBy']),
+    cancelledAt: _nullableDate(value['cancelledAt']),
   );
 
   CanteenMenuItem _menuItem(dynamic value) {
@@ -702,6 +732,12 @@ class BackendCanteenRepository
           : _text(value['customerUserId']),
       qrPayload: _text(value['qrPayload'], fallback: _text(value['id'])),
       captainName: _text(value['captainName'] ?? value['captain_name'] ?? value['fulfilledBy'] ?? value['processedBy']),
+      // The shop the server resolved the order to; older payloads send only
+      // the raw `store`, or neither, and the wallet then reads the lines.
+      shopKey: switch (_text(value['shopKey'], fallback: _text(value['store']))) {
+        '' => null,
+        final key => key.toLowerCase(),
+      },
     );
   }
 
@@ -732,14 +768,20 @@ class BackendCanteenRepository
     pending: _integer(value['pending'], 0),
   );
 
-  WalletTransaction _transaction(Map<String, dynamic> value) {
+  /// [fallbackShopKey] names the wallet a response is known to have moved
+  /// when an older server leaves `shopKey` off the row; the canteen wallet is
+  /// the ledger's own default for rows that predate separate wallets.
+  WalletTransaction _transaction(
+    Map<String, dynamic> value, {
+    String fallbackShopKey = 'mec-canteen',
+  }) {
     final amount = _number(value['amount']);
     final type = amount < 0 || _text(value['transactionType']) == 'order_debit'
         ? WalletTransactionType.debit
         : WalletTransactionType.credit;
     return WalletTransaction(
       id: _text(value['id']),
-      shopKey: _text(value['shopKey'], fallback: 'mec-canteen'),
+      shopKey: _text(value['shopKey'], fallback: fallbackShopKey),
       type: type,
       amount: amount.abs(),
       description: _text(value['description'], fallback: 'Wallet activity'),

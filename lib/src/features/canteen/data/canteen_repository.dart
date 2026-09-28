@@ -49,7 +49,15 @@ abstract interface class CanteenRepository {
 
   Future<LaundryCharge> claimLaundryCharge(String qrPayload);
 
-  Future<LaundryPaymentResult> payLaundryCharge(String chargeId);
+  /// Pays a claimed charge from the laundry wallet. [pinHash] is the wallet
+  /// PIN's SHA-256, required by the server once the user has set a PIN.
+  Future<LaundryPaymentResult> payLaundryCharge(
+    String chargeId, {
+    String? pinHash,
+  });
+
+  /// Voids a charge the student has not paid yet (counter only).
+  Future<LaundryCharge> cancelLaundryCharge(String chargeId);
 }
 
 class CanteenException implements Exception {

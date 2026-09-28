@@ -286,6 +286,7 @@ class UserSession {
     return email.trim().toLowerCase() == 'laundry@mec.local' ||
         roles.contains('laundry') ||
         roles.contains('laundry_owner') ||
+        roles.contains('laundry_operator') ||
         roles.contains('laundry_staff');
   }
 

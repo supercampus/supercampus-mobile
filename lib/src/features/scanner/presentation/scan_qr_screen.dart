@@ -2,8 +2,11 @@ import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+
+import '../data/qr_image_decoder.dart';
 
 /// The scan screen, shared by every scanner in the app.
 ///
@@ -87,29 +90,39 @@ class _ScanQrScreenState extends State<ScanQrScreen>
       if (mounted) _say('The photo library is not available on this device.');
       return;
     }
-    final path = file?.path;
-    if (path == null || path.isEmpty) {
-      if (mounted && file != null) _say('That photo could not be opened.');
-      return;
+    if (file == null) return;
+    String? value;
+    // On a phone the platform reader is fastest and handles HEIC; the web
+    // has no path and no platform reader, so the photo's bytes are decoded
+    // in Dart instead — also the fallback when the platform reader misses.
+    final path = kIsWeb ? null : file.path;
+    if (path != null && path.isNotEmpty) {
+      try {
+        final capture = await _camera.analyzeImage(path);
+        value = capture?.barcodes
+            .map((barcode) => barcode.rawValue)
+            .firstWhere(
+              (raw) => raw != null && raw.isNotEmpty,
+              orElse: () => null,
+            );
+      } catch (_) {
+        value = null;
+      }
     }
-    try {
-      final capture = await _camera.analyzeImage(path);
-      final value = capture?.barcodes
-          .map((barcode) => barcode.rawValue)
-          .firstWhere(
-            (raw) => raw != null && raw.isNotEmpty,
-            orElse: () => null,
-          );
-      if (value == null) {
-        if (mounted) _say('No QR code found in that photo.');
+    if (value == null) {
+      try {
+        final bytes = await file.readAsBytes();
+        value = decodeQrFromImageBytes(bytes);
+      } catch (_) {
+        if (mounted) _say('That photo could not be read.');
         return;
       }
-      _finish(value);
-    } on UnsupportedError {
-      if (mounted) _say('Reading a code from a photo is not supported here.');
-    } on Exception {
-      if (mounted) _say('That photo could not be read.');
     }
+    if (value == null || value.isEmpty) {
+      if (mounted) _say('No QR code found in that photo.');
+      return;
+    }
+    _finish(value);
   }
 
   void _say(String message) => ScaffoldMessenger.maybeOf(

@@ -49,7 +49,7 @@ Future<void> _pumpMenu(
           onOpenProfile: () {},
           onOpenOrders: onOpenOrders ?? () {},
           onExitModule: () {},
-          onPayLaundryCharge: (_) async {},
+          onPayLaundryCharge: (_, _) async {},
         ),
       ),
     ),

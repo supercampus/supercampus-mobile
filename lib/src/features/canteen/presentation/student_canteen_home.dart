@@ -14,6 +14,8 @@ import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
 import 'widgets/quantity_control.dart';
+import 'transaction_pin_sheet.dart';
+import '../data/canteen_repository.dart';
 import '../../../core/utils/user_facing_error.dart';
 
 class StudentCanteenHome extends StatefulWidget {
@@ -30,6 +32,7 @@ class StudentCanteenHome extends StatefulWidget {
     required this.onExitModule,
     this.initialShopKey,
     required this.onPayLaundryCharge,
+    this.onSetupPin,
     this.onWorkMode,
     this.onAlertsTap,
     this.onProfileTap,
@@ -52,7 +55,13 @@ class StudentCanteenHome extends StatefulWidget {
   final VoidCallback onOpenOrders;
   final VoidCallback onExitModule;
   final String? initialShopKey;
-  final Future<void> Function(LaundryCharge charge) onPayLaundryCharge;
+  /// Pays a claimed laundry charge. [pinHash] is the wallet PIN the student
+  /// entered (or just created), exactly as checkout sends it.
+  final Future<void> Function(LaundryCharge charge, String? pinHash)
+  onPayLaundryCharge;
+
+  /// Saves a first wallet PIN, as the cart does before a first checkout.
+  final Future<void> Function(String pinHash, {String? hint})? onSetupPin;
   final VoidCallback? onWorkMode;
   final VoidCallback? onAlertsTap;
   final VoidCallback? onProfileTap;
@@ -286,6 +295,8 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                       walletBalance: widget.store.walletBalances['mec-laundry'] ?? 0.0,
                       onPay: widget.onPayLaundryCharge,
                       onScan: widget.onScanLaundryQr,
+                      hasPin: widget.store.hasPin,
+                      onSetupPin: widget.onSetupPin,
                     )
                   else if (_visibleItems.isEmpty)
                     const CanteenSurface(
@@ -586,12 +597,48 @@ class _LaundryStudentPanel extends StatelessWidget {
     required this.walletBalance,
     required this.onPay,
     this.onScan,
+    this.hasPin = false,
+    this.onSetupPin,
   });
 
   final List<LaundryCharge> charges;
   final double walletBalance;
-  final Future<void> Function(LaundryCharge charge) onPay;
+  final Future<void> Function(LaundryCharge charge, String? pinHash) onPay;
   final VoidCallback? onScan;
+  final bool hasPin;
+  final Future<void> Function(String pinHash, {String? hint})? onSetupPin;
+
+  /// The wallet PIN for this payment, the same way checkout gets it: a
+  /// student without a PIN creates one first; everyone else enters theirs.
+  /// Null when the student backs out.
+  Future<String?> _pinFor(BuildContext context, LaundryCharge charge) async {
+    if (!hasPin) {
+      final setup = await showSetupPinSheet(context);
+      if (setup == null || !context.mounted) return null;
+      try {
+        await onSetupPin?.call(setup.pinHash, hint: setup.hint);
+      } catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                error is CanteenException
+                    ? error.message
+                    : 'Your PIN could not be saved. Try again.',
+              ),
+            ),
+          );
+        }
+        return null;
+      }
+      return setup.pinHash;
+    }
+    return showVerifyPinSheet(
+      context,
+      amount: charge.total,
+      summary: 'Campus Laundry · ${charge.name}',
+    );
+  }
 
   Future<void> _confirmPayment(
     BuildContext context,
@@ -637,8 +684,10 @@ class _LaundryStudentPanel extends StatelessWidget {
       ),
     );
     if (confirmed != true || !context.mounted) return;
+    final pinHash = await _pinFor(context, charge);
+    if (pinHash == null || !context.mounted) return;
     try {
-      await onPay(charge);
+      await onPay(charge, pinHash);
       if (context.mounted) {
         await showTransactionResult(
           context,
@@ -816,9 +865,12 @@ class _LaundryStudentPanel extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          charge.status == LaundryChargeStatus.paid
-                              ? 'Paid from wallet'
-                              : charge.status.name,
+                          switch (charge.status) {
+                            LaundryChargeStatus.paid => 'Paid from wallet',
+                            LaundryChargeStatus.cancelled =>
+                              'Cancelled by the laundry counter',
+                            _ => 'Waiting for the counter',
+                          },
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ],
