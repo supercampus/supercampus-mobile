@@ -91,4 +91,31 @@ void main() {
       ['Chicken Fried Rice'],
     );
   });
+
+  test('each pickup scan delivers instant food and steps prepared food', () {
+    final placed = order('0066', 'Vishnu S', [
+      instant('w', 'Water bottle'),
+      item('r', 'Chicken Fried Rice'),
+    ]);
+
+    final first = placed.afterScan();
+    expect(first.lineStatus(0), CanteenOrderStatus.completed);
+    expect(first.lineStatus(1), CanteenOrderStatus.preparing);
+    expect(
+      first.scanSummary,
+      'Order #0066 · Water bottle delivered · Chicken Fried Rice preparing',
+    );
+
+    final second = first.afterScan();
+    expect(second.lineStatus(1), CanteenOrderStatus.ready);
+    expect(second.status, CanteenOrderStatus.ready);
+
+    final third = second.afterScan();
+    expect(third.status, CanteenOrderStatus.completed);
+    expect(third.scanSummary, 'Order #0066 delivered');
+
+    // An instant-only order is delivered on the first scan.
+    final drinks = order('0067', 'Sahana S', [instant('w', 'Water bottle')]);
+    expect(drinks.afterScan().status, CanteenOrderStatus.completed);
+  });
 }

@@ -50,7 +50,7 @@ void main() {
           onOrderStatusChanged: (_, _) async {},
           onSaveItem: (_, _) async {},
           onUploadMedia: (_, _) async => '',
-          onScanOrder: (_) async {},
+          onScanOrder: (_) async => null,
           isMainHome: true,
           displayName: 'MEC Stationery',
           email: 'stationary@mec.local',

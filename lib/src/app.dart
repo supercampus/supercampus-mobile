@@ -996,7 +996,7 @@ class _SupercampusAppState extends State<SupercampusApp>
           if (!mounted) return;
           messenger?.showSnackBar(
             SnackBar(
-              content: Text('Order #${order.displayId} delivered successfully!'),
+              content: Text(order.scanSummary),
               behavior: SnackBarBehavior.floating,
               backgroundColor: AppColors.success,
             ),

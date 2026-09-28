@@ -43,7 +43,9 @@ class CanteenCaptainHome extends StatefulWidget {
     int? lineIndex,
   })
   onOrderStatusChanged;
-  final Future<void> Function(String qrPayload)? onScanOrder;
+  /// Hands a pickup QR to the counter; resolves with the order as it now
+  /// stands, so the confirmation can say what moved.
+  final Future<CanteenOrder?> Function(String qrPayload)? onScanOrder;
   final VoidCallback? onProfileTap;
   final String? photoUrl;
   final String? displayName;
@@ -54,6 +56,13 @@ class CanteenCaptainHome extends StatefulWidget {
 }
 
 class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
+  /// This screen's own messenger, so confirmations appear inside it, above
+  /// its bottom bar, rather than on an enclosing page behind that bar.
+  final _messengerKey = GlobalKey<ScaffoldMessengerState>();
+
+  ScaffoldMessengerState get _messenger =>
+      _messengerKey.currentState ?? ScaffoldMessenger.of(context);
+
   var _index = 0;
   var _busy = false;
 
@@ -64,7 +73,7 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
       await action();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        _messenger.showSnackBar(
           SnackBar(
             content: Text(userFacingError(error)),
           ),
@@ -79,11 +88,11 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
     final payload = await openScanQr(context, title: 'Scan order QR');
     if (payload == null || !mounted) return;
     await _run(() async {
-      await widget.onScanOrder!(payload);
+      final order = await widget.onScanOrder!(payload);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        _messenger.showSnackBar(
           SnackBar(
-            content: Text('Order delivered successfully!'),
+            content: Text(order?.scanSummary ?? 'Order scanned'),
             behavior: SnackBarBehavior.floating,
             backgroundColor: AppColors.success,
           ),
@@ -132,7 +141,7 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
 
     final avatarInitials = _initials(widget.displayName ?? widget.store.user.name);
 
-    return Scaffold(
+    final scaffold = Scaffold(
       appBar: AppBar(
         titleSpacing: widget.isMainHome ? null : 0,
         leading: widget.isMainHome ? null : ModuleBackButton(onPressed: widget.onExitModule),
@@ -231,6 +240,7 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
         ],
       ),
     );
+    return ScaffoldMessenger(key: _messengerKey, child: scaffold);
   }
 }
 

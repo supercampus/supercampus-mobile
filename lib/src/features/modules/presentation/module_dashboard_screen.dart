@@ -282,70 +282,86 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
 
     if (widget.session.isCanteenOwner || widget.session.isStationeryOwner) {
       final safeBottom = MediaQuery.paddingOf(context).bottom;
+      final floatingNav =
+          !(widget.session.isStationeryOwner &&
+              _canteenStaffMode == CanteenStaffMode.work);
+      final media = MediaQuery.of(context);
       return Stack(
         children: [
-          CanteenShell(
-            session: widget.session as dynamic,
-            onExitModule: () {},
-            onSignOut: widget.onSignOut,
-            repository: widget.canteenRepository,
-            onAlertsTap: _openAlerts,
-            onProfileTap: _openProfileSheet,
-            hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
-            photoUrl: widget.session.photoUrl,
-            isMainHome: true,
-            initialStaffMode: _canteenStaffMode,
-            onStaffModeChanged: (mode) =>
-                setState(() => _canteenStaffMode = mode),
-            ownerNav: _ownerNav,
-          ),
-          if (!(widget.session.isStationeryOwner &&
-              _canteenStaffMode == CanteenStaffMode.work))
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: safeBottom + 10,
-            child: ListenableBuilder(
-              listenable: _ownerNav,
-              builder: (context, _) {
-                // In a shop's workspace the second tab is its Menu; anywhere
-                // else (Shop mode, oversight without a menu) it stays Modules.
-                final menu = _ownerNav.menuAvailable;
-                final onMenu = _ownerNav.section == OwnerSection.menu;
-                return CampusNavBar(
-                  selectedId: menu && onMenu ? 'menu' : 'home',
-                  showScan: widget.session.canScanQr,
-                  initials: initialsOf(widget.session.displayName),
-                  avatarUrl: widget.session.photoUrl,
-                  items: menu
-                      ? [
-                          CampusNavItem(
-                            id: 'home',
-                            label: 'Home',
-                            icon: const Icon(Icons.home_outlined),
-                            selectedIcon: const Icon(Icons.home_rounded),
-                            onTap: () => _ownerNav.show(OwnerSection.orders),
-                          ),
-                          CampusNavItem(
-                            id: 'menu',
-                            label: 'Menu',
-                            icon: const Icon(Icons.restaurant_menu_outlined),
-                            selectedIcon:
-                                const Icon(Icons.restaurant_menu_rounded),
-                            onTap: () => _ownerNav.show(OwnerSection.menu),
-                          ),
-                        ]
-                      : null,
-                  onHome: () {},
-                  onModules: _openModules,
-                  onProfile: _openProfileSheet,
-                  onScan: widget.session.canScanQr && widget.onScan != null
-                      ? () => widget.onScan!(context)
-                      : null,
-                );
-              },
+          // The bar floats over the page, so the page is told its bottom
+          // inset includes the bar: floating toasts then rise above it
+          // instead of sliding underneath.
+          MediaQuery(
+            data: floatingNav
+                ? media.copyWith(
+                    padding: media.padding.copyWith(
+                      bottom: safeBottom + CampusNavBar.heightFor(context) + 10,
+                    ),
+                  )
+                : media,
+            child: CanteenShell(
+              session: widget.session as dynamic,
+              onExitModule: () {},
+              onSignOut: widget.onSignOut,
+              repository: widget.canteenRepository,
+              onAlertsTap: _openAlerts,
+              onProfileTap: _openProfileSheet,
+              hasAlerts: _alerts.isNotEmpty || _unreadNotifications > 0,
+              photoUrl: widget.session.photoUrl,
+              isMainHome: true,
+              initialStaffMode: _canteenStaffMode,
+              onStaffModeChanged: (mode) =>
+                  setState(() => _canteenStaffMode = mode),
+              ownerNav: _ownerNav,
             ),
           ),
+          if (floatingNav)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: safeBottom + 10,
+              child: ListenableBuilder(
+                listenable: _ownerNav,
+                builder: (context, _) {
+                  // In a shop's workspace the second tab is its Menu; anywhere
+                  // else (Shop mode, oversight without a menu) it stays Modules.
+                  final menu = _ownerNav.menuAvailable;
+                  final onMenu = _ownerNav.section == OwnerSection.menu;
+                  return CampusNavBar(
+                    selectedId: menu && onMenu ? 'menu' : 'home',
+                    showScan: widget.session.canScanQr,
+                    initials: initialsOf(widget.session.displayName),
+                    avatarUrl: widget.session.photoUrl,
+                    items: menu
+                        ? [
+                            CampusNavItem(
+                              id: 'home',
+                              label: 'Home',
+                              icon: const Icon(Icons.home_outlined),
+                              selectedIcon: const Icon(Icons.home_rounded),
+                              onTap: () => _ownerNav.show(OwnerSection.orders),
+                            ),
+                            CampusNavItem(
+                              id: 'menu',
+                              label: 'Menu',
+                              icon: const Icon(Icons.restaurant_menu_outlined),
+                              selectedIcon: const Icon(
+                                Icons.restaurant_menu_rounded,
+                              ),
+                              onTap: () => _ownerNav.show(OwnerSection.menu),
+                            ),
+                          ]
+                        : null,
+                    onHome: () {},
+                    onModules: _openModules,
+                    onProfile: _openProfileSheet,
+                    onScan: widget.session.canScanQr && widget.onScan != null
+                        ? () => widget.onScan!(context)
+                        : null,
+                  );
+                },
+              ),
+            ),
         ],
       );
     }
@@ -434,8 +450,8 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                           onProfile: _openProfileSheet,
                           onScan:
                               widget.session.canScanQr && widget.onScan != null
-                                  ? () => widget.onScan!(context)
-                                  : null,
+                              ? () => widget.onScan!(context)
+                              : null,
                         ),
                       ),
                     ],
@@ -448,7 +464,6 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       ),
     );
   }
-
 
   void _onNavSelect(String id) {
     switch (id) {
@@ -577,7 +592,9 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
               // Profile photo
               CircleAvatar(
                 radius: 40,
-                backgroundColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                backgroundColor: Theme.of(
+                  ctx,
+                ).colorScheme.surfaceContainerHighest,
                 backgroundImage: widget.session.photoUrl != null
                     ? NetworkImage(widget.session.photoUrl!)
                     : null,
@@ -673,7 +690,10 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
               // Sign out row
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.logout, color: Theme.of(ctx).colorScheme.error),
+                leading: Icon(
+                  Icons.logout,
+                  color: Theme.of(ctx).colorScheme.error,
+                ),
                 title: Text(
                   'Sign out',
                   style: TextStyle(color: Theme.of(ctx).colorScheme.error),

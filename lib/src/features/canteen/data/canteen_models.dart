@@ -309,6 +309,38 @@ class CanteenOrder {
     return current.nextServiceStep;
   }
 
+  /// What a pickup-QR scan did, for the counter's confirmation message.
+  String get scanSummary {
+    if (status == CanteenOrderStatus.completed) {
+      return 'Order #$displayId delivered';
+    }
+    final parts = [
+      for (var i = 0; i < lines.length; i++)
+        '${lines[i].item.name} ${switch (lineStatus(i)) {
+          CanteenOrderStatus.completed => 'delivered',
+          CanteenOrderStatus.preparing => 'preparing',
+          CanteenOrderStatus.ready => 'ready to serve',
+          _ => 'pending',
+        }}',
+    ];
+    return 'Order #$displayId · ${parts.join(' · ')}';
+  }
+
+  /// Where the next pickup-QR scan takes the order: instant food is handed
+  /// over at once, prepared food moves one step per scan.
+  CanteenOrder afterScan() {
+    var order = this;
+    for (var i = 0; i < lines.length; i++) {
+      final current = order.lineStatus(i);
+      if (current == CanteenOrderStatus.completed) continue;
+      final next = lines[i].item.isInstant
+          ? CanteenOrderStatus.completed
+          : (current.nextServiceStep ?? CanteenOrderStatus.completed);
+      order = order.withLineStatus(i, next);
+    }
+    return order;
+  }
+
   /// The order after one item moves: every item is pinned to its own status
   /// and the order's status summarises them, as the server does.
   CanteenOrder withLineStatus(int index, CanteenOrderStatus next) {

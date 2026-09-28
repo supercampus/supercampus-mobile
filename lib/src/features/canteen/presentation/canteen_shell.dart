@@ -704,8 +704,9 @@ class _CanteenShellState extends State<CanteenShell> {
         onUploadMedia: (bytes, filename) =>
             _repository.uploadMedia(bytes, filename: filename),
         onScanOrder: (payload) async {
-          await _repository.scanOrder(payload);
+          final order = await _repository.scanOrder(payload);
           await _loadStore(silent: true);
+          return order;
         },
         isMainHome: widget.isMainHome,
         onProfileTap: widget.onProfileTap,
@@ -746,8 +747,9 @@ class _CanteenShellState extends State<CanteenShell> {
         onModeChanged: _updateOwnerMode,
         onOrderStatusChanged: _updateOrderStatus,
         onScanOrder: (payload) async {
-          await _repository.scanOrder(payload);
+          final order = await _repository.scanOrder(payload);
           await _loadStore(silent: true);
+          return order;
         },
         onProfileTap: widget.onProfileTap,
         photoUrl: widget.photoUrl ?? widget.session.photoUrl,

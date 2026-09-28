@@ -95,14 +95,14 @@ class MockCanteenRepository implements CanteenRepository {
     );
     if (index < 0) throw const CanteenException('Order QR is invalid.');
     final target = _orders[index];
-    if (!target.isInstantOnly) {
-      throw const CanteenException(
-        'This order contains food that requires kitchen preparation. Please use the kitchen preparation flow.',
+    if (!target.status.isActive) {
+      throw CanteenException(
+        target.status == CanteenOrderStatus.completed
+            ? 'This order is already delivered'
+            : 'This order is already ${target.status.label.toLowerCase()}',
       );
     }
-    final updated = target.copyWith(
-      status: CanteenOrderStatus.completed,
-    );
+    final updated = target.afterScan();
     _orders[index] = updated;
     return updated;
   }

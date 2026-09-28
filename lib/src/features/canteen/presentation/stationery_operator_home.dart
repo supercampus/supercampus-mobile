@@ -51,7 +51,9 @@ class StationeryOperatorHome extends StatefulWidget {
   final Future<String> Function(Uint8List bytes, String filename) onUploadMedia;
 
   /// Collects an order from its pickup QR. The QR Scan tab needs it.
-  final Future<void> Function(String payload)? onScanOrder;
+  /// Hands a pickup QR to the counter; resolves with the order as it now
+  /// stands, so the confirmation can say what moved.
+  final Future<CanteenOrder?> Function(String payload)? onScanOrder;
   final String? initialAction;
   final bool isMainHome;
   final VoidCallback? onProfileTap;
@@ -67,6 +69,13 @@ class StationeryOperatorHome extends StatefulWidget {
 enum StationeryTab { home, inventory, scan }
 
 class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
+  /// This screen's own messenger, so confirmations appear inside it, above
+  /// its bottom bar, rather than on an enclosing page behind that bar.
+  final _messengerKey = GlobalKey<ScaffoldMessengerState>();
+
+  ScaffoldMessengerState get _messenger =>
+      _messengerKey.currentState ?? ScaffoldMessenger.of(context);
+
   var _tab = StationeryTab.home;
   var _busy = false;
   var _query = '';
@@ -97,7 +106,7 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
       await action();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        _messenger.showSnackBar(
           SnackBar(
             content: Text(userFacingError(error)),
           ),
@@ -160,7 +169,7 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
     final shopOpen = widget.store.staffState.shopOpen ?? true;
     final counterOpen = widget.store.staffState.mode == CanteenStaffMode.work;
 
-    return Scaffold(
+    final scaffold = Scaffold(
       appBar: AppBar(
         titleSpacing: widget.isMainHome ? null : 0,
         leading: widget.isMainHome
@@ -292,6 +301,7 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
         ],
       ),
     );
+    return ScaffoldMessenger(key: _messengerKey, child: scaffold);
   }
 
   /// Opens the shared scanner over the current tab and hands the pickup QR
@@ -301,10 +311,10 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
     final payload = await openScanQr(context, title: 'Scan pickup QR');
     if (payload == null || !mounted) return;
     await _run(() async {
-      await widget.onScanOrder!(payload);
+      final order = await widget.onScanOrder!(payload);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Order collected successfully.')),
+        _messenger.showSnackBar(
+          SnackBar(content: Text(order?.scanSummary ?? 'Order scanned')),
         );
       }
     });

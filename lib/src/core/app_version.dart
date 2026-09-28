@@ -3,5 +3,5 @@
 /// `package_info_plus` is not a dependency, so the values mirror
 /// `version:` in pubspec.yaml (`<name>+<build>`). `test/app_version_test.dart`
 /// fails whenever the two drift, so bump both together when releasing.
-const String appVersionName = '1.0.3';
-const String appBuildNumber = '28';
+const String appVersionName = '1.0.4';
+const String appBuildNumber = '29';
