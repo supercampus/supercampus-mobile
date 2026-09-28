@@ -198,39 +198,64 @@ class _OrderCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: context.palette.brandInk.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.qr_code_2_rounded,
-                  size: 18,
-                  color: context.palette.brandInk,
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Tap to view pickup QR code in full screen',
-                    style: TextStyle(
-                      color: context.palette.brandInk,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 18,
-                  color: context.palette.brandInk,
-                ),
-              ],
+          // Only an order still at the counter has a pickup QR; a settled
+          // one opens its outcome instead.
+          _OrderCardPrompt(order: order),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrderCardPrompt extends StatelessWidget {
+  const _OrderCardPrompt({required this.order});
+
+  final CanteenOrder order;
+
+  @override
+  Widget build(BuildContext context) {
+    final refused =
+        order.status == CanteenOrderStatus.rejected ||
+        order.status == CanteenOrderStatus.cancelled;
+    final tone = refused
+        ? context.adaptive(
+            light: const Color(0xFFB42318),
+            dark: const Color(0xFFFCA5A5),
+          )
+        : context.palette.brandInk;
+    final outcome = order.status == CanteenOrderStatus.rejected
+        ? 'Rejected'
+        : 'Cancelled';
+    final (IconData icon, String label) = order.status.isActive
+        ? (Icons.qr_code_2_rounded, 'Tap to view pickup QR code in full screen')
+        : refused
+        ? (
+            Icons.cancel_outlined,
+            '$outcome · ${formatCurrency(order.total)} refunded · Tap for details',
+          )
+        : (Icons.receipt_long_outlined, 'Tap to view order details');
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: tone.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18, color: tone),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: tone,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
             ),
           ),
+          Icon(Icons.chevron_right_rounded, size: 18, color: tone),
         ],
       ),
     );

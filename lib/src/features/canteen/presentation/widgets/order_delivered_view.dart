@@ -4,9 +4,10 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../data/canteen_models.dart';
 
-/// Shown on the order pickup screen once the order is collected. That screen
-/// is always white (for the counter scanner), so these colours are fixed for
-/// a white page in both app themes.
+/// Shown on the order pickup screen once the order is settled: collected, or
+/// rejected / cancelled (then refunded). That screen is always white (for the
+/// counter scanner), so these colours are fixed for a white page in both app
+/// themes. A settled order has no pickup QR to show.
 class OrderDeliveredView extends StatelessWidget {
   const OrderDeliveredView({
     super.key,
@@ -24,8 +25,33 @@ class OrderDeliveredView extends StatelessWidget {
   static const _successSoft = Color(0xFFE7F7EC);
   static const _ink = Color(0xFF0A0A12);
   static const _inkSecondary = Color(0xFF6B7280);
+  static const _danger = Color(0xFFB42318);
+  static const _dangerSoft = Color(0xFFFDECEA);
   static const _card = Color(0xFFF8F6FE);
   static const _cardBorder = Color(0xFFE6DFFC);
+
+  bool get _refused =>
+      order.status == CanteenOrderStatus.rejected ||
+      order.status == CanteenOrderStatus.cancelled;
+
+  Color get _tone => _refused ? _danger : _success;
+  Color get _toneSoft => _refused ? _dangerSoft : _successSoft;
+
+  String get _title => switch (order.status) {
+    CanteenOrderStatus.rejected => 'Your order was rejected',
+    CanteenOrderStatus.cancelled => 'Your order was cancelled',
+    _ => 'Your order is delivered',
+  };
+
+  String get _subtitle => _refused
+      ? '${formatCurrency(order.total)} was refunded to your wallet'
+      : 'Collected at the counter · Enjoy your food!';
+
+  String get _badge => switch (order.status) {
+    CanteenOrderStatus.rejected => 'Rejected',
+    CanteenOrderStatus.cancelled => 'Cancelled',
+    _ => 'Delivered',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -54,22 +80,24 @@ class OrderDeliveredView extends StatelessWidget {
                     child: Container(
                       width: badgeSize,
                       height: badgeSize,
-                      decoration: const BoxDecoration(
-                        color: _successSoft,
+                      decoration: BoxDecoration(
+                        color: _toneSoft,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.check_circle_rounded,
-                        color: _success,
+                        _refused
+                            ? Icons.cancel_rounded
+                            : Icons.check_circle_rounded,
+                        color: _tone,
                         size: compact ? 46 : 56,
                       ),
                     ),
                   ),
                   const SizedBox(height: 18),
-                  const Text(
-                    'Your order is delivered',
+                  Text(
+                    _title,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: _ink,
                       fontSize: 23,
                       fontWeight: FontWeight.w700,
@@ -77,10 +105,10 @@ class OrderDeliveredView extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Collected at the counter · Enjoy your food!',
+                  Text(
+                    _subtitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: _inkSecondary, fontSize: 14),
+                    style: const TextStyle(color: _inkSecondary, fontSize: 14),
                   ),
                   const SizedBox(height: 22),
                   _summaryCard(),
@@ -157,18 +185,22 @@ class OrderDeliveredView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: _successSoft,
+                color: _toneSoft,
                 borderRadius: BorderRadius.circular(999),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.check_rounded, size: 14, color: _success),
-                  SizedBox(width: 4),
+                  Icon(
+                    _refused ? Icons.close_rounded : Icons.check_rounded,
+                    size: 14,
+                    color: _tone,
+                  ),
+                  const SizedBox(width: 4),
                   Text(
-                    'Delivered',
+                    _badge,
                     style: TextStyle(
-                      color: _success,
+                      color: _tone,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -209,9 +241,9 @@ class OrderDeliveredView extends StatelessWidget {
         const Divider(height: 20, color: _cardBorder),
         Row(
           children: [
-            const Text(
-              'Total paid',
-              style: TextStyle(color: _inkSecondary, fontSize: 14),
+            Text(
+              _refused ? 'Refunded' : 'Total paid',
+              style: const TextStyle(color: _inkSecondary, fontSize: 14),
             ),
             const Spacer(),
             Text(

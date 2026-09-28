@@ -90,7 +90,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
   }
 
   void _startPolling() {
-    if (_order.status == CanteenOrderStatus.completed) return;
+    if (!_order.status.isActive) return;
     _timer = Timer.periodic(const Duration(milliseconds: 1500), (_) async {
       if (!mounted) return;
       if (widget.onRefresh != null) {
@@ -104,7 +104,7 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
         setState(() {
           _order = latest;
         });
-        if (_order.status == CanteenOrderStatus.completed) {
+        if (!_order.status.isActive) {
           _timer?.cancel();
           _timer = null;
         }
@@ -144,7 +144,9 @@ class _OrderPickupSheetState extends State<OrderPickupSheet> {
     // As large as the screen comfortably allows, so it scans from a distance.
     final qrSize =
         (MediaQuery.sizeOf(context).width - 72).clamp(220.0, 300.0).toDouble();
-    if (_order.status == CanteenOrderStatus.completed) {
+    // A settled order (delivered, rejected or cancelled) has nothing left to
+    // scan, so it shows its outcome instead of the pickup QR.
+    if (!_order.status.isActive) {
       return SafeArea(
         child: Container(
           color: theme.backgroundColor,
