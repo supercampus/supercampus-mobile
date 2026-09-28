@@ -222,6 +222,12 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
     }
     final sections = ownerSectionsFor(widget.store, activeShop);
     final section = sections.contains(_section) ? _section : sections.first;
+    final tabSections = widget.nav != null
+        ? [
+            for (final value in sections)
+              if (value != OwnerSection.menu) value,
+          ]
+        : sections;
     final overseeing = widget.store.canConfigureShops &&
         widget.store.assignedShopKeys.isEmpty;
     widget.nav?.report(
@@ -245,6 +251,7 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
       OwnerSection.menu: _OwnerMenu(
         items: scopedMenu,
         busy: _busy,
+        onAdd: () => _editItem(null),
         onEdit: _editItem,
         onDelete: (id) => _run(() => widget.onDeleteMenuItem(id)),
         onToggleAvailability: (item, isAvailable) => _run(
@@ -318,11 +325,12 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
           // These are sections of this page, not app navigation, so they sit
           // at the top of it. A second bar at the bottom would land underneath
           // the one the host already floats there.
-          // A single section needs no switcher.
-          if (sections.length > 1)
+          // A single section needs no switcher. When the host's bottom bar
+          // carries Menu, the tabs here leave it out rather than repeat it.
+          if (tabSections.length > 1)
             _SectionTabs(
-              sections: sections,
-              selected: section,
+              sections: tabSections,
+              selected: tabSections.contains(section) ? section : null,
               onChanged: (value) => setState(() => _section = value),
             ),
           if (_busy) const LinearProgressIndicator(minHeight: 2),
@@ -342,20 +350,6 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
           ),
         ],
       ),
-      floatingActionButton: section == OwnerSection.menu
-          ? Padding(
-              padding: EdgeInsets.only(
-                bottom:
-                    CampusNavBar.heightFor(context) +
-                    MediaQuery.paddingOf(context).bottom,
-              ),
-              child: FloatingActionButton(
-                tooltip: 'Add menu item',
-                onPressed: _busy ? null : () => _editItem(null),
-                child: const Icon(Icons.add),
-              ),
-            )
-          : null,
     );
   }
 
@@ -752,10 +746,12 @@ class _OwnerMenu extends StatefulWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onToggleAvailability,
+    required this.onAdd,
   });
 
   final List<CanteenMenuItem> items;
   final bool busy;
+  final VoidCallback onAdd;
   final ValueChanged<CanteenMenuItem> onEdit;
   final ValueChanged<String> onDelete;
   final void Function(CanteenMenuItem item, bool isAvailable)
@@ -767,6 +763,9 @@ class _OwnerMenu extends StatefulWidget {
 
 class _OwnerMenuState extends State<_OwnerMenu> {
   String _searchQuery = '';
+
+  /// The food type shown; null shows every type.
+  String? _type;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -778,13 +777,20 @@ class _OwnerMenuState extends State<_OwnerMenu> {
   @override
   Widget build(BuildContext context) {
     final query = _searchQuery.trim().toLowerCase();
-    final filtered = query.isEmpty
-        ? widget.items
-        : widget.items.where((item) {
-            return item.name.toLowerCase().contains(query) ||
-                item.category.toLowerCase().contains(query) ||
-                item.description.toLowerCase().contains(query);
-          }).toList();
+    final types = {
+      for (final item in widget.items)
+        if (item.category.trim().isNotEmpty) item.category.trim(),
+    }.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    final type = types.contains(_type) ? _type : null;
+    final filtered = widget.items.where((item) {
+      if (type != null && item.category.trim() != type) return false;
+      if (query.isEmpty) return true;
+      return item.name.toLowerCase().contains(query) ||
+          item.category.toLowerCase().contains(query) ||
+          item.description.toLowerCase().contains(query);
+    }).toList();
+    final narrowed = query.isNotEmpty || type != null;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
@@ -801,10 +807,59 @@ class _OwnerMenuState extends State<_OwnerMenu> {
               ),
             ),
             Text(
-              query.isEmpty
-                  ? '${widget.items.length} items'
-                  : '${filtered.length} of ${widget.items.length} items',
+              narrowed
+                  ? '${filtered.length} of ${widget.items.length} items'
+                  : '${widget.items.length} items',
               style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Type and Add item sit at the top, where the list starts.
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String?>(
+                key: const ValueKey('owner-menu-type'),
+                initialValue: type,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: 'Type',
+                  filled: true,
+                  fillColor: context.adaptive(light: const Color(0xFFF1F5F9), dark: const Color(0xFF1C1D23)),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('All types'),
+                  ),
+                  for (final value in types)
+                    DropdownMenuItem<String?>(
+                      value: value,
+                      child: Text(value, overflow: TextOverflow.ellipsis),
+                    ),
+                ],
+                onChanged: (value) => setState(() => _type = value),
+              ),
+            ),
+            const SizedBox(width: 10),
+            FilledButton.icon(
+              key: const ValueKey('owner-menu-add'),
+              onPressed: widget.busy ? null : widget.onAdd,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add item'),
             ),
           ],
         ),
@@ -1002,7 +1057,9 @@ class _SectionTabs extends StatelessWidget {
   });
 
   final List<OwnerSection> sections;
-  final OwnerSection selected;
+  /// Null while a section the tabs do not carry (Menu, from the bottom
+  /// bar) is showing.
+  final OwnerSection? selected;
   final ValueChanged<OwnerSection> onChanged;
 
   @override
@@ -1032,9 +1089,12 @@ class _SectionTabs extends StatelessWidget {
                 ),
               },
           ],
-          selected: {selected},
+          selected: {?selected},
+          emptySelectionAllowed: true,
           showSelectedIcon: false,
-          onSelectionChanged: (value) => onChanged(value.first),
+          onSelectionChanged: (value) {
+            if (value.isNotEmpty) onChanged(value.first);
+          },
         ),
       ),
     );

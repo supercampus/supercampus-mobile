@@ -74,8 +74,8 @@ void main() {
       expect(find.text('Owner workspace'), findsOneWidget);
       expect(find.text('Campus Canteen'), findsOneWidget);
       expect(find.text('Orders'), findsOneWidget);
-      // The section tab, and the bottom bar's Menu in place of Modules.
-      expect(find.text('Menu'), findsNWidgets(2));
+      // Menu lives only in the bottom bar, in place of Modules.
+      expect(find.text('Menu'), findsOneWidget);
       expect(find.text('Modules'), findsNothing);
       expect(find.text('Sales & Profit'), findsOneWidget);
       expect(find.text('Live order queue'), findsOneWidget);

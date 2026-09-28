@@ -289,16 +289,14 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       return Stack(
         children: [
           // The bar floats over the page, so the page is told its bottom
-          // inset includes the bar: floating toasts then rise above it
-          // instead of sliding underneath.
+          // view padding includes the bar: floating toasts then rise above
+          // it instead of sliding underneath. Only the view padding: the
+          // page already pads its own content for the bar.
           MediaQuery(
             data: floatingNav
                 // Scaffold places floating toasts from the view padding, so
                 // that is the inset that has to include the bar.
                 ? media.copyWith(
-                    padding: media.padding.copyWith(
-                      bottom: safeBottom + CampusNavBar.heightFor(context) + 10,
-                    ),
                     viewPadding: media.viewPadding.copyWith(
                       bottom: safeBottom + CampusNavBar.heightFor(context) + 10,
                     ),

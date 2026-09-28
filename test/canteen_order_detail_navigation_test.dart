@@ -217,7 +217,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(nav.section, OwnerSection.menu);
     expect(find.text('Menu management'), findsOneWidget);
-    expect(find.byTooltip('Add menu item'), findsOneWidget);
+    expect(find.byKey(const ValueKey('owner-menu-add')), findsOneWidget);
+    expect(find.byKey(const ValueKey('owner-menu-type')), findsOneWidget);
 
     // Leaving the workspace gives the bar its Modules entry back.
     await tester.pumpWidget(const MaterialApp(home: SizedBox()));
