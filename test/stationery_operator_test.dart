@@ -32,7 +32,7 @@ void main() {
     expect(session3.isStationeryOwner, isTrue);
   });
 
-  testWidgets('StationeryOperatorHome displays Orders tab by default without Profile segment', (
+  testWidgets('StationeryOperatorHome opens on Home with orders then history, and a Home / Inventory / QR Scan bar', (
     tester,
   ) async {
     final store = _createSampleStore();
@@ -49,6 +49,7 @@ void main() {
           onOrderStatusChanged: (_, _) async {},
           onSaveItem: (_, _) async {},
           onUploadMedia: (_, _) async => '',
+          onScanOrder: (_) async {},
           isMainHome: true,
           displayName: 'MEC Stationery',
           email: 'stationary@mec.local',
@@ -57,15 +58,37 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Verify Orders tab is active by default (matching Image 1)
-    expect(find.text('Stationery orders'), findsOneWidget);
-    expect(find.text('Live'), findsOneWidget);
-    expect(find.text('History'), findsOneWidget);
-
-    // Verify switcher only has Inventory and Orders (Profile segment removed)
-    expect(find.text('Inventory'), findsOneWidget);
+    // Home: live orders at the top, settled history underneath.
     expect(find.text('Orders'), findsOneWidget);
+    expect(find.text('History'), findsOneWidget);
+    expect(find.text('Customer One'), findsOneWidget);
+    expect(find.text('Customer Two'), findsOneWidget);
+    final ordersTop = tester.getTopLeft(find.text('Orders')).dy;
+    final historyTop = tester.getTopLeft(find.text('History')).dy;
+    expect(ordersTop, lessThan(historyTop));
+
+    // Navigation is the bottom bar; the old Inventory / Orders switch is gone.
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(SegmentedButton<int>), findsNothing);
+    final nav = find.byType(NavigationBar);
+    expect(
+      find.descendant(of: nav, matching: find.text('Home')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: nav, matching: find.text('Inventory')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: nav, matching: find.text('QR Scan')),
+      findsOneWidget,
+    );
     expect(find.text('Profile'), findsNothing);
+
+    // QR Scan opens the pickup scanner.
+    await tester.tap(find.text('QR Scan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Scan pickup QR'), findsOneWidget);
 
     // Verify top profile button exists on AppBar
     expect(find.byKey(const ValueKey('stationery-top-profile-btn')), findsOneWidget);
@@ -110,8 +133,8 @@ void main() {
     expect(find.text('Stationery Shop Operator'), findsOneWidget);
     expect(find.text('Shop Status'), findsOneWidget);
     expect(find.text('Workspace Mode'), findsOneWidget);
-    expect(find.text('Work mode'), findsOneWidget);
-    expect(find.text('Eat mode'), findsOneWidget);
+    expect(find.text('Work'), findsOneWidget);
+    expect(find.text('Shop'), findsOneWidget);
 
     // Toggle shop status switch
     final switchFinder = find.byType(Switch);
@@ -120,8 +143,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(shopOpenChangedTo, isFalse);
 
-    // Tap Eat mode in segmented button
-    await tester.tap(find.text('Eat mode'));
+    // Tap Shop in the Work / Shop switch
+    await tester.tap(find.text('Shop'));
     await tester.pumpAndSettle();
     expect(modeChangedTo, equals(CanteenStaffMode.eat));
   });
@@ -161,8 +184,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Switch to Inventory tab
-    await tester.tap(find.text('Inventory'));
+    // Switch to the Inventory tab in the bottom bar
+    await tester.tap(find.byKey(const ValueKey('stationery-nav-inventory')));
     await tester.pumpAndSettle();
 
     // Verify Inventory header and buttons
@@ -220,8 +243,18 @@ CanteenStore _createSampleStore() {
     ],
     orders: [
       CanteenOrder(
+        id: 'ord_2',
+        total: 65.0,
+        customerName: 'Customer Two',
+        createdAt: DateTime.parse('2026-09-25T10:00:00Z'),
+        status: CanteenOrderStatus.completed,
+        fulfilmentMode: FulfilmentMode.pickup,
+        lines: const [],
+      ),
+      CanteenOrder(
         id: 'ord_1',
         total: 65.0,
+        customerName: 'Customer One',
         createdAt: DateTime.parse('2026-09-26T10:00:00Z'),
         status: CanteenOrderStatus.pending,
         fulfilmentMode: FulfilmentMode.pickup,

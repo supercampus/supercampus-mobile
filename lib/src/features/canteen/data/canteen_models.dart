@@ -223,11 +223,16 @@ class CanteenOrder {
     this.tokenNumber,
     this.orderNumber,
     this.customerName,
+    this.customerUserId,
     this.qrPayload,
     this.captainName,
   });
 
   final String id;
+
+  /// The account that placed the order, when the source reports it. Staff in
+  /// Shop mode see only their own orders; their counter's queue stays in Work.
+  final String? customerUserId;
   final List<CartLine> lines;
   final double total;
   final CanteenOrderStatus status;
@@ -276,13 +281,13 @@ class CanteenOrder {
     };
   }
 
+  /// Who handled the order at the counter. Orders the server does not
+  /// attribute are grouped together rather than credited to an invented name.
   String get effectiveCaptainName {
     if (captainName != null && captainName!.trim().isNotEmpty) {
       return captainName!.trim();
     }
-    // Attribute to realistic counter captains for analytics drill-down
-    final token = tokenNumber ?? (id.hashCode.abs() % 100);
-    return token % 2 == 0 ? 'Shashi Kumar (Lead)' : 'Captain Counter 2';
+    return 'Counter';
   }
 
   CanteenOrder copyWith({
@@ -300,6 +305,7 @@ class CanteenOrder {
         tokenNumber: tokenNumber ?? this.tokenNumber,
         orderNumber: orderNumber,
         customerName: customerName,
+        customerUserId: customerUserId,
         qrPayload: qrPayload,
         captainName: captainName ?? this.captainName,
       );
@@ -352,12 +358,15 @@ class WalletTransaction {
 
 class CanteenUser {
   const CanteenUser({
+    this.id,
     required this.name,
     required this.email,
     required this.rollNumber,
     required this.department,
   });
 
+  /// The signed-in account's id, when the source reports it.
+  final String? id;
   final String name;
   final String email;
   final String rollNumber;
@@ -384,6 +393,7 @@ class CanteenStore {
     // capability split and represent owners. The backend always sends the
     // explicit value, so order-only captains still receive `false`.
     this.canManageMenu = true,
+    this.canConfigureShops = false,
     this.staffState = const CanteenStaffState(),
     this.analytics = const CanteenAnalytics(),
     this.laundryPricePerKg = 0,
@@ -403,6 +413,11 @@ class CanteenStore {
 
   /// Owners can edit the catalogue. Order-only operators are canteen captains.
   final bool canManageMenu;
+
+  /// Holds the grant to configure the campus's shops (vendor management).
+  /// Someone with it who is not assigned to a shop oversees that shop — its
+  /// figures and, for food, its menu — rather than working its counter.
+  final bool canConfigureShops;
   final CanteenStaffState staffState;
   final CanteenAnalytics analytics;
   final double laundryPricePerKg;
@@ -439,6 +454,7 @@ class CanteenStore {
       assignedShopKeys: assignedShopKeys ?? this.assignedShopKeys,
       canManage: canManage,
       canManageMenu: canManageMenu,
+      canConfigureShops: canConfigureShops,
       staffState: staffState ?? this.staffState,
       analytics: analytics ?? this.analytics,
       laundryPricePerKg: laundryPricePerKg ?? this.laundryPricePerKg,
@@ -468,9 +484,14 @@ class LaundryCharge {
     this.qrPayload,
     this.claimedAt,
     this.paidAt,
+    this.claimedBy,
   });
 
   final String id;
+
+  /// The account that claimed the charge. Only a laundry operator's payload
+  /// carries it, since they see every charge the counter raised.
+  final String? claimedBy;
   final LaundryServiceType serviceType;
   final String name;
   final String description;
@@ -499,6 +520,7 @@ class LaundryCharge {
         qrPayload: qrPayload,
         claimedAt: claimedAt,
         paidAt: paidAt ?? this.paidAt,
+        claimedBy: claimedBy,
       );
 }
 
@@ -514,7 +536,25 @@ class LaundryPaymentResult {
   final WalletTransaction transaction;
 }
 
+/// Whether someone with a shop job is at work or shopping.
+///
+/// [eat] keeps its wire name (`eat`) for the stored preference, but it means
+/// Shop: the person buys from every campus store like any student — canteen,
+/// stationery and laundry — with their own wallets.
 enum CanteenStaffMode { eat, work }
+
+extension CanteenStaffModeLabel on CanteenStaffMode {
+  String get label => switch (this) {
+    CanteenStaffMode.work => 'Work',
+    CanteenStaffMode.eat => 'Shop',
+  };
+
+  String get description => switch (this) {
+    CanteenStaffMode.work => 'Run your counter, menu and sales',
+    CanteenStaffMode.eat =>
+      'Buy from Campus Canteen, Stationery and Laundry with your wallet',
+  };
+}
 
 class CanteenStaffState {
   const CanteenStaffState({this.mode = CanteenStaffMode.eat, this.shopOpen});

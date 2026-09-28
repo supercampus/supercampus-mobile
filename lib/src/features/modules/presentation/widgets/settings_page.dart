@@ -431,24 +431,20 @@ class _SettingsPageState extends State<SettingsPage> {
                     mutedColor,
                   ),
                 ),
-                if (widget.session.isCanteenOwner ||
-                    widget.session.isCaptain ||
-                    widget.session.isStationeryOwner) ...[
+                // The host offers Work / Shop to everyone with a job; it
+                // passes the handler only for them.
+                if (widget.onCanteenModeChanged != null) ...[
                   _buildDivider(dividerColor),
                   _SettingsTile(
                     icon: Icons.storefront_outlined,
-                    title: widget.session.isStationeryOwner
-                        ? 'Stationery mode'
-                        : 'Canteen mode',
+                    title: 'Work / Shop',
                     textColor: textColor,
                     isDark: isDark,
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _canteenMode == CanteenStaffMode.work
-                              ? 'Work mode'
-                              : 'Eat mode',
+                          _canteenMode.label,
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -674,7 +670,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Canteen mode',
+                  'Work / Shop',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -683,7 +679,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Choose whether you are actively running counter operations or browsing as a customer.',
+                  'Work is your job. Shop lets you buy from Campus Canteen, Stationery and Laundry like any student.',
                   style: TextStyle(
                     fontSize: 13,
                     color: mutedColor,
@@ -712,14 +708,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   ),
                   title: Text(
-                    'Work mode',
+                    'Work',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: textColor,
                     ),
                   ),
                   subtitle: Text(
-                    'Manage live orders, counter controls, and menu items',
+                    CanteenStaffMode.work.description,
                     style: TextStyle(color: mutedColor, fontSize: 12),
                   ),
                   trailing: _canteenMode == CanteenStaffMode.work
@@ -747,21 +743,21 @@ class _SettingsPageState extends State<SettingsPage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
-                      Icons.restaurant_outlined,
+                      Icons.shopping_bag_outlined,
                       color: _canteenMode == CanteenStaffMode.eat
                           ? context.palette.brandInk
                           : mutedColor,
                     ),
                   ),
                   title: Text(
-                    'Eat mode',
+                    'Shop',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: textColor,
                     ),
                   ),
                   subtitle: Text(
-                    'Browse student menu, order food, and pay from wallet',
+                    CanteenStaffMode.eat.description,
                     style: TextStyle(color: mutedColor, fontSize: 12),
                   ),
                   trailing: _canteenMode == CanteenStaffMode.eat

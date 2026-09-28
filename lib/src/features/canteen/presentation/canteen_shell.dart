@@ -24,8 +24,8 @@ import 'canteen_orders_screen.dart';
 import 'canteen_scanner_screen.dart';
 import 'stationery_operator_home.dart';
 import 'student_canteen_home.dart';
-import 'student_canteen_profile_screen.dart';
 import 'student_wallet_screen.dart';
+import 'widgets/shop_mode_switch.dart';
 
 class CanteenShell extends StatefulWidget {
   const CanteenShell({
@@ -78,16 +78,29 @@ class _CanteenShellState extends State<CanteenShell> {
   var _loadInProgress = false;
   var _ownerWorkMode = true;
 
+  /// Everyone with a job in the shops or offices can switch between Work and
+  /// Shop. Students only ever shop.
   bool get _canUseWorkMode {
     final session = widget.session;
-    return (_store?.canManage == true ||
-            session.isCaptain ||
-            session.isCanteenOwner ||
-            session.isStationeryOwner ||
-            _isStationeryOperator) &&
+    return (_hasCounterWork || session.isAccountant) &&
         session.role != UserRole.student &&
         session.activePortalFamily != PortalFamily.student;
   }
+
+  /// Whether Work mode has a surface inside this module: a counter to run, or
+  /// (with the shop-configuration grant) the shops to oversee. An accountant's
+  /// work is the recharge desk, which lives outside it.
+  bool get _hasCounterWork {
+    final session = widget.session;
+    return _store?.canManage == true ||
+        session.isCaptain ||
+        session.isCanteenOwner ||
+        session.isStationeryOwner ||
+        _isStationeryOperator ||
+        _isLaundryOperator;
+  }
+
+  String? get _userId => _store?.user.id;
 
   bool get _isStationeryOperator {
     final lowerEmail = widget.session.email.trim().toLowerCase();
@@ -133,7 +146,10 @@ class _CanteenShellState extends State<CanteenShell> {
         ? 1
         : 0;
     _openedOrdersFromHome = false;
-    _ownerWorkMode = widget.initialStaffMode == null
+    // "shop" opens the module as a customer, whatever the last mode was.
+    _ownerWorkMode = widget.initialAction == 'shop'
+        ? false
+        : widget.initialStaffMode == null
         ? true
         : widget.initialStaffMode == CanteenStaffMode.work;
     _loadStore();
@@ -153,6 +169,7 @@ class _CanteenShellState extends State<CanteenShell> {
     if (widget.initialAction != oldWidget.initialAction) {
       // A new launching action may open the wallet again, once.
       _walletActionHandled = false;
+      if (widget.initialAction == 'shop') _ownerWorkMode = false;
     }
     if (widget.initialAction != null &&
         oldWidget.initialAction != widget.initialAction) {
@@ -228,17 +245,88 @@ class _CanteenShellState extends State<CanteenShell> {
     }
   }
 
+  /// Switches between Work and Shop. The screen answers at once; the stored
+  /// preference follows. It is only a preference, so a failed save leaves the
+  /// person where they asked to be rather than bouncing them back.
   Future<void> _updateOwnerMode(CanteenStaffMode mode) async {
-    final state = await _repository.updateStaffState(
-      mode: mode,
-      shopOpen: _store?.staffState.shopOpen,
-    );
-    if (!mounted || _store == null) return;
+    final working = mode == CanteenStaffMode.work;
+    if (working && !_hasCounterWork) {
+      // An accountant's work is the recharge desk, outside this module.
+      widget.onStaffModeChanged?.call(mode);
+      widget.onExitModule();
+      return;
+    }
     setState(() {
-      _ownerWorkMode = mode == CanteenStaffMode.work;
-      _store = _store!.copyWith(staffState: state);
+      _ownerWorkMode = working;
+      _cart.clear();
+      _selectedIndex = 0;
+      _openedOrdersFromHome = false;
     });
     widget.onStaffModeChanged?.call(mode);
+    try {
+      // The counter's open state is not part of this choice.
+      final state = await _repository.updateStaffState(mode: mode);
+      if (!mounted || _store == null) return;
+      setState(() {
+        _store = _store!.copyWith(
+          staffState: CanteenStaffState(
+            mode: state.mode,
+            shopOpen: state.shopOpen ?? _store!.staffState.shopOpen,
+          ),
+        );
+      });
+    } catch (_) {
+      if (!mounted || _store == null) return;
+      setState(() {
+        _store = _store!.copyWith(
+          staffState: CanteenStaffState(
+            mode: mode,
+            shopOpen: _store!.staffState.shopOpen,
+          ),
+        );
+      });
+    }
+  }
+
+  /// The store as a customer sees it: their own orders, their own laundry
+  /// charges, and every shop. An operator's payload also carries their
+  /// counter's queue and charges, which belong to Work.
+  CanteenStore _shopView(CanteenStore store) {
+    final me = _userId;
+    if (me == null) return store;
+    final ownsCharges = store.laundryCharges.any(
+      (charge) => charge.claimedBy != null,
+    );
+    return store.copyWith(
+      orders: [
+        for (final order in store.orders)
+          if (order.customerUserId == null || order.customerUserId == me) order,
+      ],
+      laundryCharges: ownsCharges
+          ? [
+              for (final charge in store.laundryCharges)
+                if (charge.claimedBy == me) charge,
+            ]
+          : null,
+    );
+  }
+
+  /// The store as the counter sees it: the person's own purchases from other
+  /// shops are not part of their queue.
+  CanteenStore _workView(CanteenStore store) {
+    final me = _userId;
+    final assigned = store.assignedShopKeys.toSet();
+    if (me == null || assigned.isEmpty) return store;
+    return store.copyWith(
+      orders: [
+        for (final order in store.orders)
+          if (order.customerUserId != me ||
+              order.lines.any(
+                (line) => assigned.contains(line.item.effectiveShopKey),
+              ))
+            order,
+      ],
+    );
   }
 
   Future<void> _updateShopOpen(bool open) async {
@@ -531,21 +619,23 @@ class _CanteenShellState extends State<CanteenShell> {
     );
   }
 
-  Future<void> _openProfile(BuildContext context) async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (_) => StudentCanteenProfileScreen(
-          store: _store!,
-          canUseWorkMode: _canUseWorkMode,
-          currentMode:
-              _ownerWorkMode ? CanteenStaffMode.work : CanteenStaffMode.eat,
-          onModeChanged: (mode) => _updateOwnerMode(mode),
-          onSignOut: () {
-            Navigator.of(context).pop();
-            widget.onSignOut();
-          },
-        ),
-      ),
+  /// The avatar in the shop screens, when the host has not given it the app's
+  /// own profile: the signed-in person from the session, the Work / Shop
+  /// choice, and sign-out. There used to be a second "Profile & settings"
+  /// page here that dressed every account up as a student.
+  Future<void> _openAccount(BuildContext context) {
+    final session = widget.session;
+    return showShopAccountSheet(
+      context,
+      name: session.displayName,
+      email: session.email,
+      idNumber: session.idNumber,
+      photoUrl: widget.photoUrl ?? session.photoUrl,
+      mode: _canUseWorkMode
+          ? (_ownerWorkMode ? CanteenStaffMode.work : CanteenStaffMode.eat)
+          : null,
+      onModeChanged: _canUseWorkMode ? _updateOwnerMode : null,
+      onSignOut: widget.onSignOut,
     );
   }
 
@@ -585,9 +675,10 @@ class _CanteenShellState extends State<CanteenShell> {
     }
 
     if (_isStationeryOperator && _ownerWorkMode) {
-      final stationeryStore = store.staffState.mode == CanteenStaffMode.work
-          ? store
-          : store.copyWith(
+      final workStore = _workView(store);
+      final stationeryStore = workStore.staffState.mode == CanteenStaffMode.work
+          ? workStore
+          : workStore.copyWith(
               staffState: CanteenStaffState(
                 mode: CanteenStaffMode.work,
                 shopOpen: store.staffState.shopOpen,
@@ -605,6 +696,10 @@ class _CanteenShellState extends State<CanteenShell> {
         onSaveItem: (item, create) => _saveMenuItem(item, create),
         onUploadMedia: (bytes, filename) =>
             _repository.uploadMedia(bytes, filename: filename),
+        onScanOrder: (payload) async {
+          await _repository.scanOrder(payload);
+          await _loadStore(silent: true);
+        },
         isMainHome: widget.isMainHome,
         onProfileTap: widget.onProfileTap,
         displayName: widget.session.displayName,
@@ -613,10 +708,11 @@ class _CanteenShellState extends State<CanteenShell> {
       );
     }
 
-    if (_isLaundryOperator) {
+    if (_isLaundryOperator && _ownerWorkMode) {
       return LaundryOperatorHome(
-        store: store,
+        store: _workView(store),
         onExitModule: widget.onExitModule,
+        onShopMode: () => _updateOwnerMode(CanteenStaffMode.eat),
         onRefresh: () => _loadStore(silent: true),
         onUpdatePrice: _updateLaundryPrice,
         onCreateCharge: _createLaundryCharge,
@@ -626,9 +722,10 @@ class _CanteenShellState extends State<CanteenShell> {
     final isCaptain = widget.session.isCaptain ||
         (store.canManage && !store.canManageMenu && !widget.session.isCanteenOwner);
     if (isCaptain && _ownerWorkMode) {
-      final captainStore = store.staffState.mode == CanteenStaffMode.work
-          ? store
-          : store.copyWith(
+      final workStore = _workView(store);
+      final captainStore = workStore.staffState.mode == CanteenStaffMode.work
+          ? workStore
+          : workStore.copyWith(
               staffState: CanteenStaffState(
                 mode: CanteenStaffMode.work,
                 shopOpen: store.staffState.shopOpen,
@@ -652,10 +749,11 @@ class _CanteenShellState extends State<CanteenShell> {
       );
     }
 
-    if (_canUseWorkMode && _ownerWorkMode) {
-      final ownerStore = store.staffState.mode == CanteenStaffMode.work
-          ? store
-          : store.copyWith(
+    if (_hasCounterWork && _canUseWorkMode && _ownerWorkMode) {
+      final workStore = _workView(store);
+      final ownerStore = workStore.staffState.mode == CanteenStaffMode.work
+          ? workStore
+          : workStore.copyWith(
               staffState: CanteenStaffState(
                 mode: CanteenStaffMode.work,
                 shopOpen: store.staffState.shopOpen,
@@ -674,7 +772,7 @@ class _CanteenShellState extends State<CanteenShell> {
         onUploadMedia: (bytes, filename) =>
             _repository.uploadMedia(bytes, filename: filename),
         isMainHome: widget.isMainHome,
-        onProfileTap: widget.onProfileTap ?? () => _openProfile(context),
+        onProfileTap: widget.onProfileTap ?? () => _openAccount(context),
         photoUrl: widget.photoUrl ?? widget.session.photoUrl,
         displayName: widget.session.displayName,
         email: widget.session.email,
@@ -702,15 +800,17 @@ class _CanteenShellState extends State<CanteenShell> {
       }
     }
 
+    // Shop mode: every campus store, as a customer.
+    final shopStore = _shopView(store);
     final pages = [
       StudentCanteenHome(
-        store: store,
+        store: shopStore,
         cart: _cart,
         onAdd: _addItem,
         onRemove: _removeItem,
         onOpenCart: () => _openCart(context),
         onOpenWallet: (shopKey) => _openWallet(context, shopKey),
-        onOpenProfile: () => _openProfile(context),
+        onOpenProfile: () => _openAccount(context),
         onOpenOrders: () => setState(() {
           _openedOrdersFromHome = true;
           _selectedIndex = 1;
@@ -734,7 +834,7 @@ class _CanteenShellState extends State<CanteenShell> {
         session: widget.session,
       ),
       CanteenOrdersScreen(
-        orders: store.orders,
+        orders: shopStore.orders,
         onBack: handleOrdersBack,
         onRefresh: () => _loadStore(silent: true),
       ),

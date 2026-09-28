@@ -47,4 +47,12 @@ abstract class HostelRepository {
     required bool damageSettled,
   });
   Future<HostelResidency> completeCheckout(String residencyId);
+
+  /// Staff action on an open hostel service request (resolve a complaint,
+  /// approve or reject a room change, and so on).
+  Future<HostelQueueRequest> updateRequestStatus({
+    required String requestId,
+    required String status,
+    String? note,
+  });
 }

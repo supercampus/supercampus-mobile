@@ -85,24 +85,20 @@ class _SalesOnlyRepository implements VendorRepository {
   }
 
   @override
-  Future<SalesDashboardData> getSalesDashboard() async =>
-      SalesDashboardData.fromJson({
-        'platformOrders': 2,
-        'orderStatusDistribution': {
-          'completed': 0,
-          'cancelled': 0,
-          'pending': 100,
-          'completedCount': 0,
-          'cancelledCount': 0,
-          'pendingCount': 2,
-        },
-        'paymentSplit': {
-          'ordersPercentage': 0,
-          'adhocPercentage': 0,
-          'ordersRevenue': 0,
-          'adhocRevenue': 0,
-        },
-      });
+  Future<SalesDashboardData> getSalesDashboard({
+    SalesPeriod period = SalesPeriod.today,
+  }) async => SalesDashboardData.fromJson({
+    'period': period.key,
+    'summary': {'orders': 2, 'activeOrders': 2, 'pendingNow': 2},
+  });
+
+  @override
+  Future<SalesOrderPage> listSalesOrders({
+    SalesPeriod period = SalesPeriod.all,
+    String? shopKey,
+    OrderStatusFilter status = OrderStatusFilter.all,
+    int limit = 100,
+  }) async => const SalesOrderPage();
 
   @override
   Future<VendorShop> createVendor(VendorShopDraft draft) =>
@@ -150,7 +146,7 @@ void main() {
       await pumpDashboard(tester, adminSession, adminGrants);
 
       expect(find.text('ADMIN'), findsOneWidget);
-      expect(find.text('Users & Roles'), findsWidgets);
+      expect(find.text('Users & roles'), findsOneWidget);
       expect(find.text('Admin Desk'), findsWidgets);
     });
   });
@@ -160,6 +156,9 @@ void main() {
       tester,
     ) async {
       final repository = _SalesOnlyRepository();
+      tester.view.physicalSize = const Size(430, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light,
@@ -181,34 +180,19 @@ void main() {
       expect(find.textContaining('Exception'), findsNothing);
       expect(find.text('Madras Engineering College'), findsOneWidget);
       // Two queued orders are in progress, not cancelled.
-      expect(find.text('In progress: 2 (100%)'), findsOneWidget);
-      expect(find.text('Cancelled: 0 (0%)'), findsOneWidget);
-      expect(find.text('Food Orders (0%): ₹0'), findsOneWidget);
+      expect(find.text('2 · 100%'), findsOneWidget);
+      expect(find.text('0 · 0%'), findsNWidgets(2));
     });
   });
 
-  group('order status breakdown', () {
-    test('older servers without counts never file open orders as cancelled',
-        () {
-      final data = SalesDashboardData.fromJson({
-        'platformOrders': 2,
-        'orderStatusDistribution': {
-          'completed': 0,
-          'cancelled': 0,
-          'pending': 100,
-        },
-      });
-      final breakdown = OrderStatusBreakdown.of(data);
-      expect(breakdown.completed, 0);
-      expect(breakdown.cancelled, 0);
-      expect(breakdown.active, 2);
-    });
-
+  group('sales figures', () {
     test('missing figures are zero, not invented', () {
-      final data = SalesDashboardData.fromJson({'platformOrders': 0});
-      expect(OrderStatusBreakdown.of(data).total, 0);
-      expect(RevenueSplit.of(data).isEmpty, isTrue);
-      expect(RevenueSplit.of(data).foodPercent, 0);
+      final data = SalesDashboardData.fromJson(const {});
+      expect(data.summary.orders, 0);
+      expect(data.summary.revenue, 0);
+      expect(data.summary.percentOf(0), 0);
+      expect(data.stores, isEmpty);
+      expect(data.trend.hasSales, isFalse);
     });
   });
 

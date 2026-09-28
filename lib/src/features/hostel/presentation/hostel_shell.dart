@@ -199,20 +199,17 @@ class _HostelShellState extends State<HostelShell> {
       return const Scaffold(body: SkeletonList(rows: 6, rowHeight: 82));
     }
 
-    final isStaff =
-        widget.session.role == UserRole.staff ||
-        widget.session.role == UserRole.timetableAllocator ||
-        widget.session.role == UserRole.admin;
+    // The backend sends the operations board only when the user's hostel
+    // grant reaches beyond their own record, so scope decides the view.
+    final operations = store.operations;
+    final isStaff = operations != null;
 
     final pages = [
-      if (isStaff)
+      if (operations != null)
         HostelOpsDashboardScreen(
-          store: store,
-          onOpenInventory: () => setState(() => _selectedIndex = 1),
-          onOpenOutpasses: () => setState(() => _selectedIndex = 2),
-          onOpenComplaints: () => setState(() => _selectedIndex = 3),
-          onOpenRoomChanges: () => setState(() => _selectedIndex = 4),
-          onOpenClearance: () => setState(() => _selectedIndex = 6),
+          operations: operations,
+          repository: _repository,
+          onRefresh: _load,
         )
       else
         HostelStudentHomeScreen(

@@ -1,337 +1,435 @@
-enum VendorStatus { active, pending, suspended }
+/// Campus shop sales, as `/canteen/sales-dashboard` reports them.
+///
+/// Every figure is measured on the server from real sale rows (canteen and
+/// stationery orders plus laundry charges). Revenue is completed sales only.
+/// Missing figures parse as zero; nothing here invents a number.
+library;
 
-class Vendor {
-  const Vendor({
-    required this.id,
-    required this.name,
-    required this.category,
-    required this.contact,
-    required this.status,
-  });
-  final String id;
-  final String name;
-  final String category;
-  final String contact;
-  final VendorStatus status;
-}
+/// The window the dashboard and order list are cut to, in campus local time.
+enum SalesPeriod {
+  today('today', 'Today'),
+  week('week', 'This week'),
+  month('month', 'This month'),
+  all('all', 'All time');
 
-class PurchaseOrder {
-  const PurchaseOrder({
-    required this.id,
-    required this.vendor,
-    required this.amount,
-    required this.status,
-  });
-  final String id;
-  final String vendor;
-  final double amount;
-  final String status;
-}
+  const SalesPeriod(this.key, this.label);
 
-class VendorPayment {
-  const VendorPayment({
-    required this.id,
-    required this.vendor,
-    required this.amount,
-    required this.date,
-    required this.status,
-  });
-  final String id;
-  final String vendor;
-  final double amount;
-  final String date;
-  final String status;
-}
+  /// Query value the API accepts.
+  final String key;
+  final String label;
 
-class SalesKpiMetrics {
-  const SalesKpiMetrics({
-    required this.platformOrders,
-    required this.ordersToday,
-    required this.ordersTodayTrend,
-    required this.revenue,
-    required this.revenueToday,
-    required this.revenueTodayTrend,
-    required this.monthlyRevenue,
-    required this.weeklyRevenue,
-    required this.weeklyRevenueTrend,
-    required this.todayOnlinePayments,
-    required this.monthlyOnlinePayments,
-    required this.onlinePaymentsTrend,
-    required this.pendingActions,
-    required this.pendingApprovals,
-    required this.pendingRequests,
-    required this.pendingActionsTrend,
-  });
-
-  final int platformOrders;
-  final int ordersToday;
-  final String ordersTodayTrend;
-  final double revenue;
-  final double revenueToday;
-  final String revenueTodayTrend;
-  final double monthlyRevenue;
-  final double weeklyRevenue;
-  final String weeklyRevenueTrend;
-  final double todayOnlinePayments;
-  final double monthlyOnlinePayments;
-  final String onlinePaymentsTrend;
-  final int pendingActions;
-  final int pendingApprovals;
-  final int pendingRequests;
-  final String pendingActionsTrend;
-
-  factory SalesKpiMetrics.fromJson(Map<String, dynamic> json) {
-    return SalesKpiMetrics(
-      platformOrders: (json['platformOrders'] as num?)?.toInt() ?? 0,
-      ordersToday: (json['ordersToday'] as num?)?.toInt() ?? 0,
-      ordersTodayTrend: json['ordersTodayTrend']?.toString() ?? '0 new today',
-      revenue: (json['revenue'] as num?)?.toDouble() ?? 0.0,
-      revenueToday: (json['revenueToday'] as num?)?.toDouble() ?? 0.0,
-      revenueTodayTrend: json['revenueTodayTrend']?.toString() ?? '₹0 today',
-      monthlyRevenue: (json['monthlyRevenue'] as num?)?.toDouble() ?? 0.0,
-      weeklyRevenue: (json['weeklyRevenue'] as num?)?.toDouble() ?? 0.0,
-      weeklyRevenueTrend: json['weeklyRevenueTrend']?.toString() ?? '₹0 this week',
-      todayOnlinePayments: (json['todayOnlinePayments'] as num?)?.toDouble() ?? 0.0,
-      monthlyOnlinePayments: (json['monthlyOnlinePayments'] as num?)?.toDouble() ?? 0.0,
-      onlinePaymentsTrend: json['onlinePaymentsTrend']?.toString() ?? '₹0 this month',
-      pendingActions: (json['pendingActions'] as num?)?.toInt() ?? 0,
-      pendingApprovals: (json['pendingApprovals'] as num?)?.toInt() ?? 0,
-      pendingRequests: (json['pendingRequests'] as num?)?.toInt() ?? 0,
-      pendingActionsTrend: json['pendingActionsTrend']?.toString() ?? '0 pending actions',
-    );
-  }
-
-  static const defaults = SalesKpiMetrics(
-    platformOrders: 0,
-    ordersToday: 0,
-    ordersTodayTrend: '0 new today',
-    revenue: 0.0,
-    revenueToday: 0.0,
-    revenueTodayTrend: '₹0 today',
-    monthlyRevenue: 0.0,
-    weeklyRevenue: 0.0,
-    weeklyRevenueTrend: '₹0 this week',
-    todayOnlinePayments: 0.0,
-    monthlyOnlinePayments: 0.0,
-    onlinePaymentsTrend: '₹0 this month',
-    pendingActions: 0,
-    pendingApprovals: 0,
-    pendingRequests: 0,
-    pendingActionsTrend: '0 pending actions',
+  static SalesPeriod parse(Object? raw) => SalesPeriod.values.firstWhere(
+    (p) => p.key == raw?.toString(),
+    orElse: () => SalesPeriod.today,
   );
 }
 
-class ShopSalesSummary {
-  const ShopSalesSummary({
+/// Where an order ended up.
+enum OrderStatusFilter {
+  all('all', 'All'),
+  active('active', 'In progress'),
+  completed('completed', 'Completed'),
+  cancelled('cancelled', 'Cancelled');
+
+  const OrderStatusFilter(this.key, this.label);
+
+  final String key;
+  final String label;
+
+  static OrderStatusFilter parse(Object? raw) =>
+      OrderStatusFilter.values.firstWhere(
+        (s) => s.key == raw?.toString(),
+        orElse: () => OrderStatusFilter.active,
+      );
+}
+
+int _int(Object? v) => v is num ? v.toInt() : int.tryParse('$v') ?? 0;
+double _double(Object? v) => v is num ? v.toDouble() : double.tryParse('$v') ?? 0;
+String _string(Object? v, [String fallback = '']) {
+  final s = v?.toString().trim() ?? '';
+  return s.isEmpty || s == 'null' ? fallback : s;
+}
+
+List<Map<String, dynamic>> _maps(Object? json) => json is List
+    ? json
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList(growable: false)
+    : const [];
+
+DateTime? _date(Object? raw) =>
+    raw == null ? null : DateTime.tryParse(raw.toString());
+
+class SalesSummary {
+  const SalesSummary({
+    this.orders = 0,
+    this.completedOrders = 0,
+    this.activeOrders = 0,
+    this.cancelledOrders = 0,
+    this.revenue = 0,
+    this.averageOrderValue = 0,
+    this.pendingNow = 0,
+  });
+
+  factory SalesSummary.fromJson(Map<String, dynamic> json) => SalesSummary(
+    orders: _int(json['orders']),
+    completedOrders: _int(json['completedOrders']),
+    activeOrders: _int(json['activeOrders']),
+    cancelledOrders: _int(json['cancelledOrders']),
+    revenue: _double(json['revenue']),
+    averageOrderValue: _double(json['averageOrderValue']),
+    pendingNow: _int(json['pendingNow']),
+  );
+
+  /// Every sale placed in the period, whatever became of it.
+  final int orders;
+  final int completedOrders;
+  final int activeOrders;
+  final int cancelledOrders;
+
+  /// Completed sales in the period.
+  final double revenue;
+
+  /// Revenue per completed sale.
+  final double averageOrderValue;
+
+  /// Orders waiting at a counter right now, whatever the period.
+  final int pendingNow;
+
+  /// Whole-number share of [count] among the period's orders.
+  int percentOf(int count) =>
+      orders <= 0 ? 0 : ((count / orders) * 100).round();
+}
+
+class ShopOperator {
+  const ShopOperator({required this.name, required this.role});
+
+  factory ShopOperator.fromJson(Map<String, dynamic> json) => ShopOperator(
+    name: _string(json['name'], 'Staff member'),
+    role: _string(json['role'], 'captain'),
+  );
+
+  final String name;
+
+  /// `owner` or `captain`.
+  final String role;
+
+  bool get isOwner => role == 'owner';
+}
+
+/// One shop's sales in the selected period, plus its live state today.
+class StoreSales {
+  const StoreSales({
     required this.shopKey,
     required this.name,
     required this.category,
-    required this.isActive,
-    required this.isOpen,
-    required this.ordersToday,
-    required this.revenueToday,
-    required this.totalOrders,
-    required this.totalRevenue,
-    required this.activeOrders,
+    this.id,
+    this.isActive = true,
+    this.isOpen = true,
+    this.operators = const [],
+    this.orders = 0,
+    this.completedOrders = 0,
+    this.cancelledOrders = 0,
+    this.revenue = 0,
+    this.revenueShare = 0,
+    this.averageOrderValue = 0,
+    this.ordersToday = 0,
+    this.revenueToday = 0,
+    this.activeNow = 0,
   });
 
+  factory StoreSales.fromJson(Map<String, dynamic> json) => StoreSales(
+    id: json['id']?.toString(),
+    shopKey: _string(json['shopKey']),
+    name: _string(json['name'], 'Shop'),
+    category: _string(json['category'], 'Other'),
+    isActive: json['isActive'] != false,
+    isOpen: json['isOpen'] != false,
+    operators: _maps(json['operators']).map(ShopOperator.fromJson).toList(),
+    orders: _int(json['orders']),
+    completedOrders: _int(json['completedOrders']),
+    cancelledOrders: _int(json['cancelledOrders']),
+    revenue: _double(json['revenue']),
+    revenueShare: _int(json['revenueShare']),
+    averageOrderValue: _double(json['averageOrderValue']),
+    ordersToday: _int(json['ordersToday']),
+    revenueToday: _double(json['revenueToday']),
+    activeNow: _int(json['activeNow']),
+  );
+
+  final String? id;
   final String shopKey;
   final String name;
   final String category;
   final bool isActive;
   final bool isOpen;
+  final List<ShopOperator> operators;
+  final int orders;
+  final int completedOrders;
+  final int cancelledOrders;
+  final double revenue;
+
+  /// Whole-number percent of the period's revenue.
+  final int revenueShare;
+  final double averageOrderValue;
   final int ordersToday;
   final double revenueToday;
-  final int totalOrders;
-  final double totalRevenue;
-  final int activeOrders;
+  final int activeNow;
 
-  factory ShopSalesSummary.fromJson(Map<String, dynamic> json) {
-    return ShopSalesSummary(
-      shopKey: json['shopKey']?.toString() ?? '',
-      name: json['name']?.toString() ?? 'Shop',
-      category: json['category']?.toString() ?? 'General',
-      isActive: json['isActive'] != false,
-      isOpen: json['isOpen'] != false,
-      ordersToday: (json['ordersToday'] as num?)?.toInt() ?? 0,
-      revenueToday: (json['revenueToday'] as num?)?.toDouble() ?? 0.0,
-      totalOrders: (json['totalOrders'] as num?)?.toInt() ?? 0,
-      totalRevenue: (json['totalRevenue'] as num?)?.toDouble() ?? 0.0,
-      activeOrders: (json['activeOrders'] as num?)?.toInt() ?? 0,
-    );
-  }
+  /// Taking orders right now: enabled by the admin and opened by staff.
+  bool get isTrading => isActive && isOpen;
 }
 
-class RecentSalesOrder {
-  const RecentSalesOrder({
-    required this.id,
-    required this.orderNumber,
-    required this.customerName,
-    required this.store,
-    required this.total,
-    required this.status,
-    required this.fulfilmentMode,
-    this.createdAt,
+class TrendPoint {
+  const TrendPoint({
+    required this.start,
+    this.orders = 0,
+    this.completedOrders = 0,
+    this.revenue = 0,
+    this.isFuture = false,
   });
 
-  final String id;
-  final String orderNumber;
-  final String customerName;
-  final String store;
-  final double total;
-  final String status;
-  final String fulfilmentMode;
-  final DateTime? createdAt;
+  factory TrendPoint.fromJson(Map<String, dynamic> json) => TrendPoint(
+    start: _date(json['start']) ?? DateTime(1970),
+    orders: _int(json['orders']),
+    completedOrders: _int(json['completedOrders']),
+    revenue: _double(json['revenue']),
+    isFuture: json['isFuture'] == true,
+  );
 
-  factory RecentSalesOrder.fromJson(Map<String, dynamic> json) {
-    return RecentSalesOrder(
-      id: json['id']?.toString() ?? '',
-      orderNumber: json['orderNumber']?.toString() ?? '',
-      customerName: json['customerName']?.toString() ?? 'Student',
-      store: json['store']?.toString() ?? '',
-      total: (json['total'] as num?)?.toDouble() ?? 0.0,
-      status: json['status']?.toString() ?? 'completed',
-      fulfilmentMode: json['fulfilmentMode']?.toString() ?? 'takeaway',
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString())
-          : null,
+  /// Campus local time at which this bar begins.
+  final DateTime start;
+  final int orders;
+  final int completedOrders;
+  final double revenue;
+
+  /// Later today / this week / this month: nothing could have sold yet.
+  final bool isFuture;
+}
+
+/// Width of one bar in the revenue chart.
+enum TrendUnit { hour, day, month }
+
+class SalesTrend {
+  const SalesTrend({this.unit = TrendUnit.day, this.points = const []});
+
+  factory SalesTrend.fromJson(Object? json) {
+    if (json is! Map) return const SalesTrend();
+    final map = Map<String, dynamic>.from(json);
+    return SalesTrend(
+      unit: TrendUnit.values.firstWhere(
+        (u) => u.name == map['unit'],
+        orElse: () => TrendUnit.day,
+      ),
+      points: _maps(map['points']).map(TrendPoint.fromJson).toList(),
     );
   }
+
+  final TrendUnit unit;
+  final List<TrendPoint> points;
+
+  double get peakRevenue =>
+      points.fold(0.0, (peak, p) => p.revenue > peak ? p.revenue : peak);
+
+  bool get hasSales => points.any((p) => p.revenue > 0);
+}
+
+class TopItem {
+  const TopItem({
+    required this.name,
+    required this.shopKey,
+    required this.quantity,
+    required this.revenue,
+  });
+
+  factory TopItem.fromJson(Map<String, dynamic> json) => TopItem(
+    name: _string(json['name'], 'Item'),
+    shopKey: _string(json['shopKey']),
+    quantity: _double(json['quantity']),
+    revenue: _double(json['revenue']),
+  );
+
+  final String name;
+  final String shopKey;
+  final double quantity;
+  final double revenue;
 }
 
 class SalesDashboardData {
   const SalesDashboardData({
-    required this.kpi,
-    required this.orderStatusDistribution,
-    required this.paymentSplit,
-    required this.shops,
-    required this.recentOrders,
+    this.period = SalesPeriod.today,
+    this.summary = const SalesSummary(),
+    this.stores = const [],
+    this.trend = const SalesTrend(),
+    this.topItems = const [],
+    this.generatedAt,
   });
-
-  final SalesKpiMetrics kpi;
-  final Map<String, double> orderStatusDistribution;
-  final Map<String, double> paymentSplit;
-  final List<ShopSalesSummary> shops;
-  final List<RecentSalesOrder> recentOrders;
 
   factory SalesDashboardData.fromJson(Map<String, dynamic> json) {
-    final shopsJson = json['shops'];
-    final ordersJson = json['recentOrders'];
-    final distJson = json['orderStatusDistribution'];
-    final splitJson = json['paymentSplit'];
-
+    final summary = json['summary'];
     return SalesDashboardData(
-      kpi: json['platformOrders'] != null
-          ? SalesKpiMetrics.fromJson(json)
-          : SalesKpiMetrics.defaults,
-      // Missing figures read as zero. Inventing a split here would put numbers
-      // on screen that nothing measured.
-      orderStatusDistribution: _numberMap(distJson),
-      paymentSplit: _numberMap(splitJson),
-      shops: shopsJson is List
-          ? shopsJson
-              .whereType<Map>()
-              .map((e) => ShopSalesSummary.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
-          : const [],
-      recentOrders: ordersJson is List
-          ? ordersJson
-              .whereType<Map>()
-              .map((e) => RecentSalesOrder.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
-          : const [],
+      period: SalesPeriod.parse(json['period']),
+      summary: summary is Map
+          ? SalesSummary.fromJson(Map<String, dynamic>.from(summary))
+          : const SalesSummary(),
+      stores: _maps(json['stores']).map(StoreSales.fromJson).toList(),
+      trend: SalesTrend.fromJson(json['trend']),
+      topItems: _maps(json['topItems']).map(TopItem.fromJson).toList(),
+      generatedAt: _date(json['generatedAt']),
     );
   }
 
-  static Map<String, double> _numberMap(Object? json) => {
-    if (json is Map)
-      for (final entry in json.entries)
-        if (entry.value is num)
-          entry.key.toString(): (entry.value as num).toDouble(),
-  };
+  final SalesPeriod period;
+  final SalesSummary summary;
+  final List<StoreSales> stores;
+  final SalesTrend trend;
+  final List<TopItem> topItems;
 
-  static const defaults = SalesDashboardData(
-    kpi: SalesKpiMetrics.defaults,
-    orderStatusDistribution: {'completed': 0.0, 'cancelled': 0.0, 'pending': 0.0},
-    paymentSplit: {'ordersPercentage': 0.0, 'adhocPercentage': 0.0},
-    shops: [],
-    recentOrders: [],
-  );
+  /// Campus local time the figures were measured.
+  final DateTime? generatedAt;
+
+  StoreSales? storeFor(String shopKey) {
+    for (final store in stores) {
+      if (store.shopKey == shopKey) return store;
+    }
+    return null;
+  }
+
+  String storeName(String shopKey) => storeFor(shopKey)?.name ?? shopKey;
 }
 
-/// Orders bucketed by outcome: completed, still in the queue, or ended without
-/// a sale (cancelled or rejected).
-///
-/// Current servers send the counts; older ones sent only percentages of all
-/// orders, so each bucket is then estimated from its own percentage, never by
-/// subtracting one bucket from the total (which files every open order under
-/// "cancelled").
-class OrderStatusBreakdown {
-  const OrderStatusBreakdown({
-    required this.completed,
-    required this.active,
-    required this.cancelled,
+class SalesOrderLine {
+  const SalesOrderLine({
+    required this.name,
+    required this.quantity,
+    this.price,
+    this.unitLabel,
+    this.lineTotal,
   });
 
-  factory OrderStatusBreakdown.of(SalesDashboardData data) {
-    final dist = data.orderStatusDistribution;
-    final hasCounts =
-        dist.containsKey('completedCount') ||
-        dist.containsKey('pendingCount') ||
-        dist.containsKey('cancelledCount');
-    if (hasCounts) {
-      return OrderStatusBreakdown(
-        completed: (dist['completedCount'] ?? 0).round(),
-        active: (dist['pendingCount'] ?? 0).round(),
-        cancelled: (dist['cancelledCount'] ?? 0).round(),
-      );
-    }
-    final total = data.kpi.platformOrders;
-    int estimate(String key) =>
-        (total * ((dist[key] ?? 0) / 100.0)).round().clamp(0, total);
-    return OrderStatusBreakdown(
-      completed: estimate('completed'),
-      active: estimate('pending'),
-      cancelled: estimate('cancelled'),
+  factory SalesOrderLine.fromJson(Map<String, dynamic> json) {
+    final quantity = _double(json['quantity']);
+    final price = json['price'] is num ? _double(json['price']) : null;
+    return SalesOrderLine(
+      name: _string(json['name'], 'Item'),
+      quantity: quantity,
+      price: price,
+      unitLabel: json['unitLabel']?.toString(),
+      lineTotal: json['lineTotal'] is num
+          ? _double(json['lineTotal'])
+          : (price == null ? null : price * quantity),
     );
   }
 
-  final int completed;
-  final int active;
-  final int cancelled;
+  final String name;
+  final double quantity;
+  final double? price;
 
-  int get total => completed + active + cancelled;
-
-  /// Whole-number share of [count]; 0 when there are no orders at all.
-  int percentOf(int count) => total <= 0 ? 0 : ((count / total) * 100).round();
+  /// `kg` or `clothes` for laundry; null for counted items.
+  final String? unitLabel;
+  final double? lineTotal;
 }
 
-/// Completed sales split between food counters and the QR-paid stores.
-class RevenueSplit {
-  const RevenueSplit({required this.food, required this.other});
+/// One sale: a canteen/stationery order or a laundry charge.
+class SalesOrder {
+  const SalesOrder({
+    required this.id,
+    required this.kind,
+    required this.customerName,
+    required this.shopKey,
+    required this.storeName,
+    required this.total,
+    required this.status,
+    required this.statusBucket,
+    this.orderNumber,
+    this.category = '',
+    this.fulfilmentMode,
+    this.tokenNumber,
+    this.rejectionReason,
+    this.lines = const [],
+    this.createdAt,
+    this.updatedAt,
+  });
 
-  factory RevenueSplit.of(SalesDashboardData data) {
-    final split = data.paymentSplit;
-    if (split.containsKey('ordersRevenue') ||
-        split.containsKey('adhocRevenue')) {
-      return RevenueSplit(
-        food: split['ordersRevenue'] ?? 0,
-        other: split['adhocRevenue'] ?? 0,
-      );
-    }
-    final revenue = data.kpi.revenue;
-    return RevenueSplit(
-      food: revenue * ((split['ordersPercentage'] ?? 0) / 100.0),
-      other: revenue * ((split['adhocPercentage'] ?? 0) / 100.0),
+  factory SalesOrder.fromJson(Map<String, dynamic> json) => SalesOrder(
+    id: _string(json['id']),
+    kind: _string(json['kind'], 'order'),
+    orderNumber: json['orderNumber'] is num ? _int(json['orderNumber']) : null,
+    customerName: _string(json['customerName'], 'Customer'),
+    shopKey: _string(json['shopKey'] ?? json['store']),
+    storeName: _string(json['storeName'] ?? json['store'], 'Shop'),
+    category: _string(json['category']),
+    total: _double(json['total']),
+    status: _string(json['status'], 'pending'),
+    statusBucket: OrderStatusFilter.parse(json['statusBucket']),
+    fulfilmentMode: json['fulfilmentMode']?.toString(),
+    tokenNumber: json['tokenNumber'] is num ? _int(json['tokenNumber']) : null,
+    rejectionReason: json['rejectionReason']?.toString(),
+    lines: _maps(json['lines']).map(SalesOrderLine.fromJson).toList(),
+    createdAt: _date(json['createdAt']),
+    updatedAt: _date(json['updatedAt']),
+  );
+
+  final String id;
+
+  /// `order` or `laundry`.
+  final String kind;
+  final int? orderNumber;
+  final String customerName;
+  final String shopKey;
+  final String storeName;
+  final String category;
+  final double total;
+
+  /// The raw status (pending, preparing, paid, rejected…).
+  final String status;
+  final OrderStatusFilter statusBucket;
+  final String? fulfilmentMode;
+  final int? tokenNumber;
+  final String? rejectionReason;
+  final List<SalesOrderLine> lines;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  bool get isLaundry => kind == 'laundry';
+
+  String get reference => orderNumber != null
+      ? '#$orderNumber'
+      : (isLaundry ? 'Laundry charge' : 'Order');
+
+  /// "Preparing", "Ready for pickup", "Paid"…
+  String get statusLabel => switch (status) {
+    'pending' => isLaundry ? 'Awaiting scan' : 'New',
+    'accepted' => 'Accepted',
+    'preparing' => 'Preparing',
+    'ready' => 'Ready',
+    'completed' => 'Completed',
+    'claimed' => 'Awaiting payment',
+    'paid' => 'Paid',
+    'rejected' => 'Rejected',
+    'cancelled' => 'Cancelled',
+    _ => status.isEmpty ? 'Unknown' : status[0].toUpperCase() + status.substring(1),
+  };
+
+  String? get fulfilmentLabel => switch (fulfilmentMode) {
+    'dine_in' => 'Dine in',
+    'pickup' => 'Pickup',
+    _ => null,
+  };
+}
+
+class SalesOrderPage {
+  const SalesOrderPage({this.total = 0, this.orders = const []});
+
+  factory SalesOrderPage.fromJson(Map<String, dynamic> json) {
+    final orders = _maps(json['orders']).map(SalesOrder.fromJson).toList();
+    return SalesOrderPage(
+      total: json['total'] is num ? _int(json['total']) : orders.length,
+      orders: orders,
     );
   }
 
-  final double food;
-  final double other;
-
-  double get total => food + other;
-  bool get isEmpty => total <= 0;
-
-  int get foodPercent => isEmpty ? 0 : ((food / total) * 100).round();
-  int get otherPercent => isEmpty ? 0 : 100 - foodPercent;
+  /// Every matching sale, of which [orders] holds the newest.
+  final int total;
+  final List<SalesOrder> orders;
 }

@@ -27,10 +27,12 @@ import 'widgets/home_top_bar.dart';
 import '../../canteen/data/canteen_models.dart';
 import '../../canteen/data/canteen_repository.dart';
 import '../../canteen/presentation/canteen_shell.dart';
+import '../../canteen/presentation/widgets/shop_mode_switch.dart';
 import 'widgets/dashboard_nav_bar.dart';
 import 'widgets/settings_page.dart';
 import 'widgets/campus_wall_screen.dart';
 import 'widgets/student_reports_page.dart';
+import '../../admin_portal/data/admin_student_repository.dart';
 import '../../admin_portal/presentation/admin_dashboard_screen.dart';
 
 /// One portal for every user. The module list is a projection of
@@ -115,14 +117,28 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
   int _unreadNotifications = 0;
   CanteenStaffMode _canteenStaffMode = CanteenStaffMode.work;
 
-  bool get _isCanteenStaffUser {
-    return widget.session.isCanteenOwner ||
-        widget.session.isCaptain ||
-        widget.session.isStationeryOwner;
-  }
+  /// Whose home screen is the shop counter itself.
+  bool get _shopIsHome =>
+      widget.session.isCanteenOwner ||
+      widget.session.isCaptain ||
+      widget.session.isStationeryOwner;
+
+  /// Everyone with a job — staff, accountants, admins, owners and captains —
+  /// can switch between Work and Shop. Shop makes them a customer of every
+  /// campus store. Students only ever shop, so they get no switch.
+  bool get _hasWorkShopMode =>
+      !widget.session.isStudent &&
+      (_shopIsHome ||
+          widget.session.isAccountant ||
+          widget.permissions.canSeeModule(ModuleCatalog.canteen));
 
   Future<void> _updateCanteenMode(CanteenStaffMode mode) async {
     setState(() => _canteenStaffMode = mode);
+    if (mode == CanteenStaffMode.eat && !_shopIsHome) {
+      // Their home is the portal, so Shop opens the stores on top of it.
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      widget.onOpenModule(ModuleCatalog.canteen, 'shop');
+    }
     try {
       await widget.canteenRepository?.updateStaffState(mode: mode);
     } catch (_) {}
@@ -275,6 +291,8 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
             onStaffModeChanged: (mode) =>
                 setState(() => _canteenStaffMode = mode),
           ),
+          if (!(widget.session.isStationeryOwner &&
+              _canteenStaffMode == CanteenStaffMode.work))
           Positioned(
             left: 0,
             right: 0,
@@ -312,8 +330,19 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       advisorStudentsSource: widget.advisorStudentsSource,
       glance: _glance,
       onOpenAttendanceClass: widget.onOpenAttendanceClass,
+      loadAdminUsers: _adminUsersRepository?.listUsers,
     );
   }
+
+  /// Account counts on the administrator home. Built once; null in mock
+  /// builds, which then show no counts.
+  late final AdminStudentRepository? _adminUsersRepository =
+      widget.baseUrl != null && widget.accessTokenProvider != null
+      ? AdminStudentRepository(
+          baseUrl: widget.baseUrl!,
+          accessTokenProvider: widget.accessTokenProvider!,
+        )
+      : null;
 
   Widget _buildLegacyFeed(BuildContext context) {
     final modules = orderModules(
@@ -561,97 +590,31 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                   ),
                 ),
               ],
-              if (_isCanteenStaffUser) ...[
+              if (_hasWorkShopMode) ...[
                 const SizedBox(height: 18),
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: ctx.adaptive(
-                      light: const Color(0xFFF4F6F9),
-                      dark: ctx.palette.surfaceSunken,
-                    ),
+                    color: ctx.palette.surfaceSunken,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: ctx.adaptive(
-                        light: const Color(0xFFE5E7EB),
-                        dark: ctx.palette.border,
-                      ),
-                    ),
+                    border: Border.all(color: ctx.palette.border),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            _canteenStaffMode == CanteenStaffMode.work
-                                ? Icons.storefront_outlined
-                                : Icons.restaurant_outlined,
-                            size: 18,
-                            color: ctx.palette.brandInk,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            widget.session.isStationeryOwner
-                                ? 'Stationery Mode'
-                                : 'Canteen Mode',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                      ShopModeSwitch(
+                        mode: _canteenStaffMode,
+                        onChanged: (mode) {
+                          Navigator.of(ctx).pop();
+                          _updateCanteenMode(mode);
+                        },
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       Text(
-                        _canteenStaffMode == CanteenStaffMode.work
-                            ? (widget.session.isStationeryOwner
-                                ? 'Work mode (managing stationery orders & inventory)'
-                                : 'Work mode (managing orders & counter)')
-                            : 'Eat mode (student menu & ordering)',
+                        _canteenStaffMode.description,
                         style: TextStyle(
                           fontSize: 12,
-                          color: ctx.adaptive(
-                            light: Colors.grey.shade600,
-                            dark: const Color(0xFFA3A5B0),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        child: SegmentedButton<CanteenStaffMode>(
-                          showSelectedIcon: false,
-                          segments: const [
-                            ButtonSegment(
-                              value: CanteenStaffMode.work,
-                              icon: Icon(Icons.work_outline_rounded, size: 16),
-                              label: Text(
-                                'Work mode',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            ButtonSegment(
-                              value: CanteenStaffMode.eat,
-                              icon: Icon(Icons.restaurant_outlined, size: 16),
-                              label: Text(
-                                'Eat mode',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                          selected: {_canteenStaffMode},
-                          onSelectionChanged: (selection) {
-                            final newMode = selection.first;
-                            _updateCanteenMode(newMode);
-                            Navigator.of(ctx).pop();
-                          },
+                          color: ctx.palette.inkSecondary,
                         ),
                       ),
                     ],
@@ -704,8 +667,8 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
           moduleOrder: widget.moduleOrder,
           onModuleOrderChanged: widget.onModuleOrderChanged,
           accessTokenProvider: widget.accessTokenProvider,
-          currentCanteenMode: _canteenStaffMode,
-          onCanteenModeChanged: _updateCanteenMode,
+          currentCanteenMode: _hasWorkShopMode ? _canteenStaffMode : null,
+          onCanteenModeChanged: _hasWorkShopMode ? _updateCanteenMode : null,
           apiBaseUrl: widget.baseUrl,
         ),
       ),

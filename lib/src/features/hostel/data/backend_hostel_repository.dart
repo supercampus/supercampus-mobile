@@ -115,7 +115,29 @@ class BackendHostelRepository implements HostelRepository {
       messEnabled: settings['messEnabled'] != false,
       hostelFeeValidFrom: _nullableDate(entitlement['validFrom']),
       hostelFeeValidUntil: _nullableDate(entitlement['validUntil']),
+      operations: hostel['operations'] is Map
+          ? parseHostelOperations(_map(hostel['operations']))
+          : null,
     );
+  }
+
+  @override
+  Future<HostelQueueRequest> updateRequestStatus({
+    required String requestId,
+    required String status,
+    String? note,
+  }) async {
+    final row = _data(
+      await _request(
+        'POST',
+        '/api/v1/operations/hostel/requests/${Uri.encodeComponent(requestId)}/status',
+        {
+          'status': status,
+          if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+        },
+      ),
+    );
+    return _queueRequest(row);
   }
 
   @override
@@ -400,7 +422,9 @@ class BackendHostelRepository implements HostelRepository {
       complaintsClosed: details['complaintsClosed'] == true,
       damageSettled: details['damageSettled'] == true,
       status: ClearanceStatus.values.firstWhere(
-        (value) => value.name == _text(row['status']),
+        (value) =>
+            value.name.toLowerCase() ==
+            _text(row['status']).replaceAll('_', '').toLowerCase(),
         orElse: () => ClearanceStatus.requested,
       ),
     );
@@ -413,6 +437,59 @@ class HostelException implements Exception {
   @override
   String toString() => message;
 }
+
+/// Parses the `operations` block of the hostel overview.
+HostelOperations parseHostelOperations(Map<String, dynamic> json) =>
+    HostelOperations(
+      residents: _int(json['residents']),
+      outside: _int(json['outside']),
+      onLeave: _int(json['onLeave']),
+      scopeHostel: _nullableText(json['scopeHostel']),
+      canUpdate: json['canUpdate'] == true,
+      hostels: _list(json['hostels'])
+          .map(
+            (row) => HostelOccupancy(
+              name: _text(row['name'], fallback: 'Unassigned'),
+              residents: _int(row['residents']),
+              outside: _int(row['outside']),
+            ),
+          )
+          .toList(growable: false),
+      overdue: _list(json['overdue']).map(_passHolder).toList(growable: false),
+      away: _list(json['away']).map(_passHolder).toList(growable: false),
+      requests: _list(
+        json['requests'],
+      ).map(_queueRequest).toList(growable: false),
+    );
+
+HostelPassHolder _passHolder(Map<String, dynamic> row) => HostelPassHolder(
+  requestId: _text(row['requestId']),
+  name: _text(row['name'], fallback: 'Student'),
+  rollNumber: _text(row['rollNumber']),
+  hostel: _nullableText(row['hostel']),
+  room: _nullableText(row['room']),
+  passType: _text(row['passType'], fallback: 'outpass'),
+  destination: _text(row['destination']),
+  departureAt: _date(row['departureAt']).toLocal(),
+  returnAt: _date(row['returnAt']).toLocal(),
+  exitedAt: _nullableDate(row['exitedAt'])?.toLocal(),
+);
+
+HostelQueueRequest _queueRequest(Map<String, dynamic> row) =>
+    HostelQueueRequest(
+      id: _text(row['id']),
+      kind: _text(row['kind']),
+      status: _text(row['status'], fallback: 'submitted'),
+      requesterName: _text(row['requesterName'], fallback: 'Student'),
+      rollNumber: _nullableText(row['rollNumber']),
+      hostel: _nullableText(row['hostel']),
+      room: _nullableText(row['room']),
+      createdAt: _date(row['createdAt']).toLocal(),
+      details: _map(row['details']),
+    );
+
+int _int(Object? value) =>
+    value is num ? value.toInt() : int.tryParse(_text(value)) ?? 0;
 
 Map<String, dynamic> _data(Map<String, dynamic> response) =>
     _map(response['data']);

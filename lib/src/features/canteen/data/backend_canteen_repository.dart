@@ -53,6 +53,7 @@ class BackendCanteenRepository
 
     return CanteenStore(
       user: CanteenUser(
+        id: _text(user['id']).isEmpty ? null : _text(user['id']),
         name: _text(user['name'], fallback: 'Campus user'),
         email: _text(user['email']),
         rollNumber: _text(user['rollNumber'], fallback: 'Not assigned'),
@@ -81,6 +82,7 @@ class BackendCanteenRepository
           capabilities['updateMenu'] == true ||
           capabilities['deleteMenu'] == true ||
           _text(user['email']).trim().toLowerCase() == 'akhil@gmail.com',
+      canConfigureShops: capabilities['updateShops'] == true,
       staffState: _staffState(_map(data['staffState'])),
       analytics: _analytics(_map(data['analytics'])),
       laundryPricePerKg: _number(data['laundryPricePerKg']),
@@ -565,6 +567,9 @@ class BackendCanteenRepository
         : _text(value['qrPayload']),
     claimedAt: _nullableDate(value['claimedAt']),
     paidAt: _nullableDate(value['paidAt']),
+    claimedBy: _text(value['claimedBy']).isEmpty
+        ? null
+        : _text(value['claimedBy']),
   );
 
   CanteenMenuItem _menuItem(dynamic value) {
@@ -681,6 +686,9 @@ class BackendCanteenRepository
         fallback: value['orderNumber'] is num ? '${value['orderNumber']}' : '',
       ),
       customerName: _text(value['customerName'], fallback: 'Campus user'),
+      customerUserId: _text(value['customerUserId']).isEmpty
+          ? null
+          : _text(value['customerUserId']),
       qrPayload: _text(value['qrPayload'], fallback: _text(value['id'])),
       captainName: _text(value['captainName'] ?? value['captain_name'] ?? value['fulfilledBy'] ?? value['processedBy']),
     );

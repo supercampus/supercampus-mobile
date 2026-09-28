@@ -399,6 +399,15 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
           ),
         ),
         const Spacer(),
+        // Staff shopping here can step straight back to their counter.
+        if (widget.onWorkMode != null)
+          IconButton(
+            key: const ValueKey('switch-to-work-mode'),
+            tooltip: 'Switch to Work',
+            onPressed: widget.onWorkMode,
+            icon: const Icon(Icons.work_outline_rounded),
+            color: context.palette.brandInk,
+          ),
         IconButton(
           tooltip: 'History',
           onPressed: widget.onOpenOrders,

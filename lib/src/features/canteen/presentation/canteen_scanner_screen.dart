@@ -54,10 +54,21 @@ class CanteenScannerScreen extends StatelessWidget {
                     ],
                   ),
                   const Spacer(),
-                  Center(
-                    child: SizedBox.square(
-                      dimension: 280,
-                      child: CustomPaint(painter: _ScannerFramePainter()),
+                  // The frame shrinks rather than overflowing when the page
+                  // sits under an app bar and a navigation bar.
+                  Flexible(
+                    flex: 8,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: 280,
+                          maxHeight: 280,
+                        ),
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: CustomPaint(painter: _ScannerFramePainter()),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 34),

@@ -7,6 +7,7 @@ import '../../../core/widgets/swipe_action_card.dart';
 import '../../scanner/presentation/scan_qr_screen.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
+import 'widgets/shop_mode_switch.dart';
 import 'widgets/menu_item_art.dart';
 import 'widgets/order_status_badge.dart';
 import '../../../core/utils/user_facing_error.dart';
@@ -86,70 +87,16 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
     });
   }
 
+  /// The signed-in person, the Work / Shop choice and sign-out.
   void _openFallbackProfileSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: context.palette.surfaceRaised,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.adaptive(light: Colors.grey.shade300, dark: const Color(0xFF3A3B44)),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 24),
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
-                backgroundImage: widget.photoUrl != null && widget.photoUrl!.isNotEmpty
-                    ? NetworkImage(widget.photoUrl!)
-                    : null,
-                child: widget.photoUrl == null || widget.photoUrl!.isEmpty
-                    ? Text(
-                        _initials(widget.displayName ?? widget.store.user.name),
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                      )
-                    : null,
-              ),
-              const SizedBox(height: 14),
-              Text(
-                widget.displayName ?? widget.store.user.name,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.store.user.email,
-                style: TextStyle(fontSize: 14, color: context.adaptive(light: Colors.grey.shade600, dark: const Color(0xFFA3A5B0))),
-              ),
-              const SizedBox(height: 24),
-              const Divider(height: 1),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.logout, color: Theme.of(ctx).colorScheme.error),
-                title: Text(
-                  'Sign out',
-                  style: TextStyle(color: Theme.of(ctx).colorScheme.error),
-                ),
-                onTap: () {
-                  Navigator.of(ctx).pop();
-                  widget.onSignOut();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+    showShopAccountSheet(
+      context,
+      name: widget.displayName ?? widget.store.user.name,
+      email: widget.store.user.email,
+      photoUrl: widget.photoUrl,
+      mode: widget.store.staffState.mode,
+      onModeChanged: (mode) => _run(() => widget.onModeChanged(mode)),
+      onSignOut: widget.onSignOut,
     );
   }
 
@@ -199,7 +146,7 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    working ? 'Work mode' : 'Eat mode',
+                    working ? 'Work mode' : 'Shop mode',
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(width: 4),
@@ -317,7 +264,7 @@ class _CaptainQueue extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${orders.length} waiting · swipe a card to update it',
+                      '${orders.length} waiting · tap a name to see items, swipe an item to update its order',
                       style: TextStyle(color: context.palette.inkSecondary),
                     ),
                   ],
@@ -347,16 +294,198 @@ class _CaptainQueue extends StatelessWidget {
               ),
             )
           else
-            for (final order in orders)
+            for (final group in groupOrdersByCustomer(orders))
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _CaptainOrderCard(
-                  key: ValueKey('${order.id}_${order.status.name}'),
-                  order: order,
+                child: _CustomerOrdersGroup(
+                  key: ValueKey('group_${group.customer}'),
+                  group: group,
                   enabled: !busy,
                   onStatus: onStatus,
                 ),
               ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One customer's active orders, in queue order.
+class CustomerOrderGroup {
+  const CustomerOrderGroup({required this.customer, required this.orders});
+
+  final String customer;
+  final List<CanteenOrder> orders;
+
+  /// Every food item across the orders, one entry per item line.
+  List<(CanteenOrder, CartLine)> get items => [
+    for (final order in orders)
+      for (final line in order.lines) (order, line),
+  ];
+}
+
+/// Groups orders by customer, keeping the queue order of each customer's
+/// first order.
+List<CustomerOrderGroup> groupOrdersByCustomer(List<CanteenOrder> orders) {
+  final grouped = <String, List<CanteenOrder>>{};
+  for (final order in orders) {
+    final name = order.customerName?.trim();
+    final key = (name == null || name.isEmpty) ? 'Campus user' : name;
+    grouped.putIfAbsent(key, () => <CanteenOrder>[]).add(order);
+  }
+  return [
+    for (final entry in grouped.entries)
+      CustomerOrderGroup(customer: entry.key, orders: entry.value),
+  ];
+}
+
+/// A dropdown per customer: the header shows how many orders they placed;
+/// opened, it lists every food item as its own card (scrollable), each
+/// carrying its order's number. Swiping an item card moves its whole order,
+/// so all items of that order share the status.
+class _CustomerOrdersGroup extends StatefulWidget {
+  const _CustomerOrdersGroup({
+    super.key,
+    required this.group,
+    required this.enabled,
+    required this.onStatus,
+  });
+
+  final CustomerOrderGroup group;
+  final bool enabled;
+  final void Function(String id, CanteenOrderStatus status) onStatus;
+
+  @override
+  State<_CustomerOrdersGroup> createState() => _CustomerOrdersGroupState();
+}
+
+class _CustomerOrdersGroupState extends State<_CustomerOrdersGroup> {
+  var _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final group = widget.group;
+    final items = group.items;
+    final orderCount = group.orders.length;
+    final initials = group.customer
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .take(2)
+        .map((part) => part[0].toUpperCase())
+        .join();
+
+    return CanteenSurface(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            key: ValueKey('group_header_${group.customer}'),
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => setState(() => _open = !_open),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: palette.brandSoft,
+                    child: Text(
+                      initials.isEmpty ? '?' : initials,
+                      style: TextStyle(
+                        color: palette.brandInk,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          group.customer,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: palette.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${items.length} ${items.length == 1 ? 'item' : 'items'}'
+                          ' · ${group.orders.map((o) => '#${o.displayId}').join(', ')}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: palette.inkSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    key: ValueKey('group_count_${group.customer}'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: palette.brand,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '$orderCount',
+                      style: TextStyle(
+                        color: palette.onBrand,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: _open ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: palette.inkSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_open)
+            ConstrainedBox(
+              // Tall enough for about four cards, then it scrolls.
+              constraints: const BoxConstraints(maxHeight: 360),
+              child: ListView.builder(
+                shrinkWrap: true,
+                physics: const ClampingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final (order, line) = items[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _CaptainOrderCard(
+                      key: ValueKey(
+                        '${order.id}_${index}_${order.status.name}',
+                      ),
+                      order: order,
+                      line: line,
+                      enabled: widget.enabled,
+                      onStatus: widget.onStatus,
+                    ),
+                  );
+                },
+              ),
+            ),
         ],
       ),
     );
@@ -369,9 +498,13 @@ class _CaptainOrderCard extends StatelessWidget {
     required this.order,
     required this.enabled,
     required this.onStatus,
+    this.line,
   });
 
   final CanteenOrder order;
+
+  /// When set, the card shows only this food item of [order].
+  final CartLine? line;
   final bool enabled;
   final void Function(String id, CanteenOrderStatus status) onStatus;
 
@@ -416,7 +549,12 @@ class _CaptainOrderCard extends StatelessWidget {
             : Colors.white)
         : Colors.white;
 
-    final firstItem = order.lines.firstOrNull?.item;
+    final firstItem = line?.item ?? order.lines.firstOrNull?.item;
+    // An item card shows just its own line; the customer is in the header.
+    final shownLines = line != null ? [line!] : order.lines;
+    final title = line != null
+        ? line!.item.name
+        : (order.customerName ?? 'Campus user');
 
     return SwipeActionCard(
       enabled: enabled,
@@ -469,7 +607,7 @@ class _CaptainOrderCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    order.customerName ?? 'Campus user',
+                    title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -482,14 +620,14 @@ class _CaptainOrderCard extends StatelessWidget {
                   Text.rich(
                     TextSpan(
                       children: [
-                        for (int i = 0; i < order.lines.length; i++) ...[
+                        for (int i = 0; i < shownLines.length; i++) ...[
                           if (i > 0)
                             TextSpan(
                               text: ', ',
                               style: TextStyle(color: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0))),
                             ),
                           TextSpan(
-                            text: '${order.lines[i].quantity}× ',
+                            text: '${shownLines[i].quantity}× ',
                             style: TextStyle(
                               color: context.palette.brandInk,
                               fontWeight: FontWeight.w600,
@@ -497,7 +635,9 @@ class _CaptainOrderCard extends StatelessWidget {
                             ),
                           ),
                           TextSpan(
-                            text: order.lines[i].item.name,
+                            text: line != null
+                                ? formatCurrency(shownLines[i].total)
+                                : shownLines[i].item.name,
                             style: TextStyle(
                               color: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0)),
                               fontSize: 13,
@@ -644,7 +784,7 @@ class _ModeNotice extends StatelessWidget {
           Icon(Icons.restaurant_outlined, size: 39, color: context.palette.brandInk),
           const SizedBox(height: 10),
           const Text(
-            'You are in eat mode',
+            'You are in Shop mode',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 5),
@@ -657,7 +797,7 @@ class _ModeNotice extends StatelessWidget {
             FilledButton.tonalIcon(
               onPressed: onSwitchToWork,
               icon: const Icon(Icons.work_outline_rounded, size: 18),
-              label: const Text('Switch to work mode'),
+              label: const Text('Switch to Work mode'),
             ),
           ],
         ],

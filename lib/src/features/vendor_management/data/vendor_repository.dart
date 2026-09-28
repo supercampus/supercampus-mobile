@@ -115,7 +115,19 @@ abstract interface class VendorRepository {
   Future<VendorShop> createVendor(VendorShopDraft draft);
   Future<VendorShop> updateVendor(String shopId, VendorShopDraft draft);
   Future<void> toggleVendorStatus(VendorShop shop, bool active);
-  Future<SalesDashboardData> getSalesDashboard();
+
+  /// Sales measured over [period] in campus local time.
+  Future<SalesDashboardData> getSalesDashboard({
+    SalesPeriod period = SalesPeriod.today,
+  });
+
+  /// Orders and laundry charges across every shop, newest first.
+  Future<SalesOrderPage> listSalesOrders({
+    SalesPeriod period = SalesPeriod.all,
+    String? shopKey,
+    OrderStatusFilter status = OrderStatusFilter.all,
+    int limit = 100,
+  });
 }
 
 class BackendVendorRepository implements VendorRepository {
@@ -198,15 +210,38 @@ class BackendVendorRepository implements VendorRepository {
   }
 
   @override
-  Future<SalesDashboardData> getSalesDashboard() async {
+  Future<SalesDashboardData> getSalesDashboard({
+    SalesPeriod period = SalesPeriod.today,
+  }) async {
+    final uri = _uri(
+      '/api/v1/operations/canteen/sales-dashboard',
+    ).replace(queryParameters: {'period': period.key});
     final response = await _request(
-      (headers) => _client.get(
-        _uri('/api/v1/operations/canteen/sales-dashboard'),
-        headers: headers,
-      ),
+      (headers) => _client.get(uri, headers: headers),
     );
-    final data = _data(response);
-    return SalesDashboardData.fromJson(data);
+    return SalesDashboardData.fromJson(_data(response));
+  }
+
+  @override
+  Future<SalesOrderPage> listSalesOrders({
+    SalesPeriod period = SalesPeriod.all,
+    String? shopKey,
+    OrderStatusFilter status = OrderStatusFilter.all,
+    int limit = 100,
+  }) async {
+    final uri = _uri('/api/v1/operations/canteen/sales-dashboard/orders')
+        .replace(
+          queryParameters: {
+            'period': period.key,
+            'status': status.key,
+            'limit': '$limit',
+            if (shopKey != null && shopKey.isNotEmpty) 'store': shopKey,
+          },
+        );
+    final response = await _request(
+      (headers) => _client.get(uri, headers: headers),
+    );
+    return SalesOrderPage.fromJson(_data(response));
   }
 
   Future<http.Response> _request(

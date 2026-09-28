@@ -274,12 +274,29 @@ class AdminStudentRepository {
     );
   }
 
+  /// Sets a student's year of study (1–6) on the account and the linked
+  /// student record.
+  Future<void> setUserYear(String userId, int yearOfStudy) async {
+    if (yearOfStudy < 1 || yearOfStudy > 6) {
+      throw ArgumentError.value(yearOfStudy, 'yearOfStudy', 'must be 1–6');
+    }
+    await _request(
+      (headers) => _client.put(
+        _baseUri.resolve(
+          '/api/v1/authorization/users/${Uri.encodeComponent(userId)}/year',
+        ),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({'yearOfStudy': yearOfStudy}),
+      ),
+    );
+  }
 
   Future<void> createUser({
     required String name,
     required String email,
     required String password,
     required List<String> roleIds,
+    int? yearOfStudy,
   }) async {
     await _request(
       (headers) => _client.post(
@@ -290,6 +307,7 @@ class AdminStudentRepository {
           'email': email.trim().toLowerCase(),
           'temporaryPassword': password,
           'roleIds': roleIds,
+          if (yearOfStudy != null) 'yearOfStudy': yearOfStudy,
         }),
       ),
     );

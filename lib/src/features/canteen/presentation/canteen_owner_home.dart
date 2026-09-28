@@ -12,6 +12,7 @@ import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
 import 'widgets/order_status_badge.dart';
 import 'widgets/owner_captain_sales_analytics.dart';
+import 'widgets/shop_mode_switch.dart';
 import 'canteen_menu_item_editor_screen.dart';
 import '../../../core/utils/user_facing_error.dart';
 
@@ -56,8 +57,33 @@ class CanteenOwnerHome extends StatefulWidget {
   State<CanteenOwnerHome> createState() => _CanteenOwnerHomeState();
 }
 
+/// The workspace's sections, in the order they appear.
+enum OwnerSection { orders, menu, sales }
+
+/// Which sections a shop shows to this account.
+///
+/// Whoever works a shop's counter — its owner or operator, i.e. someone
+/// assigned to it — gets the queue, the menu and the figures. Someone who holds
+/// the shop-configuration grant without being assigned to that shop is
+/// overseeing it: the queue is the counter's job, so they see the figures, and
+/// for a food counter the menu. Stationery and laundry are run entirely from
+/// their own counters.
+@visibleForTesting
+List<OwnerSection> ownerSectionsFor(CanteenStore store, CanteenShop? shop) {
+  final shopKey = shop?.shopKey;
+  final overseeing =
+      store.canConfigureShops &&
+      (shopKey == null || !store.assignedShopKeys.contains(shopKey));
+  if (!overseeing) return OwnerSection.values;
+  final category = '${shop?.category ?? ''} ${shop?.shopKey ?? ''}'
+      .toLowerCase();
+  final isFood =
+      !category.contains('station') && !category.contains('laundry');
+  return [if (isFood) OwnerSection.menu, OwnerSection.sales];
+}
+
 class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
-  var _index = 0;
+  var _section = OwnerSection.orders;
   var _busy = false;
   String? _selectedShopKey;
 
@@ -160,15 +186,23 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
       orders: scopedOrders,
       analytics: analyticsForOrders(scopedOrders),
     );
-    final pages = [
-      _OwnerOrders(
+    CanteenShop? activeShop;
+    for (final shop in _assignedShops) {
+      if (shop.shopKey == shopKey) activeShop = shop;
+    }
+    final sections = ownerSectionsFor(widget.store, activeShop);
+    final section = sections.contains(_section) ? _section : sections.first;
+    final overseeing = widget.store.canConfigureShops &&
+        widget.store.assignedShopKeys.isEmpty;
+    final pages = <OwnerSection, Widget>{
+      OwnerSection.orders: _OwnerOrders(
         store: scopedStore,
         busy: _busy,
         onRefresh: () => _run(widget.onRefresh),
         onStatus: (id, status) =>
             _run(() => widget.onOrderStatusChanged(id, status)),
       ),
-      _OwnerMenu(
+      OwnerSection.menu: _OwnerMenu(
         items: scopedMenu,
         busy: _busy,
         onEdit: _editItem,
@@ -180,12 +214,12 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
           ),
         ),
       ),
-      OwnerCaptainSalesAnalytics(
+      OwnerSection.sales: OwnerCaptainSalesAnalytics(
         store: scopedStore,
         busy: _busy,
         onRefresh: () => _run(widget.onRefresh),
       ),
-    ];
+    };
 
     return Scaffold(
       appBar: AppBar(
@@ -194,13 +228,13 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
             ? null
             : ModuleBackButton(onPressed: widget.onExitModule),
         automaticallyImplyLeading: !widget.isMainHome,
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Shop operations'),
+            const Text('Shop operations'),
             Text(
-              'Owner workspace',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+              overseeing ? 'Campus shops' : 'Owner workspace',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
             ),
           ],
         ),
@@ -243,10 +277,13 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
           // These are sections of this page, not app navigation, so they sit
           // at the top of it. A second bar at the bottom would land underneath
           // the one the host already floats there.
-          _SectionTabs(
-            index: _index,
-            onChanged: (value) => setState(() => _index = value),
-          ),
+          // A single section needs no switcher.
+          if (sections.length > 1)
+            _SectionTabs(
+              sections: sections,
+              selected: section,
+              onChanged: (value) => setState(() => _section = value),
+            ),
           if (_busy) const LinearProgressIndicator(minHeight: 2),
           Expanded(
             child: Padding(
@@ -256,12 +293,15 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
                     CampusNavBar.heightFor(context) +
                     MediaQuery.paddingOf(context).bottom,
               ),
-              child: IndexedStack(index: _index, children: pages),
+              child: IndexedStack(
+                index: sections.indexOf(section),
+                children: [for (final value in sections) pages[value]!],
+              ),
             ),
           ),
         ],
       ),
-      floatingActionButton: _index == 1
+      floatingActionButton: section == OwnerSection.menu
           ? Padding(
               padding: EdgeInsets.only(
                 bottom:
@@ -302,16 +342,15 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
                 _OwnerControlBar(
                   state: state,
                   busy: _busy,
+                  // Opening and closing is the counter's call; someone
+                  // overseeing the shops has no counter of their own.
+                  showShopOpen: widget.store.assignedShopKeys.isNotEmpty,
                   // The sheet answers immediately and the request follows, so a
                   // toggle never sits looking unpressed while the round trip
                   // completes.
                   onMode: (mode) {
-                    setSheetState(
-                      () => state = CanteenStaffState(
-                        mode: mode,
-                        shopOpen: state.shopOpen,
-                      ),
-                    );
+                    // Shop replaces this workspace, so the sheet goes with it.
+                    Navigator.of(sheetContext).pop();
                     _run(() => widget.onModeChanged(mode));
                   },
                   onShopOpen: (open) {
@@ -392,10 +431,12 @@ class _OwnerControlBar extends StatelessWidget {
     required this.busy,
     required this.onMode,
     required this.onShopOpen,
+    this.showShopOpen = true,
   });
 
   final CanteenStaffState state;
   final bool busy;
+  final bool showShopOpen;
   final ValueChanged<CanteenStaffMode> onMode;
   final ValueChanged<bool> onShopOpen;
 
@@ -409,31 +450,19 @@ class _OwnerControlBar extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: SegmentedButton<CanteenStaffMode>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(
-                    value: CanteenStaffMode.work,
-                    icon: Icon(Icons.storefront_outlined),
-                    label: Text('Work'),
-                  ),
-                  ButtonSegment(
-                    value: CanteenStaffMode.eat,
-                    icon: Icon(Icons.restaurant_outlined),
-                    label: Text('Eat'),
-                  ),
-                ],
-                selected: {state.mode},
-                onSelectionChanged: busy
-                    ? null
-                    : (selection) => onMode(selection.first),
+              child: ShopModeSwitch(
+                mode: state.mode,
+                enabled: !busy,
+                onChanged: onMode,
               ),
             ),
-            const SizedBox(width: 12),
-            Tooltip(
-              message: open ? 'Shop open' : 'Shop closed',
-              child: Switch(value: open, onChanged: busy ? null : onShopOpen),
-            ),
+            if (showShopOpen) ...[
+              const SizedBox(width: 12),
+              Tooltip(
+                message: open ? 'Shop open' : 'Shop closed',
+                child: Switch(value: open, onChanged: busy ? null : onShopOpen),
+              ),
+            ],
           ],
         ),
       ),
@@ -925,9 +954,13 @@ class _OwnerMenuState extends State<_OwnerMenu> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Menu management',
-              style: Theme.of(context).textTheme.titleLarge,
+            Flexible(
+              child: Text(
+                'Menu management',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
             Text(
               query.isEmpty
@@ -1024,7 +1057,11 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Row(
+                        // Wraps on narrow phones instead of overflowing.
+                        Wrap(
+                          spacing: 0,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text(
                               'Sell: ${formatCurrency(item.price)}',
@@ -1120,10 +1157,15 @@ class _OwnerMenuState extends State<_OwnerMenu> {
 /// bottom of the screen belongs to the one navigation bar the host floats
 /// there, and two bars stacked on each other was the bug this replaced.
 class _SectionTabs extends StatelessWidget {
-  const _SectionTabs({required this.index, required this.onChanged});
+  const _SectionTabs({
+    required this.sections,
+    required this.selected,
+    required this.onChanged,
+  });
 
-  final int index;
-  final ValueChanged<int> onChanged;
+  final List<OwnerSection> sections;
+  final OwnerSection selected;
+  final ValueChanged<OwnerSection> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1131,25 +1173,28 @@ class _SectionTabs extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
       child: SizedBox(
         width: double.infinity,
-        child: SegmentedButton<int>(
-          segments: const [
-            ButtonSegment(
-              value: 0,
-              icon: Icon(Icons.receipt_long_outlined),
-              label: Text('Orders'),
-            ),
-            ButtonSegment(
-              value: 1,
-              icon: Icon(Icons.restaurant_menu_outlined),
-              label: Text('Menu'),
-            ),
-            ButtonSegment(
-              value: 2,
-              icon: Icon(Icons.analytics_outlined),
-              label: Text('Sales & Profit'),
-            ),
+        child: SegmentedButton<OwnerSection>(
+          segments: [
+            for (final section in sections)
+              switch (section) {
+                OwnerSection.orders => const ButtonSegment(
+                  value: OwnerSection.orders,
+                  icon: Icon(Icons.receipt_long_outlined),
+                  label: Text('Orders'),
+                ),
+                OwnerSection.menu => const ButtonSegment(
+                  value: OwnerSection.menu,
+                  icon: Icon(Icons.restaurant_menu_outlined),
+                  label: Text('Menu'),
+                ),
+                OwnerSection.sales => const ButtonSegment(
+                  value: OwnerSection.sales,
+                  icon: Icon(Icons.analytics_outlined),
+                  label: Text('Sales & Profit'),
+                ),
+              },
           ],
-          selected: {index},
+          selected: {selected},
           showSelectedIcon: false,
           onSelectionChanged: (value) => onChanged(value.first),
         ),

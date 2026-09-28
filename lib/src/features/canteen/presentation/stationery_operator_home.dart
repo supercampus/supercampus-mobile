@@ -9,9 +9,11 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../../core/widgets/swipe_action_card.dart';
 import '../data/canteen_models.dart';
+import 'canteen_scanner_screen.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
 import 'widgets/order_status_badge.dart';
+import 'widgets/shop_mode_switch.dart';
 import '../../../core/utils/user_facing_error.dart';
 
 /// A stationery-only workspace. It deliberately does not reuse the food
@@ -28,6 +30,7 @@ class StationeryOperatorHome extends StatefulWidget {
     required this.onSaveItem,
     required this.onUploadMedia,
     this.onShopOpenChanged,
+    this.onScanOrder,
     this.initialAction,
     this.isMainHome = false,
     this.onProfileTap,
@@ -46,6 +49,9 @@ class StationeryOperatorHome extends StatefulWidget {
       onOrderStatusChanged;
   final Future<void> Function(CanteenMenuItem item, bool create) onSaveItem;
   final Future<String> Function(Uint8List bytes, String filename) onUploadMedia;
+
+  /// Collects an order from its pickup QR. The QR Scan tab needs it.
+  final Future<void> Function(String payload)? onScanOrder;
   final String? initialAction;
   final bool isMainHome;
   final VoidCallback? onProfileTap;
@@ -57,21 +63,23 @@ class StationeryOperatorHome extends StatefulWidget {
   State<StationeryOperatorHome> createState() => _StationeryOperatorHomeState();
 }
 
+/// The counter's three places: its orders, its shelves, and the pickup scan.
+enum StationeryTab { home, inventory, scan }
+
 class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
-  var _index = 1;
+  var _tab = StationeryTab.home;
   var _busy = false;
-  var _showHistory = false;
   var _query = '';
   String? _category;
 
   @override
   void initState() {
     super.initState();
-    // Default to Orders (index 1) matching Image 1, unless initialAction explicitly requests inventory
-    _index = widget.initialAction == 'inventory' ? 0 : 1;
-    if (widget.initialAction == 'order_history') {
-      _showHistory = true;
-    }
+    _tab = switch (widget.initialAction) {
+      'inventory' || 'menu' => StationeryTab.inventory,
+      'scan' => StationeryTab.scan,
+      _ => StationeryTab.home,
+    };
   }
 
   String get _userInitials {
@@ -199,7 +207,7 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
           const SizedBox(width: 8),
         ],
       ),
-      floatingActionButton: _index == 0
+      floatingActionButton: _tab == StationeryTab.inventory
           ? FloatingActionButton.extended(
               key: const ValueKey('stationery-add-item-fab'),
               onPressed: _addNewItem,
@@ -210,14 +218,19 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
       body: Column(
         children: [
           if (_busy) const LinearProgressIndicator(minHeight: 2),
-          _StationerySectionSwitcher(
-            selectedIndex: _index,
-            onSelected: (value) => setState(() => _index = value),
-          ),
           Expanded(
             child: IndexedStack(
-              index: _index,
+              index: _tab.index,
               children: [
+                _StationeryHomePage(
+                  active: active,
+                  history: history,
+                  counterOpen: counterOpen,
+                  busy: _busy,
+                  onRefresh: () => _run(widget.onRefresh),
+                  onStatus: (id, status) =>
+                      _run(() => widget.onOrderStatusChanged(id, status)),
+                ),
                 _InventoryPage(
                   items: _stationeryItems,
                   totalItems: widget.store.menu
@@ -237,19 +250,46 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                   onAdd: _addNewItem,
                   onEdit: _editItem,
                 ),
-                _OrdersPage(
-                  orders: _showHistory ? history : active,
-                  showHistory: _showHistory,
-                  counterOpen: counterOpen,
-                  busy: _busy,
-                  onShowHistoryChanged: (value) =>
-                      setState(() => _showHistory = value),
-                  onRefresh: () => _run(widget.onRefresh),
-                  onStatus: (id, status) =>
-                      _run(() => widget.onOrderStatusChanged(id, status)),
-                ),
+                widget.onScanOrder == null
+                    ? const _ScanUnavailable()
+                    : CanteenScannerScreen(onScan: widget.onScanOrder!),
               ],
             ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        key: const ValueKey('stationery-nav'),
+        selectedIndex: _tab.index,
+        backgroundColor: context.palette.surface,
+        indicatorColor: context.palette.brandSoft,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        onDestinationSelected: (index) =>
+            setState(() => _tab = StationeryTab.values[index]),
+        destinations: [
+          NavigationDestination(
+            key: const ValueKey('stationery-nav-home'),
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded, color: context.palette.brandInk),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            key: const ValueKey('stationery-nav-inventory'),
+            icon: const Icon(Icons.inventory_2_outlined),
+            selectedIcon: Icon(
+              Icons.inventory_2_rounded,
+              color: context.palette.brandInk,
+            ),
+            label: 'Inventory',
+          ),
+          NavigationDestination(
+            key: const ValueKey('stationery-nav-scan'),
+            icon: const Icon(Icons.qr_code_scanner_rounded),
+            selectedIcon: Icon(
+              Icons.qr_code_scanner_rounded,
+              color: context.palette.brandInk,
+            ),
+            label: 'QR Scan',
           ),
         ],
       ),
@@ -517,7 +557,7 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                                 child: Icon(
                                   mode == CanteenStaffMode.work
                                       ? Icons.work_outline_rounded
-                                      : Icons.restaurant_outlined,
+                                      : Icons.shopping_bag_outlined,
                                   color: context.palette.brandInk,
                                   size: 20,
                                 ),
@@ -535,9 +575,7 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      mode == CanteenStaffMode.work
-                                          ? 'Work mode active'
-                                          : 'Eat mode active',
+                                      '${mode.label} mode active',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: context.palette.brandInk,
@@ -550,34 +588,21 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          SegmentedButton<CanteenStaffMode>(
-                            showSelectedIcon: true,
-                            segments: const [
-                              ButtonSegment(
-                                value: CanteenStaffMode.work,
-                                icon: Icon(Icons.work_outline_rounded),
-                                label: Text('Work mode'),
-                              ),
-                              ButtonSegment(
-                                value: CanteenStaffMode.eat,
-                                icon: Icon(Icons.restaurant_outlined),
-                                label: Text('Eat mode'),
-                              ),
-                            ],
-                            selected: {mode},
-                            onSelectionChanged: _busy
-                                ? null
-                                : (selection) async {
-                                    final newMode = selection.first;
-                                    Navigator.of(sheetContext).pop();
-                                    await _run(() => widget.onCounterStateChanged(newMode));
-                                  },
+                          ShopModeSwitch(
+                            mode: mode,
+                            enabled: !_busy,
+                            onChanged: (newMode) async {
+                              Navigator.of(sheetContext).pop();
+                              await _run(
+                                () => widget.onCounterStateChanged(newMode),
+                              );
+                            },
                           ),
                           const SizedBox(height: 8),
                           Text(
                             mode == CanteenStaffMode.work
-                                ? 'Work mode lets you manage stationery inventory and incoming orders.'
-                                : 'Eat mode switches to customer view to browse campus items and order food or supplies.',
+                                ? 'Work runs this counter: orders, inventory and pickups.'
+                                : 'Shop lets you buy from Campus Canteen, Stationery and Laundry with your own wallet.',
                             style: TextStyle(
                               fontSize: 12,
                               color: context.palette.inkSecondary,
@@ -636,44 +661,6 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
       },
     );
   }
-}
-
-class _StationerySectionSwitcher extends StatelessWidget {
-  const _StationerySectionSwitcher({
-    required this.selectedIndex,
-    required this.onSelected,
-  });
-
-  final int selectedIndex;
-  final ValueChanged<int> onSelected;
-
-  @override
-  Widget build(BuildContext context) => ColoredBox(
-    color: Theme.of(context).scaffoldBackgroundColor,
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
-      child: SizedBox(
-        width: double.infinity,
-        child: SegmentedButton<int>(
-          showSelectedIcon: false,
-          segments: const [
-            ButtonSegment(
-              value: 0,
-              icon: Icon(Icons.inventory_2_outlined),
-              label: Text('Inventory'),
-            ),
-            ButtonSegment(
-              value: 1,
-              icon: Icon(Icons.receipt_long_outlined),
-              label: Text('Orders'),
-            ),
-          ],
-          selected: {selectedIndex},
-          onSelectionChanged: (selection) => onSelected(selection.first),
-        ),
-      ),
-    ),
-  );
 }
 
 class _InventoryPage extends StatelessWidget {
@@ -1288,100 +1275,183 @@ class _StationeryItemEditorState extends State<_StationeryItemEditor> {
   }
 }
 
-class _OrdersPage extends StatelessWidget {
-  const _OrdersPage({
-    required this.orders,
-    required this.showHistory,
+/// Home: what needs doing now, then what has already been done.
+///
+/// Live orders lead because they are the job; history sits underneath for the
+/// occasional "what happened to my order?" question.
+class _StationeryHomePage extends StatefulWidget {
+  const _StationeryHomePage({
+    required this.active,
+    required this.history,
     required this.counterOpen,
     required this.busy,
-    required this.onShowHistoryChanged,
     required this.onRefresh,
     required this.onStatus,
   });
 
-  final List<CanteenOrder> orders;
-  final bool showHistory;
+  final List<CanteenOrder> active;
+  final List<CanteenOrder> history;
   final bool counterOpen;
   final bool busy;
-  final ValueChanged<bool> onShowHistoryChanged;
   final Future<void> Function() onRefresh;
   final void Function(String id, CanteenOrderStatus status) onStatus;
 
   @override
+  State<_StationeryHomePage> createState() => _StationeryHomePageState();
+}
+
+class _StationeryHomePageState extends State<_StationeryHomePage> {
+  static const _historyPreview = 10;
+  var _showAllHistory = false;
+
+  @override
   Widget build(BuildContext context) {
+    final history = _showAllHistory
+        ? widget.history
+        : widget.history.take(_historyPreview).toList(growable: false);
     return RefreshIndicator(
-      onRefresh: onRefresh,
+      onRefresh: widget.onRefresh,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
         children: [
-          Text(
-            'Stationery orders',
-            style: Theme.of(context).textTheme.headlineSmall,
+          _SectionHeader(
+            title: 'Orders',
+            count: widget.active.length,
+            subtitle: 'Swipe right to move an order on, left to reject it',
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Pack and hand over orders from this shop only',
-            style: TextStyle(color: context.palette.inkSecondary),
-          ),
-          const SizedBox(height: 14),
-          SegmentedButton<bool>(
-            showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(
-                value: false,
-                icon: Icon(Icons.pending_actions_outlined),
-                label: Text('Live'),
-              ),
-              ButtonSegment(
-                value: true,
-                icon: Icon(Icons.history),
-                label: Text('History'),
-              ),
-            ],
-            selected: {showHistory},
-            onSelectionChanged: (value) => onShowHistoryChanged(value.first),
-          ),
-          const SizedBox(height: 16),
-          if (!showHistory && !counterOpen)
+          const SizedBox(height: 12),
+          if (!widget.counterOpen)
             const _CounterPausedNotice()
-          else if (orders.isEmpty)
-            CanteenSurface(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 32),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.receipt_long_outlined,
-                      size: 38,
-                      color: context.palette.brandInk,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      showHistory
-                          ? 'No settled stationery orders yet.'
-                          : 'No active stationery orders.',
-                    ),
-                  ],
-                ),
-              ),
+          else if (widget.active.isEmpty)
+            const _EmptyNotice(
+              icon: Icons.receipt_long_outlined,
+              text: 'No active stationery orders.',
             )
           else
-            for (final order in orders)
+            for (final order in widget.active)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: showHistory
-                    ? _HistoryOrderCard(order: order)
-                    : _LiveOrderCard(
-                        key: ValueKey('${order.id}_${order.status.name}'),
-                        order: order,
-                        enabled: !busy,
-                        onStatus: onStatus,
-                      ),
+                child: _LiveOrderCard(
+                  key: ValueKey('${order.id}_${order.status.name}'),
+                  order: order,
+                  enabled: !widget.busy,
+                  onStatus: widget.onStatus,
+                ),
               ),
+          const SizedBox(height: 24),
+          _SectionHeader(
+            title: 'History',
+            count: widget.history.length,
+            subtitle: 'Handed over and rejected orders, newest first',
+          ),
+          const SizedBox(height: 12),
+          if (widget.history.isEmpty)
+            const _EmptyNotice(
+              icon: Icons.history,
+              text: 'No settled stationery orders yet.',
+            )
+          else ...[
+            for (final order in history)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _HistoryOrderCard(order: order),
+              ),
+            if (widget.history.length > _historyPreview)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () =>
+                      setState(() => _showAllHistory = !_showAllHistory),
+                  child: Text(
+                    _showAllHistory
+                        ? 'Show fewer'
+                        : 'Show all ${widget.history.length}',
+                  ),
+                ),
+              ),
+          ],
         ],
       ),
     );
   }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.count,
+    required this.subtitle,
+  });
+
+  final String title;
+  final int count;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$count',
+            style: TextStyle(
+              color: context.palette.inkSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 2),
+      Text(
+        subtitle,
+        style: TextStyle(color: context.palette.inkSecondary, fontSize: 13),
+      ),
+    ],
+  );
+}
+
+class _EmptyNotice extends StatelessWidget {
+  const _EmptyNotice({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => CanteenSurface(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 28),
+      child: Column(
+        children: [
+          Icon(icon, size: 34, color: context.palette.brandInk),
+          const SizedBox(height: 10),
+          Text(text),
+        ],
+      ),
+    ),
+  );
+}
+
+class _ScanUnavailable extends StatelessWidget {
+  const _ScanUnavailable();
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(28),
+      child: Text(
+        'Pickup scanning is not available here.',
+        style: TextStyle(color: context.palette.inkSecondary),
+      ),
+    ),
+  );
 }
 
 class _LiveOrderCard extends StatelessWidget {

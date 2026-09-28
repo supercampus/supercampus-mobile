@@ -113,6 +113,9 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     }
   }
 
+  static bool _isStudent(ManagedTenantUser user) =>
+      user.roles.any((role) => role.key == 'student');
+
   bool _isSelf(ManagedTenantUser user) {
     final me = widget.currentUserEmail?.trim().toLowerCase();
     return me != null && me.isNotEmpty && user.email.trim().toLowerCase() == me;
@@ -167,28 +170,87 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     }
   }
 
+  Future<void> _assignYear(ManagedTenantUser user) async {
+    final year = await showDialog<int>(
+      context: context,
+      builder: (context) => _YearPickerDialog(
+        title: user.yearOfStudy == null ? 'Assign year' : 'Change year',
+        message: 'Choose the year of study for ${user.name}.',
+        initialYear: user.yearOfStudy,
+      ),
+    );
+    if (year == null || !mounted) return;
+    try {
+      await widget.repository.setUserYear(user.id, year);
+      await _load();
+      if (mounted) {
+        _showMessage('${user.name} is now in ${studentYearLabel(year)}.');
+      }
+    } catch (error) {
+      if (mounted) _showMessage(userFacingError(error), error: true);
+    }
+  }
+
+  /// Gives every student in the "Year not set" group the same year.
+  Future<void> _assignYearToAll(List<ManagedTenantUser> students) async {
+    if (students.isEmpty) return;
+    final year = await showDialog<int>(
+      context: context,
+      builder: (context) => _YearPickerDialog(
+        title: 'Assign year to ${students.length} '
+            '${students.length == 1 ? 'student' : 'students'}',
+        message: 'Every student listed under "Year not set" gets this year. '
+            'You can change one student later from their profile.',
+      ),
+    );
+    if (year == null || !mounted) return;
+    var failed = 0;
+    for (final student in students) {
+      try {
+        await widget.repository.setUserYear(student.id, year);
+      } catch (_) {
+        failed++;
+      }
+    }
+    await _load();
+    if (!mounted) return;
+    final saved = students.length - failed;
+    _showMessage(
+      failed == 0
+          ? '$saved ${saved == 1 ? 'student was' : 'students were'} moved to '
+                '${studentYearLabel(year)}.'
+          : '$saved saved, $failed could not be updated. Try those again.',
+      error: failed > 0,
+    );
+  }
+
   void _showUserProfile(ManagedTenantUser user) {
+    final isSelf = _isSelf(user);
+    void close(BuildContext sheetContext, VoidCallback then) {
+      Navigator.pop(sheetContext);
+      then();
+    }
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      backgroundColor: context.palette.canvas,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) => _UserProfileSheet(
         user: user,
-        onEditUser: () {
-          Navigator.pop(sheetContext);
-          _editUser(user);
-        },
-        onEditRoles: () {
-          Navigator.pop(sheetContext);
-          _editRoles(user);
-        },
-        onChangePassword: () {
-          Navigator.pop(sheetContext);
-          _changePassword(user);
-        },
+        onEditUser: () => close(sheetContext, () => _editUser(user)),
+        onEditRoles: () => close(sheetContext, () => _editRoles(user)),
+        onChangePassword: () =>
+            close(sheetContext, () => _changePassword(user)),
+        onAssignYear: _isStudent(user)
+            ? () => close(sheetContext, () => _assignYear(user))
+            : null,
+        onSetActive: isSelf
+            ? null
+            : (active) => close(sheetContext, () => _setActive(user, active)),
       ),
     );
   }
@@ -205,6 +267,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
         email: request.email,
         password: request.password,
         roleIds: request.roleIds.toList(),
+        yearOfStudy: request.yearOfStudy,
       );
       await _load();
       if (mounted) _showMessage('${request.name}\'s account was created.');
@@ -236,12 +299,25 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       return query.isEmpty ||
           '${user.name} ${user.email} $roles'.toLowerCase().contains(query);
     }).toList();
-    final studentUsers = users
-        .where((user) => user.roles.any((role) => role.key == 'student'))
-        .toList();
-    final otherUsers = users
-        .where((user) => !user.roles.any((role) => role.key == 'student'))
-        .toList();
+    final studentUsers = users.where(_isStudent).toList();
+    final otherUsers = users.where((user) => !_isStudent(user)).toList();
+    Widget card(ManagedTenantUser user) => Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: _UserCard(
+        user: user,
+        onOpenProfile: () => _showUserProfile(user),
+        onEditUser: () => _editUser(user),
+        onEditRoles: () => _editRoles(user),
+        onChangePassword: () => _changePassword(user),
+        onAssignYear: _isStudent(user) && user.yearOfStudy == null
+            ? () => _assignYear(user)
+            : null,
+        onAssignRole: user.roles.isEmpty ? () => _editRoles(user) : null,
+        onSetActive: _isSelf(user)
+            ? null
+            : (active) => _setActive(user, active),
+      ),
+    );
     final studentGroups = groupStudentsByYearAndDepartment(
       studentUsers,
       yearOf: (user) => user.yearOfStudy,
@@ -250,6 +326,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
 
     return Scaffold(
       appBar: AppBar(
+        centerTitle: false,
         title: const Text('User management'),
         actions: [
           IconButton(
@@ -357,7 +434,19 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                             _UserSectionHeader(
                               label: group.label,
                               count: group.students.length,
+                              actionLabel:
+                                  group.year == null ? 'Assign year' : null,
+                              onAction: group.year == null
+                                  ? () => _assignYearToAll(group.students)
+                                  : null,
                             ),
+                            if (group.year == null)
+                              const _NoticeBanner(
+                                message:
+                                    'Year of study is required for every '
+                                    'student. Assign one here or from a '
+                                    "student's profile.",
+                              ),
                             for (final deptGroup in group.departments) ...[
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
@@ -388,20 +477,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                                   ],
                                 ),
                               ),
-                              for (final user in deptGroup.students)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: _UserCard(
-                                    user: user,
-                                    onOpenProfile: () => _showUserProfile(user),
-                                    onEditUser: () => _editUser(user),
-                                    onEditRoles: () => _editRoles(user),
-                                    onChangePassword: () => _changePassword(user),
-                                    onSetActive: _isSelf(user)
-                                        ? null
-                                        : (active) => _setActive(user, active),
-                                  ),
-                                ),
+                              for (final user in deptGroup.students) card(user),
                             ],
                           ],
                           if (otherUsers.isNotEmpty) ...[
@@ -409,20 +485,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                               label: 'Staff and other users',
                               count: otherUsers.length,
                             ),
-                            for (final user in otherUsers)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: _UserCard(
-                                  user: user,
-                                  onOpenProfile: () => _showUserProfile(user),
-                                  onEditUser: () => _editUser(user),
-                                  onEditRoles: () => _editRoles(user),
-                                  onChangePassword: () => _changePassword(user),
-                                  onSetActive: _isSelf(user)
-                                      ? null
-                                      : (active) => _setActive(user, active),
-                                ),
-                              ),
+                            for (final user in otherUsers) card(user),
                           ],
                         ]),
                       ),
@@ -435,10 +498,17 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
 }
 
 class _UserSectionHeader extends StatelessWidget {
-  const _UserSectionHeader({required this.label, required this.count});
+  const _UserSectionHeader({
+    required this.label,
+    required this.count,
+    this.actionLabel,
+    this.onAction,
+  });
 
   final String label;
   final int count;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -451,11 +521,51 @@ class _UserSectionHeader extends StatelessWidget {
             context,
           ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
         ),
-        const Spacer(),
+        const SizedBox(width: 8),
         Text(
           '$count',
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
+            color: context.palette.inkSecondary,
+          ),
+        ),
+        const Spacer(),
+        if (actionLabel != null && onAction != null)
+          TextButton.icon(
+            onPressed: onAction,
+            icon: const Icon(Icons.event_available_rounded, size: 18),
+            label: Text(actionLabel!),
+            style: TextButton.styleFrom(
+              foregroundColor: context.palette.brandInk,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+class _NoticeBanner extends StatelessWidget {
+  const _NoticeBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+    decoration: BoxDecoration(
+      color: context.palette.warningSoft,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.info_outline_rounded, size: 18, color: context.palette.warning),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            message,
+            style: TextStyle(fontSize: 12.5, color: context.palette.ink),
           ),
         ),
       ],
@@ -470,6 +580,8 @@ class _UserCard extends StatelessWidget {
     required this.onEditUser,
     required this.onEditRoles,
     required this.onChangePassword,
+    this.onAssignYear,
+    this.onAssignRole,
     this.onSetActive,
   });
 
@@ -479,6 +591,12 @@ class _UserCard extends StatelessWidget {
   final VoidCallback onEditRoles;
   final VoidCallback onChangePassword;
 
+  /// Shown as an inline "Assign year" action for a student with no year.
+  final VoidCallback? onAssignYear;
+
+  /// Shown as an inline "Assign role" action for a user with no role.
+  final VoidCallback? onAssignRole;
+
   /// Deactivate (false) or reactivate (true); null hides the action, as on
   /// the administrator's own account.
   final ValueChanged<bool>? onSetActive;
@@ -487,6 +605,20 @@ class _UserCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final quickActions = [
+      if (onAssignYear != null)
+        _InlineAction(
+          icon: Icons.event_available_rounded,
+          label: 'Assign year',
+          onTap: onAssignYear!,
+        ),
+      if (onAssignRole != null)
+        _InlineAction(
+          icon: Icons.admin_panel_settings_outlined,
+          label: 'Assign role',
+          onTap: onAssignRole!,
+        ),
+    ];
     final card = Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -539,6 +671,10 @@ class _UserCard extends StatelessWidget {
                             _RoleChip(label: role.name),
                       ],
                     ),
+                    if (quickActions.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Wrap(spacing: 8, runSpacing: 8, children: quickActions),
+                    ],
                   ],
                 ),
               ),
@@ -645,12 +781,17 @@ class _InactiveChip extends StatelessWidget {
   );
 }
 
+/// A user's profile as an inset grouped list: identity up top, then the
+/// account facts, roles, and actions, with the destructive action alone at
+/// the bottom.
 class _UserProfileSheet extends StatelessWidget {
   const _UserProfileSheet({
     required this.user,
     required this.onEditUser,
     required this.onEditRoles,
     required this.onChangePassword,
+    this.onAssignYear,
+    this.onSetActive,
   });
 
   final ManagedTenantUser user;
@@ -658,152 +799,480 @@ class _UserProfileSheet extends StatelessWidget {
   final VoidCallback onEditRoles;
   final VoidCallback onChangePassword;
 
+  /// Null for accounts that are not students.
+  final VoidCallback? onAssignYear;
+
+  /// Null on the administrator's own account.
+  final ValueChanged<bool>? onSetActive;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
+    final palette = context.palette;
+    final year = user.yearOfStudy;
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Center(
             child: Container(
-              width: 40,
-              height: 4,
+              width: 36,
+              height: 5,
               decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
+                color: palette.borderStrong,
+                borderRadius: BorderRadius.circular(3),
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: colors.primaryContainer,
-                child: Text(
-                  _initials(user.name),
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: colors.onPrimaryContainer,
-                  ),
+          const SizedBox(height: 18),
+          Center(
+            child: CircleAvatar(
+              radius: 36,
+              backgroundColor: palette.brandSoft,
+              child: Text(
+                _initials(user.name),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: palette.brandInk,
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      user.email,
-                      style: TextStyle(color: colors.onSurfaceVariant, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 20),
-          const Divider(),
           const SizedBox(height: 12),
           Text(
-            'User Account Details',
-            style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+            user.name,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.4,
+              color: palette.ink,
+            ),
           ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                Icon(Icons.fingerprint_outlined, size: 16, color: context.palette.inkSecondary),
-                const SizedBox(width: 8),
-                Text('User ID: ', style: TextStyle(fontSize: 12, color: context.palette.inkSecondary)),
-                Expanded(
-                  child: Text(
-                    user.id,
-                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+          const SizedBox(height: 2),
+          Text(
+            user.email,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: palette.inkSecondary),
+          ),
+          const SizedBox(height: 10),
+          Center(
+            child: _StatusPill(
+              label: user.active ? 'Active' : 'Inactive',
+              color: user.active ? palette.success : palette.danger,
+              background: user.active ? palette.successSoft : palette.dangerSoft,
+            ),
+          ),
+          const SizedBox(height: 22),
+          const _GroupLabel('Account'),
+          _Group(
+            children: [
+              _GroupRow(
+                icon: Icons.person_outline_rounded,
+                title: 'Name',
+                value: user.name,
+              ),
+              _GroupRow(
+                icon: Icons.mail_outline_rounded,
+                title: 'Email',
+                value: user.email,
+              ),
+              if (onAssignYear != null)
+                _GroupRow(
+                  icon: Icons.school_outlined,
+                  title: 'Year of study',
+                  value: year == null ? 'Not set' : studentYearLabel(year),
+                  valueColor: year == null ? palette.danger : null,
+                  onTap: onAssignYear,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.copy_outlined, size: 16),
+              if (user.department?.trim().isNotEmpty ?? false)
+                _GroupRow(
+                  icon: Icons.apartment_outlined,
+                  title: 'Department',
+                  value: user.department!.trim(),
+                ),
+              _GroupRow(
+                icon: Icons.fingerprint_rounded,
+                title: 'User ID',
+                value: user.id,
+                monospace: true,
+                trailing: IconButton(
+                  icon: const Icon(Icons.copy_rounded, size: 18),
                   tooltip: 'Copy user ID',
+                  color: palette.inkTertiary,
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: user.id));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('User ID copied to clipboard.')),
+                      const SnackBar(content: Text('User ID copied.')),
                     );
                   },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Assigned Dynamic Roles',
-            style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: user.roles.isEmpty
-                ? [
-                    const Chip(
-                      label: Text('No dynamic roles assigned'),
-                      side: BorderSide.none,
-                    ),
-                  ]
-                : [
-                    for (final role in user.roles)
-                      Chip(
-                        avatar: const Icon(Icons.verified_user_outlined, size: 15),
-                        label: Text(role.name),
-                        backgroundColor: colors.primaryContainer.withValues(alpha: 0.45),
-                        side: BorderSide.none,
-                      ),
-                  ],
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: onEditUser,
-            icon: const Icon(Icons.edit_outlined),
-            label: const Text('Edit user profile (Name & Email)'),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onChangePassword,
-                  icon: const Icon(Icons.lock_reset_outlined),
-                  label: const Text('Change password'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onEditRoles,
-                  icon: const Icon(Icons.admin_panel_settings_outlined),
-                  label: const Text('Edit roles'),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 22),
+          const _GroupLabel('Roles'),
+          _Group(
+            children: [
+              if (user.roles.isEmpty)
+                _GroupRow(
+                  icon: Icons.admin_panel_settings_outlined,
+                  title: 'No role assigned',
+                  titleColor: palette.danger,
+                  actionLabel: 'Assign role',
+                  onTap: onEditRoles,
+                )
+              else ...[
+                for (final role in user.roles)
+                  _GroupRow(
+                    icon: Icons.verified_user_outlined,
+                    title: role.name,
+                  ),
+                _GroupRow(
+                  icon: Icons.tune_rounded,
+                  title: 'Edit roles',
+                  titleColor: palette.brandInk,
+                  onTap: onEditRoles,
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 22),
+          const _GroupLabel('Manage'),
+          _Group(
+            children: [
+              _GroupRow(
+                icon: Icons.edit_outlined,
+                title: 'Edit name and email',
+                onTap: onEditUser,
+              ),
+              if (onAssignYear != null)
+                _GroupRow(
+                  icon: Icons.event_available_rounded,
+                  title: year == null ? 'Assign year' : 'Change year',
+                  onTap: onAssignYear,
+                ),
+              _GroupRow(
+                icon: Icons.lock_reset_rounded,
+                title: 'Change password',
+                onTap: onChangePassword,
+              ),
+            ],
+          ),
+          if (onSetActive != null) ...[
+            const SizedBox(height: 22),
+            _Group(
+              children: [
+                _GroupRow(
+                  icon: user.active
+                      ? Icons.person_off_outlined
+                      : Icons.person_add_alt_outlined,
+                  title: user.active ? 'Deactivate user' : 'Reactivate user',
+                  titleColor: user.active ? palette.danger : palette.brandInk,
+                  iconColor: user.active ? palette.danger : palette.brandInk,
+                  showChevron: false,
+                  onTap: () => onSetActive!(!user.active),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                user.active
+                    ? 'Signs ${user.name} out on every device until you '
+                          'reactivate the account.'
+                    : '${user.name} can sign in again with their existing '
+                          'password.',
+                style: TextStyle(fontSize: 12, color: palette.inkSecondary),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
+}
+
+class _GroupLabel extends StatelessWidget {
+  const _GroupLabel(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+    child: Text(
+      label.toUpperCase(),
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.4,
+        color: context.palette.inkSecondary,
+      ),
+    ),
+  );
+}
+
+/// An inset grouped section: rows on one rounded surface, separated by
+/// hairlines that start after the icon column.
+class _Group extends StatelessWidget {
+  const _Group({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Material(
+      color: palette.surface,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0)
+              Divider(height: 1, thickness: 0.5, indent: 52, color: palette.divider),
+            children[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _GroupRow extends StatelessWidget {
+  const _GroupRow({
+    required this.icon,
+    required this.title,
+    this.value,
+    this.valueColor,
+    this.titleColor,
+    this.iconColor,
+    this.actionLabel,
+    this.trailing,
+    this.monospace = false,
+    this.showChevron = true,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? value;
+  final Color? valueColor;
+  final Color? titleColor;
+  final Color? iconColor;
+  final String? actionLabel;
+  final Widget? trailing;
+  final bool monospace;
+  final bool showChevron;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16, 6, trailing == null ? 12 : 4, 6),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: iconColor ?? palette.inkSecondary),
+              const SizedBox(width: 16),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: titleColor ?? palette.ink,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: value == null
+                    ? const SizedBox.shrink()
+                    : Text(
+                        value!,
+                        textAlign: TextAlign.end,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: monospace ? 12 : 15,
+                          fontFamily: monospace ? 'monospace' : null,
+                          color: valueColor ?? palette.inkSecondary,
+                        ),
+                      ),
+              ),
+              if (actionLabel != null) ...[
+                const SizedBox(width: 8),
+                Text(
+                  actionLabel!,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: palette.brandInk,
+                  ),
+                ),
+              ],
+              ?trailing,
+              if (trailing == null && onTap != null && showChevron) ...[
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: palette.inkTertiary,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({
+    required this.label,
+    required this.color,
+    required this.background,
+  });
+
+  final String label;
+  final Color color;
+  final Color background;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: background,
+      borderRadius: BorderRadius.circular(99),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(
+        color: color,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
+}
+
+class _InlineAction extends StatelessWidget {
+  const _InlineAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Material(
+      color: palette.brandSoft,
+      borderRadius: BorderRadius.circular(99),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(99),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 15, color: palette.brandInk),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: palette.brandInk,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Picks a year of study, 1–6. Pops the chosen year, or null on cancel.
+class _YearPickerDialog extends StatefulWidget {
+  const _YearPickerDialog({
+    required this.title,
+    required this.message,
+    this.initialYear,
+  });
+
+  final String title;
+  final String message;
+  final int? initialYear;
+
+  @override
+  State<_YearPickerDialog> createState() => _YearPickerDialogState();
+}
+
+class _YearPickerDialogState extends State<_YearPickerDialog> {
+  late int? _year = widget.initialYear;
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(widget.title),
+    content: SizedBox(
+      width: 400,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(widget.message),
+          const SizedBox(height: 16),
+          _YearChoices(
+            selected: _year,
+            onSelected: (year) => setState(() => _year = year),
+          ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: _year == null ? null : () => Navigator.pop(context, _year),
+        child: const Text('Save year'),
+      ),
+    ],
+  );
+}
+
+class _YearChoices extends StatelessWidget {
+  const _YearChoices({required this.selected, required this.onSelected});
+
+  final int? selected;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    children: [
+      for (var year = 1; year <= 6; year++)
+        ChoiceChip(
+          label: Text('Year $year'),
+          selected: selected == year,
+          onSelected: (_) => onSelected(year),
+        ),
+    ],
+  );
 }
 
 class _RoleChip extends StatelessWidget {
@@ -1108,7 +1577,14 @@ class _CreateUserDialogState extends State<_CreateUserDialog> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final Set<String> _selected = {};
+  int? _year;
   String? _error;
+
+  /// A student account needs a year of study; the server refuses one
+  /// without it.
+  bool get _createsStudent => widget.roles.any(
+    (role) => _selected.contains(role.id) && role.key == 'student',
+  );
 
   @override
   void dispose() {
@@ -1125,6 +1601,8 @@ class _CreateUserDialogState extends State<_CreateUserDialog> {
       setState(() => _error = 'The temporary password needs 8 characters.');
     } else if (_selected.isEmpty) {
       setState(() => _error = 'Choose at least one role.');
+    } else if (_createsStudent && _year == null) {
+      setState(() => _error = "Choose the student's year of study.");
     } else {
       Navigator.pop(
         context,
@@ -1133,6 +1611,7 @@ class _CreateUserDialogState extends State<_CreateUserDialog> {
           email: _email.text.trim(),
           password: _password.text,
           roleIds: _selected,
+          yearOfStudy: _createsStudent ? _year : null,
         ),
       );
     }
@@ -1188,6 +1667,25 @@ class _CreateUserDialogState extends State<_CreateUserDialog> {
                   }
                 }),
               ),
+            if (_createsStudent) ...[
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Year of study (required)',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: _YearChoices(
+                  selected: _year,
+                  onSelected: (year) => setState(() => _year = year),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             if (_error != null)
               Align(
                 alignment: Alignment.centerLeft,
@@ -1216,12 +1714,14 @@ class _CreateUserValue {
     required this.email,
     required this.password,
     required this.roleIds,
+    this.yearOfStudy,
   });
 
   final String name;
   final String email;
   final String password;
   final Set<String> roleIds;
+  final int? yearOfStudy;
 }
 
 class _LoadError extends StatelessWidget {

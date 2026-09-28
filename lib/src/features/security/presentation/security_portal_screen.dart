@@ -1,16 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/module_section_switcher.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../scanner/presentation/scan_qr_screen.dart';
 import '../data/security_gate_repository.dart';
+import 'gate_movement_detail_screen.dart';
+import 'gate_movement_tile.dart';
+import 'gate_scan_result_sheet.dart';
+import 'walk_in_visitor_screen.dart';
 
-const _brandPrimary = Color(0xFF7B42F6);
-const _brandSecondary = Color(0xFFD6006B);
-const _softPurple = Color(0xFF9D4EDD);
-
+/// The gate desk: the whole app for an account whose job is the gate.
+///
+/// Two tabs and nothing else — Home (scan, manual code, walk-in visitors,
+/// today's counts) and History (every movement, tap for detail). Whether a
+/// pass may be used is decided by the server; this screen only reports it.
 class SecurityPortalScreen extends StatefulWidget {
   const SecurityPortalScreen({
     super.key,
@@ -18,12 +24,17 @@ class SecurityPortalScreen extends StatefulWidget {
     required this.repository,
     required this.onSignOut,
     this.initialAction,
+    this.scanner,
   });
 
   final UserSession session;
   final SecurityGateRepository repository;
   final VoidCallback onSignOut;
   final String? initialAction;
+
+  /// Opens the camera and returns a scanned payload. Defaults to the app's
+  /// QR scanner; tests substitute their own.
+  final Future<String?> Function(BuildContext context)? scanner;
 
   @override
   State<SecurityPortalScreen> createState() => _SecurityPortalScreenState();
@@ -33,12 +44,16 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
   final _manualCode = TextEditingController();
   var _direction = GateDirection.entry;
   var _checkpoint = 'Main gate';
-  var _selectedTab = 0;
-  var _loadingHistory = true;
+  var _tab = 0;
+  var _loading = true;
+  var _loadingMore = false;
+  var _hasMore = false;
   var _submitting = false;
-  String? _historyError;
+  String? _error;
+  GateActivity _activity = const GateActivity();
   List<SecurityGateMovement> _movements = const [];
 
+  static const _pageSize = 50;
   static const _checkpoints = [
     'Main gate',
     'North gate',
@@ -49,8 +64,8 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedTab = widget.initialAction == 'movement_logs' ? 1 : 0;
-    _loadHistory();
+    _tab = widget.initialAction == 'movement_logs' ? 1 : 0;
+    _load();
   }
 
   @override
@@ -59,149 +74,263 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
     super.dispose();
   }
 
-  Future<void> _loadHistory() async {
+  Future<void> _load() async {
     setState(() {
-      _loadingHistory = true;
-      _historyError = null;
+      _loading = true;
+      _error = null;
     });
     try {
-      final movements = await widget.repository.recentMovements();
+      final activity = await widget.repository.activity();
       if (!mounted) return;
-      setState(() => _movements = movements);
+      setState(() {
+        _activity = activity;
+        _movements = activity.movements;
+        _hasMore = activity.movements.length >= _pageSize;
+      });
     } on SecurityGateException catch (error) {
-      if (!mounted) return;
-      setState(() => _historyError = error.message);
+      if (mounted) setState(() => _error = error.message);
     } catch (_) {
-      if (!mounted) return;
-      setState(() => _historyError = 'Recent gate scans could not be loaded.');
+      if (mounted) setState(() => _error = 'Gate activity could not be loaded.');
     } finally {
-      if (mounted) setState(() => _loadingHistory = false);
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || _movements.isEmpty) return;
+    setState(() => _loadingMore = true);
+    try {
+      final page = await widget.repository.activity(
+        before: _movements.last.createdAt,
+      );
+      if (!mounted) return;
+      final known = _movements.map((item) => item.id).toSet();
+      setState(() {
+        _movements = [
+          ..._movements,
+          ...page.movements.where((item) => !known.contains(item.id)),
+        ];
+        _hasMore = page.movements.length >= _pageSize;
+      });
+    } catch (_) {
+      // Keep what is shown; the button stays for another try.
+    } finally {
+      if (mounted) setState(() => _loadingMore = false);
     }
   }
 
   Future<void> _openScanner() async {
     if (_submitting) return;
-    final code = await openScanQr(context, title: 'Scan gatepass');
+    final scan =
+        widget.scanner ?? (context) => openScanQr(context, title: 'Scan pass');
+    final code = await scan(context);
     if (code == null || !mounted) return;
     await _submitCode(code);
   }
 
   Future<void> _submitManualCode() async {
     FocusScope.of(context).unfocus();
-    if (!RegExp(r'^\d{6}$').hasMatch(_manualCode.text.trim())) {
-      await _showRejected('Enter the student’s six-digit gate code.');
+    final code = _manualCode.text.trim();
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+      await GateScanResultSheet.show(
+        context,
+        kind: GateScanResultKind.rejected,
+        title: 'Check the code',
+        message: 'Enter the six-digit code shown on the pass.',
+      );
       return;
     }
-    await _submitCode(_manualCode.text);
+    await _submitCode(code);
   }
 
   Future<void> _submitCode(String code) async {
     if (_submitting) return;
     setState(() => _submitting = true);
+    _GateResult result;
     try {
       final movement = await widget.repository.scan(
         qrPayload: code,
         direction: _direction,
         checkpoint: _checkpoint,
       );
-      if (!mounted) return;
       _manualCode.clear();
-      setState(() {
-        _movements = [
-          movement,
-          ..._movements.where((item) => item.id != movement.id),
-        ];
-      });
-      await _showAccepted(movement);
+      HapticFeedback.mediumImpact();
+      if (mounted) {
+        _insert(movement);
+        unawaited(_load());
+      }
+      result = _GateResult(
+        GateScanResultKind.accepted,
+        movement.direction == GateDirection.entry
+            ? 'Gate-in recorded'
+            : 'Gate-out recorded',
+        movement.late
+            ? 'Valid pass · returned after the pass window.'
+            : 'Valid pass · ${movement.passTypeLabel}.',
+        movement,
+      );
+    } on GateAlreadyScannedException catch (error) {
+      _manualCode.clear();
+      HapticFeedback.heavyImpact();
+      result = _GateResult(
+        GateScanResultKind.alreadyScanned,
+        'Already scanned',
+        error.message,
+        error.previous,
+      );
     } on SecurityGateException catch (error) {
-      if (!mounted) return;
-      await _showRejected(error.message);
+      HapticFeedback.heavyImpact();
+      result = _GateResult(
+        GateScanResultKind.rejected,
+        'Do not allow',
+        error.message,
+      );
     } catch (_) {
-      if (!mounted) return;
-      await _showRejected('The gatepass could not be verified. Try again.');
+      result = const _GateResult(
+        GateScanResultKind.rejected,
+        'Not verified',
+        'The pass could not be verified. Check the connection and try again.',
+      );
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+    if (mounted) await result.show(context);
   }
 
-  Future<void> _showAccepted(SecurityGateMovement movement) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _ScanResultSheet(
-        accepted: true,
-        title: movement.direction == GateDirection.entry
-            ? 'Gate-in recorded'
-            : 'Gate-out recorded',
-        message: [
-          'Valid pass',
-          if (movement.holderName != null) movement.holderName!,
-          if (movement.passType != null) _passTypeLabel(movement.passType!),
-          movement.checkpoint,
-        ].join(' • '),
-        movement: movement,
+  void _insert(SecurityGateMovement movement) {
+    setState(() {
+      _movements = [
+        movement,
+        ..._movements.where((item) => item.id != movement.id),
+      ];
+    });
+  }
+
+  Future<void> _openWalkIn() async {
+    final movement = await Navigator.of(context).push<SecurityGateMovement>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => WalkInVisitorScreen(
+          repository: widget.repository,
+          checkpoint: _checkpoint,
+        ),
       ),
+    );
+    if (movement == null || !mounted) return;
+    _insert(movement);
+    unawaited(_load());
+    await GateScanResultSheet.show(
+      context,
+      kind: GateScanResultKind.accepted,
+      title: 'Visitor gated in',
+      message: 'Record the gate-out from Home when they leave.',
+      movement: movement,
     );
   }
 
-  Future<void> _showRejected(String message) {
-    return showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _ScanResultSheet(
-        accepted: false,
-        title: 'Do not allow movement',
-        message: message,
+  Future<void> _visitorGateOut(VisitorOnCampus visitor) async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    _GateResult result;
+    try {
+      final movement = await widget.repository.visitorGateOut(
+        visitorPassId: visitor.id,
+        checkpoint: _checkpoint,
+      );
+      if (mounted) _insert(movement);
+      result = _GateResult(
+        GateScanResultKind.accepted,
+        'Gate-out recorded',
+        '${visitor.name} has left campus.',
+        movement,
+      );
+    } on GateAlreadyScannedException catch (error) {
+      result = _GateResult(
+        GateScanResultKind.alreadyScanned,
+        'Already scanned',
+        error.message,
+        error.previous,
+      );
+    } on SecurityGateException catch (error) {
+      result = _GateResult(
+        GateScanResultKind.rejected,
+        'Gate-out not recorded',
+        error.message,
+      );
+    } catch (_) {
+      result = const _GateResult(
+        GateScanResultKind.rejected,
+        'Gate-out not recorded',
+        'Check the connection and try again.',
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+    if (!mounted) return;
+    unawaited(_load());
+    await result.show(context);
+  }
+
+  Future<void> _openDetail(SecurityGateMovement movement) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => GateMovementDetailScreen(
+          repository: widget.repository,
+          movement: movement,
+          checkpoint: _checkpoint,
+        ),
       ),
     );
+    if (changed == true && mounted) await _load();
   }
 
   @override
   Widget build(BuildContext context) {
-    final firstName = widget.session.displayName
-        .trim()
-        .split(RegExp(r'\s+'))
-        .first;
+    final p = context.palette;
+    final background = context.adaptive(light: p.surface, dark: p.canvas);
     return Scaffold(
-      backgroundColor: context.adaptive(light: const Color(0xFFF5F2FF), dark: context.palette.canvas),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        titleSpacing: 20,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Gate security',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-            ),
-            Text(
-              '$firstName • $_checkpoint',
-              style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
-            ),
-          ],
+      backgroundColor: background,
+      body: SafeArea(
+        bottom: false,
+        child: IndexedStack(
+          index: _tab,
+          children: [_homeTab(context), _historyTab(context)],
         ),
       ),
-      body: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            ModuleSectionSwitcher(
-              sections: const [
-                ModuleSection(
-                  label: 'Scanner',
-                  icon: Icons.qr_code_scanner_rounded,
-                ),
-                ModuleSection(label: 'History', icon: Icons.history_rounded),
-              ],
-              selectedIndex: _selectedTab,
-              onSelected: (value) => setState(() => _selectedTab = value),
+      bottomNavigationBar: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          labelTextStyle: WidgetStateProperty.resolveWith(
+            (states) => TextStyle(
+              fontSize: 12,
+              fontWeight: states.contains(WidgetState.selected)
+                  ? FontWeight.w600
+                  : FontWeight.w500,
+              color: states.contains(WidgetState.selected)
+                  ? p.brandInk
+                  : p.inkSecondary,
             ),
-            Expanded(
-              child: IndexedStack(
-                index: _selectedTab,
-                children: [_scannerPage(), _historyPage()],
-              ),
+          ),
+        ),
+        child: NavigationBar(
+          key: const ValueKey('security-nav'),
+          height: 68,
+          backgroundColor: background,
+          surfaceTintColor: Colors.transparent,
+          indicatorColor: p.brandSoft,
+          selectedIndex: _tab,
+          onDestinationSelected: (index) => setState(() => _tab = index),
+          destinations: [
+            NavigationDestination(
+              key: const ValueKey('security-nav-home'),
+              icon: Icon(Icons.home_outlined, color: p.inkSecondary),
+              selectedIcon: Icon(Icons.home_rounded, color: p.brandInk),
+              label: 'Home',
+            ),
+            NavigationDestination(
+              key: const ValueKey('security-nav-history'),
+              icon: Icon(Icons.history_rounded, color: p.inkSecondary),
+              selectedIcon: Icon(Icons.history_rounded, color: p.brandInk),
+              label: 'History',
             ),
           ],
         ),
@@ -209,158 +338,82 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
     );
   }
 
-  Widget _scannerPage() {
-    final today = _movements.where(_isToday).toList(growable: false);
-    final entries = today
-        .where((item) => item.direction == GateDirection.entry)
-        .length;
-    final exits = today.length - entries;
+  // ------------------------------------------------------------------ Home
+
+  Widget _homeTab(BuildContext context) {
+    final p = context.palette;
+    final firstName = widget.session.displayName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .first;
+    final visitors = _activity.visitorsOnCampus;
     return RefreshIndicator(
-      onRefresh: _loadHistory,
+      onRefresh: _load,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+        key: const ValueKey('security-home'),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [_brandPrimary, _brandSecondary],
-              ),
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: _brandSecondary.withValues(alpha: 0.2),
-                  blurRadius: 24,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Row(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.verified_user_outlined, color: Colors.white),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Verify campus movement',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    Text(
+                      'Gate security',
+                      style: TextStyle(
+                        fontSize: 30,
+                        height: 1.1,
+                        letterSpacing: -0.6,
+                        fontWeight: FontWeight.w700,
+                        color: p.ink,
                       ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$firstName · $_checkpoint',
+                      style: TextStyle(fontSize: 15, color: p.inkSecondary),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Choose the movement, then scan the student or visitor gatepass.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.78),
-                    height: 1.35,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                _directionSelector(),
-                const SizedBox(height: 14),
-                DropdownButtonFormField<String>(
-                  initialValue: _checkpoint,
-                  dropdownColor: const Color(0xFF4B1FB8),
-                  iconEnabledColor: Colors.white,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Checkpoint',
-                    labelStyle: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.72),
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.location_on_outlined,
-                      color: Colors.white,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.12),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.24),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Colors.white),
-                    ),
-                  ),
-                  items: _checkpoints
-                      .map(
-                        (value) =>
-                            DropdownMenuItem(value: value, child: Text(value)),
-                      )
-                      .toList(growable: false),
-                  onChanged: _submitting
-                      ? null
-                      : (value) {
-                          if (value != null) {
-                            setState(() => _checkpoint = value);
-                          }
-                        },
-                ),
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  key: const ValueKey('security-scan-gatepass'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(58),
-                    backgroundColor: Colors.white,
-                    foregroundColor: _brandPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  onPressed: _submitting ? null : _openScanner,
-                  icon: _submitting
-                      ? const SizedBox.square(
-                          dimension: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.qr_code_scanner_rounded),
-                  label: Text(
-                    _submitting ? 'Verifying…' : 'Scan gatepass QR',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _metric('Gate in', '$entries', Icons.login_rounded),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _metric('Gate out', '$exits', Icons.logout_rounded),
-              ),
+              _accountMenu(context),
             ],
           ),
-          const SizedBox(height: 22),
-          Text(
-            'Manual verification',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Use this only when the camera cannot read the QR.',
-            style: TextStyle(color: context.palette.inkSecondary),
+          const SizedBox(height: 20),
+          _movementControls(context),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            key: const ValueKey('security-scan-gatepass'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(58),
+              backgroundColor: p.brand,
+              foregroundColor: p.onBrand,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+            onPressed: _submitting ? null : _openScanner,
+            icon: _submitting
+                ? SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: p.onBrand,
+                    ),
+                  )
+                : const Icon(Icons.qr_code_scanner_rounded),
+            label: Text(
+              _submitting
+                  ? 'Verifying…'
+                  : 'Scan pass for ${_direction.label.toLowerCase()}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
+            key: const ValueKey('security-manual-code'),
             controller: _manualCode,
             enabled: !_submitting,
             keyboardType: TextInputType.number,
@@ -372,340 +425,505 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _submitManualCode(),
             decoration: InputDecoration(
-              hintText: 'Enter 6-digit gate code',
+              hintText: 'Or enter the 6-digit code',
               counterText: '',
-              prefixIcon: const Icon(Icons.password_rounded),
+              prefixIcon: const Icon(Icons.dialpad_rounded),
               suffixIcon: IconButton(
                 tooltip: 'Verify code',
                 onPressed: _submitting ? null : _submitManualCode,
-                icon: const Icon(Icons.arrow_forward_rounded),
+                icon: Icon(Icons.arrow_forward_rounded, color: p.brandInk),
               ),
               filled: true,
-              fillColor: context.palette.surface,
+              fillColor: p.surfaceSunken,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: p.brand, width: 1.5),
               ),
             ),
           ),
+          const SizedBox(height: 26),
+          _sectionTitle(context, 'Today'),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _stat(
+                  context,
+                  'Gate in',
+                  _activity.entriesToday,
+                  Icons.south_west_rounded,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _stat(
+                  context,
+                  'Gate out',
+                  _activity.exitsToday,
+                  Icons.north_east_rounded,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _stat(
+                  context,
+                  'Visitors in',
+                  visitors.length,
+                  Icons.badge_outlined,
+                ),
+              ),
+            ],
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            _notice(context, _error!, onRetry: _load),
+          ],
+          const SizedBox(height: 26),
+          _walkInCard(context),
+          if (visitors.isNotEmpty) ...[
+            const SizedBox(height: 26),
+            _sectionTitle(context, 'Visitors on campus'),
+            const SizedBox(height: 10),
+            ...visitors.map((visitor) => _visitorRow(context, visitor)),
+          ],
           if (_movements.isNotEmpty) ...[
-            const SizedBox(height: 24),
+            const SizedBox(height: 26),
             Row(
               children: [
-                Text(
-                  'Recent scans',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
+                Expanded(child: _sectionTitle(context, 'Recent scans')),
                 TextButton(
-                  onPressed: () => setState(() => _selectedTab = 1),
-                  child: const Text('View all'),
+                  onPressed: () => setState(() => _tab = 1),
+                  child: const Text('See all'),
                 ),
               ],
             ),
-            ..._movements.take(3).map(_movementTile),
+            const SizedBox(height: 6),
+            for (final movement in _movements.take(3))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: GateMovementTile(
+                  movement: movement,
+                  onTap: () => _openDetail(movement),
+                ),
+              ),
           ],
         ],
       ),
     );
   }
 
-  Widget _directionSelector() {
-    return SegmentedButton<GateDirection>(
-      segments: const [
-        ButtonSegment(
-          value: GateDirection.entry,
-          label: Text('Gate in'),
-          icon: Icon(Icons.login_rounded),
+  Widget _accountMenu(BuildContext context) {
+    final p = context.palette;
+    return PopupMenuButton<String>(
+      tooltip: 'Account',
+      position: PopupMenuPosition.under,
+      onSelected: (value) {
+        if (value == 'sign_out') widget.onSignOut();
+      },
+      itemBuilder: (_) => [
+        PopupMenuItem<String>(
+          enabled: false,
+          child: Text(
+            widget.session.displayName,
+            style: TextStyle(color: p.inkSecondary),
+          ),
         ),
-        ButtonSegment(
-          value: GateDirection.exit,
-          label: Text('Gate out'),
-          icon: Icon(Icons.logout_rounded),
+        const PopupMenuItem<String>(
+          value: 'sign_out',
+          child: Text('Sign out'),
         ),
       ],
-      selected: {_direction},
-      onSelectionChanged: _submitting
-          ? null
-          : (value) => setState(() => _direction = value.first),
-      style: ButtonStyle(
-        foregroundColor: WidgetStateProperty.resolveWith(
-          (states) =>
-              states.contains(WidgetState.selected) ? _brandPrimary : Colors.white,
-        ),
-        backgroundColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected)
-              ? Colors.white
-              : Colors.white.withValues(alpha: 0.1),
-        ),
-        side: WidgetStateProperty.all(
-          BorderSide(color: Colors.white.withValues(alpha: 0.28)),
-        ),
+      child: GatePersonAvatar(
+        name: widget.session.displayName,
+        photoUrl: widget.session.photoUrl,
+        size: 40,
       ),
-      showSelectedIcon: false,
     );
   }
 
-  Widget _metric(String label, String value, IconData icon) {
+  Widget _movementControls(BuildContext context) {
+    final p = context.palette;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: context.palette.surface,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: _softPurple.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: context.adaptive(light: _brandPrimary, dark: context.palette.brandInk)),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Text(label, style: TextStyle(color: context.palette.inkSecondary)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _historyPage() {
-    return RefreshIndicator(
-      onRefresh: _loadHistory,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 20, 18, 30),
-        children: [
-          Text(
-            'Gate movement history',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            'Latest verified scans from every checkpoint.',
-            style: TextStyle(color: context.palette.inkSecondary),
-          ),
-          const SizedBox(height: 18),
-          if (_loadingHistory)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(36),
-                child: CircularProgressIndicator(color: _brandSecondary),
-              ),
-            )
-          else if (_historyError != null)
-            _emptyState(
-              Icons.cloud_off_outlined,
-              _historyError!,
-              action: TextButton(
-                onPressed: _loadHistory,
-                child: const Text('Retry'),
-              ),
-            )
-          else if (_movements.isEmpty)
-            _emptyState(
-              Icons.qr_code_2_rounded,
-              'No gatepasses have been scanned yet.',
-            )
-          else
-            ..._movements.map(_movementTile),
-        ],
-      ),
-    );
-  }
-
-  Widget _movementTile(SecurityGateMovement movement) {
-    final isEntry = movement.direction == GateDirection.entry;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.palette.surface,
+        color: p.surfaceSunken,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: (isEntry ? _brandPrimary : _brandSecondary).withValues(
-                alpha: .1,
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<GateDirection>(
+              key: const ValueKey('security-direction'),
+              segments: const [
+                ButtonSegment(
+                  value: GateDirection.entry,
+                  label: Text('Gate in'),
+                  icon: Icon(Icons.south_west_rounded),
+                ),
+                ButtonSegment(
+                  value: GateDirection.exit,
+                  label: Text('Gate out'),
+                  icon: Icon(Icons.north_east_rounded),
+                ),
+              ],
+              selected: {_direction},
+              showSelectedIcon: false,
+              onSelectionChanged: _submitting
+                  ? null
+                  : (value) => setState(() => _direction = value.first),
+              style: ButtonStyle(
+                minimumSize: WidgetStateProperty.all(const Size(0, 44)),
+                side: WidgetStateProperty.all(BorderSide.none),
+                shape: WidgetStateProperty.all(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                ),
+                backgroundColor: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.selected)
+                      ? p.brand
+                      : Colors.transparent,
+                ),
+                foregroundColor: WidgetStateProperty.resolveWith(
+                  (states) => states.contains(WidgetState.selected)
+                      ? p.onBrand
+                      : p.inkSecondary,
+                ),
+                textStyle: WidgetStateProperty.all(
+                  const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              isEntry ? Icons.login_rounded : Icons.logout_rounded,
-              color: isEntry ? context.adaptive(light: _brandPrimary, dark: context.palette.brandInk) : context.adaptive(light: _brandSecondary, dark: const Color(0xFFFF7AB8)),
             ),
           ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String>(
+            key: const ValueKey('security-checkpoint'),
+            initialValue: _checkpoint,
+            isExpanded: true,
+            borderRadius: BorderRadius.circular(14),
+            decoration: InputDecoration(
+              labelText: 'Checkpoint',
+              prefixIcon: const Icon(Icons.location_on_outlined),
+              filled: true,
+              fillColor: p.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(13),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            items: _checkpoints
+                .map(
+                  (value) => DropdownMenuItem(value: value, child: Text(value)),
+                )
+                .toList(growable: false),
+            onChanged: _submitting
+                ? null
+                : (value) {
+                    if (value != null) setState(() => _checkpoint = value);
+                  },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _walkInCard(BuildContext context) {
+    final p = context.palette;
+    return Material(
+      color: p.surface,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        key: const ValueKey('security-walk-in'),
+        borderRadius: BorderRadius.circular(18),
+        onTap: _submitting ? null : _openWalkIn,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: p.border),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: p.brandSoft,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(Icons.person_add_alt_1_rounded, color: p.brandInk),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Register walk-in visitor',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: p.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'No pass? Record who they are and gate them in.',
+                      style: TextStyle(fontSize: 13, color: p.inkSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: p.inkTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _visitorRow(BuildContext context, VisitorOnCampus visitor) {
+    final p = context.palette;
+    final since = visitor.checkedInAt == null
+        ? null
+        : 'In since ${gateTime(visitor.checkedInAt!)}';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: p.border),
+      ),
+      child: Row(
+        children: [
+          GatePersonAvatar(name: visitor.name),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  movement.direction.label,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  visitor.name,
+                  style: TextStyle(fontWeight: FontWeight.w600, color: p.ink),
                 ),
                 Text(
-                  movement.checkpoint,
-                  style: TextStyle(color: context.palette.inkSecondary),
+                  [
+                    if (visitor.hostName.isNotEmpty) 'Meeting ${visitor.hostName}',
+                    ?since,
+                  ].join(' · '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12.5, color: p.inkSecondary),
                 ),
               ],
             ),
           ),
-          Text(
-            _time(movement.createdAt),
-            style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
+          TextButton(
+            key: ValueKey('security-visitor-out-${visitor.id}'),
+            onPressed: _submitting ? null : () => _visitorGateOut(visitor),
+            child: const Text('Gate out'),
           ),
         ],
       ),
     );
   }
 
-  Widget _emptyState(IconData icon, String message, {Widget? action}) {
+  Widget _stat(BuildContext context, String label, int value, IconData icon) {
+    final p = context.palette;
     return Container(
-      padding: const EdgeInsets.all(28),
+      padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
       decoration: BoxDecoration(
-        color: context.palette.surface,
-        borderRadius: BorderRadius.circular(22),
+        color: p.surfaceSunken,
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 38, color: _softPurple),
-          const SizedBox(height: 12),
-          Text(message, textAlign: TextAlign.center),
-          if (action != null) action,
+          Icon(icon, size: 18, color: p.brandInk),
+          const SizedBox(height: 10),
+          Text(
+            _loading && _activity.movements.isEmpty ? '–' : '$value',
+            style: TextStyle(
+              fontSize: 24,
+              height: 1,
+              letterSpacing: -0.4,
+              fontWeight: FontWeight.w700,
+              color: p.ink,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12.5, color: p.inkSecondary),
+          ),
         ],
       ),
     );
   }
 
-  bool _isToday(SecurityGateMovement value) {
-    final now = DateTime.now();
-    return value.createdAt.year == now.year &&
-        value.createdAt.month == now.month &&
-        value.createdAt.day == now.day;
+  Widget _sectionTitle(BuildContext context, String title) => Text(
+    title,
+    style: TextStyle(
+      fontSize: 19,
+      letterSpacing: -0.2,
+      fontWeight: FontWeight.w700,
+      color: context.palette.ink,
+    ),
+  );
+
+  Widget _notice(
+    BuildContext context,
+    String message, {
+    required VoidCallback onRetry,
+  }) {
+    final p = context.palette;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
+      decoration: BoxDecoration(
+        color: p.warningSoft,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.cloud_off_rounded, size: 18, color: p.warning),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(message, style: TextStyle(color: p.ink, fontSize: 13)),
+          ),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      ),
+    );
   }
 
-  String _time(DateTime value) {
-    final hour = value.hour % 12 == 0 ? 12 : value.hour % 12;
-    final minute = value.minute.toString().padLeft(2, '0');
-    return '$hour:$minute ${value.hour < 12 ? 'AM' : 'PM'}';
-  }
+  // --------------------------------------------------------------- History
 
-  String _passTypeLabel(String value) => switch (value) {
-    'daily_access' => 'Campus access',
-    'leave_pass' => 'Leave pass',
-    'outpass' => 'Outpass',
-    'visitor' => 'Visitor pass',
-    _ => value,
-  };
+  Widget _historyTab(BuildContext context) {
+    final p = context.palette;
+    final children = <Widget>[
+      Text(
+        'History',
+        style: TextStyle(
+          fontSize: 30,
+          height: 1.1,
+          letterSpacing: -0.6,
+          fontWeight: FontWeight.w700,
+          color: p.ink,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        'Every gate movement, newest first.',
+        style: TextStyle(fontSize: 15, color: p.inkSecondary),
+      ),
+      const SizedBox(height: 18),
+    ];
+    if (_loading && _movements.isEmpty) {
+      children.add(
+        const Padding(
+          padding: EdgeInsets.all(36),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    } else if (_error != null && _movements.isEmpty) {
+      children.add(_notice(context, _error!, onRetry: _load));
+    } else if (_movements.isEmpty) {
+      children.add(
+        Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: p.surfaceSunken,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.qr_code_2_rounded, size: 36, color: p.inkTertiary),
+              const SizedBox(height: 10),
+              Text(
+                'No gate movements yet.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: p.inkSecondary),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      String? day;
+      for (final movement in _movements) {
+        final label = gateDayLabel(movement.createdAt);
+        if (label != day) {
+          day = label;
+          children.add(
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 8, left: 2),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: p.inkSecondary,
+                ),
+              ),
+            ),
+          );
+        }
+        children.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: GateMovementTile(
+              movement: movement,
+              onTap: () => _openDetail(movement),
+            ),
+          ),
+        );
+      }
+      if (_hasMore) {
+        children.add(
+          Center(
+            child: TextButton(
+              onPressed: _loadingMore ? null : _loadMore,
+              child: Text(_loadingMore ? 'Loading…' : 'Show earlier'),
+            ),
+          ),
+        );
+      }
+    }
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        key: const ValueKey('security-history'),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        children: children,
+      ),
+    );
+  }
 }
 
-class _ScanResultSheet extends StatelessWidget {
-  const _ScanResultSheet({
-    required this.accepted,
-    required this.title,
-    required this.message,
-    this.movement,
-  });
 
-  final bool accepted;
+/// A scan's outcome, held until the busy state clears so the sheet never
+/// opens over a spinning button.
+class _GateResult {
+  const _GateResult(this.kind, this.title, this.message, [this.movement]);
+
+  final GateScanResultKind kind;
   final String title;
   final String message;
   final SecurityGateMovement? movement;
 
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    // Strong fill for the action button (white label) and a legible ink for
-    // the icon: identical in light, lifted ink in dark.
-    final color = accepted
-        ? context.adaptive(light: _brandPrimary, dark: p.brand)
-        : const Color(0xFFE53935);
-    final ink = accepted
-        ? context.adaptive(light: _brandPrimary, dark: p.brandInk)
-        : context.adaptive(light: const Color(0xFFE53935), dark: p.danger);
-    return Container(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.fromLTRB(24, 26, 24, 20),
-      decoration: BoxDecoration(
-        color: p.surfaceRaised,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: ink.withValues(alpha: context.isDarkTheme ? .16 : .1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                accepted ? Icons.verified_rounded : Icons.block_rounded,
-                size: 40,
-                color: ink,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: p.inkSecondary, height: 1.4),
-            ),
-            if (movement != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Reference ${movement!.id}',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: p.inkSecondary),
-              ),
-            ],
-            const SizedBox(height: 22),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-                backgroundColor: color,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-              onPressed: () => Navigator.pop(context),
-              child: Text(accepted ? 'Scan next pass' : 'Close'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Future<void> show(BuildContext context) => GateScanResultSheet.show(
+    context,
+    kind: kind,
+    title: title,
+    message: message,
+    movement: movement,
+  );
 }

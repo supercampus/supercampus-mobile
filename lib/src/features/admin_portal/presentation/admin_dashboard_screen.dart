@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
@@ -9,6 +10,7 @@ import '../../advisor/presentation/advisor_students_section.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../modules/presentation/today_glance.dart';
 import '../../modules/presentation/widgets/home_sheets.dart';
+import '../data/admin_student_repository.dart';
 
 /// Clean, high-productivity Bento Grid dashboard for campus administrators and staff.
 ///
@@ -33,7 +35,12 @@ class AdminDashboardScreen extends StatefulWidget {
     this.advisorStudentsSource,
     this.glance,
     this.onOpenAttendanceClass,
+    this.loadAdminUsers,
   });
+
+  /// Reads the tenant's accounts for the administrator's overview counts.
+  /// Null (or a failed read) shows no counts rather than invented ones.
+  final Future<List<ManagedTenantUser>> Function()? loadAdminUsers;
 
   final UserSession session;
   final EffectivePermissions permissions;
@@ -70,6 +77,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   /// family, and they must not be shown controls they cannot open.
   bool get _administers =>
       permissions.canSeeModule(ModuleCatalog.administration);
+
+  List<ManagedTenantUser>? _adminUsers;
+  bool _adminUsersFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAdminUsers();
+  }
+
+  Future<void> _loadAdminUsers() async {
+    final loader = widget.loadAdminUsers;
+    if (loader == null || !_administers) return;
+    try {
+      final users = await loader();
+      if (!mounted) return;
+      setState(() {
+        _adminUsers = users;
+        _adminUsersFailed = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _adminUsersFailed = true);
+    }
+  }
 
   Color _roleColor() {
     if (_administers) return const Color(0xFF7B42F6);
@@ -122,8 +153,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final listPadding = EdgeInsets.fromLTRB(
+      16,
+      14,
+      16,
+      CampusNavBar.heightFor(context) + MediaQuery.paddingOf(context).bottom + 30,
+    );
+
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0E0F13) : const Color(0xFFF8FAFC),
+      backgroundColor: _administers
+          ? context.palette.surfaceSunken
+          : isDark
+          ? const Color(0xFF0E0F13)
+          : const Color(0xFFF8FAFC),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -132,15 +174,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             Expanded(
               child: Stack(
                 children: [
+                  if (_administers)
+                    RefreshIndicator(
+                      onRefresh: _loadAdminUsers,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: listPadding,
+                        children: _buildAdminHome(context),
+                      ),
+                    )
+                  else
                   ListView(
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      14,
-                      16,
-                      CampusNavBar.heightFor(context) +
-                          MediaQuery.paddingOf(context).bottom +
-                          30,
-                    ),
+                    padding: listPadding,
                     children: [
                       _buildQuickActionShortcuts(context),
                       const SizedBox(height: 14),
@@ -325,6 +370,244 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       ),
     );
   }
+
+  // ===========================================================================
+  // ADMINISTRATOR HOME
+  // One entry per destination: a greeting, real account counts, then the
+  // workspaces grouped the way an administrator uses them. Teaching tools
+  // (attendance, timetable, examinations, library) stay in Modules.
+  // ===========================================================================
+  List<Widget> _buildAdminHome(BuildContext context) {
+    final palette = context.palette;
+    final now = DateTime.now();
+    final greeting = now.hour < 12
+        ? 'Good morning'
+        : now.hour < 17
+        ? 'Good afternoon'
+        : 'Good evening';
+    final firstName = session.displayName.trim().split(RegExp(r'\s+')).first;
+
+    void open(String module, [String? action]) =>
+        widget.onOpenModule(module, action);
+
+    final people = <_AdminRow>[
+      _AdminRow(
+        icon: Icons.manage_accounts_rounded,
+        color: AppColors.brandPurple,
+        title: 'Users & roles',
+        subtitle: 'Accounts, roles, passwords, year of study',
+        onTap: () => open(ModuleCatalog.administration, 'access_control'),
+      ),
+      _AdminRow(
+        icon: Icons.school_rounded,
+        color: AppColors.brandViolet,
+        title: 'Student directory',
+        subtitle: 'Student records, residency and guardians',
+        onTap: () => open(ModuleCatalog.administration, 'students'),
+      ),
+      _AdminRow(
+        icon: Icons.campaign_rounded,
+        color: AppColors.orangeInk,
+        title: 'Announcements',
+        subtitle: 'Campus circulars',
+        onTap: () => open(ModuleCatalog.administration, 'announcements'),
+      ),
+    ];
+
+    final money = <_AdminRow>[
+      if (permissions.canSeeModule(ModuleCatalog.canteen)) ...[
+        _AdminRow(
+          icon: Icons.storefront_rounded,
+          color: AppColors.success,
+          title: 'Shops & sales',
+          subtitle: 'Live sales across counters',
+          onTap: () => open(ModuleCatalog.canteen, 'dashboard'),
+        ),
+        _AdminRow(
+          icon: Icons.account_balance_wallet_rounded,
+          color: AppColors.brandPurple,
+          title: 'Student wallets',
+          subtitle: 'Balances and recharges',
+          onTap: () => open(ModuleCatalog.canteen, 'wallet'),
+        ),
+      ],
+      if (permissions.canSeeModule(ModuleCatalog.tuitionFee))
+        _AdminRow(
+          icon: Icons.receipt_long_rounded,
+          color: AppColors.infoInk,
+          title: 'Tuition & fees',
+          subtitle: 'Invoices and dues',
+          onTap: () => open(ModuleCatalog.tuitionFee),
+        ),
+      if (permissions.canSeeModule(ModuleCatalog.vendorManagement))
+        _AdminRow(
+          icon: Icons.handshake_outlined,
+          color: AppColors.infoInk,
+          title: 'Vendors & orders',
+          subtitle: 'Procurement',
+          onTap: () => open(ModuleCatalog.vendorManagement),
+        ),
+    ];
+
+    final campus = <_AdminRow>[
+      if (permissions.canSeeModule(ModuleCatalog.academics))
+        _AdminRow(
+          icon: Icons.auto_stories_outlined,
+          color: AppColors.brandPurple,
+          title: 'Departments & programmes',
+          subtitle: 'Curriculum structure',
+          onTap: () => open(ModuleCatalog.academics),
+        ),
+      if (permissions.canSeeModule(ModuleCatalog.hostel))
+        _AdminRow(
+          icon: Icons.apartment_rounded,
+          color: AppColors.muted,
+          title: 'Hostel',
+          subtitle: 'Rooms and residents',
+          onTap: () => open(ModuleCatalog.hostel),
+        ),
+      if (permissions.canSeeModule(ModuleCatalog.gatepass))
+        _AdminRow(
+          icon: Icons.qr_code_scanner_rounded,
+          color: AppColors.infoInk,
+          title: 'Gate security',
+          subtitle: 'Passes and checkpoint',
+          onTap: () => open(ModuleCatalog.gatepass),
+        ),
+    ];
+
+    return [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              DateFormat('EEEE, d MMMM').format(now).toUpperCase(),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.4,
+                color: palette.inkSecondary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              firstName.isEmpty ? greeting : '$greeting, $firstName',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.6,
+                color: palette.ink,
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 16),
+      _buildAdminOverview(context),
+      const SizedBox(height: 24),
+      _AdminGroup(title: 'People', rows: people),
+      if (money.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        _AdminGroup(title: 'Finance & commerce', rows: money),
+      ],
+      if (campus.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        _AdminGroup(title: 'Campus', rows: campus),
+      ],
+      if (widget.advisorStudentsSource != null) ...[
+        const SizedBox(height: 24),
+        AdvisorStudentsSection(source: widget.advisorStudentsSource!),
+      ],
+    ];
+  }
+
+  /// Account counts read from the users endpoint. Nothing is shown until
+  /// they arrive; a failed read says so instead of showing zeros.
+  Widget _buildAdminOverview(BuildContext context) {
+    final palette = context.palette;
+    final users = _adminUsers;
+    void openUsers() =>
+        widget.onOpenModule(ModuleCatalog.administration, 'access_control');
+
+    if (widget.loadAdminUsers == null) return const SizedBox.shrink();
+    if (users == null && _adminUsersFailed) {
+      return _AdminCard(
+        onTap: _loadAdminUsers,
+        child: Row(
+          children: [
+            Icon(Icons.cloud_off_rounded, color: palette.inkSecondary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Account counts could not be loaded. Tap to try again.',
+                style: TextStyle(fontSize: 14, color: palette.inkSecondary),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    bool isStudent(ManagedTenantUser user) =>
+        user.roles.any((role) => role.key == 'student');
+    final active = users?.where((user) => user.active).length;
+    final inactive = users == null ? null : users.length - active!;
+    final students = users?.where(isStudent).toList();
+    final noYear = students
+        ?.where((user) => user.yearOfStudy == null)
+        .length;
+    final noRole = users?.where((user) => user.roles.isEmpty).length;
+    final attention = noYear == null ? null : noYear + noRole!;
+
+    String count(int? value) => value == null ? '–' : '$value';
+
+    return _AdminCard(
+      onTap: openUsers,
+      child: Row(
+        children: [
+          Expanded(
+            child: _AdminMetric(
+              label: 'Active users',
+              value: count(active),
+              caption: inactive == null || inactive == 0
+                  ? null
+                  : '$inactive inactive',
+            ),
+          ),
+          _metricDivider(palette),
+          Expanded(
+            child: _AdminMetric(
+              label: 'Students',
+              value: count(students?.length),
+            ),
+          ),
+          _metricDivider(palette),
+          Expanded(
+            child: _AdminMetric(
+              label: 'Need attention',
+              value: count(attention),
+              valueColor: (attention ?? 0) > 0 ? palette.danger : null,
+              caption: attention == null || attention == 0
+                  ? null
+                  : [
+                      if (noYear! > 0) '$noYear no year',
+                      if (noRole! > 0) '$noRole no role',
+                    ].join(' · '),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricDivider(AppPalette palette) => Container(
+    width: 0.5,
+    height: 44,
+    margin: const EdgeInsets.symmetric(horizontal: 10),
+    color: palette.divider,
+  );
 
   // ===========================================================================
   // 1. TOP BAR
@@ -1445,6 +1728,198 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+class _AdminRow {
+  const _AdminRow({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+}
+
+/// A white rounded surface on the sunken page, like an iOS inset group.
+class _AdminCard extends StatelessWidget {
+  const _AdminCard({required this.child, this.onTap});
+
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: context.palette.surface,
+    borderRadius: BorderRadius.circular(16),
+    clipBehavior: Clip.antiAlias,
+    child: InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: child,
+      ),
+    ),
+  );
+}
+
+class _AdminMetric extends StatelessWidget {
+  const _AdminMetric({
+    required this.label,
+    required this.value,
+    this.caption,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final String? caption;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: palette.inkSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.5,
+            color: valueColor ?? palette.ink,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+        Text(
+          caption ?? ' ',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 11, color: palette.inkSecondary),
+        ),
+      ],
+    );
+  }
+}
+
+class _AdminGroup extends StatelessWidget {
+  const _AdminGroup({required this.title, required this.rows});
+
+  final String title;
+  final List<_AdminRow> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.4,
+              color: palette.inkSecondary,
+            ),
+          ),
+        ),
+        Material(
+          color: palette.surface,
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              for (var i = 0; i < rows.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    indent: 64,
+                    color: palette.divider,
+                  ),
+                InkWell(
+                  onTap: rows[i].onTap,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 11, 12, 11),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: rows[i].color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: Icon(
+                            rows[i].icon,
+                            size: 19,
+                            color: isDark
+                                ? Color.lerp(rows[i].color, Colors.white, 0.35)
+                                : rows[i].color,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                rows[i].title,
+                                style: TextStyle(
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: palette.ink,
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                rows[i].subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  color: palette.inkSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: palette.inkTertiary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ],
     );

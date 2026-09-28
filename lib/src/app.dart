@@ -831,6 +831,13 @@ class _SupercampusAppState extends State<SupercampusApp>
     }
 
     final openModuleId = _openModuleId;
+    // Gate staff who can record scans get the gate desk as their whole app:
+    // its own Home / History navigation, no dashboard or module switcher.
+    if (session.isSecurityStaff &&
+        permissions.can(ModuleCatalog.gatepass, 'scan', ModuleActions.create) &&
+        (openModuleId == null || openModuleId == ModuleCatalog.gatepass)) {
+      return _securityPortal(session);
+    }
     if (openModuleId == null) {
       return ModuleDashboardScreen(
         session: session,
@@ -1241,8 +1248,9 @@ class _SupercampusAppState extends State<SupercampusApp>
       ),
       ModuleCatalog.canteen =>
         // Accountants always, and admins holding the wallet top-up grant when
-        // they open the "Student Wallets" card, land on the recharge desk.
-        isAccountant ||
+        // they open the "Student Wallets" card, land on the recharge desk —
+        // unless they switched to Shop, which opens the stores as a customer.
+        (isAccountant && _openModuleAction != 'shop') ||
                 (isPortalAdmin &&
                     _openModuleAction == 'wallet' &&
                     (_permissions?.can('canteen', 'wallet', 'top_up') ?? false))
@@ -1266,17 +1274,7 @@ class _SupercampusAppState extends State<SupercampusApp>
               ),
       ModuleCatalog.gatepass =>
         isSecurity
-            ? SecurityPortalScreen(
-                session: session,
-                initialAction: _openModuleAction,
-                repository: _useMockData
-                    ? MockSecurityGateRepository()
-                    : BackendSecurityGateRepository(
-                        baseUrl: _resolvedBackendBaseUrl,
-                        accessTokenProvider: _provideAccessToken,
-                      ),
-                onSignOut: _signOut,
-              )
+            ? _securityPortal(session)
             : approvalViewerKind != null
             ? (_useMockData && approvalViewerKind == 'parent'
                   ? ParentPortalScreen(
@@ -1485,6 +1483,31 @@ class _SupercampusAppState extends State<SupercampusApp>
       baseUrl: _reportsBaseUrl,
       accessTokenProvider: _reportsBaseUrl == null ? null : _provideAccessToken,
       child: module,
+    );
+  }
+
+  SecurityGateRepository? _securityRepository;
+  String? _securityRepositoryBaseUrl;
+
+  /// The gate desk. One repository per backend so the mock one keeps its
+  /// in-memory movements across rebuilds.
+  Widget _securityPortal(UserSession session) {
+    final baseUrl = _useMockData ? '' : _resolvedBackendBaseUrl;
+    if (_securityRepository == null || _securityRepositoryBaseUrl != baseUrl) {
+      _securityRepositoryBaseUrl = baseUrl;
+      _securityRepository = _useMockData
+          ? MockSecurityGateRepository()
+          : BackendSecurityGateRepository(
+              baseUrl: baseUrl,
+              accessTokenProvider: _provideAccessToken,
+            );
+    }
+    return SecurityPortalScreen(
+      key: ValueKey('security-portal-${session.email}'),
+      session: session,
+      initialAction: _openModuleAction,
+      repository: _securityRepository!,
+      onSignOut: _signOut,
     );
   }
 

@@ -51,7 +51,7 @@ void main() {
 
     expect(find.text('Shop operations'), findsOneWidget);
 
-    // Work/Eat and the open toggle are occasional decisions, so they no longer
+    // Work/Shop and the open toggle are occasional decisions, so they no longer
     // take a strip off the top of the page — they open from the app bar.
     expect(find.text('Work'), findsNothing);
     expect(find.byTooltip('Counter controls'), findsOneWidget);
@@ -60,7 +60,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Counter controls'), findsOneWidget);
     expect(find.text('Work'), findsOneWidget);
-    expect(find.text('Eat'), findsOneWidget);
+    expect(find.text('Shop'), findsOneWidget);
   });
 
   testWidgets('order-only staff opens the canteen captain workspace', (
@@ -124,7 +124,8 @@ void main() {
       expect(find.text('Blue Ball Pen'), findsOneWidget);
       expect(find.text('Canteen captain'), findsNothing);
       expect(find.text('No active food orders.'), findsNothing);
-      expect(find.byType(NavigationBar), findsNothing);
+      // Home / Inventory / QR Scan.
+      expect(find.byType(NavigationBar), findsOneWidget);
       expect(find.byType(BottomNavigationBar), findsNothing);
     },
   );

@@ -2,10 +2,7 @@ import 'hostel_models.dart';
 import 'hostel_repository.dart';
 
 class MockHostelRepository implements HostelRepository {
-  MockHostelRepository({
-    required this.studentName,
-    required this.studentCode,
-  });
+  MockHostelRepository({required this.studentName, required this.studentCode});
 
   final String studentName;
   final String studentCode;
@@ -76,9 +73,16 @@ class MockHostelRepository implements HostelRepository {
       ],
     );
 
-    final floor2 = HostelFloor(floorNumber: 2, rooms: [room204, room205, room206]);
+    final floor2 = HostelFloor(
+      floorNumber: 2,
+      rooms: [room204, room205, room206],
+    );
 
-    final blockB = HostelBlock(id: 'block_b', name: 'Block B', floors: [floor2]);
+    final blockB = HostelBlock(
+      id: 'block_b',
+      name: 'Block B',
+      floors: [floor2],
+    );
 
     final hostelA = HostelBuilding(
       id: 'hostel_a',
@@ -326,10 +330,7 @@ class MockHostelRepository implements HostelRepository {
     final outpasses = _store.outpasses.map((o) {
       if (o.id == outpassId) {
         if (isExit) {
-          return o.copyWith(
-            status: OutpassStatus.active,
-            actualExitAt: now,
-          );
+          return o.copyWith(status: OutpassStatus.active, actualExitAt: now);
         } else {
           final isLate = now.isAfter(o.expectedReturnAt);
           return o.copyWith(
@@ -344,7 +345,9 @@ class MockHostelRepository implements HostelRepository {
     var updatedResidency = _store.activeResidency;
     if (updatedResidency != null) {
       updatedResidency = updatedResidency.copyWith(
-        presenceStatus: isExit ? PresenceStatus.outsideHostel : PresenceStatus.insideHostel,
+        presenceStatus: isExit
+            ? PresenceStatus.outsideHostel
+            : PresenceStatus.insideHostel,
       );
     }
 
@@ -373,10 +376,7 @@ class MockHostelRepository implements HostelRepository {
     final now = DateTime.now();
     final updatedTokens = _store.messTokens.map((t) {
       if (t.id == tokenId) {
-        return t.copyWith(
-          status: MealTokenStatus.used,
-          redeemedAt: now,
-        );
+        return t.copyWith(status: MealTokenStatus.used, redeemedAt: now);
       }
       return t;
     }).toList();
@@ -413,14 +413,17 @@ class MockHostelRepository implements HostelRepository {
       id: 'RCR-${(1050 + _store.roomChangeRequests.length)}',
       residencyId: _store.activeResidency?.id ?? 'res_01',
       studentName: studentName,
-      currentRoom: '${_store.activeResidency?.hostelName} / ${_store.activeResidency?.roomNumber}',
+      currentRoom:
+          '${_store.activeResidency?.hostelName} / ${_store.activeResidency?.roomNumber}',
       reason: reason,
       preferredHostel: preferredHostel,
       status: RoomChangeStatus.submitted,
       requestedAt: DateTime.now(),
     );
 
-    _store = _store.copyWith(roomChangeRequests: [req, ..._store.roomChangeRequests]);
+    _store = _store.copyWith(
+      roomChangeRequests: [req, ..._store.roomChangeRequests],
+    );
     return req;
   }
 
@@ -498,7 +501,14 @@ class MockHostelRepository implements HostelRepository {
       messCleared: messCleared,
       complaintsClosed: complaintsClosed,
       damageSettled: damageSettled,
-      status: (roomCleared && assetsReturned && keyReturned && feesPaid && messCleared && complaintsClosed && damageSettled)
+      status:
+          (roomCleared &&
+              assetsReturned &&
+              keyReturned &&
+              feesPaid &&
+              messCleared &&
+              complaintsClosed &&
+              damageSettled)
           ? ClearanceStatus.readyForCheckout
           : ClearanceStatus.inspectionPending,
     );
@@ -534,4 +544,13 @@ class MockHostelRepository implements HostelRepository {
 
     return updatedResidency!;
   }
+
+  @override
+  Future<HostelQueueRequest> updateRequestStatus({
+    required String requestId,
+    required String status,
+    String? note,
+  }) async => throw UnsupportedError(
+    'Hostel staff actions need the live hostel service.',
+  );
 }

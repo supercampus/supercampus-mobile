@@ -16,9 +16,13 @@ class LaundryOperatorHome extends StatefulWidget {
     required this.onRefresh,
     required this.onUpdatePrice,
     required this.onCreateCharge,
+    this.onShopMode,
   });
 
   final CanteenStore store;
+
+  /// Switches the operator to Shop mode, where they buy like any student.
+  final VoidCallback? onShopMode;
   final VoidCallback onExitModule;
   final Future<void> Function() onRefresh;
   final Future<double> Function(double price) onUpdatePrice;
@@ -196,6 +200,15 @@ class _LaundryOperatorHomeState extends State<LaundryOperatorHome> {
             ),
           ],
         ),
+        actions: [
+          if (widget.onShopMode != null)
+            TextButton.icon(
+              onPressed: widget.onShopMode,
+              icon: const Icon(Icons.shopping_bag_outlined, size: 18),
+              label: const Text('Shop'),
+            ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 130),

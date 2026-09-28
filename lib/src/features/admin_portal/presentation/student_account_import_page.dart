@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart' hide Border;
 import '../data/admin_student_repository.dart';
+import '../../../core/students/student_year.dart';
 import '../../../core/utils/user_facing_error.dart';
 
 const studentAccountHeaders = [
@@ -77,11 +78,18 @@ List<Map<String, dynamic>> parseStudentAccounts(List<List<String>> table) {
   for (var i = 1; i < table.length; i++) {
     final r = table[i];
     final number = i + 1;
+    if (r.length == 8 && r[5].trim().isEmpty) {
+      throw FormatException(
+        'Row $number: year of study is required (1–6). '
+        'Use 1 for first-year students.',
+      );
+    }
     if (r.length != 8 || r.any((s) => s.trim().isEmpty)) {
       throw FormatException('Row $number: all eight fields are required.');
     }
     final email = r[2].trim().toLowerCase();
-    final year = int.tryParse(r[5].trim());
+    // Accepts 1–6 as well as "1st", "Year 1" or "I".
+    final year = parseStudentYear(r[5].trim());
     if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
       throw FormatException('Row $number: invalid email.');
     }

@@ -620,8 +620,12 @@ class HostelStore {
     this.messEnabled = true,
     this.hostelFeeValidFrom,
     this.hostelFeeValidUntil,
+    this.operations,
   });
 
+  /// The staff operations board. Present only when the signed-in user's hostel
+  /// grant reaches beyond their own record; `null` for residents.
+  final HostelOperations? operations;
   final HostelResidency? activeResidency;
   final List<HostelBuilding> buildings;
   final List<HostelApplication> applications;
@@ -679,6 +683,134 @@ class HostelStore {
       messEnabled: messEnabled ?? this.messEnabled,
       hostelFeeValidFrom: hostelFeeValidFrom ?? this.hostelFeeValidFrom,
       hostelFeeValidUntil: hostelFeeValidUntil ?? this.hostelFeeValidUntil,
+      operations: operations,
     );
+  }
+}
+
+/// Live hostel operations for staff, computed by the backend from student
+/// residency, gate scans, approved gatepasses and hostel service requests.
+class HostelOperations {
+  const HostelOperations({
+    required this.residents,
+    required this.outside,
+    required this.onLeave,
+    required this.hostels,
+    required this.overdue,
+    required this.away,
+    required this.requests,
+    this.scopeHostel,
+    this.canUpdate = false,
+  });
+
+  final int residents;
+  final int outside;
+  final int onLeave;
+  final List<HostelOccupancy> hostels;
+  final List<HostelPassHolder> overdue;
+  final List<HostelPassHolder> away;
+  final List<HostelQueueRequest> requests;
+
+  /// The one hostel this viewer runs, or `null` when they see every hostel.
+  final String? scopeHostel;
+  final bool canUpdate;
+
+  int get inside => (residents - outside).clamp(0, residents);
+
+  List<HostelQueueRequest> requestsOf(String kind) =>
+      requests.where((request) => request.kind == kind).toList(growable: false);
+}
+
+class HostelOccupancy {
+  const HostelOccupancy({
+    required this.name,
+    required this.residents,
+    required this.outside,
+  });
+
+  final String name;
+  final int residents;
+  final int outside;
+}
+
+/// A resident holding an approved outpass or leave pass.
+class HostelPassHolder {
+  const HostelPassHolder({
+    required this.requestId,
+    required this.name,
+    required this.rollNumber,
+    required this.passType,
+    required this.destination,
+    required this.departureAt,
+    required this.returnAt,
+    this.hostel,
+    this.room,
+    this.exitedAt,
+  });
+
+  final String requestId;
+  final String name;
+  final String rollNumber;
+  final String? hostel;
+  final String? room;
+  final String passType;
+  final String destination;
+  final DateTime departureAt;
+  final DateTime returnAt;
+  final DateTime? exitedAt;
+
+  String get passLabel => passType == 'leave_pass' ? 'Leave pass' : 'Outpass';
+}
+
+/// An open hostel service request (complaint, room change, clearance or visitor).
+class HostelQueueRequest {
+  const HostelQueueRequest({
+    required this.id,
+    required this.kind,
+    required this.status,
+    required this.requesterName,
+    required this.createdAt,
+    required this.details,
+    this.rollNumber,
+    this.hostel,
+    this.room,
+  });
+
+  final String id;
+  final String kind;
+  final String status;
+  final String requesterName;
+  final String? rollNumber;
+  final String? hostel;
+  final String? room;
+  final DateTime createdAt;
+  final Map<String, dynamic> details;
+
+  String get statusLabel => status
+      .split('_')
+      .where((part) => part.isNotEmpty)
+      .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+      .join(' ');
+
+  /// The one-line summary a staff member reads first.
+  String get summary {
+    String text(String key) => details[key]?.toString().trim() ?? '';
+    return switch (kind) {
+      'complaint' => [
+        text('category'),
+        text('description'),
+      ].where((part) => part.isNotEmpty).join(' · '),
+      'room_change' => [
+        if (text('preferredHostel').isNotEmpty)
+          'Wants ${text('preferredHostel')}',
+        text('reason'),
+      ].where((part) => part.isNotEmpty).join(' · '),
+      'visitor' => [
+        text('visitorName'),
+        text('purpose'),
+        text('visitDate'),
+      ].where((part) => part.isNotEmpty).join(' · '),
+      _ => 'Vacating the hostel',
+    };
   }
 }
