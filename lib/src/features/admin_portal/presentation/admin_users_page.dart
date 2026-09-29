@@ -5,6 +5,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/students/student_year.dart';
 import '../data/admin_student_repository.dart';
 import 'student_account_import_page.dart';
+import 'shop_counter_sheet.dart';
+import '../../vendor_management/data/vendor_repository.dart'
+    show grantsShopCounterWork, suggestedShopRole;
 import '../../../core/utils/user_facing_error.dart';
 
 class AdminUsersPage extends StatefulWidget {
@@ -12,9 +15,14 @@ class AdminUsersPage extends StatefulWidget {
     super.key,
     required this.repository,
     this.currentUserEmail,
+    this.canDelete = false,
   });
 
   final AdminStudentRepository repository;
+
+  /// Whether the signed-in user holds `authorization.users.delete`; gates
+  /// select mode and every delete action.
+  final bool canDelete;
 
   /// The signed-in administrator, who is never offered "Deactivate" on their
   /// own account (the server refuses it as well).
@@ -30,6 +38,10 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
   String _query = '';
   String? _error;
   ManagedUserRole? _selectedRoleFilter;
+
+  /// Select mode for bulk delete; ids of the users ticked.
+  bool _selecting = false;
+  final Set<String> _selectedIds = {};
 
   @override
   void initState() {
@@ -71,6 +83,38 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       if (mounted) _showMessage('${user.name}\'s roles were updated.');
     } catch (error) {
       if (mounted) _showMessage(userFacingError(error), error: true);
+      return;
+    }
+    // A shop role is only half the setup: without a counter the person's
+    // queue is empty and every scan is refused.
+    if (mounted && _grantsCounterWork(saved)) {
+      await _chooseCounters(user.id, user.name, saved);
+    }
+  }
+
+  /// Permission keys the roles [roleIds] grant together.
+  List<String> _permissionKeysOf(Iterable<String> roleIds) => [
+    for (final role in _roles)
+      if (roleIds.contains(role.id)) ...role.permissionKeys,
+  ];
+
+  bool _grantsCounterWork(Iterable<String> roleIds) =>
+      grantsShopCounterWork(_permissionKeysOf(roleIds));
+
+  Future<void> _chooseCounters(
+    String userId,
+    String userName,
+    Iterable<String> roleIds,
+  ) async {
+    final saved = await showShopCounterSheet(
+      context,
+      repository: widget.repository,
+      userId: userId,
+      userName: userName,
+      defaultRole: suggestedShopRole(_permissionKeysOf(roleIds)),
+    );
+    if (saved == true && mounted) {
+      _showMessage('$userName\'s counters were saved.');
     }
   }
 
@@ -243,6 +287,16 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
         user: user,
         onEditUser: () => close(sheetContext, () => _editUser(user)),
         onEditRoles: () => close(sheetContext, () => _editRoles(user)),
+        onEditCounters: _grantsCounterWork(user.roles.map((r) => r.id))
+            ? () => close(
+                sheetContext,
+                () => _chooseCounters(
+                  user.id,
+                  user.name,
+                  user.roles.map((r) => r.id),
+                ),
+              )
+            : null,
         onChangePassword: () =>
             close(sheetContext, () => _changePassword(user)),
         onAssignYear: _isStudent(user)
@@ -251,6 +305,9 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
         onSetActive: isSelf
             ? null
             : (active) => close(sheetContext, () => _setActive(user, active)),
+        onDelete: isSelf || !widget.canDelete
+            ? null
+            : () => close(sheetContext, () => _deleteUsers([user])),
       ),
     );
   }
@@ -271,6 +328,96 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       );
       await _load();
       if (mounted) _showMessage('${request.name}\'s account was created.');
+    } catch (error) {
+      if (mounted) _showMessage(userFacingError(error), error: true);
+      return;
+    }
+    if (!mounted || !_grantsCounterWork(request.roleIds)) return;
+    final email = request.email.trim().toLowerCase();
+    final created = _users
+        ?.where((user) => user.email.trim().toLowerCase() == email)
+        .firstOrNull;
+    await _chooseCounters(
+      created?.id ?? email,
+      request.name,
+      request.roleIds,
+    );
+  }
+
+  void _toggleSelected(ManagedTenantUser user) {
+    if (_isSelf(user)) return;
+    setState(() {
+      if (!_selectedIds.remove(user.id)) _selectedIds.add(user.id);
+    });
+  }
+
+  void _endSelection() => setState(() {
+    _selecting = false;
+    _selectedIds.clear();
+  });
+
+  /// Asks once, naming how many accounts go and that it cannot be undone.
+  Future<bool> _confirmDelete(List<ManagedTenantUser> users) async {
+    final single = users.length == 1;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          single
+              ? 'Delete ${users.first.name}?'
+              : 'Delete ${users.length} users?',
+        ),
+        content: Text(
+          '${single ? 'This account is' : 'These accounts are'} deleted '
+          'permanently. ${single ? 'They are' : 'Everyone selected is'} '
+          'signed out everywhere and can never sign in again, and the email '
+          'address is freed. Payments, orders, attendance and other history '
+          'they left stay on record. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(single ? 'Delete user' : 'Delete ${users.length} users'),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
+  }
+
+  Future<void> _deleteUsers(List<ManagedTenantUser> users) async {
+    final targets = users.where((user) => !_isSelf(user)).toList();
+    if (targets.isEmpty || !await _confirmDelete(targets) || !mounted) return;
+    try {
+      final result = await widget.repository.deleteUsers(
+        targets.map((user) => user.id).toList(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _selecting = false;
+        _selectedIds.clear();
+      });
+      await _load();
+      if (!mounted) return;
+      final deleted = result.deleted.length;
+      final failed = result.failed.length;
+      _showMessage(
+        failed == 0
+            ? (deleted == 1
+                  ? '${targets.first.name} was deleted.'
+                  : '$deleted users were deleted.')
+            : '$deleted deleted. $failed could not be deleted: '
+                  '${result.failed.values.toSet().join('; ')}',
+        error: failed > 0,
+      );
     } catch (error) {
       if (mounted) _showMessage(userFacingError(error), error: true);
     }
@@ -305,7 +452,14 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       padding: const EdgeInsets.only(bottom: 10),
       child: _UserCard(
         user: user,
-        onOpenProfile: () => _showUserProfile(user),
+        selecting: _selecting,
+        selected: _selectedIds.contains(user.id),
+        onOpenProfile: _selecting
+            ? () => _toggleSelected(user)
+            : () => _showUserProfile(user),
+        onDelete: _isSelf(user) || !widget.canDelete
+            ? null
+            : () => _deleteUsers([user]),
         onEditUser: () => _editUser(user),
         onEditRoles: () => _editRoles(user),
         onChangePassword: () => _changePassword(user),
@@ -324,11 +478,70 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       departmentOf: (user) => user.department ?? '',
     );
 
+    final selectableVisible = users.where((user) => !_isSelf(user)).toList();
+    final allVisibleSelected =
+        selectableVisible.isNotEmpty &&
+        selectableVisible.every((user) => _selectedIds.contains(user.id));
+    final selectedUsers = allUsers
+        .where((user) => _selectedIds.contains(user.id))
+        .toList();
+
     return Scaffold(
-      appBar: AppBar(
+      appBar: _selecting
+          ? AppBar(
+              centerTitle: false,
+              leading: IconButton(
+                tooltip: 'Done',
+                icon: const Icon(Icons.close_rounded),
+                onPressed: _endSelection,
+              ),
+              title: Text(
+                _selectedIds.isEmpty
+                    ? 'Select users'
+                    : '${_selectedIds.length} selected',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: selectableVisible.isEmpty
+                      ? null
+                      : () => setState(() {
+                          if (allVisibleSelected) {
+                            _selectedIds.removeAll(
+                              selectableVisible.map((user) => user.id),
+                            );
+                          } else {
+                            _selectedIds.addAll(
+                              selectableVisible.map((user) => user.id),
+                            );
+                          }
+                        }),
+                  child: Text(
+                    allVisibleSelected ? 'Deselect all' : 'Select all',
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Delete selected',
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: selectedUsers.isEmpty
+                        ? null
+                        : context.palette.danger,
+                  ),
+                  onPressed: selectedUsers.isEmpty
+                      ? null
+                      : () => _deleteUsers(selectedUsers),
+                ),
+              ],
+            )
+          : AppBar(
         centerTitle: false,
         title: const Text('User management'),
         actions: [
+          if (widget.canDelete && _users != null)
+            TextButton(
+              onPressed: () => setState(() => _selecting = true),
+              child: const Text('Select'),
+            ),
           IconButton(
             tooltip: 'Bulk upload students',
             icon: const Icon(Icons.upload_file),
@@ -344,7 +557,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
           ),
         ],
       ),
-      floatingActionButton: _users == null || _roles.isEmpty
+      floatingActionButton: _selecting || _users == null || _roles.isEmpty
           ? null
           : FloatingActionButton.extended(
               onPressed: _createUser,
@@ -576,6 +789,9 @@ class _NoticeBanner extends StatelessWidget {
 class _UserCard extends StatelessWidget {
   const _UserCard({
     required this.user,
+    this.selecting = false,
+    this.selected = false,
+    this.onDelete,
     required this.onOpenProfile,
     required this.onEditUser,
     required this.onEditRoles,
@@ -601,6 +817,13 @@ class _UserCard extends StatelessWidget {
   /// the administrator's own account.
   final ValueChanged<bool>? onSetActive;
 
+  /// In select mode a tap toggles [selected] and the menu is hidden.
+  final bool selecting;
+  final bool selected;
+
+  /// Null hides "Delete user" (own account, or no delete permission).
+  final VoidCallback? onDelete;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -621,9 +844,14 @@ class _UserCard extends StatelessWidget {
     ];
     final card = Card(
       elevation: 0,
+      color: selecting && selected ? context.palette.brandSoft : null,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colors.outlineVariant),
+        side: BorderSide(
+          color: selecting && selected
+              ? context.palette.brandInk
+              : colors.outlineVariant,
+        ),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -633,6 +861,15 @@ class _UserCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (selecting)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Checkbox(
+                    value: selected,
+                    // The signed-in administrator cannot delete themselves.
+                    onChanged: onDelete == null ? null : (_) => onOpenProfile(),
+                  ),
+                ),
               CircleAvatar(
                 backgroundColor: colors.primaryContainer,
                 foregroundColor: colors.onPrimaryContainer,
@@ -678,6 +915,7 @@ class _UserCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (!selecting)
               PopupMenuButton<String>(
                 tooltip: 'Manage ${user.name}',
                 onSelected: (value) {
@@ -687,6 +925,7 @@ class _UserCard extends StatelessWidget {
                   if (value == 'password') onChangePassword();
                   if (value == 'deactivate') onSetActive?.call(false);
                   if (value == 'reactivate') onSetActive?.call(true);
+                  if (value == 'delete') onDelete?.call();
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(
@@ -748,6 +987,23 @@ class _UserCard extends StatelessWidget {
                         ),
                       ),
                   ],
+                  if (onDelete != null) ...[
+                    if (onSetActive == null) const PopupMenuDivider(),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(
+                          Icons.delete_outline_rounded,
+                          color: context.palette.danger,
+                        ),
+                        title: Text(
+                          'Delete user',
+                          style: TextStyle(color: context.palette.danger),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -792,11 +1048,16 @@ class _UserProfileSheet extends StatelessWidget {
     required this.onChangePassword,
     this.onAssignYear,
     this.onSetActive,
+    this.onEditCounters,
+    this.onDelete,
   });
 
   final ManagedTenantUser user;
   final VoidCallback onEditUser;
   final VoidCallback onEditRoles;
+
+  /// Present when the person's roles put them behind a shop counter.
+  final VoidCallback? onEditCounters;
   final VoidCallback onChangePassword;
 
   /// Null for accounts that are not students.
@@ -804,6 +1065,9 @@ class _UserProfileSheet extends StatelessWidget {
 
   /// Null on the administrator's own account.
   final ValueChanged<bool>? onSetActive;
+
+  /// Null on the administrator's own account or without delete permission.
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -935,6 +1199,13 @@ class _UserProfileSheet extends StatelessWidget {
                   titleColor: palette.brandInk,
                   onTap: onEditRoles,
                 ),
+                if (onEditCounters != null)
+                  _GroupRow(
+                    icon: Icons.storefront_outlined,
+                    title: 'Shop counters',
+                    titleColor: palette.brandInk,
+                    onTap: onEditCounters,
+                  ),
               ],
             ],
           ),
@@ -985,6 +1256,30 @@ class _UserProfileSheet extends StatelessWidget {
                           'reactivate the account.'
                     : '${user.name} can sign in again with their existing '
                           'password.',
+                style: TextStyle(fontSize: 12, color: palette.inkSecondary),
+              ),
+            ),
+          ],
+          if (onDelete != null) ...[
+            const SizedBox(height: 22),
+            _Group(
+              children: [
+                _GroupRow(
+                  icon: Icons.delete_outline_rounded,
+                  title: 'Delete user',
+                  titleColor: palette.danger,
+                  iconColor: palette.danger,
+                  showChevron: false,
+                  onTap: onDelete,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Removes the account for good. History such as payments '
+                'and attendance is kept.',
                 style: TextStyle(fontSize: 12, color: palette.inkSecondary),
               ),
             ),

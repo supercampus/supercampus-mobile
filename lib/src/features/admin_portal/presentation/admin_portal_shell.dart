@@ -4,14 +4,19 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/media/media_scope.dart';
 import '../../../core/media/media_picker.dart';
-import '../../../core/students/student_year.dart';
 import '../../../core/widgets/module_section_switcher.dart';
 import '../../../core/widgets/announcement_composer.dart';
 import '../../../core/widgets/announcement_image_cropper.dart';
 import '../../library/data/librarian_repository.dart';
 import '../../maintenance/data/maintenance_repository.dart';
 import '../data/admin_student_repository.dart';
+import '../../academics/data/academic_models.dart';
+import '../../academics/presentation/academic_programme_field.dart';
+import 'admin_student_directory.dart';
 import 'admin_users_page.dart';
+import 'admin_roles_page.dart';
+import '../data/admin_roles_repository.dart';
+import '../../../core/access/effective_permissions.dart';
 import '../../../core/utils/user_facing_error.dart';
 
 /// Focused admin surface for student management and pending approvals.
@@ -24,6 +29,8 @@ class AdminPortalShell extends StatefulWidget {
     this.initialSection = 0,
     this.onExitModule,
     this.currentUserEmail,
+    this.permissions,
+    this.rolesRepository,
   });
 
   final LibrarianRepository libraryRepository;
@@ -35,6 +42,17 @@ class AdminPortalShell extends StatefulWidget {
   /// The signed-in administrator; their own account cannot be deactivated.
   final String? currentUserEmail;
 
+  /// The signed-in user's effective permissions. Delete and the Roles
+  /// section are offered only when these grant them.
+  final EffectivePermissions? permissions;
+
+  /// Role management; the Roles section appears when this is set and the
+  /// user may read roles.
+  final AdminRolesRepository? rolesRepository;
+
+  /// Index of the Roles section (it follows the four fixed sections).
+  static const rolesSection = 4;
+
   @override
   State<AdminPortalShell> createState() => _AdminPortalShellState();
 }
@@ -45,20 +63,37 @@ class _AdminPortalShellState extends State<AdminPortalShell> {
   @override
   void initState() {
     super.initState();
-    _selected = widget.initialSection.clamp(0, 3);
+    _selected = widget.initialSection.clamp(0, _showsRoles ? 4 : 3);
   }
+
+  bool _can(String feature, String action) =>
+      widget.permissions?.can('authorization', feature, action) ?? false;
+
+  bool get _showsRoles =>
+      widget.rolesRepository != null && _can('roles', 'read');
 
   @override
   Widget build(BuildContext context) {
+    final rolesRepository = widget.rolesRepository;
+    final showsRoles = _showsRoles;
     final pages = [
       AdminUsersPage(
         repository: widget.studentRepository,
         currentUserEmail: widget.currentUserEmail,
+        canDelete: _can('users', 'delete'),
       ),
-      _AdminStudentsPage(repository: widget.studentRepository),
+      AdminStudentsPage(repository: widget.studentRepository),
       _AdminAnnouncementsPage(repository: widget.libraryRepository),
       _AdminMaintenancePage(repository: widget.maintenanceRepository),
+      if (showsRoles && rolesRepository != null)
+        AdminRolesPage(
+          repository: rolesRepository,
+          canCreate: _can('roles', 'create'),
+          canUpdate: _can('roles', 'update'),
+          canDelete: _can('roles', 'delete'),
+        ),
     ];
+    final selected = _selected.clamp(0, pages.length - 1);
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: widget.onExitModule != null
@@ -78,26 +113,34 @@ class _AdminPortalShellState extends State<AdminPortalShell> {
         child: Column(
           children: [
             ModuleSectionSwitcher(
-              sections: const [
-                ModuleSection(
+              sections: [
+                const ModuleSection(
                   label: 'Users',
                   icon: Icons.manage_accounts_outlined,
                 ),
-                ModuleSection(label: 'Students', icon: Icons.school_outlined),
-                ModuleSection(
+                const ModuleSection(
+                  label: 'Students',
+                  icon: Icons.school_outlined,
+                ),
+                const ModuleSection(
                   label: 'Announcements',
                   icon: Icons.campaign_outlined,
                 ),
-                ModuleSection(
+                const ModuleSection(
                   label: 'Maintenance',
                   icon: Icons.construction_rounded,
                 ),
+                if (showsRoles)
+                  const ModuleSection(
+                    label: 'Roles',
+                    icon: Icons.admin_panel_settings_outlined,
+                  ),
               ],
-              selectedIndex: _selected,
+              selectedIndex: selected,
               onSelected: (value) => setState(() => _selected = value),
             ),
             Expanded(
-              child: IndexedStack(index: _selected, children: pages),
+              child: IndexedStack(index: selected, children: pages),
             ),
           ],
         ),
@@ -106,17 +149,17 @@ class _AdminPortalShellState extends State<AdminPortalShell> {
   }
 }
 
-class _AdminStudentsPage extends StatefulWidget {
-  const _AdminStudentsPage({required this.repository});
+/// Student Master for administrators: browse, filter and edit students.
+class AdminStudentsPage extends StatefulWidget {
+  const AdminStudentsPage({super.key, required this.repository});
   final AdminStudentRepository repository;
 
   @override
-  State<_AdminStudentsPage> createState() => _AdminStudentsPageState();
+  State<AdminStudentsPage> createState() => _AdminStudentsPageState();
 }
 
-class _AdminStudentsPageState extends State<_AdminStudentsPage> {
+class _AdminStudentsPageState extends State<AdminStudentsPage> {
   List<ManagedStudent>? _students;
-  String _query = '';
   String? _error;
   String? _savingId;
 
@@ -196,11 +239,6 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
     ).showSnackBar(SnackBar(content: Text('${saved.name} was updated.')));
   }
 
-  ManagedStudentResidency? _residencyFilter;
-  int? _selectedYear;
-  String? _selectedDepartment;
-
-
   void _showStudentProfile(ManagedStudent student) {
     showModalBottomSheet<void>(
       context: context,
@@ -245,564 +283,35 @@ class _AdminStudentsPageState extends State<_AdminStudentsPage> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final query = _query.trim().toLowerCase();
-    final allStudents = _students ?? const <ManagedStudent>[];
-
-    // 0 stands for "Year not set" in the filter; it sorts last. Unknown years
-    // used to be counted as 2nd year.
-    final distinctYears = allStudents
-        .map((s) => s.yearOfStudy ?? 0)
-        .toSet()
-        .toList()
-      ..sort((a, b) => a == 0 ? 1 : b == 0 ? -1 : a.compareTo(b));
-
-    final distinctDepartments = allStudents
-        .map((s) => s.department.trim())
-        .where((d) => d.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
-
-    final rows = allStudents.where((student) {
-      if (_residencyFilter != null && student.residency != _residencyFilter) {
-        return false;
-      }
-      if (_selectedYear != null && (student.yearOfStudy ?? 0) != _selectedYear) {
-        return false;
-      }
-      if (_selectedDepartment != null &&
-          student.department.trim().toLowerCase() !=
-              _selectedDepartment!.trim().toLowerCase()) {
-        return false;
-      }
-      if (query.isNotEmpty) {
-        final content =
-            '${student.name} ${student.rollNumber} ${student.department} ${student.email} ${student.mobileNumber} ${student.section ?? ''}'
-                .toLowerCase();
-        if (!content.contains(query)) return false;
-      }
-      return true;
-    }).toList();
-
-    final groups = groupStudentsByYearAndDepartment(
-      rows,
-      yearOf: (student) => student.yearOfStudy,
-      departmentOf: (student) => student.department,
-    );
-
-    final totalDayScholars = allStudents
-        .where((s) => s.residency == ManagedStudentResidency.dayScholar)
-        .length;
-    final totalHostellers = allStudents
-        .where((s) => s.residency == ManagedStudentResidency.hosteller)
-        .length;
-
-    final hasActiveFilter = _selectedYear != null ||
-        _selectedDepartment != null ||
-        _residencyFilter != null ||
-        query.isNotEmpty;
-
+    final students = _students;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Student management'),
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-            child: TextField(
-              onChanged: (value) => setState(() => _query = value),
-              decoration: const InputDecoration(
-                hintText: 'Search by name, roll, dept or email',
-                prefixIcon: Icon(Icons.search_rounded),
-              ),
-            ),
-          ),
-          if (_students != null) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Row(
+      body: _error != null && students == null
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceContainerHighest.withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: colors.outlineVariant),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<int?>(
-                          value: _selectedYear,
-                          isExpanded: true,
-                          icon: const Icon(Icons.arrow_drop_down_rounded),
-                          hint: Row(
-                            children: [
-                              Icon(Icons.calendar_today_outlined, size: 14, color: context.palette.inkSecondary),
-                              const SizedBox(width: 6),
-                              const Expanded(
-                                child: Text(
-                                  'All Years',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          items: [
-                            DropdownMenuItem<int?>(
-                              value: null,
-                              child: Text(
-                                'All Years (${allStudents.length})',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                            for (final year in distinctYears)
-                              DropdownMenuItem<int?>(
-                                value: year,
-                                child: Text(
-                                  '${studentYearLabel(year == 0 ? null : year)} (${allStudents.where((s) => (s.yearOfStudy ?? 0) == year).length})',
-                                  style: const TextStyle(fontSize: 13),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                          ],
-                          onChanged: (val) => setState(() => _selectedYear = val),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceContainerHighest.withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: colors.outlineVariant),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String?>(
-                          value: _selectedDepartment,
-                          isExpanded: true,
-                          icon: const Icon(Icons.arrow_drop_down_rounded),
-                          hint: Row(
-                            children: [
-                              Icon(Icons.apartment_outlined, size: 14, color: context.palette.inkSecondary),
-                              const SizedBox(width: 6),
-                              const Expanded(
-                                child: Text(
-                                  'All Depts',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          items: [
-                            DropdownMenuItem<String?>(
-                              value: null,
-                              child: Text(
-                                'All Departments (${allStudents.length})',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                            for (final dept in distinctDepartments)
-                              DropdownMenuItem<String?>(
-                                value: dept,
-                                child: Text(
-                                  '$dept (${allStudents.where((s) => s.department.trim().toLowerCase() == dept.toLowerCase()).length})',
-                                  style: const TextStyle(fontSize: 13),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                          ],
-                          onChanged: (val) => setState(() => _selectedDepartment = val),
-                        ),
-                      ),
-                    ),
+                  Text(_error!, textAlign: TextAlign.center),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: _load,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Retry'),
                   ),
                 ],
               ),
+            )
+          : students == null
+          ? const Center(child: CircularProgressIndicator())
+          : StudentDirectoryView(
+              students: students,
+              busyStudentId: _savingId,
+              onOpen: _showStudentProfile,
+              onEdit: (student) {
+                if (_savingId == null) _edit(student);
+              },
+              onRefresh: _load,
             ),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Row(
-                children: [
-                  FilterChip(
-                    label: Text('All (${allStudents.length})'),
-                    selected: _residencyFilter == null,
-                    onSelected: (_) => setState(() => _residencyFilter = null),
-                  ),
-                  const SizedBox(width: 8),
-                  FilterChip(
-                    avatar: const Icon(Icons.directions_bus_outlined, size: 16),
-                    label: Text('Day Scholars ($totalDayScholars)'),
-                    selected: _residencyFilter == ManagedStudentResidency.dayScholar,
-                    onSelected: (selected) => setState(
-                      () => _residencyFilter = selected
-                          ? ManagedStudentResidency.dayScholar
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  FilterChip(
-                    avatar: const Icon(Icons.apartment_outlined, size: 16),
-                    label: Text('Hostellers ($totalHostellers)'),
-                    selected: _residencyFilter == ManagedStudentResidency.hosteller,
-                    onSelected: (selected) => setState(
-                      () => _residencyFilter = selected
-                          ? ManagedStudentResidency.hosteller
-                          : null,
-                    ),
-                  ),
-                  if (hasActiveFilter) ...[
-                    const SizedBox(width: 8),
-                    ActionChip(
-                      avatar: const Icon(Icons.clear_all_rounded, size: 16),
-                      label: const Text('Reset filters'),
-                      onPressed: () => setState(() {
-                        _selectedYear = null;
-                        _selectedDepartment = null;
-                        _residencyFilter = null;
-                        _query = '';
-                      }),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              'Select Year and Department dropdowns to filter. Tap dropdown sections to expand/collapse.',
-              style: TextStyle(color: context.palette.inkSecondary, fontSize: 12),
-            ),
-          ),
-          Expanded(
-            child: _error != null
-                ? Center(
-                    child: FilledButton.icon(
-                      onPressed: _load,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Retry'),
-                    ),
-                  )
-                : _students == null
-                ? const Center(child: CircularProgressIndicator())
-                : rows.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.people_outline_rounded, size: 48, color: context.palette.inkSecondary),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'No students match your filter',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        if (hasActiveFilter) ...[
-                          const SizedBox(height: 12),
-                          OutlinedButton.icon(
-                            onPressed: () => setState(() {
-                              _selectedYear = null;
-                              _selectedDepartment = null;
-                              _residencyFilter = null;
-                              _query = '';
-                            }),
-                            icon: const Icon(Icons.clear_all_rounded),
-                            label: const Text('Clear all filters'),
-                          ),
-                        ],
-                      ],
-                    ),
-                  )
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
-                    children: [
-                      for (final yearGroup in groups) ...[
-                        Card(
-                          elevation: 0,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: colors.outlineVariant),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Theme(
-                            data: theme.copyWith(dividerColor: Colors.transparent),
-                            child: ExpansionTile(
-                              key: PageStorageKey('year_${yearGroup.year}'),
-                              initiallyExpanded: true,
-                              leading: CircleAvatar(
-                                radius: 17,
-                                backgroundColor: colors.primaryContainer,
-                                foregroundColor: colors.onPrimaryContainer,
-                                child: const Icon(Icons.school_outlined, size: 17),
-                              ),
-                              title: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      yearGroup.label,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 14.5,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: colors.primaryContainer.withValues(alpha: 0.6),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      '${yearGroup.students.length}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: colors.primary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              subtitle: Text(
-                                '${yearGroup.students.where((s) => s.residency == ManagedStudentResidency.dayScholar).length} Day Scholars · '
-                                '${yearGroup.students.where((s) => s.residency == ManagedStudentResidency.hosteller).length} Hostellers',
-                                style: TextStyle(color: context.palette.inkSecondary, fontSize: 11),
-                              ),
-                              childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-                              children: [
-                                for (final deptGroup in yearGroup.departments) ...[
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 8, bottom: 4),
-                                    child: Card(
-                                      elevation: 0,
-                                      color: colors.surfaceContainerHighest.withValues(alpha: 0.25),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        side: BorderSide(
-                                          color: colors.outlineVariant.withValues(alpha: 0.6),
-                                        ),
-                                      ),
-                                      clipBehavior: Clip.antiAlias,
-                                      child: Theme(
-                                        data: theme.copyWith(dividerColor: Colors.transparent),
-                                        child: ExpansionTile(
-                                          key: PageStorageKey(
-                                            'year_${yearGroup.year}_dept_${deptGroup.department}',
-                                          ),
-                                          initiallyExpanded: true,
-                                          leading: Icon(
-                                            Icons.apartment_outlined,
-                                            size: 18,
-                                            color: context.palette.brandInk,
-                                          ),
-                                          title: Text(
-                                            deptGroup.label,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 13.5,
-                                            ),
-                                          ),
-                                          trailing: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 7,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: colors.surfaceContainerHighest,
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              '${deptGroup.students.length} students',
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                          childrenPadding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-                                          children: [
-                                            for (final student in deptGroup.students)
-                                              _buildStudentCard(student),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStudentCard(ManagedStudent student) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => _showStudentProfile(student),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                    child: Text(
-                      student.name.isNotEmpty
-                          ? student.name.substring(0, 1).toUpperCase()
-                          : 'S',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color:
-                            Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          student.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${student.rollNumber} • ${student.department}',
-                          style: TextStyle(
-                            color: context.palette.inkSecondary,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Edit student',
-                    onPressed: _savingId == null ? () => _edit(student) : null,
-                    icon: const Icon(Icons.edit_outlined),
-                  ),
-                ],
-              ),
-              if ((student.section ?? '').isNotEmpty ||
-                  student.email.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  [
-                    if ((student.section ?? '').isNotEmpty)
-                      'Section ${student.section}',
-                    if (student.email.isNotEmpty) student.email,
-                  ].join(' • '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: context.palette.inkSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: student.residency ==
-                              ManagedStudentResidency.dayScholar
-                          ? AppColors.infoInk.withValues(alpha: 0.12)
-                          : AppColors.brandViolet.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          student.residency ==
-                                  ManagedStudentResidency.dayScholar
-                              ? Icons.directions_bus_outlined
-                              : Icons.apartment_outlined,
-                          size: 13,
-                          color: student.residency ==
-                                  ManagedStudentResidency.dayScholar
-                              ? context.adaptive(light: AppColors.infoInk, dark: const Color(0xFF00F5D4))
-                              : context.adaptive(light: AppColors.brandViolet, dark: const Color(0xFFD9A5F7)),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          student.residency.label,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: student.residency ==
-                                    ManagedStudentResidency.dayScholar
-                                ? context.adaptive(light: AppColors.infoInk, dark: const Color(0xFF00F5D4))
-                                : context.adaptive(light: AppColors.brandViolet, dark: const Color(0xFFD9A5F7)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    onPressed: () => _showStudentProfile(student),
-                    icon: const Icon(Icons.badge_outlined, size: 16),
-                    label: const Text('View profile'),
-                  ),
-                ],
-              ),
-              if (_savingId == student.id) ...[
-                const SizedBox(height: 8),
-                const LinearProgressIndicator(minHeight: 2),
-              ],
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1135,6 +644,10 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
   late String _selectedCourse;
   late final List<String> _programmeOptions;
   late final List<String> _courseOptions;
+  AcademicCatalog? _catalog;
+  bool _catalogLoading = true;
+  AcademicProgramme? _programme;
+  String? _classId;
   bool _saving = false;
   String? _error;
 
@@ -1189,6 +702,7 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
       if (_selectedCourse.isNotEmpty) _selectedCourse,
     };
     _courseOptions = courseSet.toList()..sort();
+    _loadCatalog();
   }
 
   @override
@@ -1204,6 +718,179 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
     super.dispose();
   }
 
+  /// Loads the institution's programmes and classes. The hardcoded lists
+  /// below stay as the fallback when the catalog cannot be read (offline, no
+  /// permission, or a catalog without programmes).
+  Future<void> _loadCatalog() async {
+    AcademicCatalog? catalog;
+    try {
+      catalog = await widget.repository.loadAcademicCatalog();
+      if (catalog.programmes.isEmpty) catalog = null;
+    } catch (_) {
+      catalog = null;
+    }
+    if (!mounted) return;
+    final student = widget.student;
+    final programme = catalog == null
+        ? null
+        : AcademicProgrammeField.initialFor(
+            catalog,
+            programmeId: student.programmeId,
+            departmentId: student.departmentId,
+            departmentLabel: student.department,
+          );
+    final classId = catalog != null &&
+            programme != null &&
+            catalog
+                .classesForProgramme(programme.id)
+                .any((item) => item.id == student.sectionId)
+        ? student.sectionId
+        : null;
+    setState(() {
+      _catalog = catalog;
+      _catalogLoading = false;
+      _programme = programme;
+      _classId = classId;
+    });
+  }
+
+  void _chooseClass(String? classId) {
+    final chosen = _catalog?.classes
+        .where((item) => item.id == classId)
+        .firstOrNull;
+    setState(() {
+      _classId = classId;
+      if (chosen != null) {
+        if (chosen.code.trim().isNotEmpty) _section.text = chosen.code.trim();
+        _year = chosen.yearOfStudy ?? _year;
+      }
+    });
+  }
+
+  List<Widget> _programmeFields(BuildContext context) {
+    if (_catalogLoading) {
+      return const [
+        InputDecorator(
+          decoration: InputDecoration(labelText: 'Programme'),
+          child: SizedBox(
+            height: 20,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox.square(
+                dimension: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ),
+        ),
+      ];
+    }
+    final catalog = _catalog;
+    if (catalog != null) {
+      final programme = _programme;
+      final classes = programme == null
+          ? const <AcademicClass>[]
+          : catalog
+                .classesForProgramme(programme.id)
+                .where((item) => item.active || item.id == _classId)
+                .toList();
+      return [
+        AcademicProgrammeField(
+          key: const Key('student-programme-field'),
+          catalog: catalog,
+          initialProgrammeId: programme?.id,
+          currentDepartmentId: widget.student.departmentId,
+          currentDepartmentLabel: widget.student.department,
+          onChanged: (value) => setState(() {
+            if (value.id != _programme?.id) _classId = null;
+            _programme = value;
+          }),
+        ),
+        if (classes.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            key: ValueKey('student-class-${programme?.id}-$_classId'),
+            initialValue: _classId,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Class (optional)'),
+            items: [
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('Not assigned'),
+              ),
+              for (final item in classes)
+                DropdownMenuItem<String?>(
+                  value: item.id,
+                  child: Text(item.label, overflow: TextOverflow.ellipsis),
+                ),
+            ],
+            onChanged: _chooseClass,
+          ),
+        ],
+      ];
+    }
+    return [
+      DropdownButtonFormField<String>(
+        key: ValueKey('programme_$_selectedProgramme'),
+        initialValue: _programmeOptions.contains(_selectedProgramme)
+            ? _selectedProgramme
+            : _programmeOptions.first,
+        isExpanded: true,
+        decoration: const InputDecoration(
+          labelText: 'Programme (BE / B.Tech / etc.)',
+          prefixIcon: Icon(Icons.school_outlined),
+        ),
+        items: [
+          for (final p in _programmeOptions)
+            DropdownMenuItem(value: p, child: Text(p)),
+        ],
+        onChanged: (val) {
+          if (val != null) setState(() => _selectedProgramme = val);
+        },
+      ),
+      const SizedBox(height: 12),
+      DropdownButtonFormField<String>(
+        key: ValueKey('course_$_selectedCourse'),
+        initialValue: _courseOptions.contains(_selectedCourse)
+            ? _selectedCourse
+            : _courseOptions.first,
+        isExpanded: true,
+        decoration: const InputDecoration(
+          labelText: 'Department (Course)',
+          prefixIcon: Icon(Icons.domain_outlined),
+        ),
+        items: [
+          for (final c in _courseOptions)
+            DropdownMenuItem(
+              value: c,
+              child: Text(
+                c,
+                style: const TextStyle(fontSize: 13),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+        ],
+        onChanged: (val) {
+          if (val != null) {
+            setState(() {
+              _selectedCourse = val;
+              _selectedProgramme = recommendProgrammeForCourse(
+                val,
+                current: _selectedProgramme,
+              );
+            });
+          }
+        },
+      ),
+      const SizedBox(height: 6),
+      Text(
+        'Saved as: ${formatDepartment(programme: _selectedProgramme, course: _selectedCourse)}',
+        style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
+        overflow: TextOverflow.ellipsis,
+      ),
+    ];
+  }
+
   String? _required(String? value) =>
       value == null || value.trim().isEmpty ? 'Required' : null;
 
@@ -1214,15 +901,21 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
       _error = null;
     });
     try {
-      final formattedDepartment = formatDepartment(
-        programme: _selectedProgramme,
-        course: _selectedCourse,
-      );
+      final programme = _catalog == null ? null : _programme;
+      final formattedDepartment =
+          programme?.name ??
+          formatDepartment(
+            programme: _selectedProgramme,
+            course: _selectedCourse,
+          );
       final saved = await widget.repository.updateStudent(
         widget.student.copyWith(
           name: _name.text.trim(),
           rollNumber: _roll.text.trim(),
           department: formattedDepartment,
+          departmentId: programme?.departmentId,
+          programmeId: programme?.id,
+          sectionId: programme == null ? null : _classId,
           mobileNumber: _mobile.text.trim(),
           email: _email.text.trim().toLowerCase(),
           section: _section.text.trim(),
@@ -1303,91 +996,13 @@ class _EditStudentSheetState extends State<_EditStudentSheet> {
                 decoration: const InputDecoration(labelText: 'Mobile number'),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                key: ValueKey('programme_$_selectedProgramme'),
-                initialValue: _programmeOptions.contains(_selectedProgramme)
-                    ? _selectedProgramme
-                    : _programmeOptions.first,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Programme (BE / B.Tech / etc.)',
-                  prefixIcon: Icon(Icons.school_outlined),
-                ),
-                items: [
-                  for (final p in _programmeOptions)
-                    DropdownMenuItem(value: p, child: Text(p)),
-                ],
-                onChanged: (val) {
-                  if (val != null) setState(() => _selectedProgramme = val);
-                },
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                key: ValueKey('course_$_selectedCourse'),
-                initialValue: _courseOptions.contains(_selectedCourse)
-                    ? _selectedCourse
-                    : _courseOptions.first,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Department (Course)',
-                  prefixIcon: Icon(Icons.domain_outlined),
-                ),
-                items: [
-                  for (final c in _courseOptions)
-                    DropdownMenuItem(
-                      value: c,
-                      child: Text(
-                        c,
-                        style: const TextStyle(fontSize: 13),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                ],
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _selectedCourse = val;
-                      _selectedProgramme = recommendProgrammeForCourse(
-                        val,
-                        current: _selectedProgramme,
-                      );
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline_rounded, size: 16, color: context.palette.inkSecondary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Saved as: ${formatDepartment(programme: _selectedProgramme, course: _selectedCourse)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: context.palette.brandInk,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ..._programmeFields(context),
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<int>(
+                      key: ValueKey('student-year-$_year'),
                       initialValue: _year,
                       decoration: const InputDecoration(labelText: 'Year'),
                       hint: const Text('Select year'),

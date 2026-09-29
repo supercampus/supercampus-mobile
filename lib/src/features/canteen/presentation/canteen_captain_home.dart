@@ -8,6 +8,7 @@ import '../../scanner/presentation/scan_qr_screen.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_order_detail_page.dart';
 import 'widgets/canteen_surface.dart';
+import 'widgets/unassigned_counter_notice.dart';
 import 'widgets/shop_mode_switch.dart';
 import 'widgets/menu_item_art.dart';
 import 'widgets/order_status_badge.dart';
@@ -85,6 +86,13 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
   }
 
   Future<void> _scanOrder() async {
+    // Without a counter every scan would be refused; say why up front.
+    if (widget.store.shopAssignmentPending) {
+      _messenger.showSnackBar(
+        SnackBar(content: Text(widget.store.unassignedCounterMessage)),
+      );
+      return;
+    }
     final payload = await openScanQr(context, title: 'Scan order QR');
     if (payload == null || !mounted) return;
     await _run(() async {
@@ -128,6 +136,9 @@ class _CanteenCaptainHomeState extends State<CanteenCaptainHome> {
     final pages = [
       _CaptainQueue(
         orders: active,
+        unassignedMessage: widget.store.shopAssignmentPending
+            ? widget.store.unassignedCounterMessage
+            : null,
         working: working,
         busy: _busy,
         onRefresh: () => _run(widget.onRefresh),
@@ -252,9 +263,13 @@ class _CaptainQueue extends StatelessWidget {
     required this.onRefresh,
     required this.onStatus,
     this.onSwitchToWork,
+    this.unassignedMessage,
   });
 
   final List<CanteenOrder> orders;
+
+  /// Set when the captain works no counter yet; replaces the queue.
+  final String? unassignedMessage;
   final bool working;
   final bool busy;
   final Future<void> Function() onRefresh;
@@ -281,7 +296,9 @@ class _CaptainQueue extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${orders.length} waiting · tap a name to see items, swipe an item to move just that item',
+                      unassignedMessage != null
+                          ? 'No counter assigned'
+                          : '${orders.length} waiting · tap a name to see items, swipe an item to move just that item',
                       style: TextStyle(color: context.palette.inkSecondary),
                     ),
                   ],
@@ -291,7 +308,9 @@ class _CaptainQueue extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          if (!working)
+          if (unassignedMessage != null)
+            UnassignedCounterNotice(message: unassignedMessage!)
+          else if (!working)
             _ModeNotice(onSwitchToWork: onSwitchToWork)
           else if (orders.isEmpty)
             CanteenSurface(

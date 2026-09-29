@@ -93,6 +93,10 @@ class BackendCanteenRepository
       ).map((value) => _laundryCharge(_map(value))).toList(growable: false),
       hasPin: data['hasPin'] == true,
       hasPinHint: data['hasPinHint'] == true,
+      shopAssignmentPending: data['shopAssignmentPending'] == true,
+      shopAssignmentMessage: _text(data['shopAssignmentMessage']).isEmpty
+          ? null
+          : _text(data['shopAssignmentMessage']),
     );
   }
 

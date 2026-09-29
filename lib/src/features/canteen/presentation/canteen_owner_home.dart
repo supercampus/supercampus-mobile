@@ -14,6 +14,7 @@ import 'widgets/order_status_badge.dart';
 import 'widgets/owner_captain_sales_analytics.dart';
 import 'widgets/counter_open_tile.dart';
 import 'widgets/settled_orders_page.dart';
+import 'widgets/unassigned_counter_notice.dart';
 import 'canteen_menu_item_editor_screen.dart';
 import 'owner_workspace_nav.dart';
 import '../../../core/utils/user_facing_error.dart';
@@ -312,7 +313,18 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
           ),
         ],
       ),
-      body: Column(
+      body: widget.store.shopAssignmentPending
+          // Shop staff with no counter: say so rather than show another
+          // shop's queue or an empty one.
+          ? ListView(
+              padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+              children: [
+                UnassignedCounterNotice(
+                  message: widget.store.unassignedCounterMessage,
+                ),
+              ],
+            )
+          : Column(
         children: [
           if (_assignedShops.length > 1)
             _AssignedShopSelector(

@@ -136,6 +136,7 @@ class StoreSales {
     this.ordersToday = 0,
     this.revenueToday = 0,
     this.activeNow = 0,
+    this.position,
   });
 
   factory StoreSales.fromJson(Map<String, dynamic> json) => StoreSales(
@@ -155,6 +156,7 @@ class StoreSales {
     ordersToday: _int(json['ordersToday']),
     revenueToday: _double(json['revenueToday']),
     activeNow: _int(json['activeNow']),
+    position: json['position'] is num ? (json['position'] as num).toInt() : null,
   );
 
   final String? id;
@@ -176,8 +178,22 @@ class StoreSales {
   final double revenueToday;
   final int activeNow;
 
+  /// Where the administrator placed this shop in their sequence; null for a
+  /// key the register no longer holds (or a server that predates ordering).
+  final int? position;
+
   /// Taking orders right now: enabled by the admin and opened by staff.
   bool get isTrading => isActive && isOpen;
+}
+
+/// Orders shops the way the administrator arranged them; shops never placed
+/// follow by name.
+int compareStoresByPosition(StoreSales a, StoreSales b) {
+  final pa = a.position, pb = b.position;
+  if (pa != null && pb != null && pa != pb) return pa.compareTo(pb);
+  if (pa != null && pb == null) return -1;
+  if (pa == null && pb != null) return 1;
+  return a.name.compareTo(b.name);
 }
 
 class TrendPoint {

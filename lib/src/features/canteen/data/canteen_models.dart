@@ -539,6 +539,10 @@ class CanteenUser {
   }
 }
 
+/// Shown to shop staff whose role is set but who have no counter yet.
+const unassignedCounterFallbackMessage =
+    "You're not assigned to a counter yet. Ask the admin to add you to a shop.";
+
 class CanteenStore {
   const CanteenStore({
     required this.user,
@@ -560,6 +564,8 @@ class CanteenStore {
     this.laundryCharges = const [],
     this.hasPin = false,
     this.hasPinHint = false,
+    this.shopAssignmentPending = false,
+    this.shopAssignmentMessage,
   });
 
   final CanteenUser user;
@@ -589,6 +595,17 @@ class CanteenStore {
   /// Whether a recovery word is stored for the PIN, so "Use recovery word"
   /// can be offered when changing it.
   final bool hasPinHint;
+
+  /// The person holds shop-staff grants but works no counter yet. Their work
+  /// screens say so instead of an empty queue that looks like a quiet day.
+  final bool shopAssignmentPending;
+
+  /// The server's wording for [shopAssignmentPending], when it sends one.
+  final String? shopAssignmentMessage;
+
+  /// What to tell shop staff with no counter.
+  String get unassignedCounterMessage =>
+      shopAssignmentMessage ?? unassignedCounterFallbackMessage;
 
   CanteenStore copyWith({
     Map<String, double>? walletBalances,
@@ -621,6 +638,8 @@ class CanteenStore {
       laundryCharges: laundryCharges ?? this.laundryCharges,
       hasPin: hasPin ?? this.hasPin,
       hasPinHint: hasPinHint ?? this.hasPinHint,
+      shopAssignmentPending: shopAssignmentPending,
+      shopAssignmentMessage: shopAssignmentMessage,
     );
   }
 }

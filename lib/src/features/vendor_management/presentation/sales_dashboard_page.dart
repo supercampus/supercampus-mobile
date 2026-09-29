@@ -677,8 +677,9 @@ class _LiveCountersCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
+    // The administrator's shop sequence, as every other shop list shows it.
     final registered = stores.where((s) => s.id != null).toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+      ..sort(compareStoresByPosition);
     return _SectionCard(
       title: 'Counters right now',
       subtitle: "Open or closed, today's orders and the live queue",

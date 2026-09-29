@@ -55,6 +55,7 @@ import 'features/library/presentation/library_shell.dart';
 import 'features/library/data/librarian_repository.dart';
 import 'features/library/data/library_lending_repository.dart';
 import 'features/library/presentation/librarian_portal_screen.dart';
+import 'features/academics/data/academic_structure_repository.dart';
 import 'features/academics/presentation/academic_management_shell.dart';
 import 'features/academics/presentation/student_academics_shell.dart';
 import 'features/academics/data/student_assessments_repository.dart';
@@ -63,6 +64,7 @@ import 'core/utils/user_facing_error.dart';
 import 'features/vendor_management/data/vendor_repository.dart';
 import 'features/admin_portal/presentation/admin_portal_shell.dart';
 import 'features/admin_portal/data/admin_student_repository.dart';
+import 'features/admin_portal/data/admin_roles_repository.dart';
 import 'features/modules/data/announcement_events.dart';
 import 'features/canteen/data/canteen_events.dart';
 import 'features/modules/data/glance_source.dart';
@@ -143,6 +145,11 @@ class _SupercampusAppState extends State<SupercampusApp>
   ThemeMode _themeMode = ThemeMode.light;
   List<String> _moduleOrder = const [];
   bool _permissionRefreshInProgress = false;
+
+  /// Set when the server says this user's profile changed (for example an
+  /// administrator renamed them): the next refresh renews the session so the
+  /// greeting and profile show the new name without signing in again.
+  bool _renewSessionOnRefresh = false;
   Future<UserSession>? _sessionRenewal;
   MediaRepository? _mediaRepository;
   LibrarianRepository? _announcementRepository;
@@ -488,6 +495,7 @@ class _SupercampusAppState extends State<SupercampusApp>
       return;
     }
     if (!_eventMayChangeAccess(event.type)) return;
+    if (event.type == 'identity.user.updated') _renewSessionOnRefresh = true;
 
     // Operational events (including daily_access.activated) must not remount
     // the open module. Gatepass activation itself emits that event, so doing so
@@ -591,7 +599,9 @@ class _SupercampusAppState extends State<SupercampusApp>
     if (session == null || _useMockData || _permissionRefreshInProgress) return;
     _permissionRefreshInProgress = true;
     try {
-      session = await _ensureFreshSession();
+      final renew = _renewSessionOnRefresh;
+      _renewSessionOnRefresh = false;
+      session = await _ensureFreshSession(force: renew);
 
       EffectivePermissions permissions;
       try {
@@ -1253,10 +1263,16 @@ class _SupercampusAppState extends State<SupercampusApp>
           'students' => 1,
           'announcements' => 2,
           'maintenance' => 3,
+          'roles' => AdminPortalShell.rolesSection,
           _ => 0,
         },
         onExitModule: exit,
         currentUserEmail: session.email,
+        permissions: _permissions,
+        rolesRepository: AdminRolesRepository(
+          baseUrl: _resolvedBackendBaseUrl,
+          accessTokenProvider: _provideAccessToken,
+        ),
         maintenanceRepository: _maintenanceRepository,
         libraryRepository: LibrarianRepository(
           baseUrl: _resolvedBackendBaseUrl,
@@ -1391,6 +1407,12 @@ class _SupercampusAppState extends State<SupercampusApp>
                 session: session,
                 onExitModule: exit,
                 initialAction: _openModuleAction,
+                repository: _useMockData
+                    ? null
+                    : BackendAcademicStructureRepository(
+                        baseUrl: _resolvedBackendBaseUrl,
+                        accessTokenProvider: _provideAccessToken,
+                      ),
               )
             : StudentAcademicsShell(
                 session: session,

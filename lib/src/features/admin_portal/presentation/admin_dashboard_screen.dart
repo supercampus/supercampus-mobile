@@ -301,13 +301,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             selectedIcon: const Icon(Icons.dashboard_rounded),
                             onTap: () {},
                           ),
+                          // The administrator home already lists every area
+                          // it may open, so a Modules sheet only repeated it.
+                          // The student directory is what an administrator
+                          // opens all day: look someone up, fix a record,
+                          // change residency, set a photo.
                           CampusNavItem(
-                            id: 'modules',
-                            label: 'Modules',
-                            icon: const CampusNavCubeGlyph(filled: false),
-                            selectedIcon: const CampusNavCubeGlyph(filled: true),
-                            onTap: widget.onOpenModulesSheet ??
-                                () => widget.onOpenModule(_primaryModuleId()),
+                            id: 'students',
+                            label: 'Students',
+                            icon: const Icon(Icons.school_outlined),
+                            selectedIcon: const Icon(Icons.school_rounded),
+                            onTap: () => widget.onOpenModule(
+                              ModuleCatalog.administration,
+                              'students',
+                            ),
                           ),
                           CampusNavItem(
                             id: 'desk',
@@ -461,6 +468,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         subtitle: 'Accounts, roles, passwords, year of study',
         onTap: () => open(ModuleCatalog.administration, 'access_control'),
       ),
+      if (permissions.can('authorization', 'roles', 'read'))
+        _AdminRow(
+          icon: Icons.admin_panel_settings_rounded,
+          color: AppColors.brandViolet,
+          title: 'Roles & permissions',
+          subtitle: 'Create roles and choose what each can do',
+          onTap: () => open(ModuleCatalog.administration, 'roles'),
+        ),
       _AdminRow(
         icon: Icons.school_rounded,
         color: AppColors.brandViolet,
@@ -568,6 +583,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           title: 'Gate security',
           subtitle: 'Passes and checkpoint',
           onTap: () => open(ModuleCatalog.gatepass),
+        ),
+      // The bottom bar gives its Modules slot to Students, so everything
+      // else this administrator may open stays one row away here.
+      if (widget.onOpenModulesSheet != null)
+        _AdminRow(
+          icon: Icons.apps_rounded,
+          color: AppColors.muted,
+          title: 'All modules',
+          subtitle: 'Library, timetable, attendance and more',
+          onTap: widget.onOpenModulesSheet!,
         ),
     ];
 

@@ -15,12 +15,28 @@ class FinanceReportException implements Exception {
   String toString() => message;
 }
 
+/// The server has no outbound email configured, so nothing was sent.
+class ReportEmailUnavailable extends FinanceReportException {
+  const ReportEmailUnavailable([
+    super.message = 'Email is not configured on the server',
+  ]);
+}
+
 /// Reads finance reports; the device renders them to PDF or CSV.
 abstract class FinanceReportRepository {
   /// Shops and menu items for the parameter pickers.
   Future<ReportOptions> options();
 
   Future<FinanceReport> generate(ReportRequest request);
+
+  /// Emails the report's files to [recipients]; the server writes the
+  /// summary into the message itself.
+  Future<ReportEmailResult> email(
+    ReportRequest request, {
+    required List<String> recipients,
+    required List<ReportAttachment> attachments,
+    String? note,
+  });
 }
 
 class BackendFinanceReportRepository implements FinanceReportRepository {
@@ -55,12 +71,55 @@ class BackendFinanceReportRepository implements FinanceReportRepository {
     return FinanceReport.fromJson(data);
   }
 
-  Future<Map<String, dynamic>> _get(Uri uri) async {
+  @override
+  Future<ReportEmailResult> email(
+    ReportRequest request, {
+    required List<String> recipients,
+    required List<ReportAttachment> attachments,
+    String? note,
+  }) async {
+    final uri = _baseUri.replace(
+      path:
+          '/api/v1/operations/reports/${Uri.encodeComponent(request.kind)}/email',
+    );
+    final body = jsonEncode({
+      ...request.toQuery(),
+      'recipients': recipients,
+      'attachments': [
+        for (final file in attachments)
+          {
+            'filename': file.fileName,
+            'contentType': file.contentType,
+            'base64': base64Encode(file.bytes),
+          },
+      ],
+      if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+    });
+    final data = await _send(
+      (token) => _client.post(
+        uri,
+        headers: {..._headers(token), 'content-type': 'application/json'},
+        body: body,
+      ),
+      failure: "The report couldn't be emailed. Try again.",
+    );
+    return ReportEmailResult.fromJson(data);
+  }
+
+  Future<Map<String, dynamic>> _get(Uri uri) => _send(
+    (token) => _client.get(uri, headers: _headers(token)),
+    failure: "The report couldn't be generated. Try again.",
+  );
+
+  Future<Map<String, dynamic>> _send(
+    Future<http.Response> Function(String token) request, {
+    required String failure,
+  }) async {
     var token = await _accessTokenProvider();
-    var response = await _client.get(uri, headers: _headers(token));
+    var response = await request(token);
     if (response.statusCode == 401) {
       token = await _accessTokenProvider(forceRefresh: true);
-      response = await _client.get(uri, headers: _headers(token));
+      response = await request(token);
     }
     Map<String, dynamic>? body;
     try {
@@ -79,10 +138,14 @@ class BackendFinanceReportRepository implements FinanceReportRepository {
         String() => error,
         _ => body?['message']?.toString() ?? '',
       };
+      // A 503 about email means no mail transport; any other 503 is a
+      // passing outage, reported like every other failure.
+      if (response.statusCode == 503 &&
+          message.toLowerCase().contains('email')) {
+        throw ReportEmailUnavailable(message.trim());
+      }
       throw FinanceReportException(
-        message.trim().isNotEmpty
-            ? message
-            : "The report couldn't be generated. Try again.",
+        message.trim().isNotEmpty ? message : failure,
       );
     }
     final data = body?['data'];

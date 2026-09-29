@@ -18,6 +18,8 @@ class VendorShop {
     this.qrPayments = true,
     this.createdAt,
     this.updatedAt,
+    this.sortOrder,
+    this.operators = const [],
   });
 
   final String id;
@@ -32,6 +34,12 @@ class VendorShop {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  /// The administrator's place for this shop; null until they arrange shops.
+  final int? sortOrder;
+
+  /// Owner and captains assigned to run this shop.
+  final List<ShopStaffAssignment> operators;
+
   VendorShop copyWith({
     String? id,
     String? shopKey,
@@ -44,6 +52,8 @@ class VendorShop {
     bool? qrPayments,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? sortOrder,
+    List<ShopStaffAssignment>? operators,
   }) =>
       VendorShop(
         id: id ?? this.id,
@@ -57,6 +67,8 @@ class VendorShop {
         qrPayments: qrPayments ?? this.qrPayments,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
+        sortOrder: sortOrder ?? this.sortOrder,
+        operators: operators ?? this.operators,
       );
 
   factory VendorShop.fromJson(Map<String, dynamic> json) {
@@ -76,8 +88,65 @@ class VendorShop {
       updatedAt: json['updatedAt'] != null
           ? DateTime.tryParse(json['updatedAt'].toString())
           : null,
+      sortOrder: json['sortOrder'] is num
+          ? (json['sortOrder'] as num).toInt()
+          : null,
+      operators: [
+        for (final item in (json['operators'] as List? ?? const []))
+          if (item is Map)
+            ShopStaffAssignment.fromJson(Map<String, dynamic>.from(item)),
+      ],
     );
   }
+}
+
+/// One person's role at a shop.
+class ShopStaffAssignment {
+  const ShopStaffAssignment({
+    required this.userId,
+    required this.role,
+    this.name,
+  });
+
+  factory ShopStaffAssignment.fromJson(Map<String, dynamic> json) =>
+      ShopStaffAssignment(
+        userId: json['userId']?.toString() ?? '',
+        role: json['assignmentRole']?.toString() == 'owner'
+            ? 'owner'
+            : 'captain',
+        name: json['name']?.toString(),
+      );
+
+  final String userId;
+
+  /// `owner` or `captain`.
+  final String role;
+  final String? name;
+
+  bool get isOwner => role == 'owner';
+
+  ShopStaffAssignment withRole(String role) =>
+      ShopStaffAssignment(userId: userId, role: role, name: name);
+
+  Map<String, dynamic> toJson() => {'userId': userId, 'assignmentRole': role};
+}
+
+/// Someone an administrator may put behind a counter: an account whose
+/// roles grant shop-counter work.
+class ShopStaffCandidate {
+  const ShopStaffCandidate({
+    required this.userId,
+    required this.name,
+    required this.email,
+    required this.suggestedRole,
+  });
+
+  final String userId;
+  final String name;
+  final String email;
+
+  /// `owner` when their roles can run the menu, otherwise `captain`.
+  final String suggestedRole;
 }
 
 class VendorShopDraft {
@@ -89,6 +158,7 @@ class VendorShopDraft {
     this.isActive = true,
     this.mealCompliance = false,
     this.qrPayments = true,
+    this.operators,
   });
 
   final String shopKey;
@@ -99,6 +169,9 @@ class VendorShopDraft {
   final bool mealCompliance;
   final bool qrPayments;
 
+  /// The shop's full staff list. Null leaves the current staff untouched.
+  final List<ShopStaffAssignment>? operators;
+
   Map<String, dynamic> toJson() => {
         'shopKey': shopKey.trim().toLowerCase(),
         'name': name.trim(),
@@ -107,7 +180,43 @@ class VendorShopDraft {
         'isActive': isActive,
         'mealCompliance': mealCompliance,
         'qrPayments': qrPayments,
+        if (operators != null)
+          'operators': [for (final o in operators!) o.toJson()],
       };
+}
+
+/// Shop administration beyond the register itself: the administrator's shop
+/// sequence and who works each counter. Repositories without a campus server
+/// do not implement it, and the screens then leave those controls out.
+abstract interface class ShopAdministration {
+  /// Saves [shopKeys] as the display order every shop list follows and
+  /// returns the register in that order.
+  Future<List<VendorShop>> reorderVendors(List<String> shopKeys);
+
+  /// Accounts whose roles grant counter work. Empty when the viewer cannot
+  /// read the user directory.
+  Future<List<ShopStaffCandidate>> listShopStaffCandidates();
+}
+
+/// Whether a role's permission keys make its holder shop staff: they run
+/// orders or a menu, without the shop-configuration grant that already
+/// covers every shop.
+bool grantsShopCounterWork(Iterable<String> permissionKeys) {
+  final keys = permissionKeys.toSet();
+  if (keys.contains('vendor_management.vendors.update')) return false;
+  return keys.contains('canteen.orders.manage') ||
+      keys.contains('canteen.menu.create') ||
+      keys.contains('canteen.menu.update') ||
+      keys.contains('canteen.menu.delete');
+}
+
+/// `owner` when the permission keys can run a menu, otherwise `captain`.
+String suggestedShopRole(Iterable<String> permissionKeys) {
+  final keys = permissionKeys.toSet();
+  return keys.contains('canteen.menu.create') ||
+          keys.contains('canteen.menu.update')
+      ? 'owner'
+      : 'captain';
 }
 
 abstract interface class VendorRepository {
@@ -130,7 +239,8 @@ abstract interface class VendorRepository {
   });
 }
 
-class BackendVendorRepository implements VendorRepository {
+class BackendVendorRepository
+    implements VendorRepository, ShopAdministration {
   BackendVendorRepository({
     required String baseUrl,
     String? accessToken,
@@ -242,6 +352,82 @@ class BackendVendorRepository implements VendorRepository {
       (headers) => _client.get(uri, headers: headers),
     );
     return SalesOrderPage.fromJson(_data(response));
+  }
+
+  @override
+  Future<List<VendorShop>> reorderVendors(List<String> shopKeys) async {
+    final response = await _request(
+      (headers) => _client.put(
+        _uri('/api/v1/operations/canteen/shops/order'),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({'shopKeys': shopKeys}),
+      ),
+    );
+    final shopsJson = _data(response)['shops'];
+    if (shopsJson is! List) return const [];
+    return shopsJson
+        .whereType<Map>()
+        .map((item) => VendorShop.fromJson(Map<String, dynamic>.from(item)))
+        .toList(growable: false);
+  }
+
+  @override
+  Future<List<ShopStaffCandidate>> listShopStaffCandidates() async {
+    final List<dynamic> users;
+    final List<dynamic> roles;
+    try {
+      final responses = await Future.wait([
+        _request(
+          (headers) =>
+              _client.get(_uri('/api/v1/authorization/users'), headers: headers),
+        ),
+        _request(
+          (headers) =>
+              _client.get(_uri('/api/v1/authorization/roles'), headers: headers),
+        ),
+      ]);
+      users = _list(responses[0]);
+      roles = _list(responses[1]);
+    } catch (_) {
+      // No access to the user directory: staff are then chosen from the
+      // admin's user list instead.
+      return const [];
+    }
+    final permissionsByRole = <String, List<String>>{};
+    for (final role in roles.whereType<Map>()) {
+      permissionsByRole[role['id']?.toString() ?? ''] = [
+        for (final permission in (role['permissions'] as List? ?? const []))
+          if (permission is Map && permission['key'] != null)
+            permission['key'].toString(),
+      ];
+    }
+    final candidates = <ShopStaffCandidate>[];
+    for (final user in users.whereType<Map>()) {
+      if (user['active'] == false) continue;
+      final keys = <String>[
+        for (final role in (user['roles'] as List? ?? const []))
+          if (role is Map) ...?permissionsByRole[role['id']?.toString()],
+      ];
+      if (!grantsShopCounterWork(keys)) continue;
+      candidates.add(
+        ShopStaffCandidate(
+          userId: user['id']?.toString() ?? '',
+          name: user['name']?.toString() ?? 'Staff member',
+          email: user['email']?.toString() ?? '',
+          suggestedRole: suggestedShopRole(keys),
+        ),
+      );
+    }
+    candidates.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+    return candidates;
+  }
+
+  List<dynamic> _list(http.Response response) {
+    final body = jsonDecode(response.body);
+    final data = body is Map ? body['data'] : body;
+    return data is List ? data : const [];
   }
 
   Future<http.Response> _request(

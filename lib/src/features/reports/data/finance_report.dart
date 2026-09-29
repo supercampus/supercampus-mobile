@@ -20,10 +20,11 @@ class ReportKindSpec {
     required this.icon,
     required this.color,
     this.monthly = false,
+    this.snapshot = false,
     this.shop = ReportShopMode.optional,
     this.pickItems = false,
     this.maxDays = 731,
-    this.recorded = true,
+    this.requiredGrant,
   });
 
   final String key;
@@ -34,6 +35,9 @@ class ReportKindSpec {
 
   /// Settles by calendar month instead of a free date range.
   final bool monthly;
+
+  /// A point-in-time picture ("as of now"): no period to choose.
+  final bool snapshot;
   final ReportShopMode shop;
 
   /// Asks which menu items to include (Parameter Sales).
@@ -42,9 +46,25 @@ class ReportKindSpec {
   /// Longest date range the backend accepts for this kind.
   final int maxDays;
 
-  /// False where the platform keeps no record of this at all, so the report
-  /// is always empty. The grid says so up front.
-  final bool recorded;
+  /// A grant this kind needs on top of the report grants (fee records), as
+  /// `module.feature.action`. Matches the backend's `extra_grant`.
+  final String? requiredGrant;
+
+  bool get usesPeriod => !snapshot;
+
+  /// Whether these grants may open this kind (the report grants are checked
+  /// before the page is reachable at all).
+  bool allowedFor(EffectivePermissions permissions) {
+    final grant = requiredGrant;
+    if (grant == null) return true;
+    final parts = grant.split('.');
+    return parts.length == 3 && permissions.can(parts[0], parts[1], parts[2]);
+  }
+
+  static List<ReportKindSpec> allowed(EffectivePermissions? permissions) => [
+    for (final kind in all)
+      if (permissions == null || kind.allowedFor(permissions)) kind,
+  ];
 
   static ReportKindSpec? byKey(String key) {
     for (final kind in all) {
@@ -60,6 +80,34 @@ class ReportKindSpec {
       subtitle: 'Full operations: sales, vendors, ledger',
       icon: Icons.summarize_rounded,
       color: AppColors.brandPurple,
+    ),
+    ReportKindSpec(
+      key: 'daily_sales',
+      title: 'Daily Sales Summary',
+      subtitle: 'Completed sales, orders and cancellations by day and shop',
+      icon: Icons.calendar_view_day_rounded,
+      color: AppColors.success,
+    ),
+    ReportKindSpec(
+      key: 'item_sales',
+      title: 'Item-wise Sales',
+      subtitle: 'Top items with quantity, revenue, cost and profit',
+      icon: Icons.leaderboard_rounded,
+      color: AppColors.brandPurple,
+    ),
+    ReportKindSpec(
+      key: 'captain_performance',
+      title: 'Captain Performance',
+      subtitle: 'Orders handled, revenue and handling time per staff member',
+      icon: Icons.badge_rounded,
+      color: AppColors.brandViolet,
+    ),
+    ReportKindSpec(
+      key: 'hourly_sales',
+      title: 'Hourly Sales',
+      subtitle: 'Sales by hour of the day and day of the week',
+      icon: Icons.schedule_rounded,
+      color: AppColors.orangeInk,
     ),
     ReportKindSpec(
       key: 'credits',
@@ -81,6 +129,28 @@ class ReportKindSpec {
       subtitle: 'Order refunds and reversal transactions',
       icon: Icons.undo_rounded,
       color: AppColors.orangeInk,
+    ),
+    ReportKindSpec(
+      key: 'top_ups',
+      title: 'Wallet Top-ups',
+      subtitle: 'Top-ups by source, payment method and day',
+      icon: Icons.add_card_rounded,
+      color: AppColors.success,
+    ),
+    ReportKindSpec(
+      key: 'deductions',
+      title: 'Accountant Deductions',
+      subtitle: 'Manual wallet deductions with the reason and who made them',
+      icon: Icons.remove_circle_outline_rounded,
+      color: AppColors.hotPinkInk,
+    ),
+    ReportKindSpec(
+      key: 'wallet_balances',
+      title: 'Wallet Balances',
+      subtitle: 'Current balance of every wallet, overdrawn first',
+      icon: Icons.account_balance_wallet_outlined,
+      color: AppColors.infoInk,
+      snapshot: true,
     ),
     ReportKindSpec(
       key: 'vendor_payable',
@@ -107,16 +177,6 @@ class ReportKindSpec {
       color: AppColors.brandViolet,
     ),
     ReportKindSpec(
-      key: 'auto_debit',
-      title: 'Auto Debit History',
-      subtitle:
-          'Meal compliance debited student list with item and amount details',
-      icon: Icons.restaurant_rounded,
-      color: AppColors.muted,
-      shop: ReportShopMode.none,
-      recorded: false,
-    ),
-    ReportKindSpec(
       key: 'parameter_sales',
       title: 'Parameter Sales',
       subtitle: 'Sales and count for selected menu items in the period',
@@ -125,14 +185,43 @@ class ReportKindSpec {
       pickItems: true,
     ),
     ReportKindSpec(
-      key: 'complimentary',
-      title: 'Complimentary Consumption',
-      subtitle:
-          'Free items served to visitors, clients, guests, staff or others',
-      icon: Icons.card_giftcard_rounded,
-      color: AppColors.muted,
+      key: 'cancelled_orders',
+      title: 'Rejected & Cancelled',
+      subtitle: 'Rejected and cancelled orders and charges, with reasons',
+      icon: Icons.cancel_outlined,
+      color: AppColors.hotPinkInk,
+    ),
+    ReportKindSpec(
+      key: 'laundry_charges',
+      title: 'Laundry Charges',
+      subtitle: 'Laundry charges paid, pending and cancelled',
+      icon: Icons.local_laundry_service_rounded,
+      color: AppColors.infoInk,
+    ),
+    ReportKindSpec(
+      key: 'payment_requests',
+      title: 'Payment Requests',
+      subtitle: 'Requests issued, paid, pending and overdue by purpose',
+      icon: Icons.request_quote_rounded,
+      color: AppColors.orangeInk,
       shop: ReportShopMode.none,
-      recorded: false,
+      requiredGrant: 'fees.payment_requests.read',
+    ),
+    ReportKindSpec(
+      key: 'online_payments',
+      title: 'Online Payments',
+      subtitle: 'Razorpay payments captured, settled and pending',
+      icon: Icons.credit_score_rounded,
+      color: AppColors.brandPurple,
+      shop: ReportShopMode.none,
+      requiredGrant: 'fees.online_payments.read',
+    ),
+    ReportKindSpec(
+      key: 'student_spending',
+      title: 'Student Spending',
+      subtitle: 'Wallet spending by department and batch',
+      icon: Icons.school_rounded,
+      color: AppColors.brandViolet,
     ),
     ReportKindSpec(
       key: 'student_eod_wallet',
@@ -141,15 +230,6 @@ class ReportKindSpec {
       icon: Icons.account_balance_wallet_rounded,
       color: AppColors.brandPurple,
       maxDays: 31,
-    ),
-    ReportKindSpec(
-      key: 'self_registered',
-      title: 'Self-Registered Students',
-      subtitle: 'Students who created accounts through the old mobile API',
-      icon: Icons.phone_iphone_rounded,
-      color: AppColors.muted,
-      shop: ReportShopMode.none,
-      recorded: false,
     ),
   ];
 }
@@ -339,6 +419,10 @@ class FinanceReport {
 
   bool get isEmpty => rowCount == 0;
 
+  /// Row key the server sets to tint a row, e.g. `negative` for an
+  /// overdrawn wallet. It is not a column, so the CSV never shows it.
+  static const toneKey = '_tone';
+
   /// `credits_2026-09-01_to_2026-09-29` — safe on every file system.
   String get fileStem {
     final period = from.isEmpty
@@ -404,6 +488,65 @@ class FinanceReport {
       ],
     );
   }
+}
+
+/// Most addresses one report email may go to (the backend's limit).
+const maxReportRecipients = 10;
+
+final _emailPattern = RegExp(
+  r'^[A-Za-z0-9!#$%&*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&*+/=?^_`{|}~-]+)*'
+  r'@([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}$',
+);
+
+/// A plain address such as `accounts@college.edu.in`.
+bool isValidReportEmail(String value) {
+  final address = value.trim();
+  return address.length <= 254 && _emailPattern.hasMatch(address);
+}
+
+/// Splits typed text on commas, semicolons, spaces and new lines.
+List<String> splitReportEmails(String text) => [
+  for (final part in text.split(RegExp(r'[\s,;]+')))
+    if (part.trim().isNotEmpty) part.trim(),
+];
+
+/// A file sent with a report email, as the app rendered it.
+class ReportAttachment {
+  const ReportAttachment({
+    required this.fileName,
+    required this.contentType,
+    required this.bytes,
+  });
+
+  final String fileName;
+  final String contentType;
+  final List<int> bytes;
+}
+
+/// What the server did with a report email.
+class ReportEmailResult {
+  const ReportEmailResult({
+    this.sent = const [],
+    this.failed = const [],
+    this.delivered = true,
+  });
+
+  final List<String> sent;
+  final List<String> failed;
+
+  /// False on a development server that writes mail to its log instead.
+  final bool delivered;
+
+  factory ReportEmailResult.fromJson(Map<String, dynamic> json) =>
+      ReportEmailResult(
+        sent: [
+          for (final a in (json['sent'] as List? ?? const [])) a.toString(),
+        ],
+        failed: [
+          for (final a in (json['failed'] as List? ?? const [])) a.toString(),
+        ],
+        delivered: json['delivered'] != false,
+      );
 }
 
 Iterable<Map<String, dynamic>> _maps(Object? value) => value is List

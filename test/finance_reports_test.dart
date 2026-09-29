@@ -64,18 +64,18 @@ Map<String, dynamic> creditsJson() => {
 };
 
 FinanceReport unavailableReport() => FinanceReport.fromJson({
-  'kind': 'complimentary',
-  'title': 'Complimentary Consumption',
+  'kind': 'refunds',
+  'title': 'Refunds',
   'from': '2026-09-29',
   'to': '2026-09-29',
   'periodLabel': '29 Sep 2026',
   'generatedAt': '2026-09-29T13:39:31',
-  'available': false,
-  'notes': ['Complimentary servings are not recorded on this platform.'],
+  'available': true,
+  'notes': ['No refunds were issued on this day.'],
   'summary': <Object>[],
   'tables': [
     {
-      'title': 'Complimentary servings',
+      'title': 'Refunds issued',
       'columns': [
         {'key': 'item', 'label': 'Item', 'format': 'text'},
       ],
@@ -85,9 +85,35 @@ FinanceReport unavailableReport() => FinanceReport.fromJson({
   ],
 });
 
+class EmailCall {
+  EmailCall(this.request, this.recipients, this.attachments, this.note);
+  final ReportRequest request;
+  final List<String> recipients;
+  final List<ReportAttachment> attachments;
+  final String? note;
+}
+
 class FakeReportRepository implements FinanceReportRepository {
   final requests = <ReportRequest>[];
+  final emails = <EmailCall>[];
   int optionCalls = 0;
+
+  /// Thrown by [email] instead of sending, e.g. the server's 503.
+  Object? emailError;
+  bool delivered = true;
+
+  @override
+  Future<ReportEmailResult> email(
+    ReportRequest request, {
+    required List<String> recipients,
+    required List<ReportAttachment> attachments,
+    String? note,
+  }) async {
+    emails.add(EmailCall(request, recipients, attachments, note));
+    final error = emailError;
+    if (error != null) throw error;
+    return ReportEmailResult(sent: recipients, delivered: delivered);
+  }
 
   @override
   Future<ReportOptions> options() async {
@@ -277,15 +303,18 @@ void main() {
       expect(csv, contains(',-12.00\r\n'));
     });
 
-    test('an unrecorded kind is an empty table with its note', () {
+    test('an empty report is an empty table with its note', () {
       final csv = FinanceReportExporter.csv(unavailableReport());
-      expect(csv, contains('Complimentary servings\r\nItem\r\n'));
-      expect(
-        csv,
-        contains(
-          'Note,Complimentary servings are not recorded on this platform.',
-        ),
-      );
+      expect(csv, contains('Refunds issued\r\nItem\r\n'));
+      expect(csv, contains('Note,No refunds were issued on this day.'));
+    });
+
+    test('the row tint key never becomes a column', () {
+      final json = creditsJson();
+      final rows = ((json['tables'] as List).first as Map)['rows'] as List;
+      (rows.first as Map)['_tone'] = 'negative';
+      final csv = FinanceReportExporter.csv(FinanceReport.fromJson(json));
+      expect(csv, isNot(contains('negative')));
     });
   });
 
@@ -319,6 +348,16 @@ void main() {
       );
     });
 
+    test('tints flagged rows, such as an overdrawn wallet', () async {
+      final json = creditsJson();
+      final rows = ((json['tables'] as List).first as Map)['rows'] as List;
+      (rows.first as Map)['_tone'] = 'negative';
+      final bytes = await FinanceReportExporter.pdf(
+        FinanceReport.fromJson(json),
+      );
+      expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+    });
+
     test('refuses a report too long to print', () async {
       final json = creditsJson();
       final table = (json['tables'] as List).first as Map<String, dynamic>;
@@ -344,8 +383,116 @@ void main() {
       }
       expect(find.text('PDF'), findsNWidgets(ReportKindSpec.all.length));
       expect(find.text('CSV'), findsNWidgets(ReportKindSpec.all.length));
-      // The three the platform has no record of say so up front.
-      expect(find.text('Not recorded'), findsNWidgets(3));
+      // Kinds this platform never records are gone.
+      for (final removed in [
+        'auto_debit',
+        'complimentary',
+        'self_registered',
+      ]) {
+        expect(ReportKindSpec.byKey(removed), isNull);
+        expect(find.byKey(Key('report-kind-$removed')), findsNothing);
+      }
+      expect(find.text('Auto Debit History'), findsNothing);
+      expect(find.text('Complimentary Consumption'), findsNothing);
+      expect(find.text('Self-Registered Students'), findsNothing);
+      for (final added in [
+        'daily_sales',
+        'item_sales',
+        'captain_performance',
+        'hourly_sales',
+        'top_ups',
+        'deductions',
+        'wallet_balances',
+        'cancelled_orders',
+        'laundry_charges',
+        'payment_requests',
+        'online_payments',
+        'student_spending',
+      ]) {
+        expect(find.byKey(Key('report-kind-$added')), findsOneWidget);
+      }
+    });
+
+    testWidgets('fee kinds need their own read grant', (tester) async {
+      tester.view.physicalSize = const Size(900, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: FinanceReportsScreen(
+            repository: FakeReportRepository(),
+            permissions: EffectivePermissions(
+              grants: {'canteen.analytics.read', 'canteen.wallet.top_up'},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('report-kind-daily_sales')), findsOneWidget);
+      expect(
+        find.byKey(const Key('report-kind-payment_requests')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const Key('report-kind-online_payments')),
+        findsNothing,
+      );
+      expect(
+        ReportKindSpec.byKey('payment_requests')!.allowedFor(
+          EffectivePermissions(grants: {'fees.payment_requests.read'}),
+        ),
+        isTrue,
+      );
+    });
+
+    testWidgets('daily sales sends the period and the chosen shop', (
+      tester,
+    ) async {
+      final repository = FakeReportRepository();
+      await pumpReports(tester, repository, []);
+      await tester.tap(find.byKey(const Key('report-kind-daily_sales')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('report-preset-thisMonth')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('report-shop')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('report-shop-option-mec-canteen')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('report-generate')));
+      await tester.pumpAndSettle();
+      expect(repository.requests.single.toQuery(), {
+        'from': '2026-09-01',
+        'to': '2026-09-29',
+        'shop': 'mec-canteen',
+      });
+    });
+
+    testWidgets('wallet balances is a snapshot with no period', (tester) async {
+      final repository = FakeReportRepository();
+      await pumpReports(tester, repository, []);
+      await tester.tap(find.byKey(const Key('report-kind-wallet_balances')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('report-preset-today')), findsNothing);
+      expect(find.textContaining('no period to choose'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('report-generate')));
+      await tester.pumpAndSettle();
+      expect(repository.requests.single.toQuery(), isEmpty);
+    });
+
+    testWidgets('payment requests has a period but no shop', (tester) async {
+      final repository = FakeReportRepository();
+      await pumpReports(tester, repository, []);
+      await tester.tap(find.byKey(const Key('report-kind-payment_requests')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('report-shop')), findsNothing);
+      expect(find.byKey(const Key('report-preset-today')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('report-generate')));
+      await tester.pumpAndSettle();
+      expect(repository.requests.single.toQuery(), {
+        'from': '2026-09-29',
+        'to': '2026-09-29',
+      });
     });
 
     testWidgets('credits: preset period, generate, download CSV and PDF', (
@@ -556,6 +703,140 @@ void main() {
         0,
       );
       expect(find.text('Reports'), findsNothing);
+    });
+  });
+
+  group('Send to email', () {
+    test('addresses are validated and split', () {
+      expect(isValidReportEmail('accounts@mec.edu.in'), isTrue);
+      expect(isValidReportEmail(' a.b+c@college.org '), isTrue);
+      for (final bad in ['a', 'a@b', 'a@@b.in', 'a b@c.in', 'a@b.c', '@b.in']) {
+        expect(isValidReportEmail(bad), isFalse, reason: bad);
+      }
+      expect(splitReportEmails('a@b.in, c@d.in;e@f.in\n g@h.in'), [
+        'a@b.in',
+        'c@d.in',
+        'e@f.in',
+        'g@h.in',
+      ]);
+    });
+
+    Future<void> openSheet(
+      WidgetTester tester,
+      FakeReportRepository repository,
+    ) async {
+      await pumpReports(tester, repository, []);
+      await tester.tap(find.byKey(const Key('report-kind-credits')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('report-generate')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('report-email')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('report-email-sheet')), findsOneWidget);
+    }
+
+    Future<void> tapSend(WidgetTester tester, FakeReportRepository repo) async {
+      final before = repo.emails.length;
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(const Key('report-email-send')));
+        await tester.pump();
+        for (var i = 0; i < 100 && repo.emails.length == before; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        }
+      });
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('invalid addresses and no attachment keep Send from going', (
+      tester,
+    ) async {
+      final repository = FakeReportRepository();
+      await openSheet(tester, repository);
+      final send = find.byKey(const Key('report-email-send'));
+      expect(tester.widget<FilledButton>(send).onPressed, isNull);
+
+      await tester.enterText(
+        find.byKey(const Key('report-email-address')),
+        'not-an-address',
+      );
+      await tester.pump();
+      await tester.tap(send);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('not-an-address is not a valid email address'),
+        findsOneWidget,
+      );
+      expect(repository.emails, isEmpty);
+
+      await tester.enterText(
+        find.byKey(const Key('report-email-address')),
+        'accounts@mec.edu.in',
+      );
+      await tester.tap(find.byKey(const Key('report-email-add')));
+      await tester.pump();
+      expect(
+        find.byKey(const Key('report-email-recipient-accounts@mec.edu.in')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const Key('report-email-format-pdf')));
+      await tester.tap(find.byKey(const Key('report-email-format-csv')));
+      await tester.pump();
+      expect(find.text('Choose at least one file to attach'), findsOneWidget);
+      expect(tester.widget<FilledButton>(send).onPressed, isNull);
+    });
+
+    testWidgets('sends the chosen files to every address', (tester) async {
+      final repository = FakeReportRepository();
+      await openSheet(tester, repository);
+      await tester.enterText(
+        find.byKey(const Key('report-email-address')),
+        'Accounts@MEC.edu.in, principal@mec.edu.in',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('report-email-format-pdf')));
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('report-email-note')),
+        'For the audit',
+      );
+      await tapSend(tester, repository);
+
+      final call = repository.emails.single;
+      expect(call.recipients, ['accounts@mec.edu.in', 'principal@mec.edu.in']);
+      expect(call.request.kind, 'credits');
+      expect(call.request.toQuery(), {
+        'from': '2026-09-29',
+        'to': '2026-09-29',
+      });
+      expect(call.note, 'For the audit');
+      final file = call.attachments.single;
+      expect(file.fileName, 'credits_2026-09-01_to_2026-09-29.csv');
+      expect(file.contentType, 'text/csv');
+      expect(file.bytes.take(3), [0xEF, 0xBB, 0xBF]);
+      expect(find.byKey(const Key('report-email-sheet')), findsNothing);
+      expect(find.text('Report emailed to 2 recipients'), findsOneWidget);
+    });
+
+    testWidgets('a server without email says so and keeps the sheet', (
+      tester,
+    ) async {
+      final repository = FakeReportRepository()
+        ..emailError = const ReportEmailUnavailable();
+      await openSheet(tester, repository);
+      await tester.enterText(
+        find.byKey(const Key('report-email-address')),
+        'accounts@mec.edu.in',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('report-email-format-pdf')));
+      await tester.pump();
+      await tapSend(tester, repository);
+      expect(repository.emails, hasLength(1));
+      expect(find.byKey(const Key('report-email-sheet')), findsOneWidget);
+      expect(
+        find.textContaining('Email is not configured on the server'),
+        findsOneWidget,
+      );
     });
   });
 }

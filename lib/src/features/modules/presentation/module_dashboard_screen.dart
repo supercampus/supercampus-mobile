@@ -432,7 +432,8 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       glance: _glance,
       onOpenAttendanceClass: widget.onOpenAttendanceClass,
       loadAdminUsers: _adminUsersRepository?.listUsers,
-      onOpenReports: widget.baseUrl != null && widget.accessTokenProvider != null
+      onOpenReports:
+          widget.baseUrl != null && widget.accessTokenProvider != null
           ? _openFinanceReports
           : null,
       onOpenPushNotifications:
@@ -498,6 +499,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
             baseUrl: widget.baseUrl!,
             accessTokenProvider: widget.accessTokenProvider!,
           ),
+          permissions: widget.permissions,
         ),
       ),
     );

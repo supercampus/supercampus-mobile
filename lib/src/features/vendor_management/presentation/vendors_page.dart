@@ -34,6 +34,54 @@ class _VendorsPageState extends State<_VendorsPage> {
   String? _category;
   final Set<String> _busy = {};
 
+  /// The sequence being arranged, while the administrator reorders shops.
+  List<VendorShop>? _arranging;
+  var _savingOrder = false;
+
+  /// Shop order and counter staff, where the repository offers them.
+  ShopAdministration? get _administration => switch (widget.repository) {
+    final ShopAdministration administration => administration,
+    _ => null,
+  };
+
+  bool get _canArrange =>
+      widget.canUpdate &&
+      _administration != null &&
+      (_shops?.length ?? 0) > 1;
+
+  void _startArranging() => setState(() => _arranging = [...?_shops]);
+
+  void _moveShop(int from, int to) {
+    final list = _arranging;
+    if (list == null || from == to) return;
+    setState(() {
+      final shop = list.removeAt(from);
+      list.insert(to, shop);
+    });
+  }
+
+  Future<void> _saveOrder() async {
+    final list = _arranging;
+    final administration = _administration;
+    if (list == null || administration == null || _savingOrder) return;
+    setState(() => _savingOrder = true);
+    try {
+      final saved = await administration.reorderVendors([
+        for (final shop in list) shop.shopKey,
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _shops = saved.isEmpty ? list : saved;
+        _arranging = null;
+      });
+      _toast('Shop order saved. Every shop list now follows it.');
+    } catch (error) {
+      if (mounted) _toast(userFacingError(error), error: true);
+    } finally {
+      if (mounted) setState(() => _savingOrder = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -81,13 +129,17 @@ class _VendorsPageState extends State<_VendorsPage> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => _ShopFormSheet(suggestedCategories: _categories),
+      builder: (_) => _ShopFormSheet(
+        suggestedCategories: _categories,
+        loadStaffCandidates: _staffLoader,
+      ),
     );
     if (draft == null || !mounted) return;
     try {
       final created = await widget.repository.createVendor(draft);
       if (!mounted) return;
-      setState(() => _shops = [created, ...?_shops]);
+      // A new shop joins the end of the administrator's sequence.
+      setState(() => _shops = [...?_shops, created]);
       _toast('${created.name} added.');
     } catch (error) {
       if (mounted) _toast(userFacingError(error), error: true);
@@ -99,8 +151,11 @@ class _VendorsPageState extends State<_VendorsPage> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) =>
-          _ShopFormSheet(shop: shop, suggestedCategories: _categories),
+      builder: (_) => _ShopFormSheet(
+        shop: shop,
+        suggestedCategories: _categories,
+        loadStaffCandidates: _staffLoader,
+      ),
     );
     if (draft == null || !mounted) return;
     try {
@@ -126,6 +181,14 @@ class _VendorsPageState extends State<_VendorsPage> {
     } finally {
       if (mounted) setState(() => _busy.remove(shop.id));
     }
+  }
+
+  /// Counter staff are chosen in the shop editor where the viewer may
+  /// configure shops and the repository can list candidates.
+  Future<List<ShopStaffCandidate>> Function()? get _staffLoader {
+    final administration = _administration;
+    if (!widget.canUpdate || administration == null) return null;
+    return administration.listShopStaffCandidates;
   }
 
   void _replace(String id, VendorShop shop) => setState(() {
@@ -174,6 +237,16 @@ class _VendorsPageState extends State<_VendorsPage> {
       }
       return const Center(child: CircularProgressIndicator());
     }
+    final arranging = _arranging;
+    if (arranging != null) {
+      return _ArrangeShops(
+        shops: arranging,
+        saving: _savingOrder,
+        onMove: _moveShop,
+        onCancel: () => setState(() => _arranging = null),
+        onSave: _saveOrder,
+      );
+    }
     final query = _query.trim().toLowerCase();
     final visible = shops.where((shop) {
       if (_category != null &&
@@ -192,11 +265,23 @@ class _VendorsPageState extends State<_VendorsPage> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          Text(
-            shops.isEmpty
-                ? 'No shops yet'
-                : '${formatCount(shops.length)} shop${shops.length == 1 ? '' : 's'} · $trading open now',
-            style: TextStyle(fontSize: 13, color: p.inkSecondary),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  shops.isEmpty
+                      ? 'No shops yet'
+                      : '${formatCount(shops.length)} shop${shops.length == 1 ? '' : 's'} · $trading open now',
+                  style: TextStyle(fontSize: 13, color: p.inkSecondary),
+                ),
+              ),
+              if (_canArrange)
+                TextButton.icon(
+                  onPressed: _startArranging,
+                  icon: const Icon(Icons.swap_vert_rounded, size: 18),
+                  label: const Text('Arrange'),
+                ),
+            ],
           ),
           const SizedBox(height: 10),
           if (shops.length > 4) ...[
@@ -589,12 +674,396 @@ class _MiniStat extends StatelessWidget {
   }
 }
 
+/// The administrator's shop sequence: drag a shop by its handle, then save.
+/// Students' shop tabs, wallets, sales and reports all follow this order.
+class _ArrangeShops extends StatelessWidget {
+  const _ArrangeShops({
+    required this.shops,
+    required this.saving,
+    required this.onMove,
+    required this.onCancel,
+    required this.onSave,
+  });
+
+  final List<VendorShop> shops;
+  final bool saving;
+  final void Function(int from, int to) onMove;
+  final VoidCallback onCancel;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Row(
+            children: [
+              TextButton(
+                onPressed: saving ? null : onCancel,
+                child: const Text('Cancel'),
+              ),
+              Expanded(
+                child: Text(
+                  'Arrange shops',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: p.ink,
+                  ),
+                ),
+              ),
+              FilledButton(
+                onPressed: saving ? null : onSave,
+                child: saving
+                    ? const SizedBox.square(
+                        dimension: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save'),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+          child: Text(
+            'Drag shops into the order students, wallets, sales and reports should show them.',
+            style: TextStyle(fontSize: 13, color: p.inkSecondary),
+          ),
+        ),
+        Expanded(
+          child: ReorderableListView.builder(
+            buildDefaultDragHandles: false,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+            itemCount: shops.length,
+            onReorderItem: onMove,
+            itemBuilder: (context, index) {
+              final shop = shops[index];
+              return Material(
+                key: ValueKey('arrange_${shop.id}'),
+                color: Colors.transparent,
+                child: Column(
+                  children: [
+                    if (index > 0) Divider(height: 1, color: p.divider),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            child: Text(
+                              '${index + 1}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: p.inkTertiary,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                            ),
+                          ),
+                          _ShopAvatar(shop.category),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  shop.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: p.ink,
+                                  ),
+                                ),
+                                Text(
+                                  shop.isActive
+                                      ? _titleCase(shop.category)
+                                      : '${_titleCase(shop.category)} · Disabled',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: p.inkSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ReorderableDragStartListener(
+                            index: index,
+                            child: Semantics(
+                              label: 'Drag to move ${shop.name}',
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Icon(
+                                  Icons.drag_handle_rounded,
+                                  color: p.inkTertiary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Who works one shop's counter, edited inside the shop form. Captains run
+/// the order queue; owners also run the menu.
+class _ShopStaffEditor extends StatelessWidget {
+  const _ShopStaffEditor({
+    required this.staff,
+    required this.candidates,
+    required this.onChanged,
+  });
+
+  final List<ShopStaffAssignment> staff;
+
+  /// Null while loading.
+  final List<ShopStaffCandidate>? candidates;
+  final ValueChanged<List<ShopStaffAssignment>> onChanged;
+
+  String _nameOf(ShopStaffAssignment assignment) {
+    for (final candidate in candidates ?? const <ShopStaffCandidate>[]) {
+      if (candidate.userId == assignment.userId) return candidate.name;
+    }
+    return assignment.name ?? 'Staff member';
+  }
+
+  Future<void> _add(BuildContext context) async {
+    final taken = {for (final s in staff) s.userId};
+    final options = [
+      for (final c in candidates ?? const <ShopStaffCandidate>[])
+        if (!taken.contains(c.userId)) c,
+    ];
+    final picked = await showModalBottomSheet<ShopStaffCandidate>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _StaffPickerSheet(candidates: options),
+    );
+    if (picked == null) return;
+    onChanged([
+      ...staff,
+      ShopStaffAssignment(
+        userId: picked.userId,
+        role: picked.suggestedRole,
+        name: picked.name,
+      ),
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Counter staff',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: p.ink,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Captains run the order queue. Owners also manage the menu. '
+          'Staff see orders only for the shops listed here.',
+          style: TextStyle(fontSize: 12.5, color: p.inkSecondary),
+        ),
+        const SizedBox(height: 6),
+        if (staff.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'No one is assigned to this counter yet.',
+              style: TextStyle(fontSize: 13.5, color: p.inkSecondary),
+            ),
+          ),
+        for (final assignment in staff)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _nameOf(assignment),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 14, color: p.ink),
+                  ),
+                ),
+                _RoleToggle(
+                  role: assignment.role,
+                  onChanged: (role) => onChanged([
+                    for (final s in staff)
+                      s.userId == assignment.userId ? s.withRole(role) : s,
+                  ]),
+                ),
+                IconButton(
+                  tooltip: 'Remove ${_nameOf(assignment)}',
+                  icon: Icon(Icons.remove_circle_outline, color: p.danger),
+                  onPressed: () => onChanged([
+                    for (final s in staff)
+                      if (s.userId != assignment.userId) s,
+                  ]),
+                ),
+              ],
+            ),
+          ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: candidates == null ? null : () => _add(context),
+            icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+            label: Text(candidates == null ? 'Loading staff…' : 'Add staff'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RoleToggle extends StatelessWidget {
+  const _RoleToggle({required this.role, required this.onChanged});
+
+  final String role;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<String>(
+      showSelectedIcon: false,
+      style: const ButtonStyle(visualDensity: VisualDensity.compact),
+      segments: const [
+        ButtonSegment(value: 'captain', label: Text('Captain')),
+        ButtonSegment(value: 'owner', label: Text('Owner')),
+      ],
+      selected: {role},
+      onSelectionChanged: (value) => onChanged(value.first),
+    );
+  }
+}
+
+/// Picks one person for a counter from the accounts whose roles grant shop
+/// work.
+class _StaffPickerSheet extends StatefulWidget {
+  const _StaffPickerSheet({required this.candidates});
+
+  final List<ShopStaffCandidate> candidates;
+
+  @override
+  State<_StaffPickerSheet> createState() => _StaffPickerSheetState();
+}
+
+class _StaffPickerSheetState extends State<_StaffPickerSheet> {
+  var _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final q = _query.trim().toLowerCase();
+    final visible = [
+      for (final c in widget.candidates)
+        if (q.isEmpty || '${c.name} ${c.email}'.toLowerCase().contains(q)) c,
+    ];
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        10,
+        20,
+        MediaQuery.viewInsetsOf(context).bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _SheetHandle(),
+          const SizedBox(height: 14),
+          Text(
+            'Add staff',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.4,
+              color: p.ink,
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            onChanged: (value) => setState(() => _query = value),
+            decoration: const InputDecoration(
+              hintText: 'Search by name or email',
+              prefixIcon: Icon(Icons.search_rounded),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (widget.candidates.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'No one else has a shop captain or owner role. Give someone '
+                'that role in Users first.',
+                style: TextStyle(fontSize: 13.5, color: p.inkSecondary),
+              ),
+            )
+          else
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final c in visible)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(c.name),
+                      subtitle: Text(c.email),
+                      trailing: Text(
+                        c.suggestedRole == 'owner' ? 'Owner' : 'Captain',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: p.inkSecondary,
+                        ),
+                      ),
+                      onTap: () => Navigator.of(context).pop(c),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Add a shop, or edit one when [shop] is given.
 class _ShopFormSheet extends StatefulWidget {
-  const _ShopFormSheet({required this.suggestedCategories, this.shop});
+  const _ShopFormSheet({
+    required this.suggestedCategories,
+    this.shop,
+    this.loadStaffCandidates,
+  });
 
   final VendorShop? shop;
   final List<String> suggestedCategories;
+
+  /// Present when the viewer may choose counter staff here.
+  final Future<List<ShopStaffCandidate>> Function()? loadStaffCandidates;
 
   @override
   State<_ShopFormSheet> createState() => _ShopFormSheetState();
@@ -616,8 +1085,27 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
   late bool _isActive = widget.shop?.isActive ?? true;
   bool _autoKey = true;
   String? _problem;
+  late List<ShopStaffAssignment> _staff = [...?widget.shop?.operators];
+  var _staffChanged = false;
+  List<ShopStaffCandidate>? _candidates;
 
   bool get _editing => widget.shop != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final load = widget.loadStaffCandidates;
+    if (load != null) {
+      load().then(
+        (value) {
+          if (mounted) setState(() => _candidates = value);
+        },
+        onError: (_) {
+          if (mounted) setState(() => _candidates = const []);
+        },
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -653,6 +1141,8 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
         isActive: _isActive,
         qrPayments: _qrPayments,
         mealCompliance: widget.shop?.mealCompliance ?? false,
+        // Only a changed list is sent; otherwise the staff stay as they are.
+        operators: _staffChanged ? _staff : null,
       ),
     );
   }
@@ -748,6 +1238,17 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                 value: _isActive,
                 onChanged: (v) => setState(() => _isActive = v),
               ),
+            if (widget.loadStaffCandidates != null) ...[
+              const SizedBox(height: 12),
+              _ShopStaffEditor(
+                staff: _staff,
+                candidates: _candidates,
+                onChanged: (value) => setState(() {
+                  _staff = value;
+                  _staffChanged = true;
+                }),
+              ),
+            ],
             if (_problem != null) ...[
               const SizedBox(height: 4),
               Text(_problem!, style: TextStyle(color: p.danger, fontSize: 13)),

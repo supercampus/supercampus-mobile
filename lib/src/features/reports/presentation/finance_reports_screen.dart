@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../../core/access/effective_permissions.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/finance_report.dart';
 import '../data/finance_report_repository.dart';
@@ -53,11 +54,16 @@ class FinanceReportsScreen extends StatefulWidget {
   const FinanceReportsScreen({
     super.key,
     required this.repository,
+    this.permissions,
     this.saveFile = saveReportFile,
     this.loadFonts = _defaultFonts,
   });
 
   final FinanceReportRepository repository;
+
+  /// Hides kinds that need a grant these permissions lack (fee records).
+  /// Null shows every kind; the backend still checks each request.
+  final EffectivePermissions? permissions;
   final ReportFileSaver saveFile;
   final ReportFontLoader loadFonts;
 
@@ -92,6 +98,7 @@ class _FinanceReportsScreenState extends State<FinanceReportsScreen> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final kinds = ReportKindSpec.allowed(widget.permissions);
     return Scaffold(
       backgroundColor: palette.surfaceSunken,
       body: SafeArea(
@@ -119,9 +126,9 @@ class _FinanceReportsScreenState extends State<FinanceReportsScreen> {
                   mainAxisSpacing: 10,
                 ),
                 delegate: SliverChildBuilderDelegate((context, index) {
-                  final kind = ReportKindSpec.all[index];
+                  final kind = kinds[index];
                   return _KindCard(kind: kind, onTap: () => _open(kind));
-                }, childCount: ReportKindSpec.all.length),
+                }, childCount: kinds.length),
               ),
             ),
           ],
@@ -241,25 +248,11 @@ class _KindCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Row(
+              const Row(
                 children: [
-                  const _FormatChip('PDF'),
-                  const SizedBox(width: 6),
-                  const _FormatChip('CSV'),
-                  if (!kind.recorded) ...[
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        'Not recorded',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: palette.inkTertiary,
-                        ),
-                      ),
-                    ),
-                  ],
+                  _FormatChip('PDF'),
+                  SizedBox(width: 6),
+                  _FormatChip('CSV'),
                 ],
               ),
             ],
@@ -493,6 +486,73 @@ class _ReportParametersScreenState extends State<ReportParametersScreen> {
     });
   }
 
+  /// The parameters on screen, as the backend reads them.
+  ReportRequest _request() => ReportRequest(
+    kind: kind.key,
+    from: kind.monthly || kind.snapshot ? null : _range.start,
+    to: kind.monthly || kind.snapshot ? null : _range.end,
+    month: kind.monthly ? _month : null,
+    shopKey: _usesShop ? _shop?.shopKey : null,
+    itemIds: kind.pickItems ? _items.toList() : const [],
+  );
+
+  /// The file a download saves and an email attaches: one design for both.
+  Future<Uint8List> _render(FinanceReport report, String extension) async {
+    if (extension == 'csv') return FinanceReportExporter.csvBytes(report);
+    final fonts = await widget.loadFonts();
+    return FinanceReportExporter.pdf(
+      report,
+      regular: fonts?.regular,
+      medium: fonts?.medium,
+    );
+  }
+
+  Future<void> _email() async {
+    final report = _report;
+    if (report == null) return;
+    final request = _request();
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await showModalBottomSheet<ReportEmailResult>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => ReportEmailSheet(
+        report: report,
+        send: (recipients, formats, note) async {
+          final attachments = <ReportAttachment>[
+            for (final extension in const ['pdf', 'csv'])
+              if (formats.contains(extension))
+                ReportAttachment(
+                  fileName: '${report.fileStem}.$extension',
+                  contentType: extension == 'pdf'
+                      ? 'application/pdf'
+                      : 'text/csv',
+                  bytes: await _render(report, extension),
+                ),
+          ];
+          return widget.repository.email(
+            request,
+            recipients: recipients,
+            attachments: attachments,
+            note: note,
+          );
+        },
+      ),
+    );
+    if (result == null || !mounted) return;
+    final count = result.sent.length;
+    final who = count == 1 ? result.sent.single : '$count recipients';
+    final text = !result.delivered
+        ? 'This development server does not deliver email; '
+              'the message to $who was written to its log.'
+        : result.failed.isEmpty
+        ? 'Report emailed to $who'
+        : 'Report emailed to $who. Not sent to ${result.failed.join(', ')}.';
+    messenger
+      ..removeCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
   Future<void> _generate() async {
     if (_validation != null) return;
     setState(() {
@@ -501,16 +561,7 @@ class _ReportParametersScreenState extends State<ReportParametersScreen> {
       _report = null;
     });
     try {
-      final report = await widget.repository.generate(
-        ReportRequest(
-          kind: kind.key,
-          from: kind.monthly ? null : _range.start,
-          to: kind.monthly ? null : _range.end,
-          month: kind.monthly ? _month : null,
-          shopKey: _shop?.shopKey,
-          itemIds: kind.pickItems ? _items.toList() : const [],
-        ),
-      );
+      final report = await widget.repository.generate(_request());
       if (mounted) setState(() => _report = report);
     } catch (error) {
       if (mounted) setState(() => _error = error.toString());
@@ -525,17 +576,7 @@ class _ReportParametersScreenState extends State<ReportParametersScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _saving = extension);
     try {
-      final Uint8List bytes;
-      if (extension == 'csv') {
-        bytes = FinanceReportExporter.csvBytes(report);
-      } else {
-        final fonts = await widget.loadFonts();
-        bytes = await FinanceReportExporter.pdf(
-          report,
-          regular: fonts?.regular,
-          medium: fonts?.medium,
-        );
-      }
+      final bytes = await _render(report, extension);
       final fileName = '${report.fileStem}.$extension';
       final saved = await widget.saveFile(
         fileName: fileName,
@@ -574,21 +615,24 @@ class _ReportParametersScreenState extends State<ReportParametersScreen> {
           ),
           children: [
             _PageHeader(title: kind.title, subtitle: kind.subtitle),
-            if (!kind.recorded)
+            if (kind.usesPeriod) ...[
+              _SectionLabel(kind.monthly ? 'Month' : 'Period'),
               _Section(
+                child: kind.monthly
+                    ? _monthPicker(context)
+                    : _rangePicker(context),
+              ),
+            ] else ...[
+              const SizedBox(height: 8),
+              const _Section(
                 child: _Notice(
-                  icon: Icons.info_outline_rounded,
+                  icon: Icons.schedule_rounded,
                   text:
-                      'This platform keeps no record of this, so the report '
-                      'will be empty. It can still be generated for your files.',
+                      'Balances as they stand when you generate the report; '
+                      'there is no period to choose.',
                 ),
               ),
-            _SectionLabel(kind.monthly ? 'Month' : 'Period'),
-            _Section(
-              child: kind.monthly
-                  ? _monthPicker(context)
-                  : _rangePicker(context),
-            ),
+            ],
             if (_usesShop || kind.pickItems) ...[
               _SectionLabel('Filters'),
               _Section(padding: EdgeInsets.zero, child: _filters(context)),
@@ -891,9 +935,9 @@ class _ReportParametersScreenState extends State<ReportParametersScreen> {
             const SizedBox(height: 12),
             Text(
               report.isEmpty
-                  ? (report.available
-                        ? 'No records in this period.'
-                        : 'No records exist for this report.')
+                  ? (kind.snapshot
+                        ? 'No records yet.'
+                        : 'No records in this period.')
                   : report.rowCount == 1
                   ? '1 row'
                   : '${NumberFormat.decimalPattern('en_IN').format(report.rowCount)} rows',
@@ -940,6 +984,25 @@ class _ReportParametersScreenState extends State<ReportParametersScreen> {
               ),
             ),
           ],
+        ),
+      ),
+      const SizedBox(height: 10),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: FilledButton.tonalIcon(
+          key: const Key('report-email'),
+          onPressed: _saving == null ? _email : null,
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          icon: const Icon(Icons.mail_outline_rounded, size: 19),
+          label: const Text(
+            'Send to email',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
         ),
       ),
     ];
@@ -1254,6 +1317,324 @@ class _ItemsSheetState extends State<_ItemsSheet> {
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Send to email
+// =============================================================================
+
+/// Renders the chosen files and asks the server to email them.
+typedef ReportEmailSender =
+    Future<ReportEmailResult> Function(
+      List<String> recipients,
+      Set<String> formats,
+      String? note,
+    );
+
+/// Addresses, which files to attach, and an optional message. Pops with the
+/// server's result once the email has gone.
+class ReportEmailSheet extends StatefulWidget {
+  const ReportEmailSheet({super.key, required this.report, required this.send});
+
+  final FinanceReport report;
+  final ReportEmailSender send;
+
+  @override
+  State<ReportEmailSheet> createState() => _ReportEmailSheetState();
+}
+
+class _ReportEmailSheetState extends State<ReportEmailSheet> {
+  final _address = TextEditingController();
+  final _note = TextEditingController();
+  final _addressFocus = FocusNode();
+  final List<String> _recipients = [];
+  final Set<String> _formats = {'pdf', 'csv'};
+  String? _addressError;
+  String? _error;
+  bool _unavailable = false;
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _address.dispose();
+    _note.dispose();
+    _addressFocus.dispose();
+    super.dispose();
+  }
+
+  /// Moves whatever is typed into the list; false when something is invalid.
+  bool _commitTyped() {
+    final typed = splitReportEmails(_address.text);
+    if (typed.isEmpty) return true;
+    final invalid = [
+      for (final address in typed)
+        if (!isValidReportEmail(address)) address,
+    ];
+    if (invalid.isNotEmpty) {
+      setState(() {
+        _addressError = invalid.length == 1
+            ? '${invalid.single} is not a valid email address'
+            : 'Not valid: ${invalid.join(', ')}';
+      });
+      return false;
+    }
+    final added = [
+      for (final address in typed)
+        if (!_recipients.contains(address.toLowerCase())) address.toLowerCase(),
+    ];
+    if (_recipients.length + added.length > maxReportRecipients) {
+      setState(() {
+        _addressError = 'Send to at most $maxReportRecipients addresses';
+      });
+      return false;
+    }
+    setState(() {
+      _recipients.addAll(added);
+      _address.clear();
+      _addressError = null;
+    });
+    return true;
+  }
+
+  bool get _canSend =>
+      !_sending &&
+      _formats.isNotEmpty &&
+      (_recipients.isNotEmpty || _address.text.trim().isNotEmpty);
+
+  Future<void> _send() async {
+    if (!_commitTyped() || _recipients.isEmpty || _formats.isEmpty) return;
+    setState(() {
+      _sending = true;
+      _error = null;
+      _unavailable = false;
+    });
+    try {
+      final result = await widget.send(
+        List.of(_recipients),
+        Set.of(_formats),
+        _note.text.trim().isEmpty ? null : _note.text.trim(),
+      );
+      if (mounted) Navigator.of(context).pop(result);
+    } on ReportEmailUnavailable catch (error) {
+      if (mounted) {
+        setState(() {
+          _unavailable = true;
+          _error = error.message;
+        });
+      }
+    } on ReportTooLargeForPdf catch (error) {
+      if (mounted) setState(() => _error = error.toString());
+    } catch (error) {
+      if (mounted) {
+        setState(
+          () => _error = error is FinanceReportException
+              ? error.message
+              : "The report couldn't be emailed. Try again.",
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final report = widget.report;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          child: Column(
+            key: const Key('report-email-sheet'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Send to email',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                  color: palette.ink,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                [
+                  report.title,
+                  report.periodLabel,
+                ].where((part) => part.isNotEmpty).join(' · '),
+                style: TextStyle(fontSize: 13, color: palette.inkSecondary),
+              ),
+              const SizedBox(height: 16),
+              if (_recipients.isNotEmpty) ...[
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final address in _recipients)
+                      InputChip(
+                        key: Key('report-email-recipient-$address'),
+                        label: Text(address),
+                        onDeleted: _sending
+                            ? null
+                            : () => setState(() => _recipients.remove(address)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+              ],
+              TextField(
+                key: const Key('report-email-address'),
+                controller: _address,
+                focusNode: _addressFocus,
+                enabled: !_sending,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(
+                  labelText: 'To',
+                  hintText: 'name@college.edu.in',
+                  helperText: 'Up to $maxReportRecipients addresses',
+                  errorText: _addressError,
+                  suffixIcon: IconButton(
+                    key: const Key('report-email-add'),
+                    tooltip: 'Add address',
+                    icon: const Icon(Icons.add_rounded),
+                    onPressed: _sending ? null : _commitTyped,
+                  ),
+                ),
+                onChanged: (value) {
+                  if (RegExp(r'[,;\s]$').hasMatch(value)) {
+                    _commitTyped();
+                  } else {
+                    setState(() => _addressError = null);
+                  }
+                },
+                onSubmitted: (_) {
+                  _commitTyped();
+                  _addressFocus.requestFocus();
+                },
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'ATTACH',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.4,
+                  color: palette.inkSecondary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  for (final format in const ['pdf', 'csv']) ...[
+                    FilterChip(
+                      key: Key('report-email-format-$format'),
+                      label: Text(format.toUpperCase()),
+                      selected: _formats.contains(format),
+                      onSelected: _sending
+                          ? null
+                          : (on) => setState(() {
+                              on
+                                  ? _formats.add(format)
+                                  : _formats.remove(format);
+                            }),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ],
+              ),
+              if (_formats.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Choose at least one file to attach',
+                    style: TextStyle(fontSize: 12.5, color: palette.danger),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              TextField(
+                key: const Key('report-email-note'),
+                controller: _note,
+                enabled: !_sending,
+                maxLength: 500,
+                minLines: 1,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Message (optional)',
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  key: const Key('report-email-error'),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      _unavailable
+                          ? Icons.cloud_off_rounded
+                          : Icons.error_outline_rounded,
+                      size: 18,
+                      color: palette.danger,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _unavailable
+                            ? '$_error. Download the file and send it '
+                                  'yourself, or ask your administrator to set '
+                                  'up email.'
+                            : _error!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.35,
+                          color: palette.danger,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 12),
+              Text(
+                'The email carries this report\'s summary, with the SuperCampus '
+                'header and your name as the sender.',
+                style: TextStyle(fontSize: 12.5, color: palette.inkSecondary),
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                key: const Key('report-email-send'),
+                onPressed: _canSend ? _send : null,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: _sending
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2.4),
+                      )
+                    : const Text(
+                        'Send',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

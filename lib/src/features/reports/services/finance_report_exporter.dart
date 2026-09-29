@@ -184,6 +184,7 @@ class FinanceReportExporter {
   static const PdfColor _muted = PdfColor.fromInt(0xFF6B6F7A);
   static const PdfColor _rule = PdfColor.fromInt(0xFFE4E5EA);
   static const PdfColor _band = PdfColor.fromInt(0xFFF4F2FA);
+  static const PdfColor _negative = PdfColor.fromInt(0xFFFDE7EF);
 
   /// Poppins carries the rupee sign, which the PDF base fonts lack.
   static Future<({pw.Font regular, pw.Font medium})> loadFonts() async {
@@ -399,6 +400,12 @@ class FinanceReportExporter {
         ],
     ];
     final totalsIndex = table.totals == null ? -1 : data.length;
+    // Rows the server flags (an overdrawn wallet, an overdue request) are
+    // tinted; row 0 is the header, so data row i is rowNum i + 1.
+    final negativeRows = <int>{
+      for (var i = 0; i < table.rows.length; i++)
+        if (table.rows[i][FinanceReport.toneKey] == 'negative') i + 1,
+    };
     return pw.TableHelper.fromTextArray(
       headers: [for (final column in table.columns) column.label],
       data: data,
@@ -419,6 +426,8 @@ class FinanceReportExporter {
       // Row 0 is the header; the totals row is last.
       cellDecoration: (index, data, rowNum) => rowNum == totalsIndex
           ? const pw.BoxDecoration(color: _band)
+          : negativeRows.contains(rowNum)
+          ? const pw.BoxDecoration(color: _negative)
           : const pw.BoxDecoration(),
     );
   }

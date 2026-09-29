@@ -5,6 +5,11 @@ import 'package:http/http.dart' as http;
 import '../../authentication/data/auth_http_client.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../../core/students/student_year.dart';
+import '../../academics/data/academic_models.dart';
+
+final _uuidPattern = RegExp(
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+);
 
 enum ManagedStudentResidency { dayScholar, hosteller }
 
@@ -28,6 +33,7 @@ class ManagedStudent {
     required this.status,
     this.departmentId,
     this.sectionId,
+    this.programmeId,
     this.guardianName = '',
     this.guardianPhone = '',
     this.guardianRelationship = '',
@@ -46,6 +52,9 @@ class ManagedStudent {
   final String status;
   final String? departmentId;
   final String? sectionId;
+
+  /// The academic-catalog programme the student is enrolled in, if linked.
+  final String? programmeId;
   final String guardianName;
   final String guardianPhone;
   final String guardianRelationship;
@@ -63,6 +72,7 @@ class ManagedStudent {
     String? status,
     String? departmentId,
     String? sectionId,
+    String? programmeId,
     String? guardianName,
     String? guardianPhone,
     String? guardianRelationship,
@@ -80,6 +90,7 @@ class ManagedStudent {
     status: status ?? this.status,
     departmentId: departmentId ?? this.departmentId,
     sectionId: sectionId ?? this.sectionId,
+    programmeId: programmeId ?? this.programmeId,
     guardianName: guardianName ?? this.guardianName,
     guardianPhone: guardianPhone ?? this.guardianPhone,
     guardianRelationship: guardianRelationship ?? this.guardianRelationship,
@@ -96,12 +107,17 @@ class ManagedUserRole {
     required this.name,
     this.active = true,
     this.assignable = true,
+    this.permissionKeys = const [],
   });
 
   final String id;
   final String key;
   final String name;
   final bool active;
+
+  /// What the role grants, e.g. `canteen.orders.manage`. Decides whether the
+  /// role puts someone behind a shop counter; never the role's name.
+  final List<String> permissionKeys;
 
   /// Whether the signed-in administrator may grant or remove this role. The
   /// server enforces it; the app only uses it to not offer the choice.
@@ -138,6 +154,45 @@ class ManagedTenantUser {
   final String? department;
 }
 
+/// One shop as offered when choosing someone's counters, with their role
+/// there (null when they do not work it).
+class ShopCounterChoice {
+  const ShopCounterChoice({
+    required this.shopKey,
+    required this.name,
+    required this.category,
+    this.role,
+  });
+
+  final String shopKey;
+  final String name;
+  final String category;
+
+  /// `owner`, `captain` or null.
+  final String? role;
+}
+
+/// Outcome of a bulk delete: the ids removed and the ids skipped, each with
+/// a reason the server gives in plain words.
+class BulkDeleteResult {
+  const BulkDeleteResult({required this.deleted, required this.failed});
+
+  factory BulkDeleteResult.fromJson(Object? value) {
+    final map = value is Map ? value : const {};
+    final deleted = (map['deleted'] as List? ?? const [])
+        .map((id) => id.toString())
+        .toList();
+    final failed = <String, String>{
+      for (final item in (map['failed'] as List? ?? const []).whereType<Map>())
+        item['id'].toString(): item['reason']?.toString() ?? 'Not deleted',
+    };
+    return BulkDeleteResult(deleted: deleted, failed: failed);
+  }
+
+  final List<String> deleted;
+  final Map<String, String> failed;
+}
+
 class AdminStudentRepository {
   AdminStudentRepository({
     required String baseUrl,
@@ -161,6 +216,22 @@ class AdminStudentRepository {
     final values = data['data'];
     if (values is! List) return const [];
     return values.whereType<Map<String, dynamic>>().map(_student).toList();
+  }
+
+  /// The institution's academic catalog (departments, programmes and
+  /// classes) that the student edit form picks from.
+  Future<AcademicCatalog> loadAcademicCatalog() async {
+    final body = await _request(
+      (headers) => _client.get(
+        _baseUri.resolve('/api/v1/academic-structure/catalog'),
+        headers: headers,
+      ),
+    );
+    final data = body['data'];
+    if (data is! Map<String, dynamic>) {
+      throw const FormatException('The server returned an invalid catalog.');
+    }
+    return AcademicCatalog.fromJson(data);
   }
 
   Future<void> setStudentPhoto(String studentId, String photoUrl) async {
@@ -199,6 +270,56 @@ class AdminStudentRepository {
     final values = data['data'];
     if (values is! List) return const [];
     return values.whereType<Map<String, dynamic>>().map(_user).toList();
+  }
+
+  /// Every active shop in the administrator's order, with [userId]'s role at
+  /// each.
+  Future<List<ShopCounterChoice>> loadShopCounters(String userId) async {
+    final data = await _request(
+      (headers) => _client.get(
+        _baseUri.resolve(
+          '/api/v1/operations/canteen/shops/assignments/${Uri.encodeComponent(userId)}',
+        ),
+        headers: headers,
+      ),
+    );
+    final body = data['data'];
+    final shops = body is Map ? body['shops'] : null;
+    if (shops is! List) return const [];
+    return [
+      for (final shop in shops.whereType<Map>())
+        ShopCounterChoice(
+          shopKey: shop['shopKey']?.toString() ?? '',
+          name: shop['name']?.toString() ?? 'Shop',
+          category: shop['category']?.toString() ?? '',
+          role: switch (shop['assignmentRole']) {
+            'owner' => 'owner',
+            'captain' => 'captain',
+            _ => null,
+          },
+        ),
+    ];
+  }
+
+  /// Replaces the counters [userId] works: shop key to `owner`/`captain`.
+  Future<void> saveShopCounters(
+    String userId,
+    Map<String, String> rolesByShop,
+  ) async {
+    await _request(
+      (headers) => _client.put(
+        _baseUri.resolve(
+          '/api/v1/operations/canteen/shops/assignments/${Uri.encodeComponent(userId)}',
+        ),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({
+          'assignments': [
+            for (final entry in rolesByShop.entries)
+              {'shopKey': entry.key, 'assignmentRole': entry.value},
+          ],
+        }),
+      ),
+    );
   }
 
   Future<List<ManagedUserRole>> listRoles() async {
@@ -313,6 +434,33 @@ class AdminStudentRepository {
     );
   }
 
+  /// Permanently deletes one user: membership, sign-in and contact details
+  /// go; the history they left (ledgers, orders, attendance) stays.
+  Future<void> deleteUser(String userId) async {
+    await _request(
+      (headers) => _client.delete(
+        _baseUri.resolve(
+          '/api/v1/authorization/users/${Uri.encodeComponent(userId)}',
+        ),
+        headers: headers,
+      ),
+    );
+  }
+
+  /// Permanently deletes several users. The server refuses the whole batch
+  /// when it includes the caller or the last administrator; users it skips
+  /// for other reasons come back in [BulkDeleteResult.failed].
+  Future<BulkDeleteResult> deleteUsers(List<String> userIds) async {
+    final response = await _request(
+      (headers) => _client.post(
+        _baseUri.resolve('/api/v1/authorization/users/bulk-delete'),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({'ids': userIds}),
+      ),
+    );
+    return BulkDeleteResult.fromJson(response['data']);
+  }
+
   Future<ManagedStudentResidency> setResidency(
     String studentId,
     ManagedStudentResidency residency,
@@ -348,7 +496,18 @@ class AdminStudentRepository {
           'status': student.status,
           'yearOfStudy': student.yearOfStudy,
           'section': student.section?.trim() ?? '',
-          if (student.sectionId case final sectionId?) 'sectionId': sectionId,
+          // Fallbacks only: the server resolves the chosen department and
+          // section by name first. Legacy records can hold non-uuid ids,
+          // which the server would refuse outright, so those are left out.
+          if (student.departmentId case final departmentId?
+              when _uuidPattern.hasMatch(departmentId))
+            'departmentId': departmentId,
+          if (student.sectionId case final sectionId?
+              when _uuidPattern.hasMatch(sectionId))
+            'sectionId': sectionId,
+          if (student.programmeId case final programmeId?
+              when _uuidPattern.hasMatch(programmeId))
+            'programmeId': programmeId,
           'residency': student.residency.apiValue,
           if (student.guardianName.trim().isNotEmpty &&
               student.guardianPhone.trim().isNotEmpty) ...{
@@ -381,6 +540,7 @@ class AdminStudentRepository {
     status: value['status']?.toString() ?? 'active',
     departmentId: value['departmentId']?.toString(),
     sectionId: value['sectionId']?.toString(),
+    programmeId: value['programmeId']?.toString(),
     guardianName: value['guardianName']?.toString() ?? '',
     guardianPhone: value['guardianPhone']?.toString() ?? '',
     guardianRelationship: value['guardianRelationship']?.toString() ?? '',
@@ -400,6 +560,11 @@ class AdminStudentRepository {
         final bool flag => flag,
         _ => !isPrivilegedRoleKey(key),
       },
+      permissionKeys: [
+        for (final permission in (value['permissions'] as List? ?? const []))
+          if (permission is Map && permission['key'] != null)
+            permission['key'].toString(),
+      ],
     );
   }
 
