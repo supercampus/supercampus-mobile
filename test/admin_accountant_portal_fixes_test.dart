@@ -140,6 +140,48 @@ void main() {
       expect(find.text('Users & Roles'), findsNothing);
     });
 
+    testWidgets('the accountant home is the grouped accounts desk', (
+      tester,
+    ) async {
+      final opened = <String>[];
+      tester.view.physicalSize = const Size(430, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: AdminDashboardScreen(
+            session: accountantSession,
+            permissions: accountantGrants,
+            onOpenModule: (module, [action]) =>
+                opened.add('$module/${action ?? ''}'),
+            onSignOut: () {},
+            onProfileTap: () {},
+            onAlertsTap: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('accountant-home')), findsOneWidget);
+      expect(find.text('Accounts desk'), findsOneWidget);
+      expect(find.text('WALLETS'), findsOneWidget);
+      expect(find.text('FEES & PAYMENTS'), findsOneWidget);
+      expect(find.text('Wallet directory'), findsOneWidget);
+      expect(find.text('Tuition & fees'), findsOneWidget);
+      // Teaching tools are not part of the accounts desk, even with an
+      // examination grant.
+      expect(find.text('Examinations'), findsNothing);
+      // One entry per destination: the old pills and bento tiles are gone.
+      expect(find.text('Recharge Directory'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('accountant-action-wallets')));
+      await tester.tap(
+        find.byKey(const ValueKey('accountant-action-activity')),
+      );
+      expect(opened, ['canteen/wallet', 'canteen/transactions']);
+    });
+
     testWidgets('a tenant admin still gets the full Admin Desk', (
       tester,
     ) async {

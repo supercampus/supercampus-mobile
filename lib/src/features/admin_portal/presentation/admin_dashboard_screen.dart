@@ -240,6 +240,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         children: _buildAdminHome(context),
                       ),
                     )
+                  else if (session.isAccountant)
+                    ListView(
+                      key: const ValueKey('accountant-home'),
+                      padding: listPadding,
+                      children: _buildAccountantHome(context),
+                    )
                   else
                   ListView(
                     padding: listPadding,
@@ -616,6 +622,169 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     ];
   }
 
+  // ===========================================================================
+  // ACCOUNTANT HOME
+  // The accounts desk in the same grouped style as the administrator home:
+  // the two things done all day (changing a wallet, checking the ledger) as
+  // large actions up top, then one row per destination, grouped by job.
+  // Teaching tools (examinations etc.) are not part of the accounts desk.
+  // ===========================================================================
+  List<Widget> _buildAccountantHome(BuildContext context) {
+    final palette = context.palette;
+    final now = DateTime.now();
+    final greeting = now.hour < 12
+        ? 'Good morning'
+        : now.hour < 17
+        ? 'Good afternoon'
+        : 'Good evening';
+    final firstName = session.displayName.trim().split(RegExp(r'\s+')).first;
+    final wallets = permissions.canSeeModule(ModuleCatalog.canteen);
+
+    void open(String module, [String? action]) =>
+        widget.onOpenModule(module, action);
+
+    final fees = <_AdminRow>[
+      if (permissions.canSeeModule(ModuleCatalog.tuitionFee)) ...[
+        _AdminRow(
+          icon: Icons.receipt_long_rounded,
+          color: AppColors.infoInk,
+          title: 'Tuition & fees',
+          subtitle: 'Invoices, dues and collections',
+          onTap: () => open(ModuleCatalog.tuitionFee),
+        ),
+      ],
+      if (_openPaymentRequests != null)
+        _AdminRow(
+          icon: Icons.request_quote_rounded,
+          color: AppColors.orangeInk,
+          title: 'Payment requests',
+          subtitle: 'Fines, bills and other dues for students',
+          onTap: _openPaymentRequests!,
+        ),
+      if (_openOnlinePayments != null)
+        _AdminRow(
+          icon: Icons.credit_score_rounded,
+          color: AppColors.success,
+          title: 'Online payments',
+          subtitle: 'Razorpay payments and settlements',
+          onTap: _openOnlinePayments!,
+        ),
+    ];
+
+    final walletRows = <_AdminRow>[
+      if (wallets) ...[
+        _AdminRow(
+          icon: Icons.account_balance_wallet_rounded,
+          color: AppColors.brandPurple,
+          title: 'Wallet directory',
+          subtitle: 'Find anyone and add or deduct credits',
+          onTap: () => open(ModuleCatalog.canteen, 'wallet'),
+        ),
+        _AdminRow(
+          icon: Icons.history_rounded,
+          color: AppColors.infoInk,
+          title: 'Wallet activity',
+          subtitle: 'Every top-up, deduction, purchase and refund',
+          onTap: () => open(ModuleCatalog.canteen, 'transactions'),
+        ),
+      ],
+    ];
+
+    final more = <_AdminRow>[
+      if (_openReports != null)
+        _AdminRow(
+          icon: Icons.summarize_rounded,
+          color: AppColors.brandViolet,
+          title: 'Reports',
+          subtitle: 'Credits, debits, payables and more as PDF or CSV',
+          onTap: _openReports!,
+        ),
+      if (permissions.canSeeModule(ModuleCatalog.vendorManagement))
+        _AdminRow(
+          icon: Icons.handshake_outlined,
+          color: AppColors.infoInk,
+          title: 'Vendors & orders',
+          subtitle: 'Shop sales and vendor settlements',
+          onTap: () => open(ModuleCatalog.vendorManagement),
+        ),
+    ];
+
+    return [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              DateFormat('EEEE, d MMMM').format(now).toUpperCase(),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.4,
+                color: palette.inkSecondary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              firstName.isEmpty ? greeting : '$greeting, $firstName',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.6,
+                color: palette.ink,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Accounts desk',
+              style: TextStyle(fontSize: 14, color: palette.inkSecondary),
+            ),
+          ],
+        ),
+      ),
+      if (wallets) ...[
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Expanded(
+              child: _AccountantAction(
+                key: const ValueKey('accountant-action-wallets'),
+                icon: Icons.add_card_rounded,
+                title: 'Add or deduct',
+                subtitle: 'Change a wallet balance',
+                color: AppColors.brandPurple,
+                onTap: () => open(ModuleCatalog.canteen, 'wallet'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _AccountantAction(
+                key: const ValueKey('accountant-action-activity'),
+                icon: Icons.receipt_long_rounded,
+                title: 'Activity',
+                subtitle: 'Recent wallet entries',
+                color: AppColors.infoInk,
+                onTap: () => open(ModuleCatalog.canteen, 'transactions'),
+              ),
+            ),
+          ],
+        ),
+      ],
+      if (walletRows.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        _AdminGroup(title: 'Wallets', rows: walletRows),
+      ],
+      if (fees.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        _AdminGroup(title: 'Fees & payments', rows: fees),
+      ],
+      if (more.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        _AdminGroup(title: 'Reports & vendors', rows: more),
+      ],
+    ];
+  }
+
   /// Audit logs, security logs and app versions, each behind its own grant.
   List<_AdminRow> _systemRows() {
     final repository = widget.adminSystemRepository;
@@ -772,13 +941,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               children: [
                 Row(
                   children: [
-                    Text(
-                      'SuperCampus',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                        letterSpacing: -0.3,
+                    // Shrinks before the role badge does on a narrow phone.
+                    Flexible(
+                      child: Text(
+                        'SuperCampus',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          letterSpacing: -0.3,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -1982,6 +2156,68 @@ class _AdminMetric extends StatelessWidget {
           style: TextStyle(fontSize: 11, color: palette.inkSecondary),
         ),
       ],
+    );
+  }
+}
+
+/// One of the accountant's two primary actions: a tall tappable card with a
+/// tinted icon, so the everyday jobs are one tap from home.
+class _AccountantAction extends StatelessWidget {
+  const _AccountantAction({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tone = isDark ? Color.lerp(color, Colors.white, 0.35)! : color;
+    return _AdminCard(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, size: 22, color: tone),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+              color: palette.ink,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12.5, color: palette.inkSecondary),
+          ),
+        ],
+      ),
     );
   }
 }
