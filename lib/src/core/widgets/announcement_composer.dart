@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../media/media_repository.dart';
 import '../media/media_scope.dart';
+import '../media/picker_web_options.dart';
 import '../theme/app_theme.dart';
 import 'announcement_image_cropper.dart';
 
@@ -77,6 +80,13 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
   String? _attachmentUrl;
   bool _uploading = false;
 
+  /// Why the last attachment attempt failed, shown inside the sheet.
+  ///
+  /// Not a SnackBar: the root messenger paints under this modal sheet, so a
+  /// snackbar here is invisible and the failure looks like nothing happened.
+  String? _attachmentError;
+  String? _dateError;
+
   @override
   void initState() {
     super.initState();
@@ -107,12 +117,18 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
       lastDate: DateTime(now.year + 5),
       initialDate: _date ?? now,
     );
-    if (selected != null && mounted) setState(() => _date = selected);
+    if (selected != null && mounted) {
+      setState(() {
+        _date = selected;
+        _dateError = null;
+      });
+    }
   }
 
   Future<void> _attachFile() async {
     final repository = MediaScope.maybeOf(context);
     if (repository == null || _uploading) return;
+    setState(() => _attachmentError = null);
     PlatformFile? file;
     try {
       file = await FilePicker.pickFile(
@@ -120,53 +136,105 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
         allowedExtensions: widget.coverImageOnly
             ? null
             : const ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+        webOptions: reliableWebPickerOptions,
       );
     } catch (_) {
-      _show('The file picker is not available on this device.');
+      _fail('The file picker is not available on this device.');
       return;
     }
     if (file == null) return;
     setState(() => _uploading = true);
     try {
+      // Bytes, never `path`: on the web a picked file has no path at all.
       var bytes = await file.readAsBytes();
-      var uploadName = file.name;
-      if (_isImageName(file.name)) {
+      if (bytes.isEmpty) {
+        _fail('That file could not be read. Choose it again.');
+        return;
+      }
+      if (bytes.length > MediaRepository.maxBytes) {
+        _fail('Images and PDFs must not exceed 10 MB.');
+        return;
+      }
+      var uploadName = file.name.trim().isEmpty ? 'attachment' : file.name;
+      final isPdf = _looksLikePdf(bytes);
+      if (!isPdf && (_isImageName(uploadName) || _looksLikeImage(bytes))) {
         if (!mounted) return;
-        final cropped = await showAnnouncementImageCropper(context, bytes);
-        if (cropped == null) return;
-        bytes = cropped;
-        uploadName =
-            'announcement-cover-${DateTime.now().millisecondsSinceEpoch}.png';
+        Uint8List? cropped;
+        var decoded = true;
+        try {
+          cropped = await showAnnouncementImageCropper(context, bytes);
+        } catch (_) {
+          // An image the engine cannot decode (a HEIC saved as .jpg, say)
+          // is still worth publishing: upload it as it is and let the API
+          // decide from its content.
+          decoded = false;
+        }
+        if (decoded) {
+          if (cropped == null) return;
+          bytes = cropped;
+          uploadName =
+              'announcement-cover-${DateTime.now().millisecondsSinceEpoch}.png';
+        }
+      } else if (!isPdf) {
+        _fail('Choose a PDF, JPG, PNG or WebP file.');
+        return;
       }
       final asset = await repository.upload(bytes: bytes, fileName: uploadName);
       if (!mounted) return;
+      if (asset.secureUrl.trim().isEmpty) {
+        _fail('The upload did not return a file link. Try again.');
+        return;
+      }
       setState(() {
         _attachmentName = uploadName;
         _attachmentUrl = asset.secureUrl;
+        _attachmentError = null;
       });
     } on MediaException catch (error) {
-      _show(error.message);
+      _fail(error.message);
     } catch (_) {
-      _show('The attachment could not be uploaded. Try again.');
+      _fail('The attachment could not be uploaded. Check your connection and try again.');
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
   }
 
-  void _show(String message) {
+  void _fail(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    setState(() => _attachmentError = message);
+  }
+
+  static bool _looksLikePdf(List<int> bytes) =>
+      bytes.length >= 5 &&
+      bytes[0] == 0x25 && // %
+      bytes[1] == 0x50 && // P
+      bytes[2] == 0x44 && // D
+      bytes[3] == 0x46 && // F
+      bytes[4] == 0x2D; // -
+
+  static bool _looksLikeImage(List<int> bytes) {
+    bool starts(List<int> signature) =>
+        bytes.length >= signature.length &&
+        List.generate(signature.length, (i) => bytes[i] == signature[i])
+            .every((matches) => matches);
+    return starts(const [0xFF, 0xD8, 0xFF]) ||
+        starts(const [0x89, 0x50, 0x4E, 0x47]) ||
+        starts(const [0x47, 0x49, 0x46, 0x38]) ||
+        (bytes.length >= 12 &&
+            starts(const [0x52, 0x49, 0x46, 0x46]) &&
+            bytes[8] == 0x57 &&
+            bytes[9] == 0x45 &&
+            bytes[10] == 0x42 &&
+            bytes[11] == 0x50);
   }
 
   void _submit() {
     final valid = _formKey.currentState?.validate() == true;
-    if (!valid) return;
     if (_date == null) {
-      _show('Select the announcement date.');
-      return;
+      setState(() => _dateError = 'Select the announcement date.');
     }
+    if (!valid || _date == null) return;
+    if (_uploading) return;
     Navigator.pop(
       context,
       AnnouncementDraft(
@@ -277,9 +345,10 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
                 onTap: _selectDate,
                 borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Select date',
-                    suffixIcon: Icon(Icons.calendar_month_outlined),
+                    suffixIcon: const Icon(Icons.calendar_month_outlined),
+                    errorText: _dateError,
                   ),
                   child: Text(
                     _date == null
@@ -373,6 +442,50 @@ class _AnnouncementComposerState extends State<_AnnouncementComposer> {
                         ],
                       ),
               ),
+              if (_uploading)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'Uploading attachment…',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              if (_attachmentError != null && !_uploading)
+                Container(
+                  key: const ValueKey('announcement-attachment-error'),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.palette.danger.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.error_outline_rounded,
+                        size: 18,
+                        color: context.palette.danger,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Semantics(
+                          liveRegion: true,
+                          child: Text(
+                            'Attachment not added. $_attachmentError',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: context.palette.danger,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               if (_attachmentIsPdf && _attachmentUrl != null) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(

@@ -52,6 +52,18 @@ class AppNotification {
   final Map<String, dynamic> data;
 
   bool get isRead => readAt != null;
+
+  /// The picture attached to a broadcast, when it is a web address the app
+  /// can load.
+  String? get imageUrl {
+    final value = data['imageUrl']?.toString().trim() ?? '';
+    return value.startsWith('https://') || value.startsWith('http://')
+        ? value
+        : null;
+  }
+
+  /// An administrator's broadcast: read in place, it has no module to open.
+  bool get isBroadcast => category == 'broadcast';
 }
 
 class NotificationInbox {

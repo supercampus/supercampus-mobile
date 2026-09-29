@@ -2,6 +2,8 @@ import '../../../../authentication/data/auth_repository.dart';
 import '../../../../canteen/data/canteen_models.dart';
 import '../../../../gatepass/data/gatepass_models.dart';
 import '../../../../library/data/librarian_repository.dart';
+import '../../../../payment_requests/data/payment_request_models.dart';
+import '../../../../payment_requests/data/payment_request_repository.dart';
 import '../../today_glance.dart';
 import 'status_card_models.dart';
 
@@ -17,6 +19,7 @@ List<StatusCardData> buildStudentStatusCards({
   UserSession? session,
   bool includePreviews = false,
   bool shopsAndGatepassOnly = true,
+  DateTime? now,
 }) {
   final cards = <StatusCardData>[];
 
@@ -205,6 +208,19 @@ List<StatusCardData> buildStudentStatusCards({
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // 5. Payment requests (fines, bills...) - open ones, and recently paid ones
+  //    so the student sees the payment land. Overdue first, then by due date.
+  // ---------------------------------------------------------------------------
+  cards.addAll(
+    buildPaymentRequestCards(
+      glance?.paymentRequests ?? const [],
+      onlinePaymentsEnabled: glance?.onlinePaymentsEnabled ?? false,
+      checkout: glance?.paymentCheckout,
+      now: now ?? DateTime.now(),
+    ),
+  );
+
   // If only shops and gatepass are requested, return here
   if (shopsAndGatepassOnly) {
     return cards;
@@ -382,4 +398,35 @@ List<StatusCardData> buildStudentStatusCards({
   }
 
   return cards;
+}
+
+/// Home cards for the learner's payment requests, most urgent first.
+List<PaymentRequestCardData> buildPaymentRequestCards(
+  List<StudentPaymentRequest> requests, {
+  bool onlinePaymentsEnabled = false,
+  PaymentRequestCheckout? checkout,
+  required DateTime now,
+  int limit = 3,
+}) {
+  int rank(StudentPaymentRequest request) => switch (request.status) {
+    PaymentRequestStatus.overdue => 0,
+    PaymentRequestStatus.pending => 1,
+    _ => 2,
+  };
+  final visible = requests.where((r) => r.showsOnHome(now)).toList()
+    ..sort((a, b) {
+      final byStatus = rank(a).compareTo(rank(b));
+      if (byStatus != 0) return byStatus;
+      final aDue = a.dueDate ?? DateTime(9999);
+      final bDue = b.dueDate ?? DateTime(9999);
+      return aDue.compareTo(bDue);
+    });
+  return [
+    for (final request in visible.take(limit))
+      PaymentRequestCardData(
+        request: request,
+        onlinePaymentsEnabled: onlinePaymentsEnabled,
+        checkout: checkout,
+      ),
+  ];
 }

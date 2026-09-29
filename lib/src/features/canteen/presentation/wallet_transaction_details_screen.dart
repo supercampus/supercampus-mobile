@@ -204,9 +204,15 @@ class _WalletTransactionDetailsScreenState
               title: 'Details',
               children: [
                 _DetailRow(label: 'Type', value: detail.kind.label),
+                if (detail.kind == WalletTransactionKind.accountDeduction)
+                  _DetailRow(label: 'Reason', value: detail.description),
                 if (detail.shopName != null)
                   _DetailRow(
-                    label: detail.kind.isTopUp ? 'Wallet' : 'Shop',
+                    label:
+                        detail.kind.isTopUp ||
+                            detail.kind == WalletTransactionKind.accountDeduction
+                        ? 'Wallet'
+                        : 'Shop',
                     value: detail.shopName!,
                   ),
                 _DetailRow(

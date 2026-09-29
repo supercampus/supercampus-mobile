@@ -10,6 +10,7 @@ import '../../modules/presentation/widgets/home_top_bar.dart';
 import '../../modules/presentation/widgets/status_cards/status_card_builder.dart';
 import '../../modules/presentation/widgets/status_cards/status_card_carousel.dart';
 import '../../modules/presentation/widgets/status_cards/status_card_models.dart';
+import '../../payment_requests/presentation/payment_request_sheet.dart';
 import '../data/canteen_models.dart';
 import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
@@ -185,6 +186,15 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
   }
 
   void _handleStatusCardTap(StatusCardData card) {
+    if (card is PaymentRequestCardData) {
+      showPaymentRequestSheet(
+        context,
+        data: card,
+        customerName: widget.session?.displayName ?? '',
+        customerEmail: widget.session?.email ?? '',
+      );
+      return;
+    }
     if (card.type == StatusCardType.foodOrder) {
       widget.onOpenOrders();
       return;
@@ -394,12 +404,17 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                   fit: BoxFit.scaleDown,
                   child: Text(
                     formatCurrency(widget.store.walletBalances[_selectedShopKey] ?? 0.0),
+                    key: const ValueKey('shop-wallet-balance-pill'),
                     maxLines: 1,
                     style: TextStyle(
                       fontSize: 13,
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w700,
-                      color: context.palette.info,
+                      // Below zero after an accounts deduction: show it red.
+                      color:
+                          (widget.store.walletBalances[_selectedShopKey] ?? 0.0) < 0
+                          ? context.palette.danger
+                          : context.palette.info,
                       letterSpacing: -0.1,
                       height: 1.1,
                     ),

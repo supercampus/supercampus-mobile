@@ -60,10 +60,14 @@ Future<Uint8List?> showAnnouncementImageCropper(
 
   try {
     if (!context.mounted) return null;
+    // The dialog keeps painting through its exit animation, after this
+    // function has moved on, so it gets its own handle and releases it when
+    // its route is gone. Painting a disposed image throws.
+    final preview = image.clone();
     final settings = await showDialog<AnnouncementCropSettings>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _AnnouncementCropDialog(image: image),
+      builder: (_) => _AnnouncementCropDialog(image: preview),
     );
     if (settings == null) return null;
 
@@ -104,9 +108,16 @@ class _AnnouncementCropDialog extends StatefulWidget {
 }
 
 class _AnnouncementCropDialogState extends State<_AnnouncementCropDialog> {
+  final _cropArea = GlobalKey();
   double _focusX = 0;
   double _focusY = 0;
   double _zoom = 1;
+
+  @override
+  void dispose() {
+    widget.image.dispose();
+    super.dispose();
+  }
 
   AnnouncementCropSettings get _settings => AnnouncementCropSettings(
     focusX: _focusX,
@@ -118,8 +129,11 @@ class _AnnouncementCropDialogState extends State<_AnnouncementCropDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Crop announcement image'),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
+      // A fixed width, not a LayoutBuilder: AlertDialog sizes its content
+      // with IntrinsicWidth, which a LayoutBuilder cannot answer. That threw
+      // on every image and left the dialog blank, so no cover was uploaded.
+      content: SizedBox(
+        width: 560,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,28 +144,27 @@ class _AnnouncementCropDialogState extends State<_AnnouncementCropDialog> {
             const SizedBox(height: 14),
             AspectRatio(
               aspectRatio: announcementCoverAspectRatio,
-              child: LayoutBuilder(
-                builder: (context, constraints) => GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onPanUpdate: (details) {
-                    setState(() {
-                      _focusX = (_focusX -
-                              (details.delta.dx / constraints.maxWidth) * 2)
-                          .clamp(-1.0, 1.0);
-                      _focusY = (_focusY -
-                              (details.delta.dy / constraints.maxHeight) * 2)
-                          .clamp(-1.0, 1.0);
-                    });
-                  },
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: CustomPaint(
-                      painter: _AnnouncementCropPainter(
-                        image: widget.image,
-                        settings: _settings,
-                      ),
-                      child: const SizedBox.expand(),
+              child: GestureDetector(
+                key: _cropArea,
+                behavior: HitTestBehavior.opaque,
+                onPanUpdate: (details) {
+                  final size = _cropArea.currentContext?.size;
+                  if (size == null || size.isEmpty) return;
+                  setState(() {
+                    _focusX = (_focusX - (details.delta.dx / size.width) * 2)
+                        .clamp(-1.0, 1.0);
+                    _focusY = (_focusY - (details.delta.dy / size.height) * 2)
+                        .clamp(-1.0, 1.0);
+                  });
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: CustomPaint(
+                    painter: _AnnouncementCropPainter(
+                      image: widget.image,
+                      settings: _settings,
                     ),
+                    child: const SizedBox.expand(),
                   ),
                 ),
               ),

@@ -504,7 +504,8 @@ class WalletTransaction {
   final DateTime createdAt;
 
   /// The ledger's own kind (`order_debit`, `online_top_up`, `manual_top_up`,
-  /// `refund`), when the source reports it.
+  /// `refund`, `manual_debit` for an accounts deduction), when the source
+  /// reports it.
   final String? kind;
 
   /// What the movement was for: the order or laundry charge it paid, the order

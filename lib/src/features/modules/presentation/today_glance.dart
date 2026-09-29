@@ -5,6 +5,8 @@ import '../../../core/access/academic_presentation.dart';
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../payment_requests/data/payment_request_models.dart';
+import '../../payment_requests/data/payment_request_repository.dart';
 
 /// What a person's day is made of.
 ///
@@ -235,6 +237,9 @@ class GlanceFacts {
     this.stats = const [],
     this.queue,
     this.gatepassQr,
+    this.paymentRequests = const [],
+    this.onlinePaymentsEnabled = false,
+    this.paymentCheckout,
     this.loading = false,
   });
 
@@ -244,6 +249,15 @@ class GlanceFacts {
   final List<OversightStat> stats;
   final CounterQueue? queue;
   final String? gatepassQr;
+
+  /// Payment requests addressed to the learner (fines, bills, ...).
+  final List<StudentPaymentRequest> paymentRequests;
+
+  /// Whether those requests can be paid online through Razorpay.
+  final bool onlinePaymentsEnabled;
+
+  /// Pays a request online; null when the dashboard has no backend.
+  final PaymentRequestCheckout? paymentCheckout;
   final bool loading;
 
   static const empty = GlanceFacts();

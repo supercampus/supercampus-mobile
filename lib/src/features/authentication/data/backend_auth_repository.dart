@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../core/app_version.dart';
 import 'auth_http_client.dart';
 import 'auth_repository.dart';
 import 'session_store.dart';
@@ -255,12 +256,33 @@ class BackendAuthRepository
     }
     return _client.post(
       _uri('/api/auth/login'),
-      headers: {'content-type': 'application/json', 'x-client-surface': 'app'},
+      headers: {
+        'content-type': 'application/json',
+        'x-client-surface': 'app',
+        // Recorded in the administrator's Security Logs. Native only: in a
+        // browser these would need a CORS preflight allowance, and the
+        // server infers the web platform from the device name anyway.
+        if (!kIsWeb) ...{
+          'x-client-platform': _clientPlatform(),
+          'x-app-version': '$appVersionName+$appBuildNumber',
+        },
+      },
       body: jsonEncode(body),
     );
   }
 
   Uri _uri(String path) => _baseUri.replace(path: path);
+}
+
+String _clientPlatform() {
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.android => 'android',
+    TargetPlatform.iOS => 'ios',
+    TargetPlatform.windows => 'windows',
+    TargetPlatform.macOS => 'macos',
+    TargetPlatform.linux => 'linux',
+    TargetPlatform.fuchsia => 'fuchsia',
+  };
 }
 
 String _deviceName() {

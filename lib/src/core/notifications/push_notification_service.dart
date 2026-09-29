@@ -5,8 +5,21 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
 
 import '../../features/notifications/data/notification_repository.dart';
+
+/// The image a push carries: FCM's Android `imageUrl`, else the `imageUrl`
+/// data field the platform sends with every broadcast. Only web addresses.
+String? pushImageUrl({String? androidImageUrl, Map<String, dynamic>? data}) {
+  for (final candidate in [androidImageUrl, data?['imageUrl']?.toString()]) {
+    final value = candidate?.trim() ?? '';
+    if (value.startsWith('https://') || value.startsWith('http://')) {
+      return value;
+    }
+  }
+  return null;
+}
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -164,14 +177,26 @@ class PushNotificationService {
     }
   }
 
+  /// While the app is open FCM does not draw the notification itself, so it
+  /// is drawn here — with the broadcast's picture in Android's big-picture
+  /// style when one is attached. (In the background FCM draws it, image
+  /// included, from `notification.image`.)
   Future<void> _showForegroundNotification(RemoteMessage message) async {
     final notification = message.notification;
     if (notification == null) return;
+    final title = notification.title ?? 'SuperCampus';
+    final body = notification.body ?? '';
+    final picture = await _downloadPicture(
+      pushImageUrl(
+        androidImageUrl: notification.android?.imageUrl,
+        data: message.data,
+      ),
+    );
     await _localNotifications.show(
       id: message.messageId?.hashCode ?? message.hashCode,
-      title: notification.title ?? 'SuperCampus',
-      body: notification.body ?? '',
-      notificationDetails: const NotificationDetails(
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           'supercampus_updates',
           'SuperCampus updates',
@@ -179,10 +204,35 @@ class PushNotificationService {
               'Campus, academic, wallet, order and gatepass updates.',
           importance: Importance.high,
           priority: Priority.high,
+          styleInformation: picture == null
+              ? null
+              : BigPictureStyleInformation(
+                  ByteArrayAndroidBitmap(picture),
+                  contentTitle: title,
+                  summaryText: body,
+                ),
         ),
       ),
       payload: message.data['deepLink']?.toString(),
     );
+  }
+
+  /// The picture's bytes, or null when there is none or it cannot be fetched
+  /// quickly — the notification is then shown without it.
+  Future<Uint8List?> _downloadPicture(String? url) async {
+    if (url == null) return null;
+    try {
+      final response = await http
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
+        return null;
+      }
+      if (response.bodyBytes.length > 5 * 1024 * 1024) return null;
+      return response.bodyBytes;
+    } catch (_) {
+      return null;
+    }
   }
 
   void _handleRemoteMessage(RemoteMessage message) {

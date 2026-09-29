@@ -54,6 +54,14 @@ class _NotificationInboxSheetState extends State<NotificationInboxSheet> {
       await widget.repository.markRead(notification.id);
     }
     if (!mounted) return;
+    if (notification.isBroadcast) {
+      await showDialog<void>(
+        context: context,
+        builder: (context) => _BroadcastDetail(notification: notification),
+      );
+      if (mounted) await _load();
+      return;
+    }
     widget.onOpen(notification);
   }
 
@@ -128,7 +136,20 @@ class _NotificationInboxSheetState extends State<NotificationInboxSheet> {
                 ),
                 subtitle: Padding(
                   padding: const EdgeInsets.only(top: 3),
-                  child: Text(notification.body),
+                  child: notification.imageUrl == null
+                      ? Text(notification.body)
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              notification.body,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            _NotificationImage(url: notification.imageUrl!),
+                          ],
+                        ),
                 ),
                 trailing: notification.requiresAction
                     ? const Icon(Icons.chevron_right_rounded)
@@ -150,7 +171,72 @@ class _NotificationInboxSheetState extends State<NotificationInboxSheet> {
   }
 }
 
+class _NotificationImage extends StatelessWidget {
+  const _NotificationImage({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(12),
+    child: AspectRatio(
+      aspectRatio: 2,
+      child: Image.network(
+        url,
+        fit: BoxFit.cover,
+        semanticLabel: 'Notification image',
+        errorBuilder: (_, _, _) => ColoredBox(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          child: const Center(child: Icon(Icons.broken_image_outlined)),
+        ),
+      ),
+    ),
+  );
+}
+
+/// A broadcast read in full: the whole message and its picture.
+class _BroadcastDetail extends StatelessWidget {
+  const _BroadcastDetail({required this.notification});
+
+  final AppNotification notification;
+
+  @override
+  Widget build(BuildContext context) {
+    final sentBy = notification.data['sentBy']?.toString().trim() ?? '';
+    return AlertDialog(
+      title: Text(notification.title),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (notification.imageUrl != null) ...[
+              _NotificationImage(url: notification.imageUrl!),
+              const SizedBox(height: 12),
+            ],
+            SelectableText(notification.body),
+            if (sentBy.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'From $sentBy',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+}
+
 IconData _icon(String category) => switch (category) {
+  'broadcast' => Icons.campaign_outlined,
   'attendance' => Icons.fact_check_outlined,
   'canteen' => Icons.restaurant_outlined,
   'gatepass' => Icons.qr_code_rounded,

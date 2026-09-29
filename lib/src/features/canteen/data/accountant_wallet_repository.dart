@@ -148,6 +148,8 @@ class WalletDirectoryPage {
   final Map<String, double> balancesByStore;
 }
 
+/// The result of an accounts-desk wallet change: a credit (top-up) or a
+/// deduction.
 class AccountantWalletCredit {
   const AccountantWalletCredit({
     required this.balance,
@@ -156,7 +158,8 @@ class AccountantWalletCredit {
     this.replayed = false,
   });
 
-  /// The store wallet's balance after the credit.
+  /// The store wallet's balance after the change. A deduction can leave it
+  /// below zero.
   final double balance;
   final String shopKey;
   final String shopName;
@@ -201,6 +204,9 @@ class AccountantWalletTransaction {
   String get name => studentName;
 
   bool get isCredit => amount > 0;
+
+  /// Taken out at the accounts desk; [description] holds the reason.
+  bool get isDeduction => transactionType == 'manual_debit';
 }
 
 abstract interface class AccountantWalletRepository {
@@ -221,6 +227,16 @@ abstract interface class AccountantWalletRepository {
     required double amount,
     required String idempotencyKey,
     String? reference,
+  });
+
+  /// Takes [amount] out of one store wallet. [reason] is required and shown
+  /// to the wallet holder. The wallet may go below zero.
+  Future<AccountantWalletCredit> debitWallet({
+    required String userId,
+    required String shopKey,
+    required double amount,
+    required String reason,
+    required String idempotencyKey,
   });
 
   Future<WalletTopUpSettings> getWalletTopUpSettings();
@@ -342,6 +358,38 @@ class BackendAccountantWalletRepository implements AccountantWalletRepository {
           'source': 'manual',
           if (reference?.trim().isNotEmpty == true)
             'reference': reference!.trim(),
+          'idempotencyKey': idempotencyKey,
+        }),
+      ),
+    );
+    return AccountantWalletCredit(
+      balance: _number(data['balance']),
+      shopKey: _text(data['shopKey'], fallback: shopKey),
+      shopName: _text(data['shopName']),
+      replayed: data['replayed'] == true,
+    );
+  }
+
+  @override
+  Future<AccountantWalletCredit> debitWallet({
+    required String userId,
+    required String shopKey,
+    required double amount,
+    required String reason,
+    required String idempotencyKey,
+  }) async {
+    final uri = _baseUri.replace(
+      path:
+          '/api/v1/operations/canteen/wallets/${Uri.encodeComponent(userId)}/deductions',
+    );
+    final data = await _request(
+      (headers) => _client.post(
+        uri,
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({
+          'amount': amount,
+          'shopKey': shopKey,
+          'reason': reason.trim(),
           'idempotencyKey': idempotencyKey,
         }),
       ),

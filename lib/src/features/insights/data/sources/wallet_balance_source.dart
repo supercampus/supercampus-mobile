@@ -47,7 +47,10 @@ class WalletBalanceSource implements InsightSource {
     };
 
     final String headline;
-    if (balance < lowThreshold * 0.4) {
+    if (balance < 0) {
+      // Only an accounts deduction takes a wallet below zero.
+      headline = 'Wallet balance is negative';
+    } else if (balance < lowThreshold * 0.4) {
       headline = 'Wallet almost empty';
     } else if (balance < lowThreshold) {
       headline = nearLunch
@@ -58,15 +61,20 @@ class WalletBalanceSource implements InsightSource {
     }
 
     final rounded = balance.round();
+    final amount = rounded < 0
+        ? '-$currencySymbol${rounded.abs()}'
+        : '$currencySymbol$rounded';
 
     return Insight(
       sourceId: id,
       relevance: relevance,
       headline: headline,
-      supporting: '$currencySymbol$rounded available to spend',
+      supporting: rounded < 0
+          ? '$amount — top up before your next order'
+          : '$amount available to spend',
       metric: InsightMetric(
         value: (balance / comfortable).clamp(0.0, 1.0),
-        label: '$currencySymbol$rounded',
+        label: amount,
       ),
       icon: Icons.account_balance_wallet_outlined,
       tone: tone,

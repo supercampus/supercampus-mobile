@@ -128,7 +128,17 @@ class MediaRepository {
       final message = error is Map<String, dynamic>
           ? error['message'] as String?
           : error as String?;
-      throw MediaException(message ?? 'The upload could not be completed.');
+      throw MediaException(
+        message ??
+            switch (response.statusCode) {
+              413 => 'That file is too large to upload. The limit is 10 MB.',
+              401 || 403 => 'Your session cannot upload files. Sign in again.',
+              >= 500 =>
+                'The file server is unavailable right now. Try again in a moment.',
+              _ =>
+                'The upload could not be completed (${response.statusCode}).',
+            },
+      );
     }
     if (decoded is! Map<String, dynamic>) {
       throw const MediaException('Media storage returned invalid data.');

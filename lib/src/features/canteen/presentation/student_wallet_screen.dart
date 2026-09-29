@@ -120,6 +120,7 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
   @override
   Widget build(BuildContext context) {
     final shopName = store.walletShopFor(widget.shopKey)?.name.trim();
+    final balance = store.walletBalances[widget.shopKey] ?? 0.0;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -203,15 +204,27 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          formatCurrency(
-                            store.walletBalances[widget.shopKey] ?? 0.0,
-                          ),
+                          formatCurrency(balance),
+                          key: const ValueKey('student-wallet-balance'),
                           style: TextStyle(
-                            color: context.palette.brandInk,
+                            // An accounts deduction can leave the wallet
+                            // below zero; say so in red.
+                            color: balance < 0
+                                ? context.palette.danger
+                                : context.palette.brandInk,
                             fontSize: 25,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                        if (balance < 0)
+                          Text(
+                            'Top up to order again',
+                            key: const ValueKey('student-wallet-negative-hint'),
+                            style: TextStyle(
+                              color: context.palette.danger,
+                              fontSize: 12,
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -331,7 +344,12 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
                                           ),
                                           const SizedBox(height: 3),
                                           Text(
-                                            '${formatShortDate(transaction.createdAt)} · ${formatTime(transaction.createdAt)}',
+                                            [
+                                              if (transaction.kind ==
+                                                  'manual_debit')
+                                                'Deducted by Accounts',
+                                              '${formatShortDate(transaction.createdAt)} · ${formatTime(transaction.createdAt)}',
+                                            ].join(' · '),
                                             style: Theme.of(
                                               context,
                                             ).textTheme.bodyMedium,

@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../../../../canteen/data/canteen_models.dart';
 import '../../../../gatepass/data/gatepass_models.dart';
+import '../../../../payment_requests/data/payment_request_models.dart';
+import '../../../../payment_requests/data/payment_request_repository.dart';
 import 'academics_report_card.dart';
 import 'announcement_notice_card.dart';
 import 'fees_receipt_card.dart';
 import 'food_order_card.dart';
 import 'gatepass_ticket_card.dart';
 import 'laundry_tag_card.dart';
+import 'payment_request_card.dart';
 import 'library_slip_card.dart';
 import 'stationery_parcel_card.dart';
 import 'timetable_schedule_card.dart';
@@ -23,6 +26,7 @@ enum StatusCardType {
   stationery,
   laundry,
   announcement,
+  paymentRequest,
 }
 
 /// Base contract for all distinct status card view models.
@@ -358,4 +362,41 @@ class AnnouncementNoticeCardData extends StatusCardData {
   @override
   Widget buildCard(BuildContext context, {required VoidCallback onTap}) =>
       AnnouncementNoticeCard(data: this, onTap: onTap);
+}
+
+// =============================================================================
+// 10. PAYMENT REQUEST MODEL
+// =============================================================================
+/// A payment the accounts office asked this student for (a fine, a bill...).
+class PaymentRequestCardData extends StatusCardData {
+  const PaymentRequestCardData({
+    required this.request,
+    this.onlinePaymentsEnabled = false,
+    this.checkout,
+    this.action,
+  });
+
+  final StudentPaymentRequest request;
+  final bool onlinePaymentsEnabled;
+
+  /// Pays the request online; null when there is no backend to pay through.
+  final PaymentRequestCheckout? checkout;
+  @override
+  final String? action;
+
+  @override
+  String get id => 'payment-request-${request.payerId}';
+
+  @override
+  StatusCardType get type => StatusCardType.paymentRequest;
+
+  @override
+  String get moduleId => 'payment_requests';
+
+  bool get canPayOnline =>
+      onlinePaymentsEnabled && checkout != null && request.status.isOpen;
+
+  @override
+  Widget buildCard(BuildContext context, {required VoidCallback onTap}) =>
+      PaymentRequestCard(data: this, onTap: onTap);
 }

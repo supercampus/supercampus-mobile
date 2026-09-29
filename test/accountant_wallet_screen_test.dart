@@ -198,6 +198,183 @@ void main() {
     expect(find.text('Rahul Subramanian'), findsOneWidget);
   });
 
+  testWidgets('a deduction needs a reason, confirms the resulting negative '
+      'balance and shows it in red', (tester) async {
+    final repository = _WalletRepository();
+    await _pumpScreen(tester, repository);
+    await _openDirectory(tester);
+
+    await tester.tap(find.byKey(const ValueKey('credit-warden-1')));
+    await tester.pumpAndSettle();
+    // Add is the default; switch to Deduct.
+    expect(find.byKey(const ValueKey('wallet-reason')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('wallet-action-deduct')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('wallet-reason')), findsOneWidget);
+    expect(find.text('Review deduction'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('wallet-store-mec-stationery')));
+    await tester.enterText(find.byKey(const ValueKey('wallet-amount')), '100');
+    await tester.pump();
+    // Live preview: ₹40 − ₹100 goes below zero.
+    expect(
+      find.textContaining('goes below zero'),
+      findsOneWidget,
+    );
+
+    // No reason yet: refused inline, nothing sent.
+    await tester.tap(find.byKey(const ValueKey('wallet-review-recharge')));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter a reason for the deduction.'), findsOneWidget);
+    expect(repository.debits, isEmpty);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('wallet-reason')),
+      'Damaged library book',
+    );
+    await tester.tap(find.byKey(const ValueKey('wallet-review-recharge')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Confirm deduction'), findsOneWidget);
+    expect(
+      find.text("Deduct ₹100 from Rahul Subramanian’s Campus Stationery wallet?"),
+      findsOneWidget,
+    );
+    Text textOf(String key) =>
+        tester.widget<Text>(find.byKey(ValueKey(key)));
+    final palette = tester
+        .element(find.byKey(const ValueKey('wallet-confirm-balance-after')))
+        .palette;
+    expect(textOf('wallet-confirm-current-balance').data, '₹40');
+    expect(textOf('wallet-confirm-balance-after').data, '-₹60');
+    expect(textOf('wallet-confirm-balance-after').style?.color, palette.danger);
+    expect(
+      find.byKey(const ValueKey('wallet-confirm-negative-warning')),
+      findsOneWidget,
+    );
+    expect(find.text('Reason: Damaged library book'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('confirm-wallet-deduction')));
+    await tester.pumpAndSettle();
+
+    expect(repository.credits, isEmpty);
+    expect(repository.debits, hasLength(1));
+    final debit = repository.debits.single;
+    expect(debit.userId, 'warden-1');
+    expect(debit.shopKey, 'mec-stationery');
+    expect(debit.amount, 100);
+    expect(debit.reason, 'Damaged library book');
+    expect(debit.idempotencyKey, isNotEmpty);
+
+    expect(find.text('₹100 deducted'), findsOneWidget);
+    expect(textOf('wallet-recharge-new-balance').data, '-₹60');
+    expect(textOf('wallet-recharge-new-balance').style?.color, palette.danger);
+
+    await tester.tap(find.byKey(const ValueKey('wallet-recharge-done')));
+    await tester.pumpAndSettle();
+    // The directory row now shows the negative stationery balance in red.
+    final pill = find.byKey(
+      const ValueKey('wallet-balance-warden-1-mec-stationery'),
+    );
+    final pillText = tester.widget<Text>(
+      find.descendant(of: pill, matching: find.byType(Text)),
+    );
+    expect(pillText.data, '-₹60');
+    expect(pillText.style?.color, palette.danger);
+  });
+
+  testWidgets('a deduction that stays above zero shows no warning', (
+    tester,
+  ) async {
+    final repository = _WalletRepository();
+    await _pumpScreen(tester, repository);
+    await _openDirectory(tester);
+
+    await tester.tap(find.byKey(const ValueKey('credit-student-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wallet-action-deduct')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wallet-store-mec-canteen')));
+    await tester.enterText(find.byKey(const ValueKey('wallet-amount')), '20');
+    await tester.enterText(
+      find.byKey(const ValueKey('wallet-reason')),
+      'Correction',
+    );
+    await tester.tap(find.byKey(const ValueKey('wallet-review-recharge')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('wallet-confirm-balance-after')),
+          )
+          .data,
+      '₹100',
+    );
+    expect(
+      find.byKey(const ValueKey('wallet-confirm-negative-warning')),
+      findsNothing,
+    );
+    // Cancelling sends nothing.
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(repository.debits, isEmpty);
+  });
+
+  testWidgets('a server error during a deduction stays in the sheet', (
+    tester,
+  ) async {
+    final repository = _WalletRepository()
+      ..debitError = const CanteenException('Give a reason for the deduction');
+    await _pumpScreen(tester, repository);
+    await _openDirectory(tester);
+
+    await tester.tap(find.byKey(const ValueKey('credit-student-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wallet-action-deduct')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wallet-store-mec-canteen')));
+    await tester.enterText(find.byKey(const ValueKey('wallet-amount')), '20');
+    await tester.enterText(find.byKey(const ValueKey('wallet-reason')), 'Fine');
+    await tester.tap(find.byKey(const ValueKey('wallet-review-recharge')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('confirm-wallet-deduction')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('wallet-recharge-error')), findsOneWidget);
+    expect(find.text('Give a reason for the deduction'), findsOneWidget);
+    expect(find.byKey(const ValueKey('wallet-recharge-success')), findsNothing);
+  });
+
+  testWidgets('the ledger labels deductions and shows their reason', (
+    tester,
+  ) async {
+    final repository = _WalletRepository()
+      ..transactions = [
+        AccountantWalletTransaction(
+          id: 'tx-1',
+          userId: 'student-1',
+          studentName: 'Abinaya S',
+          studentNumber: 'MEC25AD01',
+          amount: -50,
+          transactionType: 'manual_debit',
+          description: 'Broken plate',
+          createdAt: DateTime(2026, 9, 29, 10),
+          shopName: 'Canteen',
+        ),
+      ];
+    await _pumpScreen(tester, repository);
+    await tester.tap(find.byKey(const ValueKey('open-wallet-activity')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Deduction · Canteen wallet'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('wallet-deduction-reason-tx-1')),
+      findsOneWidget,
+    );
+    expect(find.text('Reason: Broken plate'), findsOneWidget);
+    expect(find.text('−₹50'), findsOneWidget);
+  });
+
   test('directory page parsing reads stores, counts and non-students', () {
     final page = parseWalletDirectoryPage({
       'wallets': [
@@ -254,8 +431,26 @@ class _Credit {
   final String idempotencyKey;
 }
 
+class _Debit {
+  const _Debit(
+    this.userId,
+    this.shopKey,
+    this.amount,
+    this.reason,
+    this.idempotencyKey,
+  );
+  final String userId;
+  final String shopKey;
+  final double amount;
+  final String reason;
+  final String idempotencyKey;
+}
+
 class _WalletRepository implements AccountantWalletRepository {
   final credits = <_Credit>[];
+  final debits = <_Debit>[];
+  Object? debitError;
+  List<AccountantWalletTransaction> transactions = const [];
   WalletTopUpSettings settings = WalletTopUpSettings.defaults;
   WalletAudience? lastAudience;
   Object? loadError;
@@ -323,7 +518,28 @@ class _WalletRepository implements AccountantWalletRepository {
     int limit = 50,
   }) async {
     if (loadError != null) throw loadError!;
-    return const [];
+    return transactions;
+  }
+
+  @override
+  Future<AccountantWalletCredit> debitWallet({
+    required String userId,
+    required String shopKey,
+    required double amount,
+    required String reason,
+    required String idempotencyKey,
+  }) async {
+    if (debitError != null) throw debitError!;
+    debits.add(_Debit(userId, shopKey, amount, reason, idempotencyKey));
+    final index = _people.indexWhere((person) => person.userId == userId);
+    // Like the server: no floor, a deduction may take the wallet negative.
+    final balance = _people[index].balanceFor(shopKey) - amount;
+    _people[index] = _people[index].withBalance(shopKey, balance);
+    return AccountantWalletCredit(
+      balance: balance,
+      shopKey: shopKey,
+      shopName: _stores.firstWhere((store) => store.shopKey == shopKey).name,
+    );
   }
 
   @override

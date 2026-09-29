@@ -1,5 +1,7 @@
 import '../../../core/access/effective_permissions.dart';
 import '../../attendance/data/attendance_repository.dart';
+import '../../payment_requests/data/payment_request_models.dart';
+import '../../payment_requests/data/payment_request_repository.dart';
 import '../presentation/today_glance.dart';
 
 /// Loads only what the viewer's day shape actually needs.
@@ -26,11 +28,17 @@ class BackendGlanceSource implements GlanceSource {
     required this.attendance,
     required this.viewerUserId,
     this.studentActivity,
+    this.paymentRequests,
+    this.paymentCheckout,
   });
 
   final AttendanceRepository attendance;
   final String viewerUserId;
   final StudentActivitySource? studentActivity;
+
+  /// Payment requests addressed to the learner, shown as home status cards.
+  final StudentPaymentRequestSource? paymentRequests;
+  final PaymentRequestCheckout? paymentCheckout;
 
   @override
   Future<GlanceFacts> load(DayShape shape) async {
@@ -63,12 +71,28 @@ class BackendGlanceSource implements GlanceSource {
       _standing(),
       studentActivity?.load() ?? Future.value(const <StudentActivity>[]),
       gatepassFuture,
+      _paymentRequests(),
     ]);
+    final payments = results[3] as StudentPaymentRequests;
     return GlanceFacts(
       standing: results[0] as AttendanceStanding,
       activities: results[1] as List<StudentActivity>,
       gatepassQr: results[2] as String?,
+      paymentRequests: payments.requests,
+      onlinePaymentsEnabled: payments.onlinePaymentsEnabled,
+      paymentCheckout: paymentCheckout,
     );
+  }
+
+  /// A failed read shows no payment cards rather than breaking the day.
+  Future<StudentPaymentRequests> _paymentRequests() async {
+    final source = paymentRequests;
+    if (source == null) return StudentPaymentRequests.empty;
+    try {
+      return await source.mine();
+    } catch (_) {
+      return StudentPaymentRequests.empty;
+    }
   }
 
   Future<AttendanceStanding> _standing() async {

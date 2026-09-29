@@ -9,9 +9,10 @@ import '../../../core/widgets/skeleton_loading.dart';
 import '../data/accountant_wallet_repository.dart';
 import '../data/canteen_models.dart';
 
-/// The accountant's wallet desk: recharge any campus user's store wallets
-/// (canteen, stationery, laundry), review the ledger and set the online
-/// top-up limits.
+/// The accountant's wallet desk: add to or deduct from any campus user's
+/// store wallets (canteen, stationery, laundry), review the ledger and set the
+/// online top-up limits. A deduction needs a reason and may take a wallet
+/// below zero.
 class AccountantWalletScreen extends StatefulWidget {
   const AccountantWalletScreen({
     super.key,
@@ -295,6 +296,7 @@ class _OverviewCard extends StatelessWidget {
                     store: store,
                     label:
                         '${store.name} ${_money(directory.balancesByStore[store.shopKey] ?? 0)}',
+                    negative: (directory.balancesByStore[store.shopKey] ?? 0) < 0,
                   ),
               ],
             ),
@@ -328,7 +330,7 @@ class _AccountantModuleStack extends StatelessWidget {
       _AccountantModuleSpec(
         key: const ValueKey('open-student-wallets'),
         title: 'Wallet Recharge',
-        subtitle: 'Top up canteen, stationery or laundry',
+        subtitle: 'Add to or deduct from canteen, stationery or laundry',
         icon: Icons.account_balance_wallet_rounded,
         accent: AppColors.brandPurple,
         metric: '$peopleCount',
@@ -1044,9 +1046,13 @@ class _WalletPersonCard extends StatelessWidget {
                         children: [
                           for (final store in stores)
                             _StorePill(
+                              key: ValueKey(
+                                'wallet-balance-${account.userId}-${store.shopKey}',
+                              ),
                               store: store,
                               label: _money(account.balanceFor(store.shopKey)),
                               tooltip: '${store.name} wallet',
+                              negative: account.balanceFor(store.shopKey) < 0,
                             ),
                         ],
                       ),
@@ -1057,9 +1063,9 @@ class _WalletPersonCard extends StatelessWidget {
               const SizedBox(width: 6),
               IconButton.filled(
                 key: ValueKey('credit-${account.userId}'),
-                tooltip: 'Recharge ${account.name}',
+                tooltip: 'Add to or deduct from ${account.name}’s wallet',
                 onPressed: onRecharge,
-                icon: const Icon(Icons.add_rounded),
+                icon: const Icon(Icons.exposure_rounded),
               ),
             ],
           ),
@@ -1103,11 +1109,20 @@ IconData _storeIcon(String category) => switch (category) {
 };
 
 class _StorePill extends StatelessWidget {
-  const _StorePill({required this.store, required this.label, this.tooltip});
+  const _StorePill({
+    super.key,
+    required this.store,
+    required this.label,
+    this.tooltip,
+    this.negative = false,
+  });
 
   final WalletStore store;
   final String label;
   final String? tooltip;
+
+  /// The balance is below zero (after an accounts deduction): shown in red.
+  final bool negative;
 
   @override
   Widget build(BuildContext context) {
@@ -1115,18 +1130,22 @@ class _StorePill extends StatelessWidget {
     final pill = Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: palette.surfaceSunken,
+        color: negative ? palette.dangerSoft : palette.surfaceSunken,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_storeIcon(store.category), size: 12, color: palette.inkSecondary),
+          Icon(
+            _storeIcon(store.category),
+            size: 12,
+            color: negative ? palette.danger : palette.inkSecondary,
+          ),
           const SizedBox(width: 3),
           Text(
             label,
             style: TextStyle(
-              color: palette.ink,
+              color: negative ? palette.danger : palette.ink,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
@@ -1204,39 +1223,77 @@ class _RechargeSheet extends StatefulWidget {
   State<_RechargeSheet> createState() => _RechargeSheetState();
 }
 
+/// What the accounts desk does to a wallet: add money or take it out.
+enum _WalletAction { add, deduct }
+
+const _deductionReasonMaxLength = 200;
+
 class _RechargeSheetState extends State<_RechargeSheet> {
   final _amount = TextEditingController();
   final _reference = TextEditingController();
+  final _reason = TextEditingController();
+  _WalletAction _action = _WalletAction.add;
   WalletStore? _store;
   String? _error;
   bool _submitting = false;
   AccountantWalletCredit? _credit;
   double? _creditedAmount;
 
-  /// One key per attempt: a retry after a lost response cannot credit twice.
+  /// Which action produced [_credit].
+  _WalletAction _completedAction = _WalletAction.add;
+
+  /// One key per attempt: a retry after a lost response cannot move money
+  /// twice.
   String? _idempotencyKey;
+
+  bool get _deducting => _action == _WalletAction.deduct;
 
   @override
   void initState() {
     super.initState();
-    _amount.addListener(_clearKey);
+    _amount.addListener(_amountChanged);
     _reference.addListener(_clearKey);
+    _reason.addListener(_clearKey);
   }
 
   @override
   void dispose() {
     _amount.dispose();
     _reference.dispose();
+    _reason.dispose();
     super.dispose();
   }
 
   void _clearKey() => _idempotencyKey = null;
 
+  /// The deduction preview follows the amount as it is typed.
+  void _amountChanged() {
+    _clearKey();
+    if (mounted && _deducting) setState(() {});
+  }
+
+  double? get _enteredAmount =>
+      double.tryParse(_amount.text.trim().replaceAll(',', ''));
+
+  void _setAction(_WalletAction action) {
+    if (action == _action) return;
+    setState(() {
+      _action = action;
+      _error = null;
+      _idempotencyKey = null;
+    });
+  }
+
   Future<void> _review() async {
     final store = _store;
-    final amount = double.tryParse(_amount.text.trim().replaceAll(',', ''));
+    final amount = _enteredAmount;
+    final reason = _reason.text.trim();
     if (store == null) {
-      setState(() => _error = 'Choose which wallet to recharge.');
+      setState(
+        () => _error = _deducting
+            ? 'Choose which wallet to deduct from.'
+            : 'Choose which wallet to recharge.',
+      );
       return;
     }
     if (amount == null || amount <= 0) {
@@ -1244,52 +1301,62 @@ class _RechargeSheetState extends State<_RechargeSheet> {
       return;
     }
     if (amount > 100000) {
-      setState(() => _error = 'A single recharge can be at most ₹1,00,000.');
+      setState(
+        () => _error = _deducting
+            ? 'A single deduction can be at most ₹1,00,000.'
+            : 'A single recharge can be at most ₹1,00,000.',
+      );
+      return;
+    }
+    if (_deducting && reason.isEmpty) {
+      setState(() => _error = 'Enter a reason for the deduction.');
       return;
     }
     setState(() => _error = null);
+    final current = widget.account.balanceFor(store.shopKey);
+    final after = _deducting ? current - amount : current + amount;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Confirm recharge'),
-        content: Text(
-          'Add ${_money(amount)} to ${widget.account.name}’s '
-          '${store.name} wallet?',
-          key: const ValueKey('wallet-recharge-confirm-text'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            key: const ValueKey('confirm-wallet-recharge'),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text('Add ${_money(amount)}'),
-          ),
-        ],
+      builder: (dialogContext) => _ConfirmWalletChangeDialog(
+        deducting: _deducting,
+        accountName: widget.account.name,
+        store: store,
+        amount: amount,
+        currentBalance: current,
+        balanceAfter: after,
+        reason: reason,
       ),
     );
     if (confirmed != true || !mounted) return;
-    await _submit(store, amount);
+    await _submit(store, amount, reason);
   }
 
-  Future<void> _submit(WalletStore store, double amount) async {
+  Future<void> _submit(WalletStore store, double amount, String reason) async {
+    final action = _action;
     _idempotencyKey ??=
-        'accountant-${widget.account.userId}-${store.shopKey}-'
+        'accountant-${action == _WalletAction.deduct ? 'debit' : 'credit'}-'
+        '${widget.account.userId}-${store.shopKey}-'
         '${DateTime.now().microsecondsSinceEpoch}';
     setState(() {
       _submitting = true;
       _error = null;
     });
     try {
-      final credit = await widget.repository.creditWallet(
-        userId: widget.account.userId,
-        shopKey: store.shopKey,
-        amount: amount,
-        idempotencyKey: _idempotencyKey!,
-        reference: _reference.text,
-      );
+      final credit = action == _WalletAction.deduct
+          ? await widget.repository.debitWallet(
+              userId: widget.account.userId,
+              shopKey: store.shopKey,
+              amount: amount,
+              reason: reason,
+              idempotencyKey: _idempotencyKey!,
+            )
+          : await widget.repository.creditWallet(
+              userId: widget.account.userId,
+              shopKey: store.shopKey,
+              amount: amount,
+              idempotencyKey: _idempotencyKey!,
+              reference: _reference.text,
+            );
       if (!mounted) return;
       setState(() {
         _credit = AccountantWalletCredit(
@@ -1299,6 +1366,7 @@ class _RechargeSheetState extends State<_RechargeSheet> {
           replayed: credit.replayed,
         );
         _creditedAmount = amount;
+        _completedAction = action;
         _submitting = false;
       });
     } catch (error) {
@@ -1385,6 +1453,27 @@ class _RechargeSheetState extends State<_RechargeSheet> {
         ),
         _header(context),
         const SizedBox(height: 18),
+        SegmentedButton<_WalletAction>(
+          key: const ValueKey('wallet-action'),
+          showSelectedIcon: false,
+          segments: const [
+            ButtonSegment(
+              value: _WalletAction.add,
+              icon: Icon(Icons.add_rounded),
+              label: Text('Add', key: ValueKey('wallet-action-add')),
+            ),
+            ButtonSegment(
+              value: _WalletAction.deduct,
+              icon: Icon(Icons.remove_rounded),
+              label: Text('Deduct', key: ValueKey('wallet-action-deduct')),
+            ),
+          ],
+          selected: {_action},
+          onSelectionChanged: _submitting
+              ? null
+              : (selection) => _setAction(selection.first),
+        ),
+        const SizedBox(height: 16),
         Text(
           'Which wallet?',
           style: TextStyle(
@@ -1442,22 +1531,41 @@ class _RechargeSheetState extends State<_RechargeSheet> {
           enabled: !_submitting,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
-            labelText: 'Amount',
+            labelText: _deducting ? 'Amount to deduct' : 'Amount',
             prefixText: '₹ ',
             helperText: selected == null
                 ? null
                 : '${selected.name} balance now ${_money(widget.account.balanceFor(selected.shopKey))}',
           ),
         ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _reference,
-          enabled: !_submitting,
-          decoration: const InputDecoration(
-            labelText: 'Receipt or payment reference (optional)',
-            prefixIcon: Icon(Icons.receipt_long_rounded),
+        if (_deducting && selected != null && (_enteredAmount ?? 0) > 0)
+          _BalanceAfterPreview(
+            balanceAfter:
+                widget.account.balanceFor(selected.shopKey) - _enteredAmount!,
           ),
-        ),
+        const SizedBox(height: 10),
+        if (_deducting)
+          TextField(
+            key: const ValueKey('wallet-reason'),
+            controller: _reason,
+            enabled: !_submitting,
+            maxLength: _deductionReasonMaxLength,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              labelText: 'Reason (required)',
+              helperText: 'Shown to the wallet holder with the deduction.',
+              prefixIcon: Icon(Icons.edit_note_rounded),
+            ),
+          )
+        else
+          TextField(
+            controller: _reference,
+            enabled: !_submitting,
+            decoration: const InputDecoration(
+              labelText: 'Receipt or payment reference (optional)',
+              prefixIcon: Icon(Icons.receipt_long_rounded),
+            ),
+          ),
         if (_error != null) ...[
           const SizedBox(height: 12),
           Container(
@@ -1492,8 +1600,16 @@ class _RechargeSheetState extends State<_RechargeSheet> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Icon(Icons.add_card_rounded),
-          label: Text(_submitting ? 'Adding…' : 'Review recharge'),
+              : Icon(
+                  _deducting
+                      ? Icons.remove_circle_outline_rounded
+                      : Icons.add_card_rounded,
+                ),
+          label: Text(
+            _submitting
+                ? (_deducting ? 'Deducting…' : 'Adding…')
+                : (_deducting ? 'Review deduction' : 'Review recharge'),
+          ),
         ),
       ],
     );
@@ -1502,6 +1618,7 @@ class _RechargeSheetState extends State<_RechargeSheet> {
   Widget _success(BuildContext context) {
     final palette = context.palette;
     final credit = _credit!;
+    final deducted = _completedAction == _WalletAction.deduct;
     return Column(
       key: const ValueKey('wallet-recharge-success'),
       mainAxisSize: MainAxisSize.min,
@@ -1521,7 +1638,7 @@ class _RechargeSheetState extends State<_RechargeSheet> {
         ),
         const SizedBox(height: 14),
         Text(
-          '${_money(_creditedAmount ?? 0)} added',
+          '${_money(_creditedAmount ?? 0)} ${deducted ? 'deducted' : 'added'}',
           textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 22,
@@ -1550,7 +1667,7 @@ class _RechargeSheetState extends State<_RechargeSheet> {
                 _money(credit.balance),
                 key: const ValueKey('wallet-recharge-new-balance'),
                 style: TextStyle(
-                  color: palette.brandInk,
+                  color: credit.balance < 0 ? palette.danger : palette.brandInk,
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                 ),
@@ -1561,7 +1678,9 @@ class _RechargeSheetState extends State<_RechargeSheet> {
         if (credit.replayed) ...[
           const SizedBox(height: 8),
           Text(
-            'This recharge had already been recorded; nothing was added twice.',
+            deducted
+                ? 'This deduction had already been recorded; nothing was deducted twice.'
+                : 'This recharge had already been recorded; nothing was added twice.',
             textAlign: TextAlign.center,
             style: TextStyle(color: palette.inkSecondary, fontSize: 12),
           ),
@@ -1571,6 +1690,183 @@ class _RechargeSheetState extends State<_RechargeSheet> {
           key: const ValueKey('wallet-recharge-done'),
           onPressed: () => Navigator.of(context).pop(credit),
           child: const Text('Done'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Live "balance after" line under the amount while deducting.
+class _BalanceAfterPreview extends StatelessWidget {
+  const _BalanceAfterPreview({required this.balanceAfter});
+
+  final double balanceAfter;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final negative = balanceAfter < 0;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Icon(
+            negative ? Icons.warning_amber_rounded : Icons.south_east_rounded,
+            size: 16,
+            color: negative ? palette.danger : palette.inkSecondary,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(text: 'Balance after deduction '),
+                  TextSpan(
+                    text: _money(balanceAfter),
+                    style: TextStyle(
+                      color: negative ? palette.danger : palette.ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (negative) const TextSpan(text: ' · goes below zero'),
+                ],
+              ),
+              key: const ValueKey('wallet-deduct-preview'),
+              style: TextStyle(
+                color: negative ? palette.danger : palette.inkSecondary,
+                fontSize: 12.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Asks before any money moves, showing the balance before and after.
+class _ConfirmWalletChangeDialog extends StatelessWidget {
+  const _ConfirmWalletChangeDialog({
+    required this.deducting,
+    required this.accountName,
+    required this.store,
+    required this.amount,
+    required this.currentBalance,
+    required this.balanceAfter,
+    required this.reason,
+  });
+
+  final bool deducting;
+  final String accountName;
+  final WalletStore store;
+  final double amount;
+  final double currentBalance;
+  final double balanceAfter;
+  final String reason;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final negative = balanceAfter < 0;
+    Widget row(String label, String value, {Key? key, Color? color}) =>
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(color: palette.inkSecondary),
+                ),
+              ),
+              Text(
+                value,
+                key: key,
+                style: TextStyle(
+                  color: color ?? palette.ink,
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        );
+    return AlertDialog(
+      title: Text(deducting ? 'Confirm deduction' : 'Confirm recharge'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            deducting
+                ? 'Deduct ${_money(amount)} from $accountName’s '
+                      '${store.name} wallet?'
+                : 'Add ${_money(amount)} to $accountName’s '
+                      '${store.name} wallet?',
+            key: const ValueKey('wallet-recharge-confirm-text'),
+          ),
+          const SizedBox(height: 14),
+          row(
+            'Current balance',
+            _money(currentBalance),
+            key: const ValueKey('wallet-confirm-current-balance'),
+            color: currentBalance < 0 ? palette.danger : null,
+          ),
+          row(
+            deducting ? 'Deduct' : 'Add',
+            '${deducting ? '−' : '+'}${_money(amount)}',
+          ),
+          const Divider(height: 14),
+          row(
+            'Balance after',
+            _money(balanceAfter),
+            key: const ValueKey('wallet-confirm-balance-after'),
+            color: negative ? palette.danger : palette.brandInk,
+          ),
+          if (deducting) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Reason: $reason',
+              style: TextStyle(color: palette.inkSecondary, fontSize: 13),
+            ),
+          ],
+          if (negative) ...[
+            const SizedBox(height: 12),
+            Container(
+              key: const ValueKey('wallet-confirm-negative-warning'),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: palette.dangerSoft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'This wallet will go below zero. $accountName can’t pay from '
+                'it until it is topped up.',
+                style: TextStyle(color: palette.danger, fontSize: 12.5),
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: ValueKey(
+            deducting ? 'confirm-wallet-deduction' : 'confirm-wallet-recharge',
+          ),
+          style: deducting
+              ? FilledButton.styleFrom(
+                  backgroundColor: palette.danger,
+                  foregroundColor: Colors.white,
+                )
+              : null,
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(
+            deducting ? 'Deduct ${_money(amount)}' : 'Add ${_money(amount)}',
+          ),
         ),
       ],
     );
@@ -1627,7 +1923,11 @@ class _StoreOption extends StatelessWidget {
                 Text(
                   _money(balance),
                   style: TextStyle(
-                    color: selected ? palette.brandInk : palette.inkSecondary,
+                    color: balance < 0
+                        ? palette.danger
+                        : selected
+                        ? palette.brandInk
+                        : palette.inkSecondary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1737,6 +2037,7 @@ class _TransactionCard extends StatelessWidget {
     'online_top_up' => 'Online top-up',
     'order_debit' => 'Payment',
     'refund' => 'Refund',
+    'manual_debit' => 'Deduction',
     _ => transaction.description,
   };
 
@@ -1803,6 +2104,18 @@ class _TransactionCard extends StatelessWidget {
                   ].join(' · '),
                   style: TextStyle(color: palette.inkTertiary, fontSize: 11.5),
                 ),
+                if (transaction.isDeduction &&
+                    transaction.description.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    'Reason: ${transaction.description}',
+                    key: ValueKey('wallet-deduction-reason-${transaction.id}'),
+                    style: TextStyle(
+                      color: palette.inkSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

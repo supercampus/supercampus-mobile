@@ -30,6 +30,8 @@ import 'features/authentication/data/session_store.dart';
 import 'features/authentication/presentation/login_screen.dart';
 import 'features/maintenance/data/maintenance_repository.dart';
 import 'features/maintenance/presentation/maintenance_gate.dart';
+import 'features/admin_system/data/app_version_repository.dart';
+import 'features/admin_system/presentation/app_update_gate.dart';
 import 'features/advisor/data/advisor_students_repository.dart';
 import 'features/canteen/presentation/canteen_shell.dart';
 import 'features/scanner/presentation/scan_qr_screen.dart';
@@ -64,6 +66,7 @@ import 'features/admin_portal/data/admin_student_repository.dart';
 import 'features/modules/data/announcement_events.dart';
 import 'features/canteen/data/canteen_events.dart';
 import 'features/modules/data/glance_source.dart';
+import 'features/payment_requests/data/payment_request_repository.dart';
 import 'features/modules/data/student_activity_source.dart';
 import 'features/modules/presentation/module_dashboard_screen.dart';
 import 'features/modules/presentation/module_navigation_host.dart';
@@ -122,6 +125,13 @@ class _SupercampusAppState extends State<SupercampusApp>
   late final AuthRepository _authRepository;
   late final PermissionsRepository _permissionsRepository;
   late final MaintenanceRepository _maintenanceRepository;
+
+  /// Public app version policy for the update gate. Null with mock or
+  /// injected repositories (tests), which disables the check.
+  late final AppVersionSource? _appVersionSource =
+      !_useMockData && widget.authRepository == null
+      ? BackendAppVersionSource(baseUrl: _resolvedBackendBaseUrl)
+      : null;
   late final SessionStore _sessionStore;
   late final bool _persistSessions;
 
@@ -153,6 +163,7 @@ class _SupercampusAppState extends State<SupercampusApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    paymentRequestRevision.addListener(_onPaymentRequestsChanged);
     if (kIsWeb && Uri.base.path == '/reset-password') {
       _showPasswordReset = true;
       _passwordResetToken = Uri.base.queryParameters['token']?.trim();
@@ -285,6 +296,7 @@ class _SupercampusAppState extends State<SupercampusApp>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    paymentRequestRevision.removeListener(_onPaymentRequestsChanged);
     _realtimeRefreshDebounce?.cancel();
     unawaited(_realtimeEventSubscription?.cancel());
     unawaited(_pushDeepLinkSubscription?.cancel());
@@ -422,8 +434,22 @@ class _SupercampusAppState extends State<SupercampusApp>
     });
   }
 
+  /// A payment request changed (created, paid, withdrawn) or the student
+  /// just paid one: reread the home glance that carries the payment cards.
+  void _onPaymentRequestsChanged() {
+    if (!mounted || _session == null || _openModuleId != null) return;
+    setState(() => _glanceRevision++);
+  }
+
   void _onRealtimeEvent(RealtimeEvent event) {
     if (!mounted || _session == null) return;
+    // Payment requests and online payments: open admin pages and the home
+    // payment cards reload; the matching inbox item arrives with it.
+    if (isPaymentEvent(event.type)) {
+      paymentRequestRevision.value++;
+      setState(() => _notificationRevision++);
+      return;
+    }
 
     // `realtime.ready` is emitted after every socket reconnect. Authentication
     // already loaded the initial permission snapshot, so treating readiness as
@@ -487,7 +513,8 @@ class _SupercampusAppState extends State<SupercampusApp>
       type.startsWith('canteen.order.') ||
       type == 'canteen.wallet.credited' ||
       type == 'gatepass.request.decided' ||
-      type == 'attendance.report.submitted_to_principal';
+      type == 'attendance.report.submitted_to_principal' ||
+      type == 'notification.broadcast.received';
 
   Future<ThemeMode> _loadThemeMode(UserSession session) async {
     try {
@@ -716,25 +743,29 @@ class _SupercampusAppState extends State<SupercampusApp>
             ],
           ),
         ),
-        home: Builder(
-          builder: (context) {
-            final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations;
-            return AnimatedSwitcher(
-              duration: reduceMotion == true
-                  ? Duration.zero
-                  : AppMotion.standard,
-              switchInCurve: AppMotion.curve,
-              switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: AppMotion.switchTransition,
-              child: KeyedSubtree(
-                key: ValueKey<String>(
-                  '${_session?.email}|${_openModuleId ?? 'home'}|'
-                  '${_permissions == null}|$_surfaceRevision',
+        home: AppUpdateGate(
+          source: _appVersionSource,
+          child: Builder(
+            builder: (context) {
+              final reduceMotion =
+                  MediaQuery.maybeOf(context)?.disableAnimations;
+              return AnimatedSwitcher(
+                duration: reduceMotion == true
+                    ? Duration.zero
+                    : AppMotion.standard,
+                switchInCurve: AppMotion.curve,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: AppMotion.switchTransition,
+                child: KeyedSubtree(
+                  key: ValueKey<String>(
+                    '${_session?.email}|${_openModuleId ?? 'home'}|'
+                    '${_permissions == null}|$_surfaceRevision',
+                  ),
+                  child: _buildHome(),
                 ),
-                child: _buildHome(),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -904,6 +935,10 @@ class _SupercampusAppState extends State<SupercampusApp>
     // Mock mode has no session to authorize with, and an empty base URL has
     // nothing to call. Either way there is no honest day to show.
     if (_useMockData || _resolvedBackendBaseUrl.isEmpty) return null;
+    final paymentRequests = BackendPaymentRequestRepository(
+      baseUrl: _resolvedBackendBaseUrl,
+      accessTokenProvider: _provideAccessToken,
+    );
     return BackendGlanceSource(
       attendance: AttendanceRepository(
         baseUrl: _resolvedBackendBaseUrl,
@@ -916,6 +951,8 @@ class _SupercampusAppState extends State<SupercampusApp>
         session: session,
         permissions: _permissions!,
       ),
+      paymentRequests: paymentRequests,
+      paymentCheckout: paymentRequests,
     );
   }
 

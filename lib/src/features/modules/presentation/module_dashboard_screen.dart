@@ -37,6 +37,14 @@ import 'widgets/campus_wall_screen.dart';
 import 'widgets/student_reports_page.dart';
 import '../../admin_portal/data/admin_student_repository.dart';
 import '../../admin_portal/presentation/admin_dashboard_screen.dart';
+import '../../admin_system/data/admin_system_repository.dart';
+import '../../payment_requests/data/payment_request_repository.dart';
+import '../../payment_requests/presentation/admin_payment_requests_page.dart';
+import '../../payment_requests/presentation/online_payments_page.dart';
+import '../../push_broadcasts/data/push_broadcast_repository.dart';
+import '../../push_broadcasts/presentation/push_broadcast_screen.dart';
+import '../../reports/data/finance_report_repository.dart';
+import '../../reports/presentation/finance_reports_screen.dart';
 
 /// One portal for every user. The module list is a projection of
 /// [EffectivePermissions] over [ModuleCatalog] — there are no role checks in
@@ -424,8 +432,86 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       glance: _glance,
       onOpenAttendanceClass: widget.onOpenAttendanceClass,
       loadAdminUsers: _adminUsersRepository?.listUsers,
+      onOpenReports: widget.baseUrl != null && widget.accessTokenProvider != null
+          ? _openFinanceReports
+          : null,
+      onOpenPushNotifications:
+          widget.baseUrl != null && widget.accessTokenProvider != null
+          ? _openPushNotifications
+          : null,
+      onOpenPaymentRequests:
+          widget.baseUrl != null && widget.accessTokenProvider != null
+          ? _openPaymentRequests
+          : null,
+      onOpenOnlinePayments:
+          widget.baseUrl != null && widget.accessTokenProvider != null
+          ? _openOnlinePayments
+          : null,
+      adminSystemRepository: _adminSystemRepository,
     );
   }
+
+  BackendPaymentRequestRepository _paymentRequestRepository() =>
+      BackendPaymentRequestRepository(
+        baseUrl: widget.baseUrl!,
+        accessTokenProvider: widget.accessTokenProvider!,
+      );
+
+  void _openPaymentRequests() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AdminPaymentRequestsPage(
+          repository: _paymentRequestRepository(),
+          canManage: canManagePaymentRequests(widget.permissions),
+        ),
+      ),
+    );
+  }
+
+  void _openOnlinePayments() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            OnlinePaymentsPage(repository: _paymentRequestRepository()),
+      ),
+    );
+  }
+
+  void _openPushNotifications() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PushBroadcastScreen(
+          repository: BackendPushBroadcastRepository(
+            baseUrl: widget.baseUrl!,
+            accessTokenProvider: widget.accessTokenProvider!,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openFinanceReports() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FinanceReportsScreen(
+          repository: BackendFinanceReportRepository(
+            baseUrl: widget.baseUrl!,
+            accessTokenProvider: widget.accessTokenProvider!,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Audit logs, security logs and app versions on the administrator home.
+  /// Null in mock builds, which then hide the System group.
+  late final AdminSystemRepository? _adminSystemRepository =
+      widget.baseUrl != null && widget.accessTokenProvider != null
+      ? BackendAdminSystemRepository(
+          baseUrl: widget.baseUrl!,
+          accessTokenProvider: widget.accessTokenProvider!,
+        )
+      : null;
 
   /// Account counts on the administrator home. Built once; null in mock
   /// builds, which then show no counts.

@@ -12,6 +12,9 @@ enum WalletTransactionKind {
   onlineTopUp,
   manualTopUp,
   refund,
+
+  /// Taken out by the accounts desk; the description holds the reason.
+  accountDeduction,
   credit,
   debit,
 }
@@ -23,6 +26,7 @@ extension WalletTransactionKindLabel on WalletTransactionKind {
     WalletTransactionKind.onlineTopUp => 'Online top-up',
     WalletTransactionKind.manualTopUp => 'Wallet top-up',
     WalletTransactionKind.refund => 'Refund',
+    WalletTransactionKind.accountDeduction => 'Wallet deduction',
     WalletTransactionKind.credit => 'Wallet credit',
     WalletTransactionKind.debit => 'Wallet payment',
   };
@@ -141,6 +145,8 @@ class WalletTransactionDetail {
         return WalletTransactionKind.manualTopUp;
       case 'refund':
         return WalletTransactionKind.refund;
+      case 'manual_debit':
+        return WalletTransactionKind.accountDeduction;
     }
     if (laundry != null || (shopKey ?? '').contains('laundry')) {
       if (!isCredit) return WalletTransactionKind.laundryPayment;
@@ -163,7 +169,9 @@ class WalletTransactionDetail {
   /// top-up's method is not recorded, so it has none.
   String? get paymentMethod => switch (kind) {
     WalletTransactionKind.onlineTopUp => 'Razorpay',
-    WalletTransactionKind.manualTopUp || WalletTransactionKind.credit => null,
+    WalletTransactionKind.manualTopUp ||
+    WalletTransactionKind.accountDeduction ||
+    WalletTransactionKind.credit => null,
     _ => 'SuperCampus wallet',
   };
 

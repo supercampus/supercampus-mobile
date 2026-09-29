@@ -7,9 +7,15 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/campus_nav_bar.dart';
 import '../../advisor/data/advisor_students_repository.dart';
 import '../../advisor/presentation/advisor_students_section.dart';
+import '../../admin_system/data/admin_system_repository.dart';
+import '../../admin_system/presentation/admin_system_entries.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../../modules/presentation/today_glance.dart';
 import '../../modules/presentation/widgets/home_sheets.dart';
+import '../../payment_requests/presentation/admin_payment_requests_page.dart';
+import '../../payment_requests/presentation/online_payments_page.dart';
+import '../../push_broadcasts/data/push_broadcast_repository.dart';
+import '../../reports/data/finance_report.dart';
 import '../data/admin_student_repository.dart';
 
 /// Clean, high-productivity Bento Grid dashboard for campus administrators and staff.
@@ -36,7 +42,32 @@ class AdminDashboardScreen extends StatefulWidget {
     this.glance,
     this.onOpenAttendanceClass,
     this.loadAdminUsers,
+    this.onOpenReports,
+    this.onOpenPushNotifications,
+    this.onOpenPaymentRequests,
+    this.onOpenOnlinePayments,
+    this.adminSystemRepository,
   });
+
+  /// Backs the System group (Audit logs, Security logs, App versions). Null
+  /// hides the group; each row is also gated by its own grant.
+  final AdminSystemRepository? adminSystemRepository;
+
+  /// Opens Push Notifications (broadcasts). Null hides the entry, as do
+  /// grants without `notifications.broadcast.*`.
+  final VoidCallback? onOpenPushNotifications;
+
+  /// Opens Payment requests (fines, bills). Null hides the entry, as do
+  /// grants without `fees.payment_requests.*`.
+  final VoidCallback? onOpenPaymentRequests;
+
+  /// Opens Online payments (Razorpay tracking). Null hides the entry, as do
+  /// grants without `fees.online_payments.*`.
+  final VoidCallback? onOpenOnlinePayments;
+
+  /// Opens the finance Reports page (PDF / CSV). Null hides the entry, as
+  /// do grants that could not load the reports.
+  final VoidCallback? onOpenReports;
 
   /// Reads the tenant's accounts for the administrator's overview counts.
   /// Null (or a failed read) shows no counts rather than invented ones.
@@ -77,6 +108,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   /// family, and they must not be shown controls they cannot open.
   bool get _administers =>
       permissions.canSeeModule(ModuleCatalog.administration);
+
+  /// The finance Reports entry: shown to whoever holds the report grants.
+  VoidCallback? get _openReports =>
+      widget.onOpenReports != null && canGenerateFinanceReports(permissions)
+      ? widget.onOpenReports
+      : null;
+
+  /// Payment requests: shown to whoever may view or raise them.
+  VoidCallback? get _openPaymentRequests =>
+      widget.onOpenPaymentRequests != null &&
+          canViewPaymentRequests(permissions)
+      ? widget.onOpenPaymentRequests
+      : null;
+
+  /// Online payments: shown to whoever may track Razorpay payments.
+  VoidCallback? get _openOnlinePayments =>
+      widget.onOpenOnlinePayments != null && canViewOnlinePayments(permissions)
+      ? widget.onOpenOnlinePayments
+      : null;
+
+  /// Push broadcasts: shown to whoever may view or send them.
+  VoidCallback? get _openPushNotifications =>
+      widget.onOpenPushNotifications != null &&
+          canViewPushBroadcasts(permissions)
+      ? widget.onOpenPushNotifications
+      : null;
 
   List<ManagedTenantUser>? _adminUsers;
   bool _adminUsersFailed = false;
@@ -412,6 +469,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         subtitle: 'Campus circulars',
         onTap: () => open(ModuleCatalog.administration, 'announcements'),
       ),
+      if (_openPushNotifications != null)
+        _AdminRow(
+          icon: Icons.notifications_active_rounded,
+          color: AppColors.hotPinkInk,
+          title: 'Push notifications',
+          subtitle: 'Broadcast to roles, people or students',
+          onTap: _openPushNotifications!,
+        ),
     ];
 
     final money = <_AdminRow>[
@@ -446,6 +511,30 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           title: 'Vendors & orders',
           subtitle: 'Procurement',
           onTap: () => open(ModuleCatalog.vendorManagement),
+        ),
+      if (_openReports != null)
+        _AdminRow(
+          icon: Icons.summarize_rounded,
+          color: AppColors.brandViolet,
+          title: 'Reports',
+          subtitle: 'Sales, wallet and vendor reports as PDF or CSV',
+          onTap: _openReports!,
+        ),
+      if (_openPaymentRequests != null)
+        _AdminRow(
+          icon: Icons.request_quote_rounded,
+          color: AppColors.orangeInk,
+          title: 'Payment requests',
+          subtitle: 'Fines, bills and other dues for students',
+          onTap: _openPaymentRequests!,
+        ),
+      if (_openOnlinePayments != null)
+        _AdminRow(
+          icon: Icons.credit_score_rounded,
+          color: AppColors.success,
+          title: 'Online payments',
+          subtitle: 'Razorpay capture, settlement and recovery',
+          onTap: _openOnlinePayments!,
         ),
     ];
 
@@ -516,10 +605,34 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         const SizedBox(height: 24),
         _AdminGroup(title: 'Campus', rows: campus),
       ],
+      if (_systemRows().isNotEmpty) ...[
+        const SizedBox(height: 24),
+        _AdminGroup(title: 'System', rows: _systemRows()),
+      ],
       if (widget.advisorStudentsSource != null) ...[
         const SizedBox(height: 24),
         AdvisorStudentsSection(source: widget.advisorStudentsSource!),
       ],
+    ];
+  }
+
+  /// Audit logs, security logs and app versions, each behind its own grant.
+  List<_AdminRow> _systemRows() {
+    final repository = widget.adminSystemRepository;
+    if (repository == null) return const [];
+    return [
+      for (final entry in adminSystemEntries(permissions))
+        _AdminRow(
+          icon: entry.icon,
+          color: entry.color,
+          title: entry.title,
+          subtitle: entry.subtitle,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => entry.build(repository, permissions),
+            ),
+          ),
+        ),
     ];
   }
 
@@ -894,6 +1007,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           onTap: () => widget.onOpenModule(ModuleCatalog.gatepass, 'movement_logs'),
         ),
       ]);
+    }
+
+    if (_openReports != null && !_administers) {
+      shortcuts.add(
+        _buildActionPill(
+          icon: Icons.summarize_rounded,
+          label: 'Reports',
+          color: AppColors.brandViolet,
+          onTap: _openReports!,
+        ),
+      );
     }
 
     if (shortcuts.isEmpty) return const SizedBox.shrink();
@@ -1431,6 +1555,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         onTap: () => widget.onOpenModule(ModuleCatalog.administration, 'announcements'),
       ));
     }
+    if (_openPushNotifications != null && showAdmin) {
+      tiles.add(_buildAppTile(
+        title: 'Push Notifications',
+        tag: 'Broadcasts',
+        icon: Icons.notifications_active_rounded,
+        color: AppColors.hotPinkInk,
+        onTap: _openPushNotifications!,
+      ));
+    }
 
     // --- Commerce & Ops ---
     if (permissions.canSeeModule(ModuleCatalog.canteen) && showCommerce) {
@@ -1496,6 +1629,36 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         icon: Icons.handshake_outlined,
         color: const Color(0xFF0D9488),
         onTap: () => widget.onOpenModule(ModuleCatalog.vendorManagement),
+      ));
+    }
+
+    if (_openReports != null && showCommerce) {
+      tiles.add(_buildAppTile(
+        title: 'Reports',
+        tag: 'PDF & CSV',
+        icon: Icons.summarize_rounded,
+        color: AppColors.brandViolet,
+        onTap: _openReports!,
+      ));
+    }
+
+    if (_openPaymentRequests != null && showCommerce) {
+      tiles.add(_buildAppTile(
+        title: 'Payment Requests',
+        tag: 'Fines & Bills',
+        icon: Icons.request_quote_rounded,
+        color: AppColors.orangeInk,
+        onTap: _openPaymentRequests!,
+      ));
+    }
+
+    if (_openOnlinePayments != null && showCommerce) {
+      tiles.add(_buildAppTile(
+        title: 'Online Payments',
+        tag: 'Razorpay',
+        icon: Icons.credit_score_rounded,
+        color: AppColors.success,
+        onTap: _openOnlinePayments!,
       ));
     }
 
