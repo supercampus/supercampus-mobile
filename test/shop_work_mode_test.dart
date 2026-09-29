@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supercampus_mobile/src/core/widgets/campus_nav_bar.dart';
 import 'package:supercampus_mobile/src/features/authentication/data/auth_repository.dart';
 import 'package:supercampus_mobile/src/features/canteen/data/canteen_models.dart';
 import 'package:supercampus_mobile/src/features/canteen/data/canteen_repository.dart';
@@ -146,13 +147,23 @@ const _accountant = UserSession(
   activePortalFamily: PortalFamily.staff,
 );
 
+/// A destination of the workspace's bottom bar.
 Finder _sectionTab(String label) => find.descendant(
-  of: find.byType(SegmentedButton<OwnerSection>),
+  of: find.byType(CampusNavBar),
   matching: find.text(label),
 );
 
 void main() {
   group('A. an admin overseeing the shops', () {
+    test('a counter runs Home, Menu, Settled and Sales, in that order', () {
+      expect(OwnerSection.values, [
+        OwnerSection.orders,
+        OwnerSection.menu,
+        OwnerSection.settled,
+        OwnerSection.sales,
+      ]);
+    });
+
     test('sees the menu and figures for food, figures only elsewhere', () {
       final store = _store(configuresShops: true);
       expect(ownerSectionsFor(store, _canteen), [
@@ -194,21 +205,23 @@ void main() {
       expect(find.text('Shop operations'), findsOneWidget);
       expect(find.text('Campus shops'), findsOneWidget);
 
-      // Campus Canteen: Menu and Sales & Profit, no Orders.
+      // Campus Canteen: Menu and Sales, no queue (Home) and no Settled.
       expect(_sectionTab('Menu'), findsOneWidget);
-      expect(_sectionTab('Sales & Profit'), findsOneWidget);
-      expect(_sectionTab('Orders'), findsNothing);
+      expect(_sectionTab('Sales'), findsOneWidget);
+      expect(_sectionTab('Home'), findsNothing);
+      expect(_sectionTab('Settled'), findsNothing);
+      expect(find.byType(SegmentedButton<OwnerSection>), findsNothing);
 
       // Campus Laundry: Sales & Profit only, so no one-item tab bar.
       await tester.tap(find.text('Campus Laundry'));
       await tester.pumpAndSettle();
-      expect(find.byType(SegmentedButton<OwnerSection>), findsNothing);
+      expect(find.byType(CampusNavBar), findsNothing);
       expect(find.text('Sales & Profit Analytics'), findsOneWidget);
 
       // Stationery Store: the same.
       await tester.tap(find.text('Stationery Store'));
       await tester.pumpAndSettle();
-      expect(find.byType(SegmentedButton<OwnerSection>), findsNothing);
+      expect(find.byType(CampusNavBar), findsNothing);
       expect(find.text('Sales & Profit Analytics'), findsOneWidget);
     });
 

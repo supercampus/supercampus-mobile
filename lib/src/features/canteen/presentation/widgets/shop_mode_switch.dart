@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../data/canteen_models.dart';
+import 'counter_open_tile.dart';
 
 /// Work / Shop, for anyone whose job is in the campus shops or offices.
 ///
@@ -48,9 +49,13 @@ class ShopModeSwitch extends StatelessWidget {
   }
 }
 
-/// The signed-in person, as the shops know them, with the Work / Shop choice
-/// and sign-out. Everything shown comes from the session: nothing here is
-/// filled in when the account has no value for it.
+/// The signed-in person, as the shops know them, with the Work / Shop choice,
+/// the counter's open switch (for an account with a counter of its own) and
+/// sign-out. Everything shown comes from the session: nothing here is filled
+/// in when the account has no value for it.
+///
+/// [counterOpen] reads the counter's current state; the row is shown only
+/// while it and [onCounterOpenChanged] are given.
 Future<void> showShopAccountSheet(
   BuildContext context, {
   required String name,
@@ -60,11 +65,15 @@ Future<void> showShopAccountSheet(
   CanteenStaffMode? mode,
   ValueChanged<CanteenStaffMode>? onModeChanged,
   VoidCallback? onOpenSettings,
+  bool? Function()? counterOpen,
+  Future<void> Function(bool open)? onCounterOpenChanged,
   required VoidCallback onSignOut,
 }) {
   return showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
+    // Sized to its rows, scrolling when a short screen cannot hold them all.
+    isScrollControlled: true,
     backgroundColor: context.palette.surfaceRaised,
     builder: (sheetContext) {
       final palette = sheetContext.palette;
@@ -76,7 +85,7 @@ Future<void> showShopAccountSheet(
           .join();
       final hasPhoto = photoUrl != null && photoUrl.isNotEmpty;
       return SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -149,6 +158,21 @@ Future<void> showShopAccountSheet(
                 ),
               ],
               const SizedBox(height: 12),
+              if (counterOpen != null && onCounterOpenChanged != null)
+                StatefulBuilder(
+                  builder: (context, setSheetState) {
+                    final open = counterOpen();
+                    if (open == null) return const SizedBox.shrink();
+                    return CounterOpenSwitchRow(
+                      open: open,
+                      onChanged: (value) async {
+                        await onCounterOpenChanged(value);
+                        // Re-read the counter once the change has landed.
+                        if (context.mounted) setSheetState(() {});
+                      },
+                    );
+                  },
+                ),
               if (onOpenSettings != null)
                 ListTile(
                   contentPadding: EdgeInsets.zero,

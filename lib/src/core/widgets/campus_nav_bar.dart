@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -27,7 +26,12 @@ class CampusNavItem {
 /// Center profile avatar has been removed and replaced by top-right header avatars.
 /// QR scanner is strictly restricted to roles that perform scanning actions
 /// (canteen owner, stationery operator, laundry owner, captains, security).
-class CampusNavBar extends StatefulWidget {
+///
+/// Every destination and the scanner share the bar in equal slots, so two,
+/// three or four destinations all line up the same way; the scanner is the
+/// last slot, a solid brand-coloured key with its label under it like the
+/// destinations beside it.
+class CampusNavBar extends StatelessWidget {
   const CampusNavBar({
     super.key,
     required this.onHome,
@@ -85,94 +89,30 @@ class CampusNavBar extends StatefulWidget {
     return math.max(0, width) / aspect;
   }
 
-  @override
-  State<CampusNavBar> createState() => _CampusNavBarState();
-}
-
-// Colours sampled from the board.
-const _scanFrom = Color(0xFF7B42F6);
-const _scanTo = Color(0xFFFF2D95);
-const _iconPurple = Color(0xFF7B42F6);
-
-/// What the label turns on each pulse.
-const _pulseMagenta = Color(0xFFFF2D95);
-
-// Horizontal placement, as a fraction of the bar's width.
-const _scanLeftX = 592 / 942;
-const _scanWidth = 312 / 942;
-
-/// How much width a tab claims for its tap target: wide enough to hold
-/// "Modules" comfortably, narrow enough that the two never meet.
-const _tabWidth = 0.17;
-
-// Vertical placement and sizes, as a fraction of the bar's height.
-const _glyphSize = 53 / 152;
-const _glyphCentreY = 66 / 152;
-const _labelCentreY = 109.5 / 152;
-const _labelSize = 18 / 152;
-const _scanTop = 21 / 152;
-const _scanHeight = 115 / 152;
-const _scanLabelSize = 26.4 / 152;
-const _bracketStroke = 6 / 152;
-const _bracketArm = 32 / 152;
-const _bracketInset = 9 / 152;
-
-class _CampusNavBarState extends State<CampusNavBar>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 460),
-    reverseDuration: const Duration(milliseconds: 460),
-  );
-  Timer? _ticker;
-
-  bool get _effectiveShowScan => widget.showScan ?? (widget.onScan != null);
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final quiet = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (quiet || !_effectiveShowScan || widget.onScan == null) {
-      _stop();
-    } else {
-      _start();
-    }
-  }
-
-  void _start() {
-    _ticker ??= Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => _pulse.forward().then((_) {
-        if (mounted) _pulse.reverse();
-      }),
-    );
-  }
-
-  void _stop() {
-    _ticker?.cancel();
-    _ticker = null;
-    _pulse.value = 0;
-  }
-
-  @override
-  void didUpdateWidget(covariant CampusNavBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final oldShow = oldWidget.showScan ?? (oldWidget.onScan != null);
-    if ((_effectiveShowScan && widget.onScan != null) !=
-        (oldShow && oldWidget.onScan != null)) {
-      (_effectiveShowScan && widget.onScan != null) ? _start() : _stop();
-    }
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    _pulse.dispose();
-    super.dispose();
-  }
+  bool get _effectiveShowScan => showScan ?? (onScan != null);
 
   @override
   Widget build(BuildContext context) {
+    final tabs = (items != null && items!.isNotEmpty)
+        ? items!
+        : [
+            CampusNavItem(
+              id: 'home',
+              label: 'Home',
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: const Icon(Icons.home_rounded),
+              onTap: onHome,
+            ),
+            CampusNavItem(
+              id: 'modules',
+              label: 'Modules',
+              icon: const CampusNavCubeGlyph(filled: false),
+              selectedIcon: const CampusNavCubeGlyph(filled: true),
+              onTap: onModules,
+            ),
+          ];
+    final hasScan = _effectiveShowScan;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -184,133 +124,7 @@ class _CampusNavBarState extends State<CampusNavBar>
             aspectRatio: CampusNavBar.aspect,
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final w = constraints.maxWidth;
                 final h = constraints.maxHeight;
-                final hasScan = _effectiveShowScan;
-
-                final List<Widget> navChildren = [];
-
-                if (hasScan) {
-                  // Right side: Scan Button
-                  navChildren.add(
-                    Positioned(
-                      left: _scanLeftX * w,
-                      top: _scanTop * h,
-                      width: _scanWidth * w,
-                      height: _scanHeight * h,
-                      child: _ScanButton(
-                        pulse: _pulse,
-                        onTap: widget.onScan,
-                        barHeight: h,
-                      ),
-                    ),
-                  );
-
-                  // Left area (width: _scanLeftX * w)
-                  if (widget.items != null && widget.items!.isNotEmpty) {
-                    final count = widget.items!.length;
-                    for (int i = 0; i < count; i++) {
-                      final item = widget.items![i];
-                      final centreX = (_scanLeftX * (i + 0.5)) / count;
-                      navChildren.add(
-                        _tab(
-                          w: w,
-                          h: h,
-                          centreX: centreX,
-                          id: item.id,
-                          label: item.label,
-                          icon: item.icon,
-                          selectedIcon: item.selectedIcon,
-                          onTap: item.onTap,
-                          customWidth: (_scanLeftX * w) / count,
-                        ),
-                      );
-                    }
-                  } else {
-                    // Default Home & Modules spaced cleanly in left zone
-                    navChildren.add(
-                      _tab(
-                        w: w,
-                        h: h,
-                        centreX: _scanLeftX * 0.30,
-                        id: 'home',
-                        label: 'Home',
-                        icon: Icon(
-                          widget.selectedId == 'home'
-                              ? Icons.home_rounded
-                              : Icons.home_outlined,
-                        ),
-                        onTap: widget.onHome,
-                      ),
-                    );
-                    navChildren.add(
-                      _tab(
-                        w: w,
-                        h: h,
-                        centreX: _scanLeftX * 0.72,
-                        id: 'modules',
-                        label: 'Modules',
-                        icon: CampusNavCubeGlyph(
-                          filled: widget.selectedId == 'modules',
-                        ),
-                        onTap: widget.onModules,
-                      ),
-                    );
-                  }
-                } else {
-                  // No scan button: Full width w used
-                  if (widget.items != null && widget.items!.isNotEmpty) {
-                    final count = widget.items!.length;
-                    for (int i = 0; i < count; i++) {
-                      final item = widget.items![i];
-                      final centreX = (i + 0.5) / count;
-                      navChildren.add(
-                        _tab(
-                          w: w,
-                          h: h,
-                          centreX: centreX,
-                          id: item.id,
-                          label: item.label,
-                          icon: item.icon,
-                          selectedIcon: item.selectedIcon,
-                          onTap: item.onTap,
-                          customWidth: w / count,
-                        ),
-                      );
-                    }
-                  } else {
-                    // Default: Home and Modules spaced across width
-                    navChildren.add(
-                      _tab(
-                        w: w,
-                        h: h,
-                        centreX: 0.30,
-                        id: 'home',
-                        label: 'Home',
-                        icon: Icon(
-                          widget.selectedId == 'home'
-                              ? Icons.home_rounded
-                              : Icons.home_outlined,
-                        ),
-                        onTap: widget.onHome,
-                      ),
-                    );
-                    navChildren.add(
-                      _tab(
-                        w: w,
-                        h: h,
-                        centreX: 0.70,
-                        id: 'modules',
-                        label: 'Modules',
-                        icon: CampusNavCubeGlyph(
-                          filled: widget.selectedId == 'modules',
-                        ),
-                        onTap: widget.onModules,
-                      ),
-                    );
-                  }
-                }
-
                 final p = context.palette;
                 return DecoratedBox(
                   decoration: BoxDecoration(
@@ -333,8 +147,25 @@ class _CampusNavBarState extends State<CampusNavBar>
                     color: Colors.transparent,
                     shape: const StadiumBorder(),
                     clipBehavior: Clip.antiAlias,
-                    child: Stack(
-                      children: navChildren,
+                    child: Padding(
+                      // Keeps the outer slots clear of the rounded caps.
+                      padding: EdgeInsets.symmetric(horizontal: h * 0.22),
+                      child: Row(
+                        children: [
+                          for (final item in tabs)
+                            Expanded(
+                              child: _NavTab(
+                                item: item,
+                                selected: selectedId == item.id,
+                                barHeight: h,
+                              ),
+                            ),
+                          if (hasScan)
+                            Expanded(
+                              child: _ScanButton(onTap: onScan, barHeight: h),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -345,79 +176,112 @@ class _CampusNavBarState extends State<CampusNavBar>
       ),
     );
   }
+}
 
-  Widget _tab({
-    required double w,
-    required double h,
-    required double centreX,
-    required String id,
-    required String label,
-    required Widget icon,
-    Widget? selectedIcon,
-    required VoidCallback onTap,
-    double? customWidth,
-  }) {
-    final width = customWidth ?? (_tabWidth * w);
+const _iconPurple = Color(0xFF7B42F6);
+
+// Vertical placement and sizes, as a fraction of the bar's height.
+const _glyphSize = 53 / 152;
+const _glyphCentreY = 66 / 152;
+const _labelCentreY = 109.5 / 152;
+const _labelSize = 18 / 152;
+
+/// The scanner key: where its centre sits, its size and its glyph. It stays
+/// clear of its label, which lines up with the destinations' labels.
+const _scanCentreY = 63 / 152;
+const _scanKeyHeight = 60 / 152;
+const _scanKeyWidth = 96 / 152;
+const _scanGlyphSize = 36 / 152;
+
+/// The label under a glyph, in the destinations' type.
+TextStyle _labelStyle(double h, {required Color color, required bool bold}) =>
+    TextStyle(
+      color: color,
+      fontSize: _labelSize * h,
+      height: 1.2,
+      fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+    );
+
+class _NavTab extends StatelessWidget {
+  const _NavTab({
+    required this.item,
+    required this.selected,
+    required this.barHeight,
+  });
+
+  final CampusNavItem item;
+  final bool selected;
+  final double barHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final h = barHeight;
     final glyph = _glyphSize * h;
-    final selected = widget.selectedId == id;
     final inactiveColor = context.adaptive(
-      light: Theme.of(context).colorScheme.onSurfaceVariant.withValues(
-        alpha: .58,
-      ),
+      light: Theme.of(
+        context,
+      ).colorScheme.onSurfaceVariant.withValues(alpha: .58),
       dark: context.palette.inkSecondary,
     );
     final activeColor = context.adaptive(
       light: _iconPurple,
       dark: context.palette.brandInk,
     );
-    final displayIcon = (selected && selectedIcon != null) ? selectedIcon : icon;
+    final displayIcon = (selected && item.selectedIcon != null)
+        ? item.selectedIcon!
+        : item.icon;
 
-    return Positioned(
-      left: centreX * w - width / 2,
-      top: 0,
-      width: width,
-      height: h,
+    // One node per destination: its name, that it is a button, whether it
+    // is the current one, and the tap the InkResponse brings.
+    return Semantics(
+      container: true,
+      button: true,
+      selected: selected,
+      label: item.label,
       child: InkResponse(
-        key: ValueKey('nav-$id'),
-        onTap: onTap,
+        key: ValueKey('nav-${item.id}'),
+        onTap: item.onTap,
         containedInkWell: false,
-        radius: width / 2,
-        child: Stack(
-          children: [
-            Positioned(
-              left: 0,
-              right: 0,
-              top: _glyphCentreY * h - glyph / 2,
-              height: glyph,
-              child: IconTheme(
-                data: IconThemeData(
-                  color: selected ? activeColor : inactiveColor,
-                  size: glyph,
+        radius: h * 0.6,
+        child: ExcludeSemantics(
+          child: Stack(
+            children: [
+              Positioned(
+                left: 0,
+                right: 0,
+                top: _glyphCentreY * h - glyph / 2,
+                height: glyph,
+                child: IconTheme(
+                  data: IconThemeData(
+                    color: selected ? activeColor : inactiveColor,
+                    size: glyph,
+                  ),
+                  child: Center(child: displayIcon),
                 ),
-                child: Center(child: displayIcon),
               ),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              top: _labelCentreY * h - _labelSize * h * 0.6,
-              child: Center(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: selected
-                        ? Theme.of(context).colorScheme.onSurface
-                        : inactiveColor,
-                    fontSize: _labelSize * h,
-                    height: 1.2,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+              Positioned(
+                left: 0,
+                right: 0,
+                top: _labelCentreY * h - _labelSize * h * 0.6,
+                child: Center(
+                  child: Text(
+                    item.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.fade,
+                    softWrap: false,
+                    textAlign: TextAlign.center,
+                    style: _labelStyle(
+                      h,
+                      color: selected
+                          ? Theme.of(context).colorScheme.onSurface
+                          : inactiveColor,
+                      bold: selected,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -498,144 +362,136 @@ class _CubePainter extends CustomPainter {
       oldDelegate.filled != filled;
 }
 
-/// The scanner: a gradient slab framed by viewfinder corners.
-class _ScanButton extends StatelessWidget {
-  const _ScanButton({
-    required this.pulse,
-    required this.onTap,
-    required this.barHeight,
-  });
+/// The scanner: a solid brand-coloured key holding a crisp scanner glyph, with
+/// "Scan" under it where the destinations carry their labels.
+///
+/// It presses in the moment a finger lands — a slight scale and a deeper
+/// fill — and springs back on release. Without an [onTap] it stays in place,
+/// dimmed, so a permission change never reflows the bar.
+class _ScanButton extends StatefulWidget {
+  const _ScanButton({required this.onTap, required this.barHeight});
 
-  final Animation<double> pulse;
   final VoidCallback? onTap;
   final double barHeight;
 
   @override
+  State<_ScanButton> createState() => _ScanButtonState();
+}
+
+class _ScanButtonState extends State<_ScanButton> {
+  var _pressed = false;
+
+  void _press(bool value) {
+    if (_pressed != value) setState(() => _pressed = value);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final enabled = onTap != null;
-    final h = barHeight;
+    final h = widget.barHeight;
+    final enabled = widget.onTap != null;
+    final p = context.palette;
+    final quiet = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final keyHeight = _scanKeyHeight * h;
+    final keyWidth = _scanKeyWidth * h;
+    final fill = enabled
+        ? (_pressed ? Color.lerp(p.brand, Colors.black, 0.18)! : p.brand)
+        : p.brand.withValues(alpha: 0.38);
 
     return Semantics(
+      container: true,
       button: true,
       enabled: enabled,
       label: 'Scan QR code',
-      child: InkResponse(
-        key: const ValueKey('nav-scan'),
-        onTap: onTap,
-        containedInkWell: false,
-        child: AnimatedBuilder(
-          animation: pulse,
-          builder: (context, _) {
-            final t = pulse.value;
-            final arm = (_bracketArm + t * 0.035) * h;
-            final inset = (_bracketInset - t * 0.02) * h;
-            final bracketColor = Color.lerp(Colors.white, _pulseMagenta, t)!;
-
-            return CustomPaint(
-              foregroundPainter: _ViewfinderPainter(
-                stroke: _bracketStroke * h,
-                arm: arm,
-                inset: inset,
-                color: bracketColor,
-              ),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(_scanHeight * h / 2),
-                  gradient: const LinearGradient(
-                    colors: [_scanFrom, _scanTo],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _scanTo.withValues(alpha: 0.35),
-                      blurRadius: h * 0.20,
-                      offset: Offset(0, h * 0.06),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.qr_code_scanner_rounded,
-                        color: Colors.white,
-                        size: _scanLabelSize * h * 1.05,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        'Scan',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: _scanLabelSize * h * 0.9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.2,
+      child: Tooltip(
+        message: 'Scan QR code',
+        excludeFromSemantics: true,
+        // The key goes in on pointer-down — not after the tap is decided —
+        // and comes back out when the finger lifts or slides away.
+        child: Listener(
+          onPointerDown: enabled ? (_) => _press(true) : null,
+          onPointerUp: (_) => _press(false),
+          onPointerCancel: (_) => _press(false),
+          child: GestureDetector(
+            key: const ValueKey('nav-scan'),
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onTap,
+            child: ExcludeSemantics(
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    top: _scanCentreY * h - keyHeight / 2,
+                    height: keyHeight,
+                    child: Center(
+                      child: AnimatedScale(
+                        scale: _pressed ? 0.92 : 1,
+                        duration: quiet
+                            ? Duration.zero
+                            : const Duration(milliseconds: 110),
+                        curve: Curves.easeOut,
+                        child: AnimatedContainer(
+                          key: const ValueKey('nav-scan-key'),
+                          duration: quiet
+                              ? Duration.zero
+                              : const Duration(milliseconds: 110),
+                          width: keyWidth,
+                          height: keyHeight,
+                          decoration: BoxDecoration(
+                            color: fill,
+                            // A rounded square, not a pill: it reads as a key.
+                            borderRadius: BorderRadius.circular(
+                              keyHeight * 0.36,
+                            ),
+                            boxShadow: enabled && !_pressed
+                                ? [
+                                    BoxShadow(
+                                      color: p.brand.withValues(alpha: 0.28),
+                                      blurRadius: h * 0.12,
+                                      offset: Offset(0, h * 0.04),
+                                    ),
+                                  ]
+                                : const [],
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.qr_code_scanner_rounded,
+                            color: p.onBrand,
+                            size: _scanGlyphSize * h,
+                          ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    top: _labelCentreY * h - _labelSize * h * 0.6,
+                    child: Center(
+                      child: Text(
+                        'Scan',
+                        maxLines: 1,
+                        softWrap: false,
+                        textAlign: TextAlign.center,
+                        style: _labelStyle(
+                          h,
+                          color: enabled
+                              ? context.adaptive(
+                                  light: _iconPurple,
+                                  dark: p.brandInk,
+                                )
+                              : p.inkDisabled,
+                          bold: true,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
   }
-}
-
-class _ViewfinderPainter extends CustomPainter {
-  const _ViewfinderPainter({
-    required this.stroke,
-    required this.arm,
-    required this.inset,
-    required this.color,
-  });
-
-  final double stroke;
-  final double arm;
-  final double inset;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..color = color;
-
-    final rect = Rect.fromLTRB(
-      inset + stroke / 2,
-      inset + stroke / 2,
-      size.width - inset - stroke / 2,
-      size.height - inset - stroke / 2,
-    );
-
-    void corner(Offset at, double dx, double dy) {
-      final radius = arm * 0.72;
-      canvas.drawPath(
-        Path()
-          ..moveTo(at.dx + dx * arm, at.dy)
-          ..lineTo(at.dx + dx * radius, at.dy)
-          ..quadraticBezierTo(at.dx, at.dy, at.dx, at.dy + dy * radius)
-          ..lineTo(at.dx, at.dy + dy * arm),
-        paint,
-      );
-    }
-
-    corner(rect.topLeft, 1, 1);
-    corner(rect.topRight, -1, 1);
-    corner(rect.bottomLeft, 1, -1);
-    corner(rect.bottomRight, -1, -1);
-  }
-
-  @override
-  bool shouldRepaint(_ViewfinderPainter oldDelegate) =>
-      oldDelegate.inset != inset ||
-      oldDelegate.color != color ||
-      oldDelegate.stroke != stroke ||
-      oldDelegate.arm != arm;
 }

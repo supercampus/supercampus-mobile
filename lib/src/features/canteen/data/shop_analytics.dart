@@ -127,6 +127,13 @@ class ShopAnalyticsOrder {
     required this.profit,
     required this.itemCount,
     required this.createdAt,
+    this.cost,
+    this.updatedAt,
+    this.lines = const [],
+    this.fulfilmentMode = FulfilmentMode.pickup,
+    this.tokenNumber,
+    this.captainName,
+    this.shopKey,
   });
 
   factory ShopAnalyticsOrder.fromJson(Map<String, dynamic> json) =>
@@ -137,10 +144,44 @@ class ShopAnalyticsOrder {
         status: '${json['status'] ?? ''}',
         total: _double(json['total']),
         profit: _double(json['profit']),
+        cost: json['cost'] == null ? null : _double(json['cost']),
         itemCount: _int(json['itemCount']),
         createdAt:
             DateTime.tryParse('${json['createdAt'] ?? ''}')?.toLocal() ??
             DateTime.fromMillisecondsSinceEpoch(0),
+        updatedAt: DateTime.tryParse('${json['updatedAt'] ?? ''}')?.toLocal(),
+        lines: _list(json['lines'])
+            .map((value) => _line(_map(value), '${json['shopKey'] ?? ''}'))
+            .toList(growable: false),
+        fulfilmentMode: json['fulfilmentMode'] == 'dine_in'
+            ? FulfilmentMode.dineIn
+            : FulfilmentMode.pickup,
+        tokenNumber: json['tokenNumber'] == null
+            ? null
+            : _int(json['tokenNumber']),
+        captainName: json['captainName'] is String
+            ? json['captainName'] as String
+            : null,
+        shopKey: json['shopKey'] is String ? json['shopKey'] as String : null,
+      );
+
+  /// [order] as a staff member's detail lists it.
+  factory ShopAnalyticsOrder.fromOrder(CanteenOrder order) =>
+      ShopAnalyticsOrder(
+        id: order.id,
+        orderNumber: order.orderNumber ?? order.displayId,
+        customerName: order.customerName ?? '',
+        status: order.status.apiValue,
+        total: order.total,
+        profit: order.totalProfit,
+        cost: order.totalCost,
+        itemCount: order.itemCount,
+        createdAt: order.createdAt,
+        lines: order.lines,
+        fulfilmentMode: order.fulfilmentMode,
+        tokenNumber: order.tokenNumber,
+        captainName: order.captainName,
+        shopKey: order.shopKey,
       );
 
   final String id;
@@ -151,8 +192,65 @@ class ShopAnalyticsOrder {
   final String status;
   final double total;
   final double profit;
+
+  /// What the order's items cost the shop; null when the source leaves it out.
+  final double? cost;
   final int itemCount;
   final DateTime createdAt;
+
+  /// When it last moved; for a delivered order, when it was handed over.
+  final DateTime? updatedAt;
+
+  /// The items, when the source sends them (a staff member's detail does).
+  final List<CartLine> lines;
+  final FulfilmentMode fulfilmentMode;
+  final int? tokenNumber;
+  final String? captainName;
+  final String? shopKey;
+
+  CanteenOrderStatus get orderStatus => CanteenOrderStatus.values.firstWhere(
+    (value) => value.apiValue == status,
+    orElse: () => CanteenOrderStatus.pending,
+  );
+
+  /// The order as the order detail page shows it.
+  CanteenOrder toCanteenOrder() => CanteenOrder(
+    id: id,
+    lines: lines,
+    total: total,
+    status: orderStatus,
+    fulfilmentMode: fulfilmentMode,
+    createdAt: createdAt,
+    tokenNumber: tokenNumber,
+    orderNumber: orderNumber,
+    customerName: customerName.isEmpty ? null : customerName,
+    captainName: captainName,
+    shopKey: shopKey,
+  );
+}
+
+/// One line of an order as the analytics endpoint echoes it from the order.
+CartLine _line(Map<String, dynamic> json, String shopKey) {
+  final status = '${json['status'] ?? ''}';
+  return CartLine(
+    item: CanteenMenuItem(
+      id: '${json['itemId'] ?? ''}',
+      name: '${json['name'] ?? 'Menu item'}',
+      description: '',
+      category: '${json['category'] ?? 'meals'}',
+      price: _double(json['price']),
+      cost: json['cost'] == null ? null : _double(json['cost']),
+      isVegetarian: json['isVegetarian'] != false,
+      isInstant: json['isInstant'] == true,
+      shopKey: shopKey.isEmpty ? null : shopKey,
+    ),
+    quantity: json['quantity'] == null ? 1 : _int(json['quantity']),
+    status: status.isEmpty
+        ? null
+        : CanteenOrderStatus.values
+              .where((value) => value.apiValue == status)
+              .firstOrNull,
+  );
 }
 
 /// A captain (or anyone else who handled orders) and their range figures.
@@ -165,6 +263,7 @@ class CaptainPerformance {
     this.role,
     this.assigned = true,
     this.lastHandledAt,
+    this.lastSeenAt,
     this.recentOrders = const [],
   });
 
@@ -178,6 +277,7 @@ class CaptainPerformance {
         lastHandledAt: DateTime.tryParse(
           '${json['lastHandledAt'] ?? ''}',
         )?.toLocal(),
+        lastSeenAt: DateTime.tryParse('${json['lastSeenAt'] ?? ''}')?.toLocal(),
         figures: ShopSalesFigures.fromJson(json),
         recentOrders: _list(json['recentOrders'])
             .map((value) => ShopAnalyticsOrder.fromJson(_map(value)))
@@ -191,7 +291,12 @@ class CaptainPerformance {
   /// The shop assignment (`captain`, `owner`); null when no longer assigned.
   final String? role;
   final bool assigned;
+
+  /// When they last moved an order in the range.
   final DateTime? lastHandledAt;
+
+  /// When they last signed in, when the server knows.
+  final DateTime? lastSeenAt;
   final ShopSalesFigures figures;
   final List<ShopAnalyticsOrder> recentOrders;
 }
@@ -239,6 +344,163 @@ class ShopAnalyticsReport {
   final List<CaptainPerformance> captains;
 }
 
+/// One day of a staff member's range.
+class CaptainDailyPoint {
+  const CaptainDailyPoint({
+    required this.date,
+    this.orders = 0,
+    this.completedOrders = 0,
+    this.revenue = 0,
+    this.profit = 0,
+  });
+
+  factory CaptainDailyPoint.fromJson(Map<String, dynamic> json) {
+    final date = DateTime.tryParse('${json['date'] ?? ''}');
+    return CaptainDailyPoint(
+      date: date == null
+          ? DateTime.fromMillisecondsSinceEpoch(0)
+          : DateTime(date.year, date.month, date.day),
+      orders: _int(json['orders']),
+      completedOrders: _int(json['completedOrders']),
+      revenue: _double(json['revenue']),
+      profit: _double(json['profit']),
+    );
+  }
+
+  final DateTime date;
+  final int orders;
+  final int completedOrders;
+  final double revenue;
+  final double profit;
+}
+
+/// One staff member over a range: their figures, a day-by-day series and a
+/// page of the orders they handled, newest first.
+class CaptainPerformanceDetail {
+  const CaptainPerformanceDetail({
+    required this.captain,
+    required this.range,
+    this.daily = const [],
+    this.orders = const [],
+    this.page = 1,
+    this.pageSize = 20,
+    this.totalOrders = 0,
+    this.totalPages = 1,
+  });
+
+  /// Reads `captainDetail` from a `shop-analytics?captain=…` response.
+  factory CaptainPerformanceDetail.fromJson(
+    Map<String, dynamic> json, {
+    required AnalyticsDateRange requested,
+  }) {
+    final detail = _map(json['captainDetail']);
+    final range = _map(json['range']);
+    final from = DateTime.tryParse('${range['from'] ?? ''}');
+    final to = DateTime.tryParse('${range['to'] ?? ''}');
+    return CaptainPerformanceDetail(
+      captain: CaptainPerformance.fromJson(detail),
+      range: from != null && to != null
+          ? AnalyticsDateRange(from, to)
+          : requested,
+      daily: _list(detail['daily'])
+          .map((value) => CaptainDailyPoint.fromJson(_map(value)))
+          .toList(growable: false),
+      orders: _list(detail['orders'])
+          .map((value) => ShopAnalyticsOrder.fromJson(_map(value)))
+          .toList(growable: false),
+      page: detail['page'] == null ? 1 : _int(detail['page']),
+      pageSize: detail['pageSize'] == null ? 20 : _int(detail['pageSize']),
+      totalOrders: _int(detail['totalOrders']),
+      totalPages: detail['totalPages'] == null ? 1 : _int(detail['totalPages']),
+    );
+  }
+
+  final CaptainPerformance captain;
+  final AnalyticsDateRange range;
+  final List<CaptainDailyPoint> daily;
+  final List<ShopAnalyticsOrder> orders;
+  final int page;
+  final int pageSize;
+  final int totalOrders;
+  final int totalPages;
+
+  bool get hasMore => page < totalPages;
+}
+
+/// A staff member's detail rolled up from orders on the device, for
+/// repositories without the analytics endpoint. Offline, staff are named by
+/// the orders, so [captainId] is the name [localShopAnalytics] used.
+CaptainPerformanceDetail localCaptainDetail({
+  required List<CanteenOrder> orders,
+  required AnalyticsDateRange range,
+  required String captainId,
+  int page = 1,
+  int pageSize = 20,
+}) {
+  final report = localShopAnalytics(orders: orders, range: range);
+  final captain =
+      report.captains.where((c) => c.userId == captainId).firstOrNull ??
+      CaptainPerformance(
+        userId: captainId,
+        name: captainId,
+        role: 'captain',
+        figures: const ShopSalesFigures(),
+      );
+  bool sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+  bool inRange(DateTime at) {
+    final day = DateTime(at.year, at.month, at.day);
+    return !day.isBefore(range.from) && !day.isAfter(range.to);
+  }
+
+  final mine =
+      orders
+          .where(
+            (order) =>
+                order.effectiveCaptainName == captainId &&
+                inRange(order.createdAt.toLocal()),
+          )
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  final daily = <CaptainDailyPoint>[];
+  for (var i = 0; i < range.days; i++) {
+    final day = DateTime(range.from.year, range.from.month, range.from.day + i);
+    final those = [
+      for (final order in mine)
+        if (sameDay(order.createdAt.toLocal(), day)) order,
+    ];
+    final done = those.where(
+      (order) => order.status == CanteenOrderStatus.completed,
+    );
+    daily.add(
+      CaptainDailyPoint(
+        date: day,
+        orders: those.length,
+        completedOrders: done.length,
+        revenue: done.fold(0, (sum, order) => sum + order.total),
+        profit: done.fold(0, (sum, order) => sum + order.totalProfit),
+      ),
+    );
+  }
+  final size = pageSize < 1 ? 1 : pageSize;
+  final totalPages = mine.isEmpty ? 1 : (mine.length / size).ceil();
+  final current = page.clamp(1, totalPages);
+  return CaptainPerformanceDetail(
+    captain: captain,
+    range: range,
+    daily: daily,
+    orders: mine
+        .skip((current - 1) * size)
+        .take(size)
+        .map(ShopAnalyticsOrder.fromOrder)
+        .toList(growable: false),
+    page: current,
+    pageSize: size,
+    totalOrders: mine.length,
+    totalPages: totalPages,
+  );
+}
+
 /// The same report rolled up from orders already on the device, for
 /// repositories without the analytics endpoint (the offline demo). Staff are
 /// whoever the orders name; there is no assignment list to add idle ones from.
@@ -271,18 +533,7 @@ ShopAnalyticsReport localShopAnalytics({
               figures: _figures(entry.value, summary.revenue),
               recentOrders: entry.value
                   .take(10)
-                  .map(
-                    (order) => ShopAnalyticsOrder(
-                      id: order.id,
-                      orderNumber: order.displayId,
-                      customerName: order.customerName ?? '',
-                      status: order.status.apiValue,
-                      total: order.total,
-                      profit: order.totalProfit,
-                      itemCount: order.itemCount,
-                      createdAt: order.createdAt,
-                    ),
-                  )
+                  .map(ShopAnalyticsOrder.fromOrder)
                   .toList(growable: false),
             ),
           )
@@ -343,6 +594,15 @@ abstract interface class ShopAnalyticsRepository {
   Future<ShopAnalyticsReport> loadShopAnalytics({
     required String shopKey,
     required AnalyticsDateRange range,
+  });
+
+  /// One staff member's figures, daily series and a page of their orders.
+  Future<CaptainPerformanceDetail> loadCaptainPerformance({
+    required String shopKey,
+    required String captainId,
+    required AnalyticsDateRange range,
+    int page = 1,
+    int pageSize = 20,
   });
 }
 

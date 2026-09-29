@@ -6,7 +6,7 @@ import '../../../../core/utils/user_facing_error.dart';
 import '../../data/canteen_models.dart';
 import '../../data/shop_analytics.dart';
 import 'canteen_surface.dart';
-import 'order_status_badge.dart';
+import 'captain_performance_page.dart';
 
 /// Loads one shop's analytics for a date range from the server.
 typedef ShopAnalyticsLoader =
@@ -15,10 +15,20 @@ typedef ShopAnalyticsLoader =
       AnalyticsDateRange range,
     );
 
+/// Loads one staff member's detail — figures, daily series and a page of
+/// their orders — for a shop and date range.
+typedef CaptainDetailLoader =
+    Future<CaptainPerformanceDetail> Function(
+      String shopKey,
+      String captainId,
+      AnalyticsDateRange range,
+      int page,
+    );
+
 /// The quick ranges above the figures; [custom] is a picked range.
 enum SalesRangePreset { today, last7Days, last30Days, thisMonth, custom }
 
-extension on SalesRangePreset {
+extension SalesRangePresetRange on SalesRangePreset {
   String get label => switch (this) {
     SalesRangePreset.today => 'Today',
     SalesRangePreset.last7Days => '7 days',
@@ -36,8 +46,9 @@ extension on SalesRangePreset {
   };
 }
 
-/// The owner workspace's "Sales & Profit" tab: one shop's revenue, cost and
-/// profit over a chosen range, and how each of its captains performed.
+/// The owner workspace's Sales destination: one shop's revenue, cost and
+/// profit over a chosen range, and how each of its captains performed. Each
+/// captain is a card that opens their own page for the same range.
 ///
 /// With [loadAnalytics] and a [shopKey] every figure comes from the server
 /// for the selected range; otherwise it is rolled up from [store]'s orders.
@@ -50,6 +61,7 @@ class OwnerCaptainSalesAnalytics extends StatefulWidget {
     this.shopKey,
     this.shopName,
     this.loadAnalytics,
+    this.loadCaptainDetail,
     this.today,
   });
 
@@ -59,6 +71,10 @@ class OwnerCaptainSalesAnalytics extends StatefulWidget {
   final String? shopKey;
   final String? shopName;
   final ShopAnalyticsLoader? loadAnalytics;
+
+  /// Loads a captain's own page; without it the page is rolled up from
+  /// [store]'s orders.
+  final CaptainDetailLoader? loadCaptainDetail;
 
   /// Overrides the device's date, for tests.
   final DateTime? today;
@@ -76,7 +92,6 @@ class _OwnerCaptainSalesAnalyticsState
   Object? _error;
   var _loading = false;
   var _request = 0;
-  String? _expanded;
 
   DateTime get _today {
     final now = widget.today ?? DateTime.now();
@@ -95,10 +110,7 @@ class _OwnerCaptainSalesAnalyticsState
   @override
   void didUpdateWidget(covariant OwnerCaptainSalesAnalytics oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.shopKey != widget.shopKey) {
-      _expanded = null;
-      _load();
-    }
+    if (oldWidget.shopKey != widget.shopKey) _load();
   }
 
   Future<void> _load() async {
@@ -130,7 +142,6 @@ class _OwnerCaptainSalesAnalyticsState
     setState(() {
       _preset = preset;
       _range = range;
-      _expanded = null;
       // Figures from the previous range must not pass for the new one.
       if (_report?.range != range) _report = null;
     });
@@ -148,7 +159,10 @@ class _OwnerCaptainSalesAnalyticsState
       saveText: 'Apply',
     );
     if (picked == null || !mounted) return;
-    _select(SalesRangePreset.custom, AnalyticsDateRange(picked.start, picked.end));
+    _select(
+      SalesRangePreset.custom,
+      AnalyticsDateRange(picked.start, picked.end),
+    );
   }
 
   Future<void> _refresh() async {
@@ -163,6 +177,38 @@ class _OwnerCaptainSalesAnalyticsState
       range: _range,
       shopKey: widget.shopKey ?? '',
       shopName: widget.shopName ?? '',
+    );
+  }
+
+  Future<void> _openCaptain(CaptainPerformance captain) {
+    final shopKey = widget.shopKey;
+    final loader = widget.loadCaptainDetail;
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => CaptainPerformancePage(
+          captain: captain,
+          shopName: widget.shopName,
+          preset: _preset,
+          range: _range,
+          today: _today,
+          load: (range, page) async {
+            if (loader != null && shopKey != null && _remote) {
+              return loader(shopKey, captain.userId, range, page);
+            }
+            return localCaptainDetail(
+              orders: widget.store.orders,
+              range: range,
+              captainId: captain.userId,
+              page: page,
+            );
+          },
+          // The list follows a range picked on the captain's page, so going
+          // back shows the same days.
+          onRangeChanged: (preset, range) {
+            if (mounted) _select(preset, range);
+          },
+        ),
+      ),
     );
   }
 
@@ -184,15 +230,15 @@ class _OwnerCaptainSalesAnalyticsState
           ),
           const SizedBox(height: 2),
           Text(
-            _rangeLabel(_range),
+            salesRangeLabel(_range),
             key: const ValueKey('sales-range-label'),
             style: TextStyle(fontSize: 13, color: p.inkSecondary),
           ),
           const SizedBox(height: 12),
-          _RangeBar(
+          SalesRangeBar(
             selected: _preset,
             customLabel: _preset == SalesRangePreset.custom
-                ? _shortRange(_range)
+                ? shortSalesRange(_range)
                 : null,
             onPreset: (preset) => _select(preset, preset.range(_today)),
             onCustom: _pickCustom,
@@ -208,7 +254,10 @@ class _OwnerCaptainSalesAnalyticsState
               icon: Icons.cloud_off_rounded,
               title: 'Couldn’t load sales',
               body: userFacingError(_error!),
-              action: TextButton(onPressed: _load, child: const Text('Try again')),
+              action: TextButton(
+                onPressed: _load,
+                child: const Text('Try again'),
+              ),
             )
           else if (report != null) ...[
             if (_loading) const LinearProgressIndicator(minHeight: 2),
@@ -233,9 +282,9 @@ class _OwnerCaptainSalesAnalyticsState
             const SizedBox(height: 12),
             if (report.captains.isEmpty)
               const _Message(
+                key: ValueKey('captains-empty'),
                 icon: Icons.badge_outlined,
-                title: 'No captains yet',
-                body: 'Captains assigned to this shop appear here.',
+                body: noCaptainsAssignedMessage,
               )
             else
               for (final captain in report.captains)
@@ -243,12 +292,7 @@ class _OwnerCaptainSalesAnalyticsState
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _CaptainCard(
                     captain: captain,
-                    expanded: _expanded == captain.userId,
-                    onToggle: () => setState(
-                      () => _expanded = _expanded == captain.userId
-                          ? null
-                          : captain.userId,
-                    ),
+                    onOpen: () => _openCaptain(captain),
                   ),
                 ),
           ],
@@ -258,19 +302,29 @@ class _OwnerCaptainSalesAnalyticsState
   }
 }
 
-String _rangeLabel(AnalyticsDateRange range) {
+/// What the Sales page says when nobody is assigned to the shop's counter.
+const noCaptainsAssignedMessage =
+    'No captains are assigned to this shop yet — the admin can add them in '
+    'Vendors & shops → Counter staff.';
+
+/// The range in words: one day, or both ends and the length.
+String salesRangeLabel(AnalyticsDateRange range) {
   if (range.days == 1) return formatShortDate(range.from);
   return '${formatShortDate(range.from)} – ${formatShortDate(range.to)} · '
       '${range.days} days';
 }
 
-String _shortRange(AnalyticsDateRange range) {
+/// The range as a chip label.
+String shortSalesRange(AnalyticsDateRange range) {
   String day(DateTime value) =>
       formatShortDate(value).split(' ').take(2).join(' ');
-  return range.days == 1 ? day(range.from) : '${day(range.from)} – ${day(range.to)}';
+  return range.days == 1
+      ? day(range.from)
+      : '${day(range.from)} – ${day(range.to)}';
 }
 
-String _minutes(double? minutes) {
+/// Minutes as "12 min" or "1 h 5 min"; a dash when there is nothing to time.
+String formatHandlingMinutes(double? minutes) {
   if (minutes == null) return '—';
   if (minutes < 60) return '${minutes.round()} min';
   final hours = minutes ~/ 60;
@@ -278,8 +332,10 @@ String _minutes(double? minutes) {
   return rest == 0 ? '$hours h' : '$hours h $rest min';
 }
 
-class _RangeBar extends StatelessWidget {
-  const _RangeBar({
+/// The quick ranges and the custom-range chip.
+class SalesRangeBar extends StatelessWidget {
+  const SalesRangeBar({
+    super.key,
     required this.selected,
     required this.onPreset,
     required this.onCustom,
@@ -303,7 +359,10 @@ class _RangeBar extends StatelessWidget {
               child: preset == SalesRangePreset.custom
                   ? ChoiceChip(
                       key: const ValueKey('sales-range-custom'),
-                      avatar: const Icon(Icons.calendar_month_rounded, size: 16),
+                      avatar: const Icon(
+                        Icons.calendar_month_rounded,
+                        size: 16,
+                      ),
                       label: Text(customLabel ?? preset.label),
                       selected: selected == preset,
                       showCheckmark: false,
@@ -418,7 +477,7 @@ class _OutcomeCard extends StatelessWidget {
           const Divider(height: 1),
           _Line(
             label: 'Avg. time to deliver',
-            value: _minutes(summary.averageHandlingMinutes),
+            value: formatHandlingMinutes(summary.averageHandlingMinutes),
           ),
         ],
       ),
@@ -467,156 +526,140 @@ class _Line extends StatelessWidget {
   }
 }
 
+/// A captain at a glance: who, how many orders, how much, their share of
+/// the shop and how quickly they deliver. Tapping opens their page.
 class _CaptainCard extends StatelessWidget {
-  const _CaptainCard({
-    required this.captain,
-    required this.expanded,
-    required this.onToggle,
-  });
+  const _CaptainCard({required this.captain, required this.onOpen});
 
   final CaptainPerformance captain;
-  final bool expanded;
-  final VoidCallback onToggle;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     final f = captain.figures;
-    final initials = captain.name
+    final idle = f.orders == 0;
+    final role = captainRoleLabel(captain.role);
+
+    return Semantics(
+      button: true,
+      label:
+          '${captain.name}, $role, ${f.orders} orders, '
+          '${formatCurrency(f.revenue)}. Opens their performance.',
+      excludeSemantics: true,
+      child: CanteenSurface(
+        key: ValueKey('captain-${captain.userId}'),
+        onTap: onOpen,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CaptainAvatar(name: captain.name, radius: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        captain.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          letterSpacing: -0.1,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        idle
+                            ? '$role · no orders in this range'
+                            : '$role · ${f.orders} orders · '
+                                  '${f.completedOrders} delivered',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12, color: p.inkSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  formatCurrency(f.revenue),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Icon(Icons.chevron_right_rounded, color: p.inkTertiary),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: (f.revenueShare / 100).clamp(0.0, 1.0),
+                minHeight: 6,
+                backgroundColor: p.surfaceSunken,
+                valueColor: AlwaysStoppedAnimation<Color>(p.brandInk),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _Stat(label: 'Orders', value: '${f.orders}'),
+                _Stat(label: 'Share', value: '${f.revenueShare.round()}%'),
+                _Stat(
+                  label: 'Avg. time',
+                  value: formatHandlingMinutes(f.averageHandlingMinutes),
+                ),
+                _Stat(label: 'Profit', value: formatCurrency(f.profit)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A person's initials in a soft brand circle.
+class CaptainAvatar extends StatelessWidget {
+  const CaptainAvatar({super.key, required this.name, this.radius = 20});
+
+  final String name;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final initials = name
         .split(RegExp(r'\s+'))
         .where((word) => word.isNotEmpty)
         .map((word) => word[0].toUpperCase())
         .take(2)
         .join();
-    final role = switch (captain.role) {
-      'captain' => 'Captain',
-      'owner' => 'Owner',
-      null => 'No longer assigned',
-      final other => other,
-    };
-    final idle = f.orders == 0;
-
-    return CanteenSurface(
-      key: ValueKey('captain-${captain.userId}'),
-      onTap: idle ? null : onToggle,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: p.brandInk.withValues(alpha: 0.12),
-                foregroundColor: p.brandInk,
-                child: Text(
-                  initials.isEmpty ? '?' : initials,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      captain.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      idle
-                          ? '$role · no orders in this range'
-                          : '$role · ${f.orders} orders · '
-                                '${f.completedOrders} delivered',
-                      style: TextStyle(fontSize: 12, color: p.inkSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    formatCurrency(f.revenue),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(
-                    '${formatCurrency(f.profit)} profit',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: p.success,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: (f.revenueShare / 100).clamp(0.0, 1.0),
-              minHeight: 6,
-              backgroundColor: p.surfaceSunken,
-              valueColor: AlwaysStoppedAnimation<Color>(p.brandInk),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _Stat(label: 'Share', value: '${f.revenueShare.round()}%'),
-              _Stat(label: 'Items', value: '${f.itemsSold}'),
-              _Stat(label: 'Rejected', value: '${f.rejectedOrders}'),
-              _Stat(
-                label: 'Avg. time',
-                value: _minutes(f.averageHandlingMinutes),
-              ),
-            ],
-          ),
-          if (!idle) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Text(
-                  f.activeOrders > 0 ? '${f.activeOrders} in the queue' : '',
-                  style: TextStyle(fontSize: 12, color: p.inkSecondary),
-                ),
-                const Spacer(),
-                Text(
-                  expanded ? 'Hide orders' : 'View orders',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: p.brandInk,
-                  ),
-                ),
-                Icon(
-                  expanded
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_down_rounded,
-                  size: 18,
-                  color: p.brandInk,
-                ),
-              ],
-            ),
-          ],
-          if (expanded && captain.recentOrders.isNotEmpty) ...[
-            const Divider(height: 24),
-            for (final order in captain.recentOrders) _OrderRow(order: order),
-          ],
-        ],
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: p.brandInk.withValues(alpha: 0.12),
+      foregroundColor: p.brandInk,
+      child: Text(
+        initials.isEmpty ? '?' : initials,
+        style: TextStyle(fontWeight: FontWeight.w700, fontSize: radius * 0.7),
       ),
     );
   }
 }
+
+/// How the shop knows a staff member.
+String captainRoleLabel(String? role) => switch (role) {
+  'captain' => 'Captain',
+  'owner' => 'Owner',
+  null => 'No longer assigned',
+  final other => other,
+};
 
 class _Stat extends StatelessWidget {
   const _Stat({required this.label, required this.value});
@@ -638,51 +681,6 @@ class _Stat extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           Text(label, style: TextStyle(fontSize: 11, color: p.inkSecondary)),
-        ],
-      ),
-    );
-  }
-}
-
-class _OrderRow extends StatelessWidget {
-  const _OrderRow({required this.order});
-
-  final ShopAnalyticsOrder order;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    final status = CanteenOrderStatus.values.firstWhere(
-      (value) => value.apiValue == order.status,
-      orElse: () => CanteenOrderStatus.pending,
-    );
-    final number = int.tryParse(order.orderNumber);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        children: [
-          Text(
-            '#${number == null ? order.orderNumber : number.toString().padLeft(4, '0')}',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              order.customerName.isEmpty ? 'Customer' : order.customerName,
-              style: TextStyle(fontSize: 12, color: p.inkSecondary),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          OrderStatusGradientBadge(
-            status: status,
-            fontSize: 10,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            formatCurrency(order.total),
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-          ),
         ],
       ),
     );
@@ -751,14 +749,15 @@ class _KpiCard extends StatelessWidget {
 
 class _Message extends StatelessWidget {
   const _Message({
+    super.key,
     required this.icon,
-    required this.title,
+    this.title,
     required this.body,
     this.action,
   });
 
   final IconData icon;
-  final String title;
+  final String? title;
   final String body;
   final Widget? action;
 
@@ -773,8 +772,10 @@ class _Message extends StatelessWidget {
           children: [
             Icon(icon, color: p.inkSecondary),
             const SizedBox(height: 8),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 2),
+            if (title != null) ...[
+              Text(title!, style: const TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 2),
+            ],
             Text(body, style: TextStyle(color: p.inkSecondary)),
             if (action != null) ...[const SizedBox(height: 4), action!],
           ],

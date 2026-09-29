@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/user_facing_error.dart';
 import '../../../core/widgets/skeleton_loading.dart';
 import '../../../screens/tuition_fee/razorpay_checkout.dart';
 import '../../authentication/data/auth_repository.dart';
@@ -695,8 +696,19 @@ class _CanteenShellState extends State<CanteenShell> {
   /// own profile: the signed-in person from the session, the Work / Shop
   /// choice, and sign-out. There used to be a second "Profile & settings"
   /// page here that dressed every account up as a student.
-  Future<void> _openAccount(BuildContext context) {
+  Future<void> _openAccount(BuildContext context, {bool counter = false}) {
     final session = widget.session;
+    // The counter switch is shown only to an account with a counter of its
+    // own, as the owner workspace decides it.
+    bool? counterOpen() {
+      final store = _store;
+      if (!counter || store == null) return null;
+      if (store.assignedShopKeys.isEmpty || store.shopAssignmentPending) {
+        return null;
+      }
+      return store.staffState.shopOpen ?? true;
+    }
+
     return showShopAccountSheet(
       context,
       name: session.displayName,
@@ -707,8 +719,23 @@ class _CanteenShellState extends State<CanteenShell> {
           ? (_ownerWorkMode ? CanteenStaffMode.work : CanteenStaffMode.eat)
           : null,
       onModeChanged: _canUseWorkMode ? _updateOwnerMode : null,
+      counterOpen: counterOpen() == null ? null : counterOpen,
+      onCounterOpenChanged: _updateShopOpenReporting,
       onSignOut: widget.onSignOut,
     );
+  }
+
+  /// [_updateShopOpen] for the profile sheet: a failure is told rather than
+  /// thrown into the sheet.
+  Future<void> _updateShopOpenReporting(bool open) async {
+    try {
+      await _updateShopOpen(open);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(userFacingError(error))));
+    }
   }
 
   @override
@@ -851,7 +878,8 @@ class _CanteenShellState extends State<CanteenShell> {
         onUploadMedia: (bytes, filename) =>
             _repository.uploadMedia(bytes, filename: filename),
         isMainHome: widget.isMainHome,
-        onProfileTap: widget.onProfileTap ?? () => _openAccount(context),
+        onProfileTap:
+            widget.onProfileTap ?? () => _openAccount(context, counter: true),
         photoUrl: widget.photoUrl ?? widget.session.photoUrl,
         displayName: widget.session.displayName,
         email: widget.session.email,
@@ -860,6 +888,17 @@ class _CanteenShellState extends State<CanteenShell> {
           final ShopAnalyticsRepository analytics =>
             (shopKey, range) =>
                 analytics.loadShopAnalytics(shopKey: shopKey, range: range),
+          _ => null,
+        },
+        loadCaptainDetail: switch (_repository) {
+          final ShopAnalyticsRepository analytics =>
+            (shopKey, captainId, range, page) =>
+                analytics.loadCaptainPerformance(
+                  shopKey: shopKey,
+                  captainId: captainId,
+                  range: range,
+                  page: page,
+                ),
           _ => null,
         },
       );

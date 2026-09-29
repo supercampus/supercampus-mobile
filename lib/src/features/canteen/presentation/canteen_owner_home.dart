@@ -12,7 +12,6 @@ import 'widgets/canteen_surface.dart';
 import 'widgets/menu_item_art.dart';
 import 'widgets/order_status_badge.dart';
 import 'widgets/owner_captain_sales_analytics.dart';
-import 'widgets/counter_open_tile.dart';
 import 'widgets/settled_orders_page.dart';
 import 'widgets/unassigned_counter_notice.dart';
 import 'canteen_menu_item_editor_screen.dart';
@@ -39,13 +38,20 @@ class CanteenOwnerHome extends StatefulWidget {
     this.email,
     this.nav,
     this.loadShopAnalytics,
+    this.loadCaptainDetail,
   });
 
-  /// Loads the Sales & Profit tab's figures from the server for a date range;
-  /// without it the tab rolls up the orders already in [store].
+  /// Loads the Sales destination's figures from the server for a date range;
+  /// without it the page rolls up the orders already in [store].
   final ShopAnalyticsLoader? loadShopAnalytics;
 
-  /// Lets the host's bottom bar open this workspace's sections.
+  /// Loads one captain's page (figures, daily trend and orders) from the
+  /// server; without it the page is rolled up from [store]'s orders.
+  final CaptainDetailLoader? loadCaptainDetail;
+
+  /// Lets the host's bottom bar open this workspace's sections and its
+  /// profile sheet open or close the counter. Without it the workspace
+  /// floats its own bar.
   final OwnerWorkspaceNav? nav;
 
   final CanteenStore store;
@@ -73,13 +79,15 @@ class CanteenOwnerHome extends StatefulWidget {
   State<CanteenOwnerHome> createState() => _CanteenOwnerHomeState();
 }
 
-/// The workspace's sections, in the order they appear.
-enum OwnerSection { orders, menu, sales }
+/// The workspace's sections, in the order the bottom bar shows them: Home
+/// (the live queue), Menu, Settled orders and Sales.
+enum OwnerSection { orders, menu, settled, sales }
 
 /// Which sections a shop shows to this account.
 ///
 /// Whoever works a shop's counter — its owner or operator, i.e. someone
-/// assigned to it — gets the queue, the menu and the figures. Someone who holds
+/// assigned to it — gets the queue, the menu, its settled orders and the
+/// figures. Someone who holds
 /// the shop-configuration grant without being assigned to that shop is
 /// overseeing it: the queue is the counter's job, so they see the figures, and
 /// for a food counter the menu. Stationery and laundry are run entirely from
@@ -93,8 +101,7 @@ List<OwnerSection> ownerSectionsFor(CanteenStore store, CanteenShop? shop) {
   if (!overseeing) return OwnerSection.values;
   final category = '${shop?.category ?? ''} ${shop?.shopKey ?? ''}'
       .toLowerCase();
-  final isFood =
-      !category.contains('station') && !category.contains('laundry');
+  final isFood = !category.contains('station') && !category.contains('laundry');
   return [if (isFood) OwnerSection.menu, OwnerSection.sales];
 }
 
@@ -106,7 +113,11 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
   List<CanteenShop> get _assignedShops {
     final assigned = widget.store.assignedShopKeys.toSet();
     final filtered = widget.store.shops
-        .where((shop) => shop.isActive && (assigned.isEmpty || assigned.contains(shop.shopKey)))
+        .where(
+          (shop) =>
+              shop.isActive &&
+              (assigned.isEmpty || assigned.contains(shop.shopKey)),
+        )
         .toList();
     if (filtered.isNotEmpty) return filtered;
     return widget.store.shops.where((shop) => shop.isActive).toList();
@@ -125,7 +136,7 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
   void initState() {
     super.initState();
     _selectedShopKey = _activeShopKey;
-    widget.nav?.attach(_showSection);
+    widget.nav?.attach(_showSection, onCounterOpenChanged: _setCounterOpen);
   }
 
   @override
@@ -134,7 +145,7 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
     _selectedShopKey = _activeShopKey;
     if (oldWidget.nav != widget.nav) {
       oldWidget.nav?.detach(_showSection);
-      widget.nav?.attach(_showSection);
+      widget.nav?.attach(_showSection, onCounterOpenChanged: _setCounterOpen);
     }
   }
 
@@ -148,6 +159,15 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
     if (mounted) setState(() => _section = section);
   }
 
+  /// Opening and closing is the counter's call: an account overseeing the
+  /// shops, or staff not yet given a counter, has none of its own.
+  bool get _hasCounter =>
+      widget.store.assignedShopKeys.isNotEmpty &&
+      !widget.store.shopAssignmentPending;
+
+  Future<void> _setCounterOpen(bool open) =>
+      _run(() => widget.onShopOpenChanged(open));
+
   Future<void> _run(Future<void> Function() action) async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -155,11 +175,9 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
       await action();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(userFacingError(error)),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(userFacingError(error))));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -223,18 +241,19 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
     }
     final sections = ownerSectionsFor(widget.store, activeShop);
     final section = sections.contains(_section) ? _section : sections.first;
-    final tabSections = widget.nav != null
-        ? [
-            for (final value in sections)
-              if (value != OwnerSection.menu) value,
-          ]
-        : sections;
-    final overseeing = widget.store.canConfigureShops &&
-        widget.store.assignedShopKeys.isEmpty;
+    final overseeing =
+        widget.store.canConfigureShops && widget.store.assignedShopKeys.isEmpty;
     widget.nav?.report(
-      menuAvailable: sections.contains(OwnerSection.menu),
+      sections: sections,
       section: section,
+      counterOpen: _hasCounter
+          ? (widget.store.staffState.shopOpen ?? true)
+          : null,
+      counterBusy: _busy,
     );
+    final settledOrders =
+        scopedOrders.where((order) => !order.status.isActive).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final pages = <OwnerSection, Widget>{
       OwnerSection.orders: _OwnerOrders(
         store: scopedStore,
@@ -243,11 +262,6 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
         onStatus: (id, status, {lineIndex}) => _run(
           () => widget.onOrderStatusChanged(id, status, lineIndex: lineIndex),
         ),
-        // Opening and closing is the counter's call; someone overseeing the
-        // shops has no counter of their own.
-        onShopOpen: widget.store.assignedShopKeys.isEmpty
-            ? null
-            : (open) => _run(() => widget.onShopOpenChanged(open)),
       ),
       OwnerSection.menu: _OwnerMenu(
         items: scopedMenu,
@@ -262,6 +276,14 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
           ),
         ),
       ),
+      OwnerSection.settled: RefreshIndicator(
+        onRefresh: () => _run(widget.onRefresh),
+        child: SettledOrdersView(
+          orders: settledOrders,
+          showTitle: true,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+        ),
+      ),
       OwnerSection.sales: OwnerCaptainSalesAnalytics(
         store: scopedStore,
         busy: _busy,
@@ -269,98 +291,132 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
         shopKey: shopKey,
         shopName: activeShop?.name,
         loadAnalytics: widget.loadShopAnalytics,
+        loadCaptainDetail: widget.loadCaptainDetail,
       ),
     };
+    // Hosted, the bar is the host's; on its own (opened as a module) the
+    // workspace floats the same bar itself.
+    final ownBar =
+        widget.nav == null &&
+        sections.length > 1 &&
+        !widget.store.shopAssignmentPending;
 
-    return Scaffold(
-      appBar: AppBar(
-        titleSpacing: widget.isMainHome ? null : 0,
-        leading: widget.isMainHome
-            ? null
-            : ModuleBackButton(onPressed: widget.onExitModule),
-        automaticallyImplyLeading: !widget.isMainHome,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Shop operations'),
-            Text(
-              overseeing ? 'Campus shops' : 'Owner workspace',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+    return PopScope(
+      // Back from Menu, Settled or Sales returns to the first section before
+      // it leaves the workspace.
+      canPop: section == sections.first,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) setState(() => _section = sections.first);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          titleSpacing: widget.isMainHome ? null : 0,
+          leading: widget.isMainHome
+              ? null
+              : ModuleBackButton(onPressed: widget.onExitModule),
+          automaticallyImplyLeading: !widget.isMainHome,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Shop operations'),
+              Text(
+                overseeing ? 'Campus shops' : 'Owner workspace',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            // Work / Shop and opening the counter live in the profile, so the
+            // app bar needs no controls of its own.
+            Padding(
+              padding: const EdgeInsets.only(right: 12, left: 4),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: widget.onProfileTap,
+                child: CircleAvatar(
+                  radius: 17,
+                  backgroundColor: context.palette.brandInk.withValues(
+                    alpha: 0.12,
+                  ),
+                  backgroundImage:
+                      (widget.photoUrl != null && widget.photoUrl!.isNotEmpty)
+                      ? NetworkImage(widget.photoUrl!)
+                      : null,
+                  child: (widget.photoUrl == null || widget.photoUrl!.isEmpty)
+                      ? Icon(
+                          Icons.person,
+                          size: 20,
+                          color: context.palette.brandInk,
+                        )
+                      : null,
+                ),
+              ),
             ),
           ],
         ),
-        actions: [
-          // Work / Shop lives in the profile, and opening the counter sits at
-          // the head of the Orders queue, so the app bar needs no controls of
-          // its own.
-          Padding(
-            padding: const EdgeInsets.only(right: 12, left: 4),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: widget.onProfileTap,
-              child: CircleAvatar(
-                radius: 17,
-                backgroundColor: context.palette.brandInk.withValues(alpha: 0.12),
-                backgroundImage: (widget.photoUrl != null &&
-                        widget.photoUrl!.isNotEmpty)
-                    ? NetworkImage(widget.photoUrl!)
-                    : null,
-                child: (widget.photoUrl == null || widget.photoUrl!.isEmpty)
-                    ? Icon(Icons.person, size: 20, color: context.palette.brandInk)
-                    : null,
+        body: widget.store.shopAssignmentPending
+            // Shop staff with no counter: say so rather than show another
+            // shop's queue or an empty one.
+            ? ListView(
+                padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+                children: [
+                  UnassignedCounterNotice(
+                    message: widget.store.unassignedCounterMessage,
+                  ),
+                ],
+              )
+            : Stack(
+                children: [
+                  Column(
+                    children: [
+                      if (_assignedShops.length > 1)
+                        _AssignedShopSelector(
+                          shops: _assignedShops,
+                          selectedShopKey: shopKey,
+                          onSelected: (value) => setState(() {
+                            _selectedShopKey = value;
+                          }),
+                        ),
+                      // The sections are destinations of the bottom bar,
+                      // so the page carries no switcher of its own.
+                      if (_busy) const LinearProgressIndicator(minHeight: 2),
+                      Expanded(
+                        child: Padding(
+                          // Clear the floating nav so the last row of a list
+                          // stays readable.
+                          padding: EdgeInsets.only(
+                            bottom:
+                                CampusNavBar.heightFor(context) +
+                                MediaQuery.paddingOf(context).bottom,
+                          ),
+                          child: IndexedStack(
+                            index: sections.indexOf(section),
+                            children: [
+                              for (final value in sections) pages[value]!,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (ownBar)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: MediaQuery.paddingOf(context).bottom + 10,
+                      child: CampusNavBar(
+                        selectedId: ownerNavId(section),
+                        items: ownerNavItems(sections, _showSection),
+                        showScan: false,
+                        onHome: () => _showSection(sections.first),
+                        onModules: () {},
+                      ),
+                    ),
+                ],
               ),
-            ),
-          ),
-        ],
-      ),
-      body: widget.store.shopAssignmentPending
-          // Shop staff with no counter: say so rather than show another
-          // shop's queue or an empty one.
-          ? ListView(
-              padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
-              children: [
-                UnassignedCounterNotice(
-                  message: widget.store.unassignedCounterMessage,
-                ),
-              ],
-            )
-          : Column(
-        children: [
-          if (_assignedShops.length > 1)
-            _AssignedShopSelector(
-              shops: _assignedShops,
-              selectedShopKey: shopKey,
-              onSelected: (value) => setState(() {
-                _selectedShopKey = value;
-              }),
-            ),
-          // These are sections of this page, not app navigation, so they sit
-          // at the top of it. A second bar at the bottom would land underneath
-          // the one the host already floats there.
-          // A single section needs no switcher. When the host's bottom bar
-          // carries Menu, the tabs here leave it out rather than repeat it.
-          if (tabSections.length > 1)
-            _SectionTabs(
-              sections: tabSections,
-              selected: tabSections.contains(section) ? section : null,
-              onChanged: (value) => setState(() => _section = value),
-            ),
-          if (_busy) const LinearProgressIndicator(minHeight: 2),
-          Expanded(
-            child: Padding(
-              // Clear the floating nav so the last row of a list stays readable.
-              padding: EdgeInsets.only(
-                bottom:
-                    CampusNavBar.heightFor(context) +
-                    MediaQuery.paddingOf(context).bottom,
-              ),
-              child: IndexedStack(
-                index: sections.indexOf(section),
-                children: [for (final value in sections) pages[value]!],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -425,12 +481,7 @@ class _OwnerOrders extends StatefulWidget {
     required this.busy,
     required this.onRefresh,
     required this.onStatus,
-    this.onShopOpen,
   });
-
-  /// Opens or closes the counter; null when this account has no counter of
-  /// its own (someone overseeing the shops).
-  final ValueChanged<bool>? onShopOpen;
 
   final CanteenStore store;
   final bool busy;
@@ -454,21 +505,11 @@ class _OwnerOrdersState extends State<_OwnerOrders> {
     final active = store.orders
         .where((order) => order.status.isActive)
         .toList();
-    final settled =
-        store.orders.where((order) => !order.status.isActive).toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return RefreshIndicator(
       onRefresh: () async => onRefresh(),
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
         children: [
-          if (widget.onShopOpen != null) ...[
-            CounterOpenTile(
-              open: store.staffState.shopOpen ?? true,
-              onChanged: busy ? null : widget.onShopOpen,
-            ),
-            const SizedBox(height: 12),
-          ],
           Row(
             children: [
               Expanded(
@@ -527,9 +568,6 @@ class _OwnerOrdersState extends State<_OwnerOrders> {
                       onStatus: onStatus,
                     ),
                   ),
-          const SizedBox(height: 22),
-          // Settled orders live on their own page; the queue keeps one row.
-          SettledOrdersLink(orders: settled),
         ],
       ),
     );
@@ -602,7 +640,7 @@ class _OwnerOrderCard extends StatelessWidget {
     final next = lineIndex != null
         ? order.nextLineStep(lineIndex!)
         : (order.nextServiceStep ??
-            (order.status.isActive ? CanteenOrderStatus.completed : null));
+              (order.status.isActive ? CanteenOrderStatus.completed : null));
     if (next == null) return null;
     return switch (next) {
       CanteenOrderStatus.preparing => (
@@ -637,8 +675,8 @@ class _OwnerOrderCard extends StatelessWidget {
         : null;
     final advanceForeground = advanceStatus != null
         ? (advanceStatus == CanteenOrderStatus.preparing
-            ? const Color(0xFF78350F)
-            : Colors.white)
+              ? const Color(0xFF78350F)
+              : Colors.white)
         : Colors.white;
 
     final lines = _lines;
@@ -680,7 +718,10 @@ class _OwnerOrderCard extends StatelessWidget {
                 child: firstItem != null
                     ? MenuItemArt(item: firstItem, size: 48)
                     : Container(
-                        color: context.adaptive(light: const Color(0xFFF1F5F9), dark: const Color(0xFF1C1D23)),
+                        color: context.adaptive(
+                          light: const Color(0xFFF1F5F9),
+                          dark: const Color(0xFF1C1D23),
+                        ),
                         alignment: Alignment.center,
                         child: Icon(
                           Icons.restaurant_rounded,
@@ -703,7 +744,10 @@ class _OwnerOrderCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: context.adaptive(light: const Color(0xFF1E293B), dark: const Color(0xFFF2F2F5)),
+                      color: context.adaptive(
+                        light: const Color(0xFF1E293B),
+                        dark: const Color(0xFFF2F2F5),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -714,7 +758,12 @@ class _OwnerOrderCard extends StatelessWidget {
                           if (i > 0)
                             TextSpan(
                               text: ', ',
-                              style: TextStyle(color: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0))),
+                              style: TextStyle(
+                                color: context.adaptive(
+                                  light: const Color(0xFF64748B),
+                                  dark: const Color(0xFFA3A5B0),
+                                ),
+                              ),
                             ),
                           TextSpan(
                             text: '${lines[i].quantity}× ',
@@ -727,7 +776,10 @@ class _OwnerOrderCard extends StatelessWidget {
                           TextSpan(
                             text: lines[i].item.name,
                             style: TextStyle(
-                              color: context.adaptive(light: const Color(0xFF64748B), dark: const Color(0xFFA3A5B0)),
+                              color: context.adaptive(
+                                light: const Color(0xFF64748B),
+                                dark: const Color(0xFFA3A5B0),
+                              ),
                               fontSize: 13,
                             ),
                           ),
@@ -749,8 +801,6 @@ class _OwnerOrderCard extends StatelessWidget {
   }
 }
 
-
-
 class _OwnerMenu extends StatefulWidget {
   const _OwnerMenu({
     required this.items,
@@ -767,7 +817,7 @@ class _OwnerMenu extends StatefulWidget {
   final ValueChanged<CanteenMenuItem> onEdit;
   final ValueChanged<String> onDelete;
   final void Function(CanteenMenuItem item, bool isAvailable)
-      onToggleAvailability;
+  onToggleAvailability;
 
   @override
   State<_OwnerMenu> createState() => _OwnerMenuState();
@@ -792,8 +842,7 @@ class _OwnerMenuState extends State<_OwnerMenu> {
     final types = {
       for (final item in widget.items)
         if (item.category.trim().isNotEmpty) item.category.trim(),
-    }.toList()
-      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    }.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     final type = types.contains(_type) ? _type : null;
     final filtered = widget.items.where((item) {
       if (type != null && item.category.trim() != type) return false;
@@ -822,7 +871,10 @@ class _OwnerMenuState extends State<_OwnerMenu> {
               narrowed
                   ? '${filtered.length} of ${widget.items.length} items'
                   : '${widget.items.length} items',
-              style: TextStyle(fontSize: 12, color: context.palette.inkSecondary),
+              style: TextStyle(
+                fontSize: 12,
+                color: context.palette.inkSecondary,
+              ),
             ),
           ],
         ),
@@ -838,9 +890,14 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                 decoration: InputDecoration(
                   labelText: 'Type',
                   filled: true,
-                  fillColor: context.adaptive(light: const Color(0xFFF1F5F9), dark: const Color(0xFF1C1D23)),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  fillColor: context.adaptive(
+                    light: const Color(0xFFF1F5F9),
+                    dark: const Color(0xFF1C1D23),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
@@ -893,9 +950,14 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                   )
                 : null,
             filled: true,
-            fillColor: context.adaptive(light: const Color(0xFFF1F5F9), dark: const Color(0xFF1C1D23)),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            fillColor: context.adaptive(
+              light: const Color(0xFFF1F5F9),
+              dark: const Color(0xFF1C1D23),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 10,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none,
@@ -909,7 +971,10 @@ class _OwnerMenuState extends State<_OwnerMenu> {
             child: Center(
               child: Text(
                 'No menu items found',
-                style: TextStyle(color: context.palette.inkSecondary, fontSize: 14),
+                style: TextStyle(
+                  color: context.palette.inkSecondary,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),
@@ -947,7 +1012,10 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: context.adaptive(light: Colors.amber.shade100, dark: const Color(0x2EFFC107)),
+                                  color: context.adaptive(
+                                    light: Colors.amber.shade100,
+                                    dark: const Color(0x2EFFC107),
+                                  ),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -955,7 +1023,10 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w700,
-                                    color: context.adaptive(light: Colors.amber.shade900, dark: const Color(0xFFFCD34D)),
+                                    color: context.adaptive(
+                                      light: Colors.amber.shade900,
+                                      dark: const Color(0xFFFCD34D),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -973,7 +1044,10 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12.5,
-                                color: context.adaptive(light: const Color(0xFF1E293B), dark: const Color(0xFFF2F2F5)),
+                                color: context.adaptive(
+                                  light: const Color(0xFF1E293B),
+                                  dark: const Color(0xFFF2F2F5),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -992,10 +1066,12 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                               ),
                               decoration: BoxDecoration(
                                 color: item.profit >= 0
-                                    ? const Color(0xFF10B981)
-                                        .withValues(alpha: 0.12)
-                                    : const Color(0xFFEF4444)
-                                        .withValues(alpha: 0.12),
+                                    ? const Color(
+                                        0xFF10B981,
+                                      ).withValues(alpha: 0.12)
+                                    : const Color(
+                                        0xFFEF4444,
+                                      ).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -1006,8 +1082,14 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   color: item.profit >= 0
-                                      ? context.adaptive(light: const Color(0xFF047857), dark: const Color(0xFF6EE7B7))
-                                      : context.adaptive(light: const Color(0xFFB91C1C), dark: const Color(0xFFFCA5A5)),
+                                      ? context.adaptive(
+                                          light: const Color(0xFF047857),
+                                          dark: const Color(0xFF6EE7B7),
+                                        )
+                                      : context.adaptive(
+                                          light: const Color(0xFFB91C1C),
+                                          dark: const Color(0xFFFCA5A5),
+                                        ),
                                 ),
                               ),
                             ),
@@ -1019,8 +1101,14 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                           style: TextStyle(
                             fontSize: 11,
                             color: item.isAvailable
-                                ? context.adaptive(light: const Color(0xFF087A53), dark: const Color(0xFF6EE7B7))
-                                : context.adaptive(light: const Color(0xFFB42318), dark: const Color(0xFFFCA5A5)),
+                                ? context.adaptive(
+                                    light: const Color(0xFF087A53),
+                                    dark: const Color(0xFF6EE7B7),
+                                  )
+                                : context.adaptive(
+                                    light: const Color(0xFFB42318),
+                                    dark: const Color(0xFFFCA5A5),
+                                  ),
                           ),
                         ),
                       ],
@@ -1046,7 +1134,9 @@ class _OwnerMenuState extends State<_OwnerMenu> {
                   ),
                   IconButton(
                     tooltip: 'Delete item',
-                    onPressed: widget.busy ? null : () => widget.onDelete(item.id),
+                    onPressed: widget.busy
+                        ? null
+                        : () => widget.onDelete(item.id),
                     icon: const Icon(Icons.delete_outline, size: 20),
                   ),
                 ],
@@ -1054,61 +1144,6 @@ class _OwnerMenuState extends State<_OwnerMenu> {
             ),
           ),
       ],
-    );
-  }
-}
-
-/// The owner workspace's own sections. They live at the top of the page: the
-/// bottom of the screen belongs to the one navigation bar the host floats
-/// there, and two bars stacked on each other was the bug this replaced.
-class _SectionTabs extends StatelessWidget {
-  const _SectionTabs({
-    required this.sections,
-    required this.selected,
-    required this.onChanged,
-  });
-
-  final List<OwnerSection> sections;
-  /// Null while a section the tabs do not carry (Menu, from the bottom
-  /// bar) is showing.
-  final OwnerSection? selected;
-  final ValueChanged<OwnerSection> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-      child: SizedBox(
-        width: double.infinity,
-        child: SegmentedButton<OwnerSection>(
-          segments: [
-            for (final section in sections)
-              switch (section) {
-                OwnerSection.orders => const ButtonSegment(
-                  value: OwnerSection.orders,
-                  icon: Icon(Icons.receipt_long_outlined),
-                  label: Text('Orders'),
-                ),
-                OwnerSection.menu => const ButtonSegment(
-                  value: OwnerSection.menu,
-                  icon: Icon(Icons.restaurant_menu_outlined),
-                  label: Text('Menu'),
-                ),
-                OwnerSection.sales => const ButtonSegment(
-                  value: OwnerSection.sales,
-                  icon: Icon(Icons.analytics_outlined),
-                  label: Text('Sales & Profit'),
-                ),
-              },
-          ],
-          selected: {?selected},
-          emptySelectionAllowed: true,
-          showSelectedIcon: false,
-          onSelectionChanged: (value) {
-            if (value.isNotEmpty) onChanged(value.first);
-          },
-        ),
-      ),
     );
   }
 }

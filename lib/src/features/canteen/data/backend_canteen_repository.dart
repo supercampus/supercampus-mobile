@@ -818,6 +818,30 @@ class BackendCanteenRepository
   }
 
   @override
+  Future<CaptainPerformanceDetail> loadCaptainPerformance({
+    required String shopKey,
+    required String captainId,
+    required AnalyticsDateRange range,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final uri = _uri('/api/v1/operations/canteen/shop-analytics').replace(
+      queryParameters: {
+        'shop': shopKey,
+        'from': AnalyticsDateRange.wire(range.from),
+        'to': AnalyticsDateRange.wire(range.to),
+        'captain': captainId,
+        'page': '$page',
+        'pageSize': '$pageSize',
+      },
+    );
+    final response = await _authorizedRequest(
+      (headers) => _client.get(uri, headers: headers),
+    );
+    return CaptainPerformanceDetail.fromJson(_data(response), requested: range);
+  }
+
+  @override
   Future<WalletTransactionDetail> loadWalletTransaction(
     String transactionId,
   ) async {

@@ -26,7 +26,7 @@ import 'widgets/home_sheets.dart';
 import 'widgets/home_top_bar.dart';
 import '../../canteen/data/canteen_models.dart';
 import '../../canteen/data/canteen_repository.dart';
-import '../../canteen/presentation/canteen_owner_home.dart' show OwnerSection;
+import '../../canteen/presentation/widgets/counter_open_tile.dart';
 import '../../canteen/presentation/laundry_workspace_nav.dart';
 import '../../canteen/presentation/canteen_shell.dart';
 import '../../canteen/presentation/owner_workspace_nav.dart';
@@ -128,8 +128,9 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
   int _unreadNotifications = 0;
   CanteenStaffMode _canteenStaffMode = CanteenStaffMode.work;
 
-  /// While a shop workspace with a menu is on screen, the bar's second tab
-  /// opens that menu instead of the Modules sheet.
+  /// While a shop workspace is on screen, the bar carries its sections (Home,
+  /// Menu, Settled, Sales) instead of the Modules entry, and the profile
+  /// sheet carries its counter's open switch.
   final _ownerNav = OwnerWorkspaceNav();
 
   /// While the laundry counter is on screen, the bar's second tab opens its
@@ -344,10 +345,10 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
               child: ListenableBuilder(
                 listenable: Listenable.merge([_ownerNav, _laundryNav]),
                 builder: (context, _) {
-                  // In a shop's workspace the second tab is its Menu; anywhere
-                  // else (Shop mode, oversight without a menu) it stays Modules.
-                  final menu = _ownerNav.menuAvailable;
-                  final onMenu = _ownerNav.section == OwnerSection.menu;
+                  // In a shop's workspace the bar is its sections; anywhere
+                  // else (Shop mode, a single section) it stays Home and
+                  // Modules.
+                  final workspace = _ownerNav.sections.length > 1;
                   // The laundry counter has no menu; its second tab is the
                   // charge History.
                   final laundry = _laundryNav.available;
@@ -356,8 +357,8 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                   return CampusNavBar(
                     selectedId: laundry
                         ? (onHistory ? 'history' : 'home')
-                        : menu && onMenu
-                        ? 'menu'
+                        : workspace
+                        ? ownerNavId(_ownerNav.section)
                         : 'home',
                     showScan: widget.session.canScanQr,
                     initials: initialsOf(widget.session.displayName),
@@ -381,25 +382,8 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                                   _laundryNav.show(LaundrySection.history),
                             ),
                           ]
-                        : menu
-                        ? [
-                            CampusNavItem(
-                              id: 'home',
-                              label: 'Home',
-                              icon: const Icon(Icons.home_outlined),
-                              selectedIcon: const Icon(Icons.home_rounded),
-                              onTap: () => _ownerNav.show(OwnerSection.orders),
-                            ),
-                            CampusNavItem(
-                              id: 'menu',
-                              label: 'Menu',
-                              icon: const Icon(Icons.restaurant_menu_outlined),
-                              selectedIcon: const Icon(
-                                Icons.restaurant_menu_rounded,
-                              ),
-                              onTap: () => _ownerNav.show(OwnerSection.menu),
-                            ),
-                          ]
+                        : workspace
+                        ? ownerNavItems(_ownerNav.sections, _ownerNav.show)
                         : null,
                     onHome: () {},
                     onModules: _openModules,
@@ -700,7 +684,7 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -805,6 +789,20 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
               ],
               const SizedBox(height: 24),
               const Divider(height: 1),
+              // The counter's open switch, beside Settings, for an account
+              // whose workspace has a counter of its own.
+              ListenableBuilder(
+                listenable: _ownerNav,
+                builder: (context, _) {
+                  final open = _ownerNav.counterOpen;
+                  if (open == null) return const SizedBox.shrink();
+                  return CounterOpenSwitchRow(
+                    open: open,
+                    busy: _ownerNav.counterBusy,
+                    onChanged: _ownerNav.setCounterOpen,
+                  );
+                },
+              ),
               // Settings row
               ListTile(
                 contentPadding: EdgeInsets.zero,
