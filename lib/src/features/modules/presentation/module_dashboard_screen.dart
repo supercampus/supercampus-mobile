@@ -1,6 +1,5 @@
 // ignore_for_file: unused_element
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/access/module_catalog.dart';
@@ -45,6 +44,7 @@ import '../../push_broadcasts/data/push_broadcast_repository.dart';
 import '../../push_broadcasts/presentation/push_broadcast_screen.dart';
 import '../../reports/data/finance_report_repository.dart';
 import '../../reports/presentation/finance_reports_screen.dart';
+import '../../../core/widgets/attachment_viewer.dart';
 
 /// One portal for every user. The module list is a projection of
 /// [EffectivePermissions] over [ModuleCatalog] — there are no role checks in
@@ -1096,11 +1096,22 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
           if (item.attachmentUrl != null &&
               !_isImageAttachment(item.attachmentName, item.attachmentUrl)) ...[
             const SizedBox(height: 20),
-            OutlinedButton.icon(
-              onPressed: () =>
-                  _openExternalAttachment(context, item.attachmentUrl!),
-              icon: const Icon(Icons.open_in_new_rounded),
-              label: Text(item.attachmentName ?? 'Open attachment'),
+            Row(
+              children: [
+                const Icon(Icons.attach_file_rounded, size: 18),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    item.attachmentName ?? 'Attachment',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                AttachmentActions(
+                  url: item.attachmentUrl!,
+                  name: item.attachmentName,
+                ),
+              ],
             ),
           ],
         ],
@@ -1112,16 +1123,8 @@ class _PriorityDashboardCardState extends State<_PriorityDashboardCard> {
     BuildContext context,
     String value,
   ) async {
-    final uri = Uri.tryParse(value);
-    if (uri != null &&
-        await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      return;
-    }
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('The attachment could not be opened.')),
-      );
-    }
+    // Attachments open inside the app, never in another app or tab.
+    await openAttachmentPreview(context, url: value);
   }
 
   @override
@@ -1556,16 +1559,8 @@ Future<void> _openNoticePdf(
 ) async {
   final url = notice.pdfUrl;
   if (url == null) return;
-
-  final opened = await launchUrl(
-    Uri.parse(url),
-    mode: LaunchMode.externalApplication,
-  );
-  if (!opened && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Unable to open this notice PDF.')),
-    );
-  }
+  // The notice opens inside the app, with Download there.
+  await openAttachmentPreview(context, url: url);
 }
 
 class _SectionLabel extends StatelessWidget {

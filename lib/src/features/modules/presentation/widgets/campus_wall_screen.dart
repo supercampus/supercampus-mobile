@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/access/effective_permissions.dart';
 import '../../../../core/access/module_catalog.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -10,6 +9,7 @@ import '../../data/announcement_events.dart';
 import 'dashboard_nav_bar.dart';
 import 'student_reports_page.dart';
 import '../../../../core/utils/user_facing_error.dart';
+import '../../../../core/widgets/attachment_viewer.dart';
 
 class CampusWallNotice {
   const CampusWallNotice({
@@ -694,33 +694,12 @@ class _CampusWallScreenState extends State<CampusWallScreen> {
                           ],
                         ),
                       ),
-                      TextButton.icon(
-                        onPressed: () async {
-                          final value = notice.attachmentUrl;
-                          if (value != null && value.isNotEmpty) {
-                            final uri = Uri.tryParse(value);
-                            if (uri != null &&
-                                await launchUrl(
-                                  uri,
-                                  mode: LaunchMode.externalApplication,
-                                )) {
-                              return;
-                            }
-                          }
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Viewing ${notice.attachmentName}...',
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.open_in_new, size: 16),
-                        label: const Text('Open'),
-                      ),
+                      // Preview opens inside the app; Download saves it.
+                      if (notice.attachmentUrl?.isNotEmpty ?? false)
+                        AttachmentActions(
+                          url: notice.attachmentUrl!,
+                          name: notice.attachmentName,
+                        ),
                     ],
                   ),
                 ),

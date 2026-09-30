@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/announcement_composer.dart';
@@ -15,6 +14,7 @@ import '../data/librarian_repository.dart';
 import '../data/library_lending_repository.dart';
 import 'librarian_lending_screen.dart';
 import '../../../core/utils/user_facing_error.dart';
+import '../../../core/widgets/attachment_viewer.dart';
 
 class LibrarianPortalScreen extends StatefulWidget {
   const LibrarianPortalScreen({
@@ -246,11 +246,12 @@ class _LibrarianPortalScreenState extends State<LibrarianPortalScreen> {
   Future<void> _openAnnouncementAttachment(LibraryAnnouncement item) async {
     final value = item.attachmentUrl;
     if (value == null || value.isEmpty) return;
-    final uri = Uri.tryParse(value);
-    if (uri == null ||
-        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (mounted) _snack('The attachment could not be opened.', error: true);
-    }
+    // Opens inside the app, with Download there.
+    await openAttachmentPreview(
+      context,
+      url: value,
+      name: item.attachmentName,
+    );
   }
 
   Future<void> _chooseExport() async {

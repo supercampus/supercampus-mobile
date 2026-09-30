@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/media/media_scope.dart';
@@ -18,6 +17,7 @@ import 'admin_roles_page.dart';
 import '../data/admin_roles_repository.dart';
 import '../../../core/access/effective_permissions.dart';
 import '../../../core/utils/user_facing_error.dart';
+import '../../../core/widgets/attachment_viewer.dart';
 
 /// Focused admin surface for student management and pending approvals.
 class AdminPortalShell extends StatefulWidget {
@@ -1314,18 +1314,9 @@ class _AdminAnnouncementsPageState extends State<_AdminAnnouncementsPage> {
     }
   }
 
-  Future<void> _openAttachment(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri != null &&
-        await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      return;
-    }
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open attachment.')),
-      );
-    }
-  }
+  // Opens inside the app, with Download there.
+  Future<void> _openAttachment(String url) =>
+      openAttachmentPreview(context, url: url);
 
   @override
   Widget build(BuildContext context) => Scaffold(

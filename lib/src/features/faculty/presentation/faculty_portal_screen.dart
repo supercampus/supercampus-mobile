@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/announcement_composer.dart';
@@ -7,6 +6,7 @@ import '../../../core/widgets/module_navigation_buttons.dart';
 import '../../authentication/data/auth_repository.dart';
 import '../data/faculty_models.dart';
 import '../data/mock_faculty_repository.dart';
+import '../../../core/widgets/attachment_viewer.dart';
 
 /// Faculty purple used as text or icon colour: exact in light, lifted in dark.
 Color _purpleInk(BuildContext context) => context.adaptive(
@@ -90,15 +90,8 @@ class _FacultyPortalScreenState extends State<FacultyPortalScreen> {
   Future<void> _openNoticeAttachment(DepartmentNotice notice) async {
     final value = notice.pdfUrl;
     if (value == null || value.isEmpty) return;
-    final uri = Uri.tryParse(value);
-    if (uri == null ||
-        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('The attachment could not be opened.')),
-        );
-      }
-    }
+    // Opens inside the app, with Download there.
+    await openAttachmentPreview(context, url: value);
   }
 
   @override
