@@ -50,6 +50,11 @@
       touch-action: manipulation;
     }
   </style>
+  <!-- In-app PDF preview (package:printing) loads pdf.js on first use; pin
+       it to jsDelivr at the version the package is built for. -->
+  <script>
+    var dartPdfJsBaseUrl = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.2.146/build/";
+  </script>
 </head>
 <body>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
