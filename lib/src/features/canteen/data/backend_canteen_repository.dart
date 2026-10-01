@@ -80,6 +80,12 @@ class BackendCanteenRepository
               role: _text(_map(raw)['assignmentRole']) == 'owner'
                   ? 'owner'
                   : 'captain',
+              name: _text(_map(raw)['name']).isEmpty
+                  ? null
+                  : _text(_map(raw)['name']),
+              parentShopKey: _text(_map(raw)['parentShopKey']).isEmpty
+                  ? null
+                  : _text(_map(raw)['parentShopKey']),
             ),
       ],
       menu: menu,
@@ -782,6 +788,9 @@ class BackendCanteenRepository
       createdAt: _text(shop['createdAt']).isEmpty
           ? null
           : DateTime.tryParse(_text(shop['createdAt'])),
+      parentShopKey: _text(shop['parentShopKey']).isEmpty
+          ? null
+          : _text(shop['parentShopKey']),
     );
   }
 
@@ -815,6 +824,12 @@ class BackendCanteenRepository
       referenceId: _text(value['referenceId']).isEmpty
           ? null
           : _text(value['referenceId']),
+      walletScope: _text(value['walletScope']).isEmpty
+          ? null
+          : _text(value['walletScope']),
+      counterShopKey: _text(value['counterShopKey']).isEmpty
+          ? null
+          : _text(value['counterShopKey']),
     );
   }
 

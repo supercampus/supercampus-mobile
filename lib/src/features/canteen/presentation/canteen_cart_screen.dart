@@ -90,6 +90,98 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
         : 'Canteen';
   }
 
+  /// The wallets the cart spends from, in cart order: a counter's canteen
+  /// holds its wallet, so Meals and Snacks share one line.
+  List<String> get _wallets {
+    final seen = <String>[];
+    for (final shop in _shops) {
+      final wallet = walletKeyOf(shop, widget.shops);
+      if (!seen.contains(wallet)) seen.add(wallet);
+    }
+    return seen;
+  }
+
+  /// How each shop's part of the cart will be paid, exactly as checkout
+  /// will: a counter's own credit first, then its canteen's.
+  ({List<List<WalletDebit>> debits, int? failedAt}) get _plan =>
+      planWalletDebits(
+        [
+          for (final shop in _shops)
+            (
+              shop: shop,
+              total: _linesFor(
+                shop,
+              ).fold<double>(0, (sum, line) => sum + line.total),
+            ),
+        ],
+        widget.walletBalances,
+        widget.shops,
+      );
+
+  /// "₹100 Snacks-only + ₹20 canteen credit" for one counter's debits.
+  String _paidWith(String shop, List<WalletDebit> debits) {
+    if (debits.isEmpty) return 'Nothing to pay';
+    return debits
+        .map(
+          (debit) => debit.bucket == shop
+              ? '${formatCurrency(debit.amount)} ${_shopName(shop)}-only credit'
+              : '${formatCurrency(debit.amount)} canteen credit',
+        )
+        .join(' + ');
+  }
+
+  Widget _walletSummary(BuildContext context) {
+    final plan = _plan;
+    final textStyle = Theme.of(context).textTheme.bodyMedium;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final wallet in _wallets) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.account_balance_wallet_outlined,
+                  size: 19,
+                  color: context.palette.brandInk,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${_shopName(wallet)} wallet: ${formatCurrency(walletBreakdownOf(wallet, widget.walletBalances, widget.shops).total)}',
+                    style: textStyle,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Counters say which credit pays for them, since credit can be
+          // limited to one counter.
+          for (var index = 0; index < _shops.length; index++)
+            if (_shops[index] != wallet &&
+                walletKeyOf(_shops[index], widget.shops) == wallet)
+              Padding(
+                key: ValueKey('cart-wallet-split-${_shops[index]}'),
+                padding: const EdgeInsets.only(left: 27, bottom: 4),
+                child: Text(
+                  index < plan.debits.length
+                      ? '${_shopName(_shops[index])} · ${_paidWith(_shops[index], plan.debits[index])}'
+                      : index == plan.failedAt
+                      ? '${_shopName(_shops[index])} · not enough credit here'
+                      : _shopName(_shops[index]),
+                  style: textStyle?.copyWith(
+                    color: index == plan.failedAt
+                        ? context.palette.danger
+                        : context.palette.inkSecondary,
+                  ),
+                ),
+              ),
+        ],
+      ],
+    );
+  }
+
   Future<void> _placeOrder() async {
     // The parent clears the cart as soon as the order succeeds. Preserve the
     // amount the student approved so the result screen never recomputes an
@@ -290,24 +382,7 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      for (final shopKey in _shops)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.account_balance_wallet_outlined,
-                                size: 19,
-                                color: context.palette.brandInk,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${_shopName(shopKey)} wallet: ${formatCurrency(widget.walletBalances[shopKey] ?? 0.0)}',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ],
-                          ),
-                        ),
+                      _walletSummary(context),
                       if (_error != null) ...[
                         const SizedBox(height: 12),
                         Text(

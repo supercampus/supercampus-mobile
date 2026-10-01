@@ -146,6 +146,46 @@ class _VendorsPageState extends State<_VendorsPage> {
     }
   }
 
+  /// The canteen [shop] is a counter of, when it is one and is listed.
+  VendorShop? _parentOf(VendorShop shop) {
+    if (!shop.isCounter) return null;
+    for (final candidate in _shops ?? const <VendorShop>[]) {
+      if (candidate.shopKey == shop.parentShopKey) return candidate;
+    }
+    return null;
+  }
+
+  /// [canteen]'s counters, in the administrator's order.
+  List<VendorShop> _countersOf(VendorShop canteen) => [
+    for (final shop in _shops ?? const <VendorShop>[])
+      if (shop.parentShopKey == canteen.shopKey) shop,
+  ];
+
+  /// Adds a counter (Meals, Beverages, Snacks …) under [canteen]: a shop of
+  /// its own for staff, menu and orders that students find in the canteen.
+  Future<void> _addCounter(VendorShop canteen) async {
+    final draft = await showModalBottomSheet<VendorShopDraft>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _ShopFormSheet(
+        parent: canteen,
+        suggestedCategories: _categories,
+        loadStaffCandidates: _staffLoader,
+        nextPosition: _countersOf(canteen).length + 1,
+      ),
+    );
+    if (draft == null || !mounted) return;
+    try {
+      final created = await widget.repository.createVendor(draft);
+      if (!mounted) return;
+      setState(() => _shops = [...?_shops, created]);
+      _toast('${created.name} counter added to ${canteen.name}.');
+    } catch (error) {
+      if (mounted) _toast(userFacingError(error), error: true);
+    }
+  }
+
   Future<void> _editShop(VendorShop shop) async {
     final draft = await showModalBottomSheet<VendorShopDraft>(
       context: context,
@@ -153,6 +193,7 @@ class _VendorsPageState extends State<_VendorsPage> {
       useSafeArea: true,
       builder: (_) => _ShopFormSheet(
         shop: shop,
+        parent: _parentOf(shop),
         suggestedCategories: _categories,
         loadStaffCandidates: _staffLoader,
       ),
@@ -206,6 +247,18 @@ class _VendorsPageState extends State<_VendorsPage> {
         shop: shop,
         sales: _salesFor(shop),
         canUpdate: widget.canUpdate,
+        canCreate: widget.canCreate,
+        parent: _parentOf(shop),
+        counters: _countersOf(shop),
+        salesFor: _salesFor,
+        onAddCounter: () {
+          Navigator.pop(sheet);
+          _addCounter(shop);
+        },
+        onOpenCounter: (counter) {
+          Navigator.pop(sheet);
+          _showShop(counter);
+        },
         onEdit: () {
           Navigator.pop(sheet);
           _editShop(shop);
@@ -248,7 +301,8 @@ class _VendorsPageState extends State<_VendorsPage> {
       );
     }
     final query = _query.trim().toLowerCase();
-    final visible = shops.where((shop) {
+    // Counters sit right under their canteen.
+    final visible = nestCounters(shops).where((shop) {
       if (_category != null &&
           shop.category.trim().toLowerCase() != _category!.toLowerCase()) {
         return false;
@@ -343,6 +397,7 @@ class _VendorsPageState extends State<_VendorsPage> {
                     if (i > 0) Divider(height: 1, color: p.divider),
                     _ShopRow(
                       shop: visible[i],
+                      parent: _parentOf(visible[i]),
                       sales: _salesFor(visible[i]),
                       busy: _busy.contains(visible[i].id),
                       onTap: () => _showShop(visible[i]),
@@ -380,9 +435,13 @@ class _ShopRow extends StatelessWidget {
     required this.sales,
     required this.busy,
     required this.onTap,
+    this.parent,
   });
 
   final VendorShop shop;
+
+  /// The canteen this row is a counter of; the row is then indented under it.
+  final VendorShop? parent;
   final StoreSales? sales;
   final bool busy;
   final VoidCallback onTap;
@@ -391,13 +450,19 @@ class _ShopRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     final sales = this.sales;
+    final parent = this.parent;
     return InkWell(
+      key: ValueKey('vendor-shop-${shop.shopKey}'),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: EdgeInsets.only(
+          top: 12,
+          bottom: 12,
+          left: parent == null ? 0 : 28,
+        ),
         child: Row(
           children: [
-            _ShopAvatar(shop.category),
+            _ShopAvatar(shop.category, size: parent == null ? 40 : 32),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -427,7 +492,7 @@ class _ShopRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${_titleCase(shop.category)} · ${_staffLine(sales?.operators ?? const [])}',
+                    '${parent == null ? _titleCase(shop.category) : 'Counter of ${parent.name}'} · ${_staffLine(sales?.operators ?? const [])}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 12.5, color: p.inkSecondary),
@@ -468,11 +533,33 @@ class _ShopDetailSheet extends StatelessWidget {
     required this.onEdit,
     required this.onToggle,
     required this.onOrders,
+    this.canCreate = false,
+    this.parent,
+    this.counters = const [],
+    this.salesFor,
+    this.onAddCounter,
+    this.onOpenCounter,
   });
 
   final VendorShop shop;
   final StoreSales? sales;
   final bool canUpdate;
+  final bool canCreate;
+
+  /// The canteen [shop] is a counter of, when it is one.
+  final VendorShop? parent;
+
+  /// [shop]'s counters, when it is a canteen that has them.
+  final List<VendorShop> counters;
+  final StoreSales? Function(VendorShop shop)? salesFor;
+  final VoidCallback? onAddCounter;
+  final ValueChanged<VendorShop>? onOpenCounter;
+
+  /// A canteen can be split into counters; a counter cannot.
+  bool get _takesCounters =>
+      !shop.isCounter &&
+      shop.isActive &&
+      shop.category.trim().toLowerCase() == 'canteen';
   final VoidCallback onEdit;
   final VoidCallback onToggle;
   final VoidCallback onOrders;
@@ -596,7 +683,79 @@ class _ShopDetailSheet extends StatelessWidget {
                   ],
                 ),
               ),
+          if (_takesCounters && (counters.isNotEmpty || canCreate)) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Counters',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: p.ink,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Each counter has its own staff, menu and order queue. '
+              'Students order from them inside ${shop.name}, and its wallet '
+              'pays at every counter.',
+              style: TextStyle(fontSize: 12.5, color: p.inkSecondary),
+            ),
+            for (final counter in counters)
+              InkWell(
+                key: ValueKey('counter-row-${counter.shopKey}'),
+                onTap: onOpenCounter == null
+                    ? null
+                    : () => onOpenCounter!(counter),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              counter.name,
+                              style: TextStyle(fontSize: 14, color: p.ink),
+                            ),
+                            Text(
+                              _staffLine(
+                                salesFor?.call(counter)?.operators ??
+                                    const [],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: p.inkSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _tradingPill(
+                        context,
+                        active: counter.isActive,
+                        open: counter.isOpen,
+                      ),
+                      Icon(Icons.chevron_right_rounded, color: p.inkTertiary),
+                    ],
+                  ),
+                ),
+              ),
+            if (canCreate && onAddCounter != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const ValueKey('add-counter'),
+                  onPressed: onAddCounter,
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('Add counter'),
+                ),
+              ),
+          ],
           const SizedBox(height: 8),
+          if (parent != null) _DetailRow('Counter of', parent!.name),
           _DetailRow('Shop key', shop.shopKey),
           _DetailRow('Wallet QR', shop.qrPayments ? 'Accepted' : 'Off'),
           if (shop.mealCompliance) const _DetailRow('Meal plan', 'Counts toward hostel meals'),
@@ -1057,9 +1216,18 @@ class _ShopFormSheet extends StatefulWidget {
     required this.suggestedCategories,
     this.shop,
     this.loadStaffCandidates,
+    this.parent,
+    this.nextPosition,
   });
 
   final VendorShop? shop;
+
+  /// The canteen the shop is (or becomes) a counter of. A counter takes its
+  /// canteen's category, so the form asks for a position instead.
+  final VendorShop? parent;
+
+  /// Where a new counter goes among its canteen's counters.
+  final int? nextPosition;
   final List<String> suggestedCategories;
 
   /// Present when the viewer may choose counter staff here.
@@ -1081,6 +1249,11 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
   late final _description = TextEditingController(
     text: widget.shop?.description,
   );
+  late final _position = TextEditingController(
+    text: widget.parent == null
+        ? ''
+        : '${widget.shop == null ? (widget.nextPosition ?? 1) : (widget.shop!.sortOrder ?? '')}',
+  );
   late bool _qrPayments = widget.shop?.qrPayments ?? true;
   late bool _isActive = widget.shop?.isActive ?? true;
   bool _autoKey = true;
@@ -1090,6 +1263,8 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
   List<ShopStaffCandidate>? _candidates;
 
   bool get _editing => widget.shop != null;
+
+  bool get _counter => widget.parent != null;
 
   @override
   void initState() {
@@ -1113,6 +1288,7 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
     _key.dispose();
     _category.dispose();
     _description.dispose();
+    _position.dispose();
     super.dispose();
   }
 
@@ -1120,7 +1296,14 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
     final name = _name.text.trim();
     final key = _key.text.trim().toLowerCase();
     if (name.isEmpty) {
-      setState(() => _problem = 'Enter a shop name.');
+      setState(
+        () => _problem = _counter ? 'Enter a counter name.' : 'Enter a shop name.',
+      );
+      return;
+    }
+    final position = _position.text.trim();
+    if (_counter && position.isNotEmpty && int.tryParse(position) == null) {
+      setState(() => _problem = 'The position is a whole number, like 1 or 2.');
       return;
     }
     if (!RegExp(r'^[a-z0-9][a-z0-9_-]{1,63}$').hasMatch(key)) {
@@ -1134,7 +1317,9 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
       VendorShopDraft(
         name: name,
         shopKey: key,
-        category: _category.text.trim().isEmpty
+        category: _counter
+            ? widget.parent!.category
+            : _category.text.trim().isEmpty
             ? 'General'
             : _category.text.trim(),
         description: _description.text.trim(),
@@ -1143,6 +1328,9 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
         mealCompliance: widget.shop?.mealCompliance ?? false,
         // Only a changed list is sent; otherwise the staff stay as they are.
         operators: _staffChanged ? _staff : null,
+        // A new counter names its canteen; an edit leaves it where it is.
+        parentShopKey: _counter && !_editing ? widget.parent!.shopKey : null,
+        sortOrder: _counter && position.isNotEmpty ? int.tryParse(position) : null,
       ),
     );
   }
@@ -1164,7 +1352,11 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
             const _SheetHandle(),
             const SizedBox(height: 14),
             Text(
-              _editing ? 'Edit ${widget.shop!.name}' : 'Add shop',
+              _editing
+                  ? 'Edit ${widget.shop!.name}'
+                  : _counter
+                  ? 'Add counter to ${widget.parent!.name}'
+                  : 'Add shop',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -1178,13 +1370,21 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
               textCapitalization: TextCapitalization.words,
               onChanged: (value) {
                 if (_editing || !_autoKey) return;
-                _key.text = value
+                final slug = value
                     .trim()
                     .toLowerCase()
                     .replaceAll(RegExp(r'[^a-z0-9_-]+'), '-')
                     .replaceAll(RegExp(r'^-+|-+$'), '');
+                // A counter's key starts with its canteen's, so it reads as
+                // part of it in QR codes and reports.
+                _key.text = _counter && slug.isNotEmpty
+                    ? '${widget.parent!.shopKey}-$slug'
+                    : slug;
               },
-              decoration: const InputDecoration(labelText: 'Shop name'),
+              decoration: InputDecoration(
+                labelText: _counter ? 'Counter name' : 'Shop name',
+                hintText: _counter ? 'Meals, Beverages, Snacks …' : null,
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -1196,12 +1396,26 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                 helperText: 'Used in QR codes and reports. Cannot change later.',
               ),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _category,
-              decoration: const InputDecoration(labelText: 'Category'),
-            ),
-            if (widget.suggestedCategories.isNotEmpty) ...[
+            if (_counter) ...[
+              const SizedBox(height: 12),
+              TextField(
+                key: const ValueKey('counter-position'),
+                controller: _position,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Position in ${widget.parent!.name} (optional)',
+                  helperText: 'Students see counters in this order.',
+                ),
+              ),
+            ],
+            if (!_counter) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _category,
+                decoration: const InputDecoration(labelText: 'Category'),
+              ),
+            ],
+            if (!_counter && widget.suggestedCategories.isNotEmpty) ...[
               const SizedBox(height: 8),
               Wrap(
                 spacing: 6,
@@ -1255,8 +1469,15 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
             ],
             const SizedBox(height: 16),
             FilledButton(
+              key: const ValueKey('shop-form-submit'),
               onPressed: _submit,
-              child: Text(_editing ? 'Save changes' : 'Add shop'),
+              child: Text(
+                _editing
+                    ? 'Save changes'
+                    : _counter
+                    ? 'Add counter'
+                    : 'Add shop',
+              ),
             ),
           ],
         ),

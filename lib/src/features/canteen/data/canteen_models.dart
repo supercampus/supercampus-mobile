@@ -125,6 +125,7 @@ class CanteenShop {
     this.isActive = true,
     this.isOpen = true,
     this.createdAt,
+    this.parentShopKey,
   });
 
   final String id;
@@ -134,6 +135,14 @@ class CanteenShop {
   final String description;
   final bool isActive;
   final bool isOpen;
+
+  /// The canteen this shop is a counter of (Meals, Beverages, Snacks under
+  /// the campus canteen). A counter runs its own staff, menu and orders;
+  /// students find it inside its canteen, and its canteen holds the wallet.
+  final String? parentShopKey;
+
+  bool get isCounter =>
+      parentShopKey != null && parentShopKey!.trim().isNotEmpty;
 
   /// When the administrator added the shop. Legacy store keys belong to the
   /// oldest shop of their category, so a newer second canteen never takes
@@ -150,9 +159,20 @@ class CanteenShop {
 
 /// One shop the signed-in person works at, and in what capacity.
 class ShopAssignment {
-  const ShopAssignment({required this.shopKey, required this.role});
+  const ShopAssignment({
+    required this.shopKey,
+    required this.role,
+    this.name,
+    this.parentShopKey,
+  });
 
   final String shopKey;
+
+  /// The shop's name, when the server sends it.
+  final String? name;
+
+  /// The canteen [shopKey] is a counter of, when it is one.
+  final String? parentShopKey;
 
   /// `owner` (runs the counter and its menu) or `captain` (runs the counter).
   final String role;
@@ -209,10 +229,13 @@ String resolveShopKey(String? raw, List<CanteenShop> shops) {
   return candidates.first.$2.shopKey;
 }
 
-/// The first active shop of [category] in the campus's listed order.
+/// The first active shop of [category] in the campus's listed order. A
+/// counter is never "the canteen": links land on the canteen it belongs to.
 String? firstShopKeyOfCategory(List<CanteenShop> shops, String category) {
   for (final shop in shops) {
-    if (shop.isActive && shop.category.trim().toLowerCase() == category) {
+    if (shop.isActive &&
+        !shop.isCounter &&
+        shop.category.trim().toLowerCase() == category) {
       return shop.shopKey;
     }
   }
@@ -223,6 +246,127 @@ String? firstShopKeyOfCategory(List<CanteenShop> shops, String category) {
 bool sameShop(String? rowKey, String walletKey, List<CanteenShop> shops) {
   if (rowKey == null || rowKey.trim().isEmpty) return false;
   return resolveShopKey(rowKey, shops) == resolveShopKey(walletKey, shops);
+}
+
+/// The active counters of [canteenKey], in the campus's listed order.
+List<CanteenShop> countersOf(String canteenKey, List<CanteenShop> shops) => [
+  for (final shop in shops)
+    if (shop.isActive && shop.parentShopKey == canteenKey) shop,
+];
+
+/// The wallet [shopKey] spends from: the canteen of a counter, otherwise the
+/// shop itself.
+String walletKeyOf(String shopKey, List<CanteenShop> shops) {
+  for (final shop in shops) {
+    if (shop.shopKey == shopKey && shop.isCounter) return shop.parentShopKey!;
+  }
+  return shopKey;
+}
+
+/// One canteen wallet split into what each counter may spend.
+///
+/// The canteen's own balance is general credit, spendable at any of its
+/// counters; a counter's own balance is credit the accountant restricted to
+/// that counter. A shop without counters has only [general].
+class WalletBreakdown {
+  const WalletBreakdown({
+    required this.walletKey,
+    required this.general,
+    this.restricted = const {},
+  });
+
+  final String walletKey;
+  final double general;
+
+  /// Counter key → credit only that counter accepts, for every active
+  /// counter of the canteen (zero when there is none).
+  final Map<String, double> restricted;
+
+  bool get hasCounters => restricted.isNotEmpty;
+
+  /// Everything held in this wallet, restricted credit included.
+  double get total =>
+      restricted.values.fold<double>(general, (sum, value) => sum + value);
+
+  /// What an order at [counterKey] can spend: its restricted credit first,
+  /// then the general credit. A balance below zero counts as nothing.
+  double spendableAt(String counterKey) =>
+      _positive(restricted[counterKey] ?? 0) + _positive(general);
+
+  static double _positive(double value) => value > 0 ? value : 0;
+}
+
+/// [WalletBreakdown] for the wallet [shopKey] spends from.
+WalletBreakdown walletBreakdownOf(
+  String shopKey,
+  Map<String, double> balances,
+  List<CanteenShop> shops,
+) {
+  final walletKey = walletKeyOf(shopKey, shops);
+  return WalletBreakdown(
+    walletKey: walletKey,
+    general: balances[walletKey] ?? 0,
+    restricted: {
+      for (final counter in countersOf(walletKey, shops))
+        counter.shopKey: balances[counter.shopKey] ?? 0,
+    },
+  );
+}
+
+/// One wallet bucket's share of paying a shop's order.
+class WalletDebit {
+  const WalletDebit({required this.bucket, required this.amount});
+
+  /// The bucket's key: a counter's (its restricted credit) or the canteen's
+  /// (general credit), or a shop's only wallet.
+  final String bucket;
+  final double amount;
+
+  @override
+  bool operator ==(Object other) =>
+      other is WalletDebit && other.bucket == bucket && other.amount == amount;
+
+  @override
+  int get hashCode => Object.hash(bucket, amount);
+
+  @override
+  String toString() => 'WalletDebit($bucket, $amount)';
+}
+
+/// How a cart is paid, mirroring the server's checkout: each shop's basket
+/// ([shopTotals], in cart order) spends its own wallet — a counter's
+/// restricted credit — first, then, for a counter, its canteen's general
+/// credit, which the baskets share. Returns the debits per basket, or the
+/// index of the first basket the wallet cannot cover as `failedAt`.
+({List<List<WalletDebit>> debits, int? failedAt}) planWalletDebits(
+  List<({String shop, double total})> shopTotals,
+  Map<String, double> balances,
+  List<CanteenShop> shops,
+) {
+  int paise(double value) => (value * 100).round();
+  final left = {
+    for (final entry in balances.entries) entry.key: paise(entry.value),
+  };
+  final plans = <List<WalletDebit>>[];
+  for (var index = 0; index < shopTotals.length; index++) {
+    final basket = shopTotals[index];
+    final parent = walletKeyOf(basket.shop, shops);
+    var remaining = paise(basket.total);
+    final plan = <WalletDebit>[];
+    for (final bucket in [basket.shop, if (parent != basket.shop) parent]) {
+      if (remaining <= 0) break;
+      final available = (left[bucket] ?? 0) > 0 ? left[bucket]! : 0;
+      final take = available < remaining ? available : remaining;
+      if (take > 0) {
+        plan.add(WalletDebit(bucket: bucket, amount: take / 100));
+        remaining -= take;
+        left[bucket] = (left[bucket] ?? 0) - take;
+      }
+    }
+    if (remaining > 0) return (debits: plans, failedAt: index);
+    plans.add(plan);
+  }
+  return (debits: plans, failedAt: null);
 }
 
 /// Laundry charges are raised by the one laundry counter the API knows.
@@ -546,10 +690,22 @@ class WalletTransaction {
     required this.createdAt,
     this.kind,
     this.referenceId,
+    this.walletScope,
+    this.counterShopKey,
   });
 
   final String id;
+
+  /// The wallet bucket the row moved: a shop's own wallet, a canteen's
+  /// general credit, or a counter's restricted credit (the counter's key).
   final String shopKey;
+
+  /// `all` (credit any counter of the canteen accepts) or the counter the
+  /// credit is restricted to. Older rows leave it out.
+  final String? walletScope;
+
+  /// The counter a purchase or refund was at, when the server reports it.
+  final String? counterShopKey;
   final WalletTransactionType type;
   final double amount;
   final String description;
@@ -781,14 +937,29 @@ extension CanteenStoreWalletScope on CanteenStore {
   List<CanteenOrder> walletOrdersFor(String shopKey) => [
     for (final order in orders)
       if (_isMine(order.customerUserId) &&
-          sameShop(order.storeKey, shopKey, shops))
+          _sameWallet(order.storeKey, shopKey))
         order,
   ];
 
+  /// A canteen's wallet history includes its counters' restricted credit.
   List<WalletTransaction> walletTransactionsFor(String shopKey) => [
     for (final transaction in walletTransactions)
-      if (sameShop(transaction.shopKey, shopKey, shops)) transaction,
+      if (_sameWallet(transaction.shopKey, shopKey)) transaction,
   ];
+
+  bool _sameWallet(String? rowKey, String walletKey) {
+    if (rowKey == null || rowKey.trim().isEmpty) return false;
+    return walletKeyOf(resolveShopKey(rowKey, shops), shops) ==
+        walletKeyOf(resolveShopKey(walletKey, shops), shops);
+  }
+
+  /// The wallet [shopKey] spends from: its canteen when it is a counter.
+  String walletKeyFor(String shopKey) =>
+      walletKeyOf(resolveShopKey(shopKey, shops), shops);
+
+  /// The wallet behind [shopKey], split into general and counter-only credit.
+  WalletBreakdown walletBreakdownFor(String shopKey) =>
+      walletBreakdownOf(resolveShopKey(shopKey, shops), walletBalances, shops);
 
   /// Laundry charges this person claimed, when [shopKey] is the laundry's
   /// wallet. An operator's payload also lists unclaimed and others' charges.

@@ -8,6 +8,66 @@ import '../data/canteen_models.dart';
 import 'canteen_orders_screen.dart';
 import 'wallet_transaction_details_screen.dart';
 
+/// A canteen wallet's credit by scope — general credit and credit limited to
+/// one counter — and what each counter can spend, since an order at a
+/// counter uses its own credit first and then the general credit.
+class _CounterCredit extends StatelessWidget {
+  const _CounterCredit({required this.breakdown, required this.counters});
+
+  final WalletBreakdown breakdown;
+  final List<CanteenShop> counters;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final restricted = [
+      for (final counter in counters)
+        if ((breakdown.restricted[counter.shopKey] ?? 0) != 0)
+          '${counter.name} only ${formatCurrency(breakdown.restricted[counter.shopKey]!)}',
+    ];
+    final labelStyle = TextStyle(fontSize: 12.5, color: p.inkSecondary);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          [
+            'General ${formatCurrency(breakdown.general)}',
+            ...restricted,
+          ].join(' · '),
+          key: const ValueKey('student-wallet-breakdown'),
+          style: TextStyle(fontSize: 13.5, color: p.ink),
+        ),
+        const SizedBox(height: 8),
+        Text('You can spend', style: labelStyle),
+        const SizedBox(height: 4),
+        Wrap(
+          key: const ValueKey('student-wallet-spendable'),
+          spacing: 8,
+          runSpacing: 6,
+          children: [
+            for (final counter in counters)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: p.surfaceSunken,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${counter.name} ${formatCurrency(breakdown.spendableAt(counter.shopKey))}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: p.ink,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 /// Which history the wallet is showing.
 enum WalletHistory { orders, transactions }
 
@@ -120,7 +180,12 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
   @override
   Widget build(BuildContext context) {
     final shopName = store.walletShopFor(widget.shopKey)?.name.trim();
-    final balance = store.walletBalances[widget.shopKey] ?? 0.0;
+    // A canteen with counters holds general credit plus credit the accountant
+    // limited to one counter; the balance is all of it.
+    final breakdown = store.walletBreakdownFor(widget.shopKey);
+    final balance = breakdown.hasCounters
+        ? breakdown.total
+        : store.walletBalances[widget.shopKey] ?? 0.0;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
@@ -236,6 +301,13 @@ class _StudentWalletSheetState extends State<StudentWalletSheet> {
                 ],
               ),
             ),
+            if (breakdown.hasCounters) ...[
+              const SizedBox(height: 10),
+              _CounterCredit(
+                breakdown: breakdown,
+                counters: countersOf(breakdown.walletKey, store.shops),
+              ),
+            ],
             const SizedBox(height: 20),
             SegmentedButton<WalletHistory>(
               showSelectedIcon: false,

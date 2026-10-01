@@ -158,6 +158,10 @@ class _ShopCounterSheetState extends State<ShopCounterSheet> {
                   for (final shop in shops)
                     _CounterRow(
                       shop: shop,
+                      parentName: [
+                        for (final other in shops)
+                          if (other.shopKey == shop.parentShopKey) other.name,
+                      ].firstOrNull,
                       role: _chosen[shop.shopKey],
                       onToggle: (on) => setState(() {
                         if (on) {
@@ -213,9 +217,13 @@ class _CounterRow extends StatelessWidget {
     required this.role,
     required this.onToggle,
     required this.onRole,
+    this.parentName,
   });
 
   final ShopCounterChoice shop;
+
+  /// The canteen [shop] is a counter of, by name.
+  final String? parentName;
 
   /// Null when this shop is not ticked.
   final String? role;
@@ -243,7 +251,9 @@ class _CounterRow extends StatelessWidget {
                 children: [
                   Text(shop.name, style: TextStyle(fontSize: 15, color: p.ink)),
                   Text(
-                    shop.category,
+                    parentName == null
+                        ? shop.category
+                        : 'Counter of $parentName',
                     style: TextStyle(fontSize: 12.5, color: p.inkSecondary),
                   ),
                 ],

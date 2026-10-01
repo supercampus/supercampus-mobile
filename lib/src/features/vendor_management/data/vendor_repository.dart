@@ -20,6 +20,7 @@ class VendorShop {
     this.updatedAt,
     this.sortOrder,
     this.operators = const [],
+    this.parentShopKey,
   });
 
   final String id;
@@ -39,6 +40,13 @@ class VendorShop {
 
   /// Owner and captains assigned to run this shop.
   final List<ShopStaffAssignment> operators;
+
+  /// The canteen this shop is a counter of (Meals, Snacks …). A counter has
+  /// its own staff, menu and orders; its canteen holds the wallet.
+  final String? parentShopKey;
+
+  bool get isCounter =>
+      parentShopKey != null && parentShopKey!.trim().isNotEmpty;
 
   VendorShop copyWith({
     String? id,
@@ -69,6 +77,7 @@ class VendorShop {
         updatedAt: updatedAt ?? this.updatedAt,
         sortOrder: sortOrder ?? this.sortOrder,
         operators: operators ?? this.operators,
+        parentShopKey: parentShopKey,
       );
 
   factory VendorShop.fromJson(Map<String, dynamic> json) {
@@ -96,8 +105,27 @@ class VendorShop {
           if (item is Map)
             ShopStaffAssignment.fromJson(Map<String, dynamic>.from(item)),
       ],
+      parentShopKey: (json['parentShopKey']?.toString().trim().isEmpty ?? true)
+          ? null
+          : json['parentShopKey'].toString().trim(),
     );
   }
+}
+
+/// The register in display order with each canteen's counters right under
+/// it: canteens and other shops in the administrator's order, counters in
+/// theirs. A counter whose canteen is missing is listed on its own.
+List<VendorShop> nestCounters(List<VendorShop> shops) {
+  final keys = {for (final shop in shops) shop.shopKey};
+  final nested = <VendorShop>[];
+  for (final shop in shops) {
+    if (shop.isCounter && keys.contains(shop.parentShopKey)) continue;
+    nested.add(shop);
+    for (final counter in shops) {
+      if (counter.parentShopKey == shop.shopKey) nested.add(counter);
+    }
+  }
+  return nested;
 }
 
 /// One person's role at a shop.
@@ -159,6 +187,8 @@ class VendorShopDraft {
     this.mealCompliance = false,
     this.qrPayments = true,
     this.operators,
+    this.parentShopKey,
+    this.sortOrder,
   });
 
   final String shopKey;
@@ -172,6 +202,13 @@ class VendorShopDraft {
   /// The shop's full staff list. Null leaves the current staff untouched.
   final List<ShopStaffAssignment>? operators;
 
+  /// Makes the shop a counter of this canteen. Null leaves it as it is.
+  final String? parentShopKey;
+
+  /// The shop's place in the sequence (a counter's place in its canteen).
+  /// Null leaves it as it is.
+  final int? sortOrder;
+
   Map<String, dynamic> toJson() => {
         'shopKey': shopKey.trim().toLowerCase(),
         'name': name.trim(),
@@ -182,6 +219,8 @@ class VendorShopDraft {
         'qrPayments': qrPayments,
         if (operators != null)
           'operators': [for (final o in operators!) o.toJson()],
+        if (parentShopKey != null) 'parentShopKey': parentShopKey,
+        if (sortOrder != null) 'sortOrder': sortOrder,
       };
 }
 

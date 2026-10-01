@@ -291,12 +291,17 @@ class _OverviewCard extends StatelessWidget {
               spacing: 6,
               runSpacing: 6,
               children: [
-                for (final store in directory.stores)
+                for (final store in directory.stores.wallets)
                   _StorePill(
                     store: store,
                     label:
-                        '${store.name} ${_money(directory.balancesByStore[store.shopKey] ?? 0)}',
-                    negative: (directory.balancesByStore[store.shopKey] ?? 0) < 0,
+                        '${store.name} ${_money(directory.stores.walletTotal(store.shopKey, directory.balancesByStore))}',
+                    negative:
+                        directory.stores.walletTotal(
+                          store.shopKey,
+                          directory.balancesByStore,
+                        ) <
+                        0,
                   ),
               ],
             ),
@@ -1044,15 +1049,25 @@ class _WalletPersonCard extends StatelessWidget {
                         spacing: 5,
                         runSpacing: 5,
                         children: [
-                          for (final store in stores)
+                          for (final store in stores.wallets)
                             _StorePill(
                               key: ValueKey(
                                 'wallet-balance-${account.userId}-${store.shopKey}',
                               ),
                               store: store,
-                              label: _money(account.balanceFor(store.shopKey)),
-                              tooltip: '${store.name} wallet',
-                              negative: account.balanceFor(store.shopKey) < 0,
+                              label: _money(
+                                stores.walletTotal(
+                                  store.shopKey,
+                                  account.walletBalances,
+                                ),
+                              ),
+                              tooltip: _walletTooltip(store, stores, account),
+                              negative:
+                                  stores.walletTotal(
+                                    store.shopKey,
+                                    account.walletBalances,
+                                  ) <
+                                  0,
                             ),
                         ],
                       ),
@@ -1073,6 +1088,24 @@ class _WalletPersonCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "Canteen wallet: General ₹50 · Snacks only ₹100" for a wallet with
+/// counter-only credit; just the wallet's name otherwise.
+String _walletTooltip(
+  WalletStore store,
+  List<WalletStore> stores,
+  WalletAccount account,
+) {
+  final counters = stores.countersOf(store.shopKey);
+  final restricted = [
+    for (final counter in counters)
+      if (account.balanceFor(counter.shopKey) != 0)
+        '${counter.name} only ${_money(account.balanceFor(counter.shopKey))}',
+  ];
+  if (restricted.isEmpty) return '${store.name} wallet';
+  return '${store.name} wallet: General '
+      '${_money(account.balanceFor(store.shopKey))} · ${restricted.join(' · ')}';
 }
 
 class _RoleChip extends StatelessWidget {
@@ -1234,6 +1267,10 @@ class _RechargeSheetState extends State<_RechargeSheet> {
   final _reason = TextEditingController();
   _WalletAction _action = _WalletAction.add;
   WalletStore? _store;
+
+  /// For a canteen with counters, the one counter the money is limited to;
+  /// null is the whole canteen (general credit). One bucket per change.
+  WalletStore? _scope;
   String? _error;
   bool _submitting = false;
   AccountantWalletCredit? _credit;
@@ -1265,6 +1302,22 @@ class _RechargeSheetState extends State<_RechargeSheet> {
   }
 
   void _clearKey() => _idempotencyKey = null;
+
+  /// The selected wallet's counters, when it is a canteen that has them.
+  List<WalletStore> get _counters {
+    final store = _store;
+    return store == null ? const [] : widget.stores.countersOf(store.shopKey);
+  }
+
+  /// The wallet bucket the change lands in: the counter it is limited to,
+  /// else the wallet itself.
+  String? get _bucketKey => _scope?.shopKey ?? _store?.shopKey;
+
+  double get _bucketBalance =>
+      _bucketKey == null ? 0 : widget.account.balanceFor(_bucketKey!);
+
+  /// "Snacks only" when the change is limited to a counter, else null.
+  String? get _scopeLabel => _scope == null ? null : '${_scope!.name} only';
 
   /// The deduction preview follows the amount as it is typed.
   void _amountChanged() {
@@ -1313,7 +1366,7 @@ class _RechargeSheetState extends State<_RechargeSheet> {
       return;
     }
     setState(() => _error = null);
-    final current = widget.account.balanceFor(store.shopKey);
+    final current = _bucketBalance;
     final after = _deducting ? current - amount : current + amount;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -1321,6 +1374,8 @@ class _RechargeSheetState extends State<_RechargeSheet> {
         deducting: _deducting,
         accountName: widget.account.name,
         store: store,
+        scopeLabel: _scopeLabel,
+        wholeCanteen: _scope == null && _counters.isNotEmpty,
         amount: amount,
         currentBalance: current,
         balanceAfter: after,
@@ -1333,9 +1388,12 @@ class _RechargeSheetState extends State<_RechargeSheet> {
 
   Future<void> _submit(WalletStore store, double amount, String reason) async {
     final action = _action;
+    // A counter's own key is credit limited to that counter; the server keeps
+    // it in that counter's bucket of its canteen's wallet.
+    final bucket = _bucketKey ?? store.shopKey;
     _idempotencyKey ??=
         'accountant-${action == _WalletAction.deduct ? 'debit' : 'credit'}-'
-        '${widget.account.userId}-${store.shopKey}-'
+        '${widget.account.userId}-$bucket-'
         '${DateTime.now().microsecondsSinceEpoch}';
     setState(() {
       _submitting = true;
@@ -1345,14 +1403,14 @@ class _RechargeSheetState extends State<_RechargeSheet> {
       final credit = action == _WalletAction.deduct
           ? await widget.repository.debitWallet(
               userId: widget.account.userId,
-              shopKey: store.shopKey,
+              shopKey: bucket,
               amount: amount,
               reason: reason,
               idempotencyKey: _idempotencyKey!,
             )
           : await widget.repository.creditWallet(
               userId: widget.account.userId,
-              shopKey: store.shopKey,
+              shopKey: bucket,
               amount: amount,
               idempotencyKey: _idempotencyKey!,
               reference: _reference.text,
@@ -1361,8 +1419,10 @@ class _RechargeSheetState extends State<_RechargeSheet> {
       setState(() {
         _credit = AccountantWalletCredit(
           balance: credit.balance,
-          shopKey: credit.shopKey.isEmpty ? store.shopKey : credit.shopKey,
-          shopName: credit.shopName.isEmpty ? store.name : credit.shopName,
+          shopKey: credit.shopKey.isEmpty ? bucket : credit.shopKey,
+          shopName: credit.shopName.isEmpty
+              ? [store.name, ?_scopeLabel].join(' · ')
+              : credit.shopName,
           replayed: credit.replayed,
         );
         _creditedAmount = amount;
@@ -1489,23 +1549,83 @@ class _RechargeSheetState extends State<_RechargeSheet> {
             style: TextStyle(color: palette.danger),
           )
         else
-          for (final store in widget.stores)
+          for (final store in widget.stores.wallets)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: _StoreOption(
                 key: ValueKey('wallet-store-${store.shopKey}'),
                 store: store,
-                balance: widget.account.balanceFor(store.shopKey),
+                balance: widget.stores.walletTotal(
+                  store.shopKey,
+                  widget.account.walletBalances,
+                ),
                 selected: selected?.shopKey == store.shopKey,
                 onTap: _submitting
                     ? null
                     : () => setState(() {
                         _store = store;
+                        _scope = null;
                         _error = null;
                         _idempotencyKey = null;
                       }),
               ),
             ),
+        if (_counters.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            _deducting ? 'Take it from' : 'Where can it be spent?',
+            style: TextStyle(
+              color: palette.inkSecondary,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChoiceChip(
+                key: const ValueKey('wallet-scope-all'),
+                label: Text(
+                  'Whole canteen · '
+                  '${_money(widget.account.balanceFor(selected!.shopKey))}',
+                ),
+                selected: _scope == null,
+                onSelected: _submitting
+                    ? null
+                    : (_) => setState(() {
+                        _scope = null;
+                        _idempotencyKey = null;
+                      }),
+              ),
+              for (final counter in _counters)
+                ChoiceChip(
+                  key: ValueKey('wallet-scope-${counter.shopKey}'),
+                  label: Text(
+                    'Only at ${counter.name} · '
+                    '${_money(widget.account.balanceFor(counter.shopKey))}',
+                  ),
+                  selected: _scope?.shopKey == counter.shopKey,
+                  onSelected: _submitting
+                      ? null
+                      : (_) => setState(() {
+                          _scope = counter;
+                          _idempotencyKey = null;
+                        }),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _scope == null
+                ? 'General credit: any counter of ${selected.name} accepts it.'
+                : 'Only ${_scope!.name} accepts it. Orders there use it before general credit.',
+            key: const ValueKey('wallet-scope-hint'),
+            style: TextStyle(color: palette.inkSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 4),
+        ],
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -1535,14 +1655,11 @@ class _RechargeSheetState extends State<_RechargeSheet> {
             prefixText: '₹ ',
             helperText: selected == null
                 ? null
-                : '${selected.name} balance now ${_money(widget.account.balanceFor(selected.shopKey))}',
+                : '${[selected.name, ?_scopeLabel].join(' · ')} balance now ${_money(_bucketBalance)}',
           ),
         ),
         if (_deducting && selected != null && (_enteredAmount ?? 0) > 0)
-          _BalanceAfterPreview(
-            balanceAfter:
-                widget.account.balanceFor(selected.shopKey) - _enteredAmount!,
-          ),
+          _BalanceAfterPreview(balanceAfter: _bucketBalance - _enteredAmount!),
         const SizedBox(height: 10),
         if (_deducting)
           TextField(
@@ -1754,11 +1871,19 @@ class _ConfirmWalletChangeDialog extends StatelessWidget {
     required this.currentBalance,
     required this.balanceAfter,
     required this.reason,
+    this.scopeLabel,
+    this.wholeCanteen = false,
   });
 
   final bool deducting;
   final String accountName;
   final WalletStore store;
+
+  /// "Snacks only" when the change is limited to one counter.
+  final String? scopeLabel;
+
+  /// The wallet has counters and the change is general credit for them all.
+  final bool wholeCanteen;
   final double amount;
   final double currentBalance;
   final double balanceAfter;
@@ -1805,6 +1930,20 @@ class _ConfirmWalletChangeDialog extends StatelessWidget {
                       '${store.name} wallet?',
             key: const ValueKey('wallet-recharge-confirm-text'),
           ),
+          if (scopeLabel != null || wholeCanteen) ...[
+            const SizedBox(height: 6),
+            Text(
+              scopeLabel != null
+                  ? (deducting
+                        ? 'From the $scopeLabel credit.'
+                        : 'Spendable $scopeLabel.')
+                  : (deducting
+                        ? 'From the general credit.'
+                        : 'Spendable at every counter.'),
+              key: const ValueKey('wallet-confirm-scope'),
+              style: TextStyle(color: palette.inkSecondary, fontSize: 13),
+            ),
+          ],
           const SizedBox(height: 14),
           row(
             'Current balance',

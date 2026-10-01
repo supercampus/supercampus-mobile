@@ -571,6 +571,9 @@ class _CanteenShellState extends State<CanteenShell> {
 
 
   Future<WalletTopUpResult> _topUpWallet(double amount, String shopKey) async {
+    // Money a student adds is general credit of the wallet: a counter's
+    // canteen holds it, and every counter there can spend it.
+    shopKey = _store?.walletKeyFor(shopKey) ?? shopKey;
     final result = switch (_repository) {
       BackendCanteenRepository backend => await _payWalletTopUp(
         backend,
@@ -668,6 +671,10 @@ class _CanteenShellState extends State<CanteenShell> {
       }
     }
     if (!context.mounted) return;
+    // A counter's wallet is its canteen's.
+    final walletKey = _store!.walletKeyFor(
+      shopKey ?? _store!.defaultWalletShopKey,
+    );
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -680,9 +687,8 @@ class _CanteenShellState extends State<CanteenShell> {
         heightFactor: 0.84,
         child: StudentWalletSheet(
           store: _store!,
-          onTopUp: (amount) =>
-              _topUpWallet(amount, shopKey ?? _store!.defaultWalletShopKey),
-          shopKey: shopKey ?? _store!.defaultWalletShopKey,
+          onTopUp: (amount) => _topUpWallet(amount, walletKey),
+          shopKey: walletKey,
           topUpSettings: settings,
           loadTransactionDetail: switch (_repository) {
             final WalletTransactionDetailRepository repository =>

@@ -86,9 +86,20 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
   /// Sub-category filter within the open storefront; null means "All".
   String? _subCategory;
 
+  /// The counter the student narrowed a canteen with counters to; null
+  /// shows every counter, each under its own heading.
+  String? _counter;
+
+  /// The storefronts across the top. Counters (Meals, Snacks …) are not
+  /// storefronts of their own: they appear inside their canteen.
   List<CanteenShop> get _shops {
     final active = widget.store.shops.where((shop) => shop.isActive).toList();
-    if (active.isNotEmpty) return active;
+    final activeKeys = {for (final shop in active) shop.shopKey};
+    final storefronts = [
+      for (final shop in active)
+        if (!shop.isCounter || !activeKeys.contains(shop.parentShopKey)) shop,
+    ];
+    if (storefronts.isNotEmpty) return storefronts;
 
     final keys = <String>[];
     for (final item in widget.store.menu) {
@@ -123,7 +134,30 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
     return null;
   }
 
-  bool get _selectedShopIsOpen => _selectedShop?.isOpen ?? true;
+  /// The open storefront's counters, when it is a canteen that has them.
+  List<CanteenShop> get _counters {
+    final key = _selectedShopKey;
+    if (key == null) return const [];
+    return countersOf(key, widget.store.shops);
+  }
+
+  /// Shops whose items the open storefront lists: the storefront itself and
+  /// its counters, or only the counter the student picked.
+  Set<String> get _storefrontKeys {
+    final key = _selectedShopKey;
+    if (key == null) return const {};
+    final counters = _counters;
+    if (_counter != null && counters.any((c) => c.shopKey == _counter)) {
+      return {_counter!};
+    }
+    return {key, for (final counter in counters) counter.shopKey};
+  }
+
+  /// A canteen with counters takes orders while any of them is open.
+  bool get _selectedShopIsOpen {
+    final open = _selectedShop?.isOpen ?? true;
+    return open || _counters.any((counter) => counter.isOpen);
+  }
   bool get _selectedShopIsLaundry =>
       _selectedShop?.category.toLowerCase() == 'laundry' ||
       _selectedShopKey == 'mec-laundry';
@@ -143,10 +177,12 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
         _shops.any((shop) => shop.shopKey == widget.initialShopKey)) {
       _shopKey = widget.initialShopKey;
       _subCategory = null;
+      _counter = null;
     }
     if (_shops.isNotEmpty && !_shops.any((shop) => shop.shopKey == _shopKey)) {
       _shopKey = _shops.first.shopKey;
       _subCategory = null;
+      _counter = null;
     }
   }
 
@@ -154,7 +190,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
   List<String> get _subCategories {
     final seen = <String>[];
     for (final item in widget.store.menu) {
-      if (item.effectiveShopKey == _selectedShopKey &&
+      if (_storefrontKeys.contains(item.effectiveShopKey) &&
           !seen.contains(item.category)) {
         seen.add(item.category);
       }
@@ -165,7 +201,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
   List<CanteenMenuItem> get _visibleItems {
     final query = _query.trim().toLowerCase();
     return widget.store.menu.where((item) {
-      final matchesStore = item.effectiveShopKey == _selectedShopKey;
+      final matchesStore = _storefrontKeys.contains(item.effectiveShopKey);
       final matchesCategory =
           _subCategory == null || item.category == _subCategory;
       final matchesQuery =
@@ -174,6 +210,36 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
           item.description.toLowerCase().contains(query);
       return matchesStore && matchesCategory && matchesQuery;
     }).toList();
+  }
+
+  /// The open storefront's items under one heading per counter, in the
+  /// administrator's counter order; the canteen's own items come first.
+  /// A closed counter keeps its heading with nothing to order.
+  List<(CanteenShop, List<CanteenMenuItem>)> get _counterSections {
+    final items = _visibleItems;
+    final selected = _selectedShop;
+    final sections = <(CanteenShop, List<CanteenMenuItem>)>[];
+    for (final shop in [?selected, ..._counters]) {
+      if (!_storefrontKeys.contains(shop.shopKey)) continue;
+      final own = [
+        for (final item in items)
+          if (item.effectiveShopKey == shop.shopKey) item,
+      ];
+      if (own.isEmpty && (shop == selected || _query.isNotEmpty)) continue;
+      sections.add((shop, own));
+    }
+    return sections;
+  }
+
+  /// What the wallet pill shows: a canteen's whole wallet, or what the
+  /// picked counter can spend (its own credit plus the canteen's).
+  double get _walletFigure {
+    final key = _selectedShopKey;
+    if (key == null) return 0;
+    final breakdown = widget.store.walletBreakdownFor(key);
+    if (!breakdown.hasCounters) return widget.store.walletBalances[key] ?? 0.0;
+    final counter = _counter;
+    return counter == null ? breakdown.total : breakdown.spendableAt(counter);
   }
 
   int get _cartCount =>
@@ -280,12 +346,27 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                     onSelected: (shopKey) => setState(() {
                       _shopKey = shopKey;
                       _subCategory = null;
+                      _counter = null;
                       _query = '';
                     }),
                   ),
+                  // A canteen with counters filters by counter (Meals,
+                  // Beverages, Snacks): each is its own queue and wallet
+                  // credit, which matters more than the item category.
+                  if (_selectedShopIsOpen && _counters.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _CounterFilter(
+                      counters: _counters,
+                      selected: _counter,
+                      onSelected: (counter) => setState(() {
+                        _counter = counter;
+                        _subCategory = null;
+                      }),
+                    ),
+                  ]
                   // Food storefronts are a single flat list; only a shop with
                   // several aisles needs a second row of filters.
-                  if (_selectedShopIsOpen &&
+                  else if (_selectedShopIsOpen &&
                       !_selectedShopIsLaundry &&
                       _subCategories.length > 1) ...[
                     const SizedBox(height: 12),
@@ -308,6 +389,50 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                       hasPin: widget.store.hasPin,
                       onSetupPin: widget.onSetupPin,
                     )
+                  else if (_counters.isNotEmpty && _counterSections.isNotEmpty)
+                    for (final (shop, items) in _counterSections) ...[
+                      _CounterHeading(
+                        shop: shop,
+                        isCanteen: shop.shopKey == _selectedShopKey,
+                        spendable: widget.store
+                            .walletBreakdownFor(shop.shopKey)
+                            .spendableAt(shop.shopKey),
+                      ),
+                      if (!shop.isOpen)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: Text(
+                            '${shop.name} isn’t taking orders right now.',
+                            style: TextStyle(
+                              color: context.palette.inkSecondary,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        )
+                      else if (items.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: Text(
+                            'Nothing on the menu yet.',
+                            style: TextStyle(
+                              color: context.palette.inkSecondary,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        )
+                      else
+                        for (final item in items)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _MenuItemRow(
+                              item: item,
+                              quantity: widget.cart[item.id] ?? 0,
+                              onAdd: () => widget.onAdd(item),
+                              onRemove: () => widget.onRemove(item),
+                            ),
+                          ),
+                      const SizedBox(height: 6),
+                    ]
                   else if (_visibleItems.isEmpty)
                     const CanteenSurface(
                       child: Padding(
@@ -384,7 +509,9 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
         InkWell(
           customBorder: const StadiumBorder(),
           onTap: () => widget.onOpenWallet(
-            _selectedShopKey ?? widget.store.defaultWalletShopKey,
+            widget.store.walletKeyFor(
+              _selectedShopKey ?? widget.store.defaultWalletShopKey,
+            ),
           ),
           child: Container(
             height: 38,
@@ -405,7 +532,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
-                    formatCurrency(widget.store.walletBalances[_selectedShopKey] ?? 0.0),
+                    formatCurrency(_walletFigure),
                     key: const ValueKey('shop-wallet-balance-pill'),
                     maxLines: 1,
                     style: TextStyle(
@@ -413,8 +540,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w700,
                       // Below zero after an accounts deduction: show it red.
-                      color:
-                          (widget.store.walletBalances[_selectedShopKey] ?? 0.0) < 0
+                      color: _walletFigure < 0
                           ? context.palette.danger
                           : context.palette.info,
                       letterSpacing: -0.1,
@@ -552,6 +678,122 @@ String _shopLabel(String value) {
       .where((word) => word.isNotEmpty)
       .map((word) => '${word[0].toUpperCase()}${word.substring(1)}')
       .join(' ');
+}
+
+/// The counters of a canteen (Meals, Beverages, Snacks) as filter pills,
+/// "All" first. Each counter is its own queue, pickup QR and wallet credit.
+class _CounterFilter extends StatelessWidget {
+  const _CounterFilter({
+    required this.counters,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final List<CanteenShop> counters;
+  final String? selected;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: counters.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final counter = index == 0 ? null : counters[index - 1];
+          final isSelected = counter?.shopKey == selected;
+          return Material(
+            key: ValueKey('counter-filter-${counter?.shopKey ?? 'all'}'),
+            color: isSelected ? context.palette.brand : context.palette.surface,
+            shape: StadiumBorder(
+              side: BorderSide(
+                color: isSelected ? context.palette.brand : context.palette.border,
+              ),
+            ),
+            child: InkWell(
+              customBorder: const StadiumBorder(),
+              onTap: () => onSelected(counter?.shopKey),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Center(
+                  child: Text(
+                    counter?.name ?? 'All',
+                    style: TextStyle(
+                      color: isSelected
+                          ? Colors.white
+                          : counter != null && !counter.isOpen
+                          ? context.palette.inkTertiary
+                          : context.palette.inkSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// A counter's heading inside its canteen: its name, whether it is open,
+/// and what the student's wallet can spend there.
+class _CounterHeading extends StatelessWidget {
+  const _CounterHeading({
+    required this.shop,
+    required this.isCanteen,
+    required this.spendable,
+  });
+
+  final CanteenShop shop;
+
+  /// The canteen's own items, sold at no particular counter.
+  final bool isCanteen;
+  final double spendable;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Padding(
+      key: ValueKey('counter-section-${shop.shopKey}'),
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Text(
+              shop.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+                color: p.ink,
+              ),
+            ),
+          ),
+          if (!shop.isOpen)
+            Text(
+              'Closed',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: p.danger,
+              ),
+            )
+          else if (!isCanteen)
+            Text(
+              '${formatCurrency(spendable)} to spend here',
+              style: TextStyle(fontSize: 12.5, color: p.inkSecondary),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Aisle filters inside a storefront that has more than one, scrolled

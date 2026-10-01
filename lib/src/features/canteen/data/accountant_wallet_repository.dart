@@ -14,6 +14,7 @@ class WalletStore {
     required this.shopKey,
     required this.name,
     required this.category,
+    this.parentShopKey,
   });
 
   final String shopKey;
@@ -21,6 +22,42 @@ class WalletStore {
 
   /// `canteen`, `stationery` or `laundry`.
   final String category;
+
+  /// The canteen this store is a counter of. A counter's balance is credit
+  /// the accounts desk limited to that counter; its canteen's own balance is
+  /// general credit any of its counters accepts.
+  final String? parentShopKey;
+
+  bool get isCounter =>
+      parentShopKey != null && parentShopKey!.trim().isNotEmpty;
+}
+
+/// Wallets as the accounts desk lists them: a canteen's counters are scopes
+/// of the canteen's wallet, not wallets of their own.
+extension WalletStoreScopes on List<WalletStore> {
+  /// Every wallet: stores that are not counters, plus any counter whose
+  /// canteen is not listed (a counter's own staff see only their counter).
+  List<WalletStore> get wallets {
+    final keys = {for (final store in this) store.shopKey};
+    return [
+      for (final store in this)
+        if (!store.isCounter || !keys.contains(store.parentShopKey)) store,
+    ];
+  }
+
+  /// The listed counters of [walletKey], in the administrator's order.
+  List<WalletStore> countersOf(String walletKey) => [
+    for (final store in this)
+      if (store.parentShopKey == walletKey) store,
+  ];
+
+  /// What [balances] (bucket key → balance) hold in [walletKey]'s wallet,
+  /// its counters' restricted credit included.
+  double walletTotal(String walletKey, Map<String, double> balances) =>
+      countersOf(walletKey).fold<double>(
+        balances[walletKey] ?? 0,
+        (sum, counter) => sum + (balances[counter.shopKey] ?? 0),
+      );
 }
 
 /// Who the recharge directory is narrowed to.
@@ -503,6 +540,9 @@ WalletDirectoryPage parseWalletDirectoryPage(Map<String, dynamic> data) {
                 shopKey: _text(store['shopKey']),
                 name: _text(store['name'], fallback: _text(store['shopKey'])),
                 category: _text(store['category']).toLowerCase(),
+                parentShopKey: _text(store['parentShopKey']).isEmpty
+                    ? null
+                    : _text(store['parentShopKey']),
               ),
             )
             .where((store) => store.shopKey.isNotEmpty)
