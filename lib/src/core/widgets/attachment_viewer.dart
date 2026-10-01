@@ -53,12 +53,56 @@ String attachmentFileName(String url, String? name) {
 /// Fetches an attachment's bytes. Swappable in tests.
 typedef AttachmentLoader = Future<Uint8List> Function(String url);
 
-Future<Uint8List> _download(String url) async {
-  final response = await http.get(Uri.parse(url));
+const _apiBase = String.fromEnvironment(
+  'SUPERCAMPUS_API_BASE_URL',
+  defaultValue: 'https://api.supercampus.ai',
+);
+
+/// The API's relay for a Cloudinary attachment, or null for other hosts.
+@visibleForTesting
+Uri? attachmentProxyUri(String url, {String apiBase = _apiBase}) {
+  final parsed = Uri.tryParse(url);
+  if (parsed == null || parsed.host != 'res.cloudinary.com') return null;
+  final base = apiBase.endsWith('/')
+      ? apiBase.substring(0, apiBase.length - 1)
+      : apiBase;
+  return Uri.parse('$base/api/media/proxy').replace(
+    queryParameters: {'url': url},
+  );
+}
+
+/// A secure page cannot load an http:// attachment, so on the web the link
+/// is upgraded to https:// (local development hosts excepted).
+@visibleForTesting
+Uri attachmentFetchUri(String url, {bool web = kIsWeb}) {
+  final uri = Uri.parse(url);
+  final local = uri.host == 'localhost' || uri.host == '127.0.0.1';
+  if (web && uri.scheme == 'http' && !local && Uri.base.scheme == 'https') {
+    return uri.replace(scheme: 'https');
+  }
+  return uri;
+}
+
+Future<Uint8List> _fetch(Uri uri) async {
+  final response = await http.get(uri);
   if (response.statusCode < 200 || response.statusCode >= 300) {
     throw Exception('HTTP ${response.statusCode}');
   }
   return response.bodyBytes;
+}
+
+/// Downloads an attachment. Cloudinary refuses to deliver PDFs to the app
+/// unless the account allows it, so a failed Cloudinary download is retried
+/// through the API, which fetches the original with Cloudinary's own
+/// credentials.
+Future<Uint8List> _download(String url) async {
+  try {
+    return await _fetch(attachmentFetchUri(url));
+  } catch (error) {
+    final proxy = attachmentProxyUri(url);
+    if (proxy == null) rethrow;
+    return _fetch(proxy);
+  }
 }
 
 /// Saves an attachment straight to the device (a browser download on the

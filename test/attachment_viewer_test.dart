@@ -46,6 +46,33 @@ void main() {
       expect(attachmentKindOf(unknown, 'sheet.xlsx'), AttachmentKind.other);
     });
 
+    test('Cloudinary attachments fall back to the API relay', () {
+      const pdf =
+          'https://res.cloudinary.com/campus/image/upload/v1/supercampus/mec/media/SCAN.pdf';
+      final proxy = attachmentProxyUri(pdf, apiBase: 'https://api.supercampus.ai/');
+      expect(proxy.toString(),
+          startsWith('https://api.supercampus.ai/api/media/proxy?url='));
+      expect(proxy!.queryParameters['url'], pdf);
+      expect(
+        attachmentProxyUri(
+          'https://api.supercampus.ai/api/media/files/mec/1/a.pdf',
+        ),
+        isNull,
+      );
+    });
+
+    test('an http link is upgraded on a secure web page only', () {
+      expect(
+        attachmentFetchUri('http://api.supercampus.ai/a.pdf', web: false)
+            .scheme,
+        'http',
+      );
+      expect(
+        attachmentFetchUri('http://127.0.0.1:4000/a.pdf', web: true).scheme,
+        'http',
+      );
+    });
+
     test('the file name prefers the announcement name, else the URL', () {
       expect(attachmentFileName('https://x/a/b/c.pdf', 'Exam.pdf'), 'Exam.pdf');
       expect(attachmentFileName('https://x/a/b/Fee%20notice.pdf', null),
