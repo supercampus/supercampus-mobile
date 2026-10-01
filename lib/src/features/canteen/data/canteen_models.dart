@@ -124,6 +124,7 @@ class CanteenShop {
     this.description = '',
     this.isActive = true,
     this.isOpen = true,
+    this.createdAt,
   });
 
   final String id;
@@ -133,6 +134,30 @@ class CanteenShop {
   final String description;
   final bool isActive;
   final bool isOpen;
+
+  /// When the administrator added the shop. Legacy store keys belong to the
+  /// oldest shop of their category, so a newer second canteen never takes
+  /// over the original canteen's old items and orders.
+  final DateTime? createdAt;
+
+  /// Whether the shop sells food (anything that is not stationery or
+  /// laundry), and so has a menu and kitchen queue.
+  bool get isFood {
+    final kind = '${category.toLowerCase()} ${shopKey.toLowerCase()}';
+    return !kind.contains('station') && !kind.contains('laundry');
+  }
+}
+
+/// One shop the signed-in person works at, and in what capacity.
+class ShopAssignment {
+  const ShopAssignment({required this.shopKey, required this.role});
+
+  final String shopKey;
+
+  /// `owner` (runs the counter and its menu) or `captain` (runs the counter).
+  final String role;
+
+  bool get isOwner => role == 'owner';
 }
 
 /// The shop category a store key implies, by the server's own rule: anything
@@ -148,23 +173,50 @@ String shopCategoryForStoreKey(String key) {
 /// Maps a stored store key — possibly a legacy one like `classic` or
 /// `stationery` — onto the configured shop it belongs to.
 ///
-/// Mirrors the platform API's resolver (`campus_ops.shops` joined on
-/// `shop_key = store OR category = <category of store>`): an exact key wins,
-/// otherwise the first active shop of the implied category. With no matching
-/// shop the category itself stands in, so two legacy keys of one kind still
-/// agree with each other.
+/// Mirrors the platform API's resolver (`resolved_shop_key_sql!`), so a
+/// campus can run several shops of one category — two canteens — without
+/// one absorbing the other:
+///
+/// - a key that is some shop's own key is that shop, active or not;
+/// - only a key naming no shop (a legacy `classic`, `bites`) falls back to a
+///   shop of the category it implies: the oldest active one, else the oldest;
+/// - with no shop of that category the category itself stands in, so two
+///   legacy keys of one kind still agree with each other.
 String resolveShopKey(String? raw, List<CanteenShop> shops) {
   final key = (raw ?? '').trim();
   for (final shop in shops) {
-    if (shop.isActive && shop.shopKey == key) return shop.shopKey;
+    if (shop.shopKey == key) return shop.shopKey;
   }
   final category = shopCategoryForStoreKey(key);
+  final candidates = [
+    for (var i = 0; i < shops.length; i++)
+      if (shops[i].category.trim().toLowerCase() == category) (i, shops[i]),
+  ];
+  if (candidates.isEmpty) return 'category:$category';
+  candidates.sort((a, b) {
+    final (indexA, shopA) = a;
+    final (indexB, shopB) = b;
+    if (shopA.isActive != shopB.isActive) return shopA.isActive ? -1 : 1;
+    final createdA = shopA.createdAt;
+    final createdB = shopB.createdAt;
+    if (createdA != null && createdB != null) {
+      final byAge = createdA.compareTo(createdB);
+      return byAge != 0 ? byAge : shopA.shopKey.compareTo(shopB.shopKey);
+    }
+    // Without creation times (older servers) the listed order decides.
+    return indexA.compareTo(indexB);
+  });
+  return candidates.first.$2.shopKey;
+}
+
+/// The first active shop of [category] in the campus's listed order.
+String? firstShopKeyOfCategory(List<CanteenShop> shops, String category) {
   for (final shop in shops) {
     if (shop.isActive && shop.category.trim().toLowerCase() == category) {
       return shop.shopKey;
     }
   }
-  return 'category:$category';
+  return null;
 }
 
 /// Whether [rowKey] and [walletKey] name the same shop's wallet.
@@ -552,6 +604,7 @@ class CanteenStore {
     required this.walletTransactions,
     this.shops = const [],
     this.assignedShopKeys = const [],
+    this.assignedShops = const [],
     this.canManage = false,
     // Existing custom/test repositories that expose management predate the
     // capability split and represent owners. The backend always sends the
@@ -575,6 +628,11 @@ class CanteenStore {
   final List<WalletTransaction> walletTransactions;
   final List<CanteenShop> shops;
   final List<String> assignedShopKeys;
+
+  /// The capacity in which this person works each of [assignedShopKeys].
+  /// Older servers do not send it; every assigned shop then counts as run in
+  /// whatever capacity the person's grants allow.
+  final List<ShopAssignment> assignedShops;
   final bool canManage;
 
   /// Owners can edit the catalogue. Order-only operators are canteen captains.
@@ -614,6 +672,7 @@ class CanteenStore {
     List<CanteenMenuItem>? menu,
     List<CanteenShop>? shops,
     List<String>? assignedShopKeys,
+    List<ShopAssignment>? assignedShops,
     CanteenStaffState? staffState,
     CanteenAnalytics? analytics,
     double? laundryPricePerKg,
@@ -629,6 +688,7 @@ class CanteenStore {
       walletTransactions: walletTransactions ?? this.walletTransactions,
       shops: shops ?? this.shops,
       assignedShopKeys: assignedShopKeys ?? this.assignedShopKeys,
+      assignedShops: assignedShops ?? this.assignedShops,
       canManage: canManage,
       canManageMenu: canManageMenu,
       canConfigureShops: canConfigureShops,
@@ -641,6 +701,67 @@ class CanteenStore {
       shopAssignmentPending: shopAssignmentPending,
       shopAssignmentMessage: shopAssignmentMessage,
     );
+  }
+}
+
+/// What the signed-in person does at each shop, decided by scope — their
+/// assignments and grants — never by a role name or an email address.
+extension CanteenStoreCounterScope on CanteenStore {
+  /// `owner` or `captain` at [shopKey]; null when not assigned there.
+  String? assignmentRoleAt(String shopKey) {
+    for (final assignment in assignedShops) {
+      if (assignment.shopKey == shopKey) return assignment.role;
+    }
+    if (assignedShopKeys.contains(shopKey)) {
+      // An older server: the grants say what the person can do there.
+      return canManageMenu ? 'owner' : 'captain';
+    }
+    return null;
+  }
+
+  /// Whether this person may change [shopKey]'s menu: its owner, or someone
+  /// overseeing the campus's shops who does not work that counter.
+  bool canEditMenuOf(String shopKey) {
+    if (!canManageMenu) return false;
+    final role = assignmentRoleAt(shopKey);
+    if (role != null) return role == 'owner';
+    return canConfigureShops;
+  }
+
+  /// Whether this person has an owner's work: a shop whose menu they run,
+  /// or the campus's shops to oversee. Counter staff who own nothing — even
+  /// with owner grants from elsewhere — run the captain's queue.
+  bool get hasOwnerWork {
+    if (canConfigureShops) return true;
+    if (!canManageMenu) return false;
+    if (assignedShopKeys.isEmpty) return true;
+    return assignedShopKeys.any((key) => assignmentRoleAt(key) == 'owner');
+  }
+
+  /// The shop an order was placed with, as a configured shop key.
+  String orderShopKey(CanteenOrder order) =>
+      resolveShopKey(order.storeKey, shops);
+
+  /// The shop a menu item is sold by, as a configured shop key.
+  String itemShopKey(CanteenMenuItem item) =>
+      resolveShopKey(item.effectiveShopKey, shops);
+
+  /// The first active shop of [category] (`canteen`, `stationery`,
+  /// `laundry`), for links that open "the laundry" rather than one shop.
+  String? firstShopKeyOf(String category) =>
+      firstShopKeyOfCategory(shops, category);
+
+  /// The wallet to open when no shop was chosen: the campus's first canteen,
+  /// else its first shop. Never a hard-coded key the campus may not have.
+  String get defaultWalletShopKey {
+    final canteen = firstShopKeyOf('canteen');
+    if (canteen != null) return canteen;
+    for (final shop in shops) {
+      if (shop.isActive) return shop.shopKey;
+    }
+    return walletBalances.keys.isEmpty
+        ? 'canteen'
+        : walletBalances.keys.first;
   }
 }
 

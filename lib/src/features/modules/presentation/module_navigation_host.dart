@@ -49,7 +49,7 @@ class ModuleNavigationHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (session.isCaptain) {
+    if (session.isCaptain && !session.isCanteenOwner) {
       return child;
     }
 

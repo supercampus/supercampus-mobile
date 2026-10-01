@@ -25,9 +25,13 @@ class CanteenCartScreen extends StatefulWidget {
     this.latestOrderFinder,
     this.hasPin = false,
     this.onSetupPin,
+    this.shops = const [],
   });
 
   final List<CanteenMenuItem> menu;
+
+  /// The campus's shops, to name each shop the cart splits into.
+  final List<CanteenShop> shops;
   final Map<String, int> cart;
   final Map<String, double> walletBalances;
   final ValueChanged<CanteenMenuItem> onAdd;
@@ -58,17 +62,33 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
 
   double get _total => _lines.fold(0, (sum, line) => sum + line.total);
 
+  /// The shop a cart line is bought from. Two canteens are two shops: each
+  /// takes its own order, hands over its own QR and debits its own wallet.
+  String _shopOf(CartLine line) =>
+      resolveShopKey(line.item.effectiveShopKey, widget.shops);
+
   /// Shops represented in the cart, in menu order — one order and one QR each.
-  List<MenuStore> get _shops {
-    final seen = <MenuStore>[];
+  List<String> get _shops {
+    final seen = <String>[];
     for (final line in _lines) {
-      if (!seen.contains(line.item.store)) seen.add(line.item.store);
+      final shop = _shopOf(line);
+      if (!seen.contains(shop)) seen.add(shop);
     }
     return seen;
   }
 
-  List<CartLine> _linesFor(MenuStore shop) =>
-      _lines.where((line) => line.item.store == shop).toList(growable: false);
+  List<CartLine> _linesFor(String shop) =>
+      _lines.where((line) => _shopOf(line) == shop).toList(growable: false);
+
+  /// What the student calls [shopKey]: its configured name.
+  String _shopName(String shopKey) {
+    for (final shop in widget.shops) {
+      if (shop.shopKey == shopKey) return shop.name;
+    }
+    return shopCategoryForStoreKey(shopKey) == 'stationery'
+        ? 'Stationery'
+        : 'Canteen';
+  }
 
   Future<void> _placeOrder() async {
     // The parent clears the cart as soon as the order succeeds. Preserve the
@@ -126,20 +146,26 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
         title: 'Order placed',
         message: 'Your payment is complete and the counter has your order.',
         amount: formatCurrency(transactionTotal),
-        reference: 'Order #${result.order.orderNumber}',
+        reference: result.orders
+            .map((order) => 'Order #${order.orderNumber}')
+            .join(' · '),
       );
-      if (!mounted) return;
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => OrderPickupSheet(
-          order: result.order,
-          onRefresh: widget.onRefresh,
-          latestOrderFinder: () => widget.latestOrderFinder?.call(result.order.id),
-        ),
-      );
+      // A cart spanning two shops (two canteens, say) is two orders, each
+      // collected at its own counter with its own QR: show every one.
+      for (final order in result.orders) {
+        if (!mounted) return;
+        await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => OrderPickupSheet(
+            order: order,
+            onRefresh: widget.onRefresh,
+            latestOrderFinder: () => widget.latestOrderFinder?.call(order.id),
+          ),
+        );
+      }
       if (mounted) Navigator.of(context).pop();
     } catch (error) {
       if (mounted) {
@@ -204,7 +230,7 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8, top: 4),
                             child: Text(
-                              shop.label,
+                              _shopName(shop),
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: -0.1,
@@ -264,7 +290,7 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      for (final shopKey in _lines.map((l) => l.item.effectiveShopKey).toSet())
+                      for (final shopKey in _shops)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Row(
@@ -276,7 +302,7 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                '${shopKey == 'mec-stationery' ? 'Stationery' : 'Canteen'} wallet: ${formatCurrency(widget.walletBalances[shopKey] ?? 0.0)}',
+                                '${_shopName(shopKey)} wallet: ${formatCurrency(widget.walletBalances[shopKey] ?? 0.0)}',
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                             ],

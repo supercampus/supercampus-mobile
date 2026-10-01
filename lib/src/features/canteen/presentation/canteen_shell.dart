@@ -341,7 +341,9 @@ class _CanteenShellState extends State<CanteenShell> {
   }
 
   /// The store as the counter sees it: the person's own purchases from other
-  /// shops are not part of their queue.
+  /// shops are not part of their queue. Orders are matched to a counter by
+  /// the shop they were placed with, so one canteen's order never shows at
+  /// another canteen.
   CanteenStore _workView(CanteenStore store) {
     final me = _userId;
     final assigned = store.assignedShopKeys.toSet();
@@ -350,9 +352,7 @@ class _CanteenShellState extends State<CanteenShell> {
       orders: [
         for (final order in store.orders)
           if (order.customerUserId != me ||
-              order.lines.any(
-                (line) => assigned.contains(line.item.effectiveShopKey),
-              ))
+              assigned.contains(store.orderShopKey(order)))
             order,
       ],
     );
@@ -631,6 +631,7 @@ class _CanteenShellState extends State<CanteenShell> {
         heightFactor: 0.94,
         child: CanteenCartScreen(
           menu: store.menu,
+          shops: store.shops,
           cart: _cart,
           walletBalances: store.walletBalances,
           onAdd: _addItem,
@@ -679,8 +680,9 @@ class _CanteenShellState extends State<CanteenShell> {
         heightFactor: 0.84,
         child: StudentWalletSheet(
           store: _store!,
-          onTopUp: (amount) => _topUpWallet(amount, shopKey ?? 'mec-canteen'),
-          shopKey: shopKey ?? 'mec-canteen',
+          onTopUp: (amount) =>
+              _topUpWallet(amount, shopKey ?? _store!.defaultWalletShopKey),
+          shopKey: shopKey ?? _store!.defaultWalletShopKey,
           topUpSettings: settings,
           loadTransactionDetail: switch (_repository) {
             final WalletTransactionDetailRepository repository =>
@@ -824,8 +826,14 @@ class _CanteenShellState extends State<CanteenShell> {
       );
     }
 
-    final isCaptain = widget.session.isCaptain ||
-        (store.canManage && !store.canManageMenu && !widget.session.isCanteenOwner);
+    // Which workspace is the store's call, not the account's role name or
+    // email: someone who captains one canteen and owns another runs the
+    // owner workspace, and an owner of nothing who captains a counter runs
+    // the captain's queue. The session only decides for staff the server
+    // has not yet given a counter.
+    final isCaptain = store.canManage
+        ? !store.hasOwnerWork
+        : widget.session.isCaptain;
     if (isCaptain && _ownerWorkMode) {
       final workStore = _workView(store);
       final captainStore = workStore.staffState.mode == CanteenStaffMode.work
@@ -942,7 +950,7 @@ class _CanteenShellState extends State<CanteenShell> {
         }),
         onExitModule: widget.onExitModule,
         initialShopKey: widget.initialAction == 'laundry'
-            ? 'mec-laundry'
+            ? (store.firstShopKeyOf('laundry') ?? laundryChargeShopKey)
             : null,
         onPayLaundryCharge: _payLaundryCharge,
         onSetupPin: (pinHash, {hint}) => _setupPin(pinHash, hint: hint),

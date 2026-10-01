@@ -52,6 +52,9 @@ class BackendCanteenRepository
     final shops = _list(data['shops']).map(_shop).toList(growable: false);
     final byId = {for (final item in menu) item.id: item};
     final capabilities = _map(data['capabilities']);
+    // Ledger rows from servers that predate per-shop wallets name no shop;
+    // they belong to the campus's first canteen, whatever its key.
+    final legacyWalletShop = firstShopKeyOfCategory(shops, 'canteen') ?? '';
 
     return CanteenStore(
       user: CanteenUser(
@@ -69,13 +72,26 @@ class BackendCanteenRepository
           .map((value) => _text(value))
           .where((value) => value.isNotEmpty)
           .toList(growable: false),
+      assignedShops: [
+        for (final raw in _list(data['assignedShops']))
+          if (_text(_map(raw)['shopKey']).isNotEmpty)
+            ShopAssignment(
+              shopKey: _text(_map(raw)['shopKey']),
+              role: _text(_map(raw)['assignmentRole']) == 'owner'
+                  ? 'owner'
+                  : 'captain',
+            ),
+      ],
       menu: menu,
       orders: _list(
         data['orders'],
       ).map((value) => _order(_map(value), byId)).toList(growable: false),
-      walletTransactions: _list(
-        data['walletTransactions'],
-      ).map((value) => _transaction(_map(value))).toList(growable: false),
+      walletTransactions: _list(data['walletTransactions'])
+          .map(
+            (value) =>
+                _transaction(_map(value), fallbackShopKey: legacyWalletShop),
+          )
+          .toList(growable: false),
       canManage: data['canManage'] == true ||
           _text(user['email']).trim().toLowerCase() == 'akhil@gmail.com',
       canManageMenu:
@@ -763,6 +779,9 @@ class BackendCanteenRepository
       description: _text(shop['description']),
       isActive: shop['isActive'] != false && shop['active'] != false,
       isOpen: shop['shopOpen'] != false,
+      createdAt: _text(shop['createdAt']).isEmpty
+          ? null
+          : DateTime.tryParse(_text(shop['createdAt'])),
     );
   }
 
@@ -773,11 +792,11 @@ class BackendCanteenRepository
   );
 
   /// [fallbackShopKey] names the wallet a response is known to have moved
-  /// when an older server leaves `shopKey` off the row; the canteen wallet is
-  /// the ledger's own default for rows that predate separate wallets.
+  /// when an older server leaves `shopKey` off the row; rows that predate
+  /// separate wallets belong to the campus's first canteen.
   WalletTransaction _transaction(
     Map<String, dynamic> value, {
-    String fallbackShopKey = 'mec-canteen',
+    String fallbackShopKey = '',
   }) {
     final amount = _number(value['amount']);
     final type = amount < 0 || _text(value['transactionType']) == 'order_debit'

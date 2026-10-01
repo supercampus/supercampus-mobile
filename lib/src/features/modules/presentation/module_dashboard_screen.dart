@@ -281,7 +281,9 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
       );
     }
 
-    if (widget.session.isCaptain) {
+    // Someone who captains one canteen and owns another works from the
+    // owner's workspace, with its bar.
+    if (widget.session.isCaptain && !widget.session.isCanteenOwner) {
       return CanteenShell(
         session: widget.session as dynamic,
         onExitModule: () {},

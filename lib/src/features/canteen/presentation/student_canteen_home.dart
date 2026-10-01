@@ -201,7 +201,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
     }
     if (card.moduleId == 'canteen' && card.type == StatusCardType.laundry) {
       setState(() {
-        _shopKey = 'mec-laundry';
+        _shopKey = widget.store.firstShopKeyOf('laundry') ?? laundryChargeShopKey;
         _subCategory = null;
         _query = '';
       });
@@ -209,7 +209,7 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
     }
     if (card.moduleId == 'canteen' && card.type == StatusCardType.stationery) {
       setState(() {
-        _shopKey = 'stationery';
+        _shopKey = widget.store.firstShopKeyOf('stationery') ?? 'stationery';
         _subCategory = null;
         _query = '';
       });
@@ -383,7 +383,9 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
         // wallet, where the histories live.
         InkWell(
           customBorder: const StadiumBorder(),
-          onTap: () => widget.onOpenWallet(_selectedShopKey ?? 'mec-canteen'),
+          onTap: () => widget.onOpenWallet(
+            _selectedShopKey ?? widget.store.defaultWalletShopKey,
+          ),
           child: Container(
             height: 38,
             padding: const EdgeInsets.symmetric(horizontal: 14),

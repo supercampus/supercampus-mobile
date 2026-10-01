@@ -85,23 +85,26 @@ enum OwnerSection { orders, menu, settled, sales }
 
 /// Which sections a shop shows to this account.
 ///
-/// Whoever works a shop's counter — its owner or operator, i.e. someone
-/// assigned to it — gets the queue, the menu, its settled orders and the
-/// figures. Someone who holds
-/// the shop-configuration grant without being assigned to that shop is
+/// Whoever owns a shop's counter — someone assigned to it as its owner —
+/// gets the queue, the menu, its settled orders and the figures. Someone who
+/// captains that counter (they may own a different canteen) gets its queue
+/// and settled orders: the menu and the takings are the owner's. Someone who
+/// holds the shop-configuration grant without being assigned to that shop is
 /// overseeing it: the queue is the counter's job, so they see the figures, and
 /// for a food counter the menu. Stationery and laundry are run entirely from
 /// their own counters.
 @visibleForTesting
 List<OwnerSection> ownerSectionsFor(CanteenStore store, CanteenShop? shop) {
   final shopKey = shop?.shopKey;
-  final overseeing =
-      store.canConfigureShops &&
-      (shopKey == null || !store.assignedShopKeys.contains(shopKey));
-  if (!overseeing) return OwnerSection.values;
-  final category = '${shop?.category ?? ''} ${shop?.shopKey ?? ''}'
-      .toLowerCase();
-  final isFood = !category.contains('station') && !category.contains('laundry');
+  final role = shopKey == null ? null : store.assignmentRoleAt(shopKey);
+  final overseeing = store.canConfigureShops && role == null;
+  if (!overseeing) {
+    if (role == 'captain') {
+      return const [OwnerSection.orders, OwnerSection.settled];
+    }
+    return OwnerSection.values;
+  }
+  final isFood = shop?.isFood ?? true;
   return [if (isFood) OwnerSection.menu, OwnerSection.sales];
 }
 
@@ -128,6 +131,13 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
     if (shops.isEmpty) return null;
     if (shops.any((shop) => shop.shopKey == _selectedShopKey)) {
       return _selectedShopKey;
+    }
+    // Open on a shop the person owns: someone who captains the original
+    // canteen and owns a new one lands on their own canteen.
+    for (final shop in shops) {
+      if (widget.store.assignmentRoleAt(shop.shopKey) == 'owner') {
+        return shop.shopKey;
+      }
     }
     return shops.first.shopKey;
   }
@@ -218,14 +228,13 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
       );
     }
 
+    // Each canteen's menu and queue are its own: items and orders are matched
+    // by the shop they belong to, never by the kind of shop.
     final scopedMenu = widget.store.menu
-        .where((item) => item.effectiveShopKey == shopKey)
+        .where((item) => widget.store.itemShopKey(item) == shopKey)
         .toList();
     final scopedOrders = widget.store.orders
-        .where(
-          (order) =>
-              order.lines.any((line) => line.item.effectiveShopKey == shopKey),
-        )
+        .where((order) => widget.store.orderShopKey(order) == shopKey)
         .toList();
     // The server's analytics span every store this account can see. The tiles
     // sit above one store's queue, so they are recounted from that store's
@@ -426,7 +435,12 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
       MaterialPageRoute(
         builder: (_) => CanteenMenuItemEditorScreen(
           item: item,
-          shops: _assignedShops,
+          // Only shops whose menu this person runs: an item is saved to the
+          // shop on screen, never to a canteen they merely captain.
+          shops: [
+            for (final shop in _assignedShops)
+              if (widget.store.canEditMenuOf(shop.shopKey)) shop,
+          ],
           selectedShopKey: _activeShopKey!,
           onUploadMedia: widget.onUploadMedia,
         ),
