@@ -1,11 +1,49 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
 enum TransactionResult { success, failure }
+
+/// Plays the order sound that matches a ✓ or ✖ result.
+///
+/// One player is kept for the app's lifetime so a second result interrupts
+/// the first instead of overlapping. Sound is a nicety: if the platform has no
+/// audio (tests, a muted browser tab that blocks autoplay) it fails quietly.
+class TransactionResultSound {
+  TransactionResultSound._();
+
+  static const successAsset = 'sounds/order_success.mp3';
+  static const failureAsset = 'sounds/order_failed.mp3';
+
+  /// Replaces playback in tests; receives the asset that would have played.
+  @visibleForTesting
+  static void Function(String asset)? debugOverride;
+
+  static AudioPlayer? _player;
+
+  static Future<void> play(TransactionResult result) async {
+    final asset = result == TransactionResult.success
+        ? successAsset
+        : failureAsset;
+    final override = debugOverride;
+    if (override != null) {
+      override(asset);
+      return;
+    }
+    try {
+      final player = _player ??= AudioPlayer()
+        ..setReleaseMode(ReleaseMode.stop);
+      await player.stop();
+      await player.play(AssetSource(asset));
+    } catch (_) {
+      // No audio here; the result screen still shows.
+    }
+  }
+}
 
 Future<void> showTransactionResult(
   BuildContext context, {
@@ -68,6 +106,8 @@ class _TransactionResultViewState extends State<_TransactionResultView>
       vsync: this,
       duration: const Duration(milliseconds: 1550),
     )..forward();
+    // The sound lands with the ✓ / ✖ as it appears.
+    unawaited(TransactionResultSound.play(widget.result));
     _dismissTimer = Timer(const Duration(milliseconds: 2600), _close);
   }
 
