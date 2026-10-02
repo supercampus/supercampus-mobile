@@ -6,6 +6,7 @@ import 'package:supercampus_mobile/src/features/authentication/data/mock_auth_re
 import 'package:supercampus_mobile/src/features/canteen/data/mock_canteen_repository.dart';
 import 'package:supercampus_mobile/src/features/gatepass/data/mock_gatepass_repository.dart';
 import 'package:supercampus_mobile/src/features/modules/presentation/module_stack.dart';
+import 'package:supercampus_mobile/src/features/authentication/presentation/login_signature.dart';
 
 /// The identity [MockAuthRepository] issues for the credentials [_signIn] uses.
 /// The module mocks below are seeded with it so the screens read the same way
@@ -324,7 +325,8 @@ void main() {
     await tester.tap(signOutAction);
     await tester.pumpAndSettle();
 
-    expect(find.text('SuperCampus'), findsOneWidget);
+    // Back on the sign-in page, whose wordmark is the signature animation.
+    expect(find.byType(LoginSignature), findsOneWidget);
   });
 
   testWidgets('home header keeps search and AI shortcuts out of the way', (

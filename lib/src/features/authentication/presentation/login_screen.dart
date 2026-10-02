@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/skeleton_loading.dart';
 import '../data/auth_repository.dart';
 import '../data/login_attempt_limiter.dart';
+import 'login_signature.dart';
 
 enum _AuthView { signIn, resetPassword }
 
@@ -684,18 +685,21 @@ class _SignInView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 36),
-              Text(
-                'SuperCampus',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Brittany',
-                  fontSize: 34,
-                  color: context._authInk,
-                  height: 1.1,
+              const SizedBox(height: 20),
+              // The signature animation, looping, above the line below it.
+              LoginSignature(
+                darkFallback: Text(
+                  'SuperCampus',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Brittany',
+                    fontSize: 34,
+                    color: context._authInk,
+                    height: 1.1,
+                  ),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 2),
               Text(
                 'login to your account issued by your instituition',
                 textAlign: TextAlign.center,
