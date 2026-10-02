@@ -686,19 +686,9 @@ class _SignInView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 20),
-              // The signature animation, looping, above the line below it.
-              LoginSignature(
-                darkFallback: Text(
-                  'SuperCampus',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Brittany',
-                    fontSize: 34,
-                    color: context._authInk,
-                    height: 1.1,
-                  ),
-                ),
-              ),
+              // The handwritten signature, cycling words, above the line
+              // below it.
+              const LoginSignature(),
               const SizedBox(height: 2),
               Text(
                 'login to your account issued by your instituition',
