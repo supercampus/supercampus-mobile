@@ -331,7 +331,7 @@ void main() {
             ),
           )
           .data,
-      'Meals · ₹45 canteen credit',
+      'Meals · ₹45 Campus Canteen credit',
     );
     expect(
       tester
@@ -420,7 +420,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey('wallet-review-recharge')));
     await tester.pumpAndSettle();
-    expect(find.text('Spendable at every counter.'), findsOneWidget);
+    expect(find.text('Spendable in every category.'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('confirm-wallet-recharge')));
     await tester.pumpAndSettle();
     expect(repository.credits.last, ('mec-canteen', 50.0));
@@ -455,7 +455,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Snacks is listed right under its canteen, labelled as its counter.
-    expect(find.textContaining('Counter of Campus Canteen'), findsOneWidget);
+    expect(find.textContaining('Category of Campus Canteen'), findsOneWidget);
     final canteenY = tester
         .getTopLeft(find.byKey(const ValueKey('vendor-shop-mec-canteen')))
         .dy;
@@ -478,9 +478,9 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('add-counter')));
     await tester.pumpAndSettle();
-    expect(find.text('Add counter to Campus Canteen'), findsOneWidget);
+    expect(find.text('Add category to Campus Canteen'), findsOneWidget);
     await tester.enterText(
-      find.widgetWithText(TextField, 'Counter name'),
+      find.widgetWithText(TextField, 'Category name'),
       'Meals',
     );
     await tester.pump();

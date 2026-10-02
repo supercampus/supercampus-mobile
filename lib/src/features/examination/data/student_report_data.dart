@@ -401,6 +401,13 @@ class CanteenReport {
 
     String nameFor(String key) {
       final shop = store.shops.where((s) => s.shopKey == key).firstOrNull;
+      if (shop != null && shop.isCounter) {
+        // A category's own balance is credit only it accepts.
+        final parent = store.shops
+            .where((s) => s.shopKey == shop.parentShopKey)
+            .firstOrNull;
+        if (parent != null) return '${parent.name} · ${shop.name} only';
+      }
       if (shop != null && shop.name.trim().isNotEmpty) return shop.name;
       if (MenuStore.values.any((s) => s.apiValue == key)) {
         return MenuStoreLabel.parse(key).label;

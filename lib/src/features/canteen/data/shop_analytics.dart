@@ -1,10 +1,18 @@
 /// One shop's sales, cost, profit and counter-staff performance over a date
 /// range, as `GET /api/v1/operations/canteen/shop-analytics` reports them.
 ///
-/// Revenue is completed orders only; rejected orders are refunded and
-/// cancelled ones never charged. Staff figures credit whoever last moved an
-/// order at the counter, and every captain assigned to the shop is listed,
-/// idle ones included.
+/// Every figure is derived from what was recorded; a figure that cannot be
+/// derived is null and shown as "not recorded" — never estimated.
+///
+/// * The shop summary covers orders placed in the range. Revenue is completed
+///   orders only; rejected orders are refunded and cancelled ones never
+///   charged. Cost is each item's recorded cost price; when an item has none,
+///   cost and profit are not recorded.
+/// * Staff figures come from the counter's per-item record: each item is
+///   credited to whoever prepared it or handed it over, when they did it.
+///   Every captain assigned to the shop is listed, idle ones included.
+///   Orders completed before that record existed are reported separately as
+///   unattributed rather than credited to anyone.
 library;
 
 import 'canteen_models.dart';
@@ -49,7 +57,7 @@ class AnalyticsDateRange {
   int get hashCode => Object.hash(from, to);
 }
 
-/// Figures shared by the shop summary and each staff member.
+/// The shop's orders placed in the range.
 class ShopSalesFigures {
   const ShopSalesFigures({
     this.orders = 0,
@@ -59,14 +67,16 @@ class ShopSalesFigures {
     this.cancelledOrders = 0,
     this.itemsSold = 0,
     this.revenue = 0,
-    this.cost = 0,
-    this.profit = 0,
-    this.marginPercent = 0,
+    this.cost,
+    this.profit,
+    this.marginPercent,
+    this.uncostedItems = 0,
     this.averageOrderValue = 0,
     this.activeValue = 0,
     this.refunded = 0,
-    this.revenueShare = 0,
     this.averageHandlingMinutes,
+    this.timedOrders = 0,
+    this.waitingOrders = 0,
   });
 
   factory ShopSalesFigures.fromJson(Map<String, dynamic> json) =>
@@ -78,16 +88,18 @@ class ShopSalesFigures {
         cancelledOrders: _int(json['cancelledOrders']),
         itemsSold: _int(json['itemsSold']),
         revenue: _double(json['revenue']),
-        cost: _double(json['cost']),
-        profit: _double(json['profit']),
-        marginPercent: _double(json['marginPercent']),
+        cost: _maybeDouble(json['cost']),
+        profit: _maybeDouble(json['profit']),
+        marginPercent: _maybeDouble(json['marginPercent']),
+        uncostedItems: _int(json['uncostedItems']),
         averageOrderValue: _double(json['averageOrderValue']),
         activeValue: _double(json['activeValue']),
         refunded: _double(json['refunded']),
-        revenueShare: _double(json['revenueShare']),
-        averageHandlingMinutes: json['averageHandlingMinutes'] == null
-            ? null
-            : _double(json['averageHandlingMinutes']),
+        averageHandlingMinutes: _maybeDouble(json['averageHandlingMinutes']),
+        timedOrders: _int(json['timedOrders']),
+        waitingOrders: _int(
+          json['waitingOrders'] ?? json['unattributedOrders'],
+        ),
       );
 
   final int orders;
@@ -99,9 +111,14 @@ class ShopSalesFigures {
 
   /// Completed sales only.
   final double revenue;
-  final double cost;
-  final double profit;
-  final double marginPercent;
+
+  /// What the sold items cost; null when an item has no recorded cost price.
+  final double? cost;
+  final double? profit;
+  final double? marginPercent;
+
+  /// Sold items without a recorded cost price.
+  final int uncostedItems;
   final double averageOrderValue;
 
   /// Value of orders still in the queue.
@@ -110,13 +127,106 @@ class ShopSalesFigures {
   /// Value of rejected (refunded) orders.
   final double refunded;
 
-  /// Share of the shop's revenue, 0–100.
-  final double revenueShare;
-
-  /// Placement to hand-over, averaged over completed orders; null without any.
+  /// Placement to the last item's recorded hand-over, over [timedOrders]
+  /// completed orders; null without any.
   final double? averageHandlingMinutes;
+  final int timedOrders;
+
+  /// Orders in the queue nobody has picked up yet.
+  final int waitingOrders;
 }
 
+/// What one person did at the counter in the range.
+class StaffFigures {
+  const StaffFigures({
+    this.itemsDelivered = 0,
+    this.ordersDelivered = 0,
+    this.ordersTouched = 0,
+    this.revenue = 0,
+    this.cost = 0,
+    this.profit = 0,
+    this.uncostedItems = 0,
+    this.revenueShare = 0,
+    this.itemsPrepared = 0,
+    this.rejectedOrders = 0,
+    this.refunded = 0,
+    this.averagePrepSeconds,
+    this.prepTimedItems = 0,
+    this.averageHandoverSeconds,
+    this.handoverTimedItems = 0,
+    this.firstActivityAt,
+    this.lastActivityAt,
+    this.activeDays = 0,
+    this.actions = 0,
+  });
+
+  factory StaffFigures.fromJson(Map<String, dynamic> json) => StaffFigures(
+    itemsDelivered: _int(json['itemsDelivered']),
+    ordersDelivered: _int(json['ordersDelivered']),
+    ordersTouched: _int(json['ordersTouched']),
+    revenue: _double(json['revenue']),
+    cost: _maybeDouble(json['cost']),
+    profit: _maybeDouble(json['profit']),
+    uncostedItems: _int(json['uncostedItems']),
+    revenueShare: _double(json['revenueShare']),
+    itemsPrepared: _int(json['itemsPrepared']),
+    rejectedOrders: _int(json['rejectedOrders']),
+    refunded: _double(json['refunded']),
+    averagePrepSeconds: _maybeDouble(json['averagePrepSeconds']),
+    prepTimedItems: _int(json['prepTimedItems']),
+    averageHandoverSeconds: _maybeDouble(json['averageHandoverSeconds']),
+    handoverTimedItems: _int(json['handoverTimedItems']),
+    firstActivityAt: _time(json['firstActivityAt']),
+    lastActivityAt: _time(json['lastActivityAt']),
+    activeDays: _int(json['activeDays']),
+    actions: _int(json['actions']),
+  );
+
+  /// Items they handed over (orders since refunded excluded).
+  final int itemsDelivered;
+
+  /// Orders they handed over at least one item of.
+  final int ordersDelivered;
+
+  /// Orders they moved at all.
+  final int ordersTouched;
+
+  /// The line totals of the items they handed over.
+  final double revenue;
+
+  /// What those items cost; null when one has no recorded cost price.
+  final double? cost;
+  final double? profit;
+  final int uncostedItems;
+
+  /// Their share of everything delivered in the range, 0–100.
+  final double revenueShare;
+
+  /// Items they moved to preparing or ready.
+  final int itemsPrepared;
+  final int rejectedOrders;
+  final double refunded;
+
+  /// Preparing → ready, over [prepTimedItems] items they marked ready.
+  final double? averagePrepSeconds;
+  final int prepTimedItems;
+
+  /// Ready (or, for instant items, placed) → handed over, over
+  /// [handoverTimedItems] items they handed over.
+  final double? averageHandoverSeconds;
+  final int handoverTimedItems;
+  final DateTime? firstActivityAt;
+  final DateTime? lastActivityAt;
+  final int activeDays;
+
+  /// Every recorded action of theirs in the range.
+  final int actions;
+
+  bool get idle => actions == 0;
+}
+
+/// An order as the analytics endpoint sends it with an action, in the shape
+/// the order detail page takes.
 class ShopAnalyticsOrder {
   const ShopAnalyticsOrder({
     required this.id,
@@ -124,11 +234,8 @@ class ShopAnalyticsOrder {
     required this.customerName,
     required this.status,
     required this.total,
-    required this.profit,
     required this.itemCount,
     required this.createdAt,
-    this.cost,
-    this.updatedAt,
     this.lines = const [],
     this.fulfilmentMode = FulfilmentMode.pickup,
     this.tokenNumber,
@@ -143,13 +250,9 @@ class ShopAnalyticsOrder {
         customerName: '${json['customerName'] ?? ''}',
         status: '${json['status'] ?? ''}',
         total: _double(json['total']),
-        profit: _double(json['profit']),
-        cost: json['cost'] == null ? null : _double(json['cost']),
         itemCount: _int(json['itemCount']),
         createdAt:
-            DateTime.tryParse('${json['createdAt'] ?? ''}')?.toLocal() ??
-            DateTime.fromMillisecondsSinceEpoch(0),
-        updatedAt: DateTime.tryParse('${json['updatedAt'] ?? ''}')?.toLocal(),
+            _time(json['createdAt']) ?? DateTime.fromMillisecondsSinceEpoch(0),
         lines: _list(json['lines'])
             .map((value) => _line(_map(value), '${json['shopKey'] ?? ''}'))
             .toList(growable: false),
@@ -165,25 +268,6 @@ class ShopAnalyticsOrder {
         shopKey: json['shopKey'] is String ? json['shopKey'] as String : null,
       );
 
-  /// [order] as a staff member's detail lists it.
-  factory ShopAnalyticsOrder.fromOrder(CanteenOrder order) =>
-      ShopAnalyticsOrder(
-        id: order.id,
-        orderNumber: order.orderNumber ?? order.displayId,
-        customerName: order.customerName ?? '',
-        status: order.status.apiValue,
-        total: order.total,
-        profit: order.totalProfit,
-        cost: order.totalCost,
-        itemCount: order.itemCount,
-        createdAt: order.createdAt,
-        lines: order.lines,
-        fulfilmentMode: order.fulfilmentMode,
-        tokenNumber: order.tokenNumber,
-        captainName: order.captainName,
-        shopKey: order.shopKey,
-      );
-
   final String id;
   final String orderNumber;
   final String customerName;
@@ -191,20 +275,13 @@ class ShopAnalyticsOrder {
   /// The API's status value (`completed`, `rejected`, `preparing`, …).
   final String status;
   final double total;
-  final double profit;
-
-  /// What the order's items cost the shop; null when the source leaves it out.
-  final double? cost;
   final int itemCount;
   final DateTime createdAt;
-
-  /// When it last moved; for a delivered order, when it was handed over.
-  final DateTime? updatedAt;
-
-  /// The items, when the source sends them (a staff member's detail does).
   final List<CartLine> lines;
   final FulfilmentMode fulfilmentMode;
   final int? tokenNumber;
+
+  /// Everyone recorded acting on the order.
   final String? captainName;
   final String? shopKey;
 
@@ -239,7 +316,6 @@ CartLine _line(Map<String, dynamic> json, String shopKey) {
       description: '',
       category: '${json['category'] ?? 'meals'}',
       price: _double(json['price']),
-      cost: json['cost'] == null ? null : _double(json['cost']),
       isVegetarian: json['isVegetarian'] != false,
       isInstant: json['isInstant'] == true,
       shopKey: shopKey.isEmpty ? null : shopKey,
@@ -253,7 +329,7 @@ CartLine _line(Map<String, dynamic> json, String shopKey) {
   );
 }
 
-/// A captain (or anyone else who handled orders) and their range figures.
+/// A captain (or anyone else who acted at the counter) and their figures.
 class CaptainPerformance {
   const CaptainPerformance({
     required this.userId,
@@ -262,9 +338,7 @@ class CaptainPerformance {
     this.email,
     this.role,
     this.assigned = true,
-    this.lastHandledAt,
     this.lastSeenAt,
-    this.recentOrders = const [],
   });
 
   factory CaptainPerformance.fromJson(Map<String, dynamic> json) =>
@@ -274,31 +348,73 @@ class CaptainPerformance {
         email: json['email'] is String ? json['email'] as String : null,
         role: json['role'] is String ? json['role'] as String : null,
         assigned: json['assigned'] != false,
-        lastHandledAt: DateTime.tryParse(
-          '${json['lastHandledAt'] ?? ''}',
-        )?.toLocal(),
-        lastSeenAt: DateTime.tryParse('${json['lastSeenAt'] ?? ''}')?.toLocal(),
-        figures: ShopSalesFigures.fromJson(json),
-        recentOrders: _list(json['recentOrders'])
-            .map((value) => ShopAnalyticsOrder.fromJson(_map(value)))
-            .toList(growable: false),
+        lastSeenAt: _time(json['lastSeenAt']),
+        figures: StaffFigures.fromJson(json),
       );
 
   final String userId;
   final String name;
   final String? email;
 
-  /// The shop assignment (`captain`, `owner`); null when no longer assigned.
+  /// The shop assignment (`captain`, `owner`); null when not assigned.
   final String? role;
   final bool assigned;
 
-  /// When they last moved an order in the range.
-  final DateTime? lastHandledAt;
-
   /// When they last signed in, when the server knows.
   final DateTime? lastSeenAt;
-  final ShopSalesFigures figures;
-  final List<ShopAnalyticsOrder> recentOrders;
+  final StaffFigures figures;
+}
+
+/// Completed orders whose items nobody is recorded handing over: they
+/// predate the counter's per-item record, so they are credited to no one.
+class UnattributedHistory {
+  const UnattributedHistory({
+    this.orders = 0,
+    this.items = 0,
+    this.revenue = 0,
+    this.revenueShare = 0,
+  });
+
+  factory UnattributedHistory.fromJson(Map<String, dynamic> json) =>
+      UnattributedHistory(
+        orders: _int(json['orders']),
+        items: _int(json['items']),
+        revenue: _double(json['revenue']),
+        revenueShare: _double(json['revenueShare']),
+      );
+
+  final int orders;
+  final int items;
+  final double revenue;
+  final double revenueShare;
+}
+
+/// Everything delivered in the range, as the staff figures divide it.
+class StaffSummary {
+  const StaffSummary({
+    this.trackedRevenue = 0,
+    this.trackedItems = 0,
+    this.totalRevenue = 0,
+    this.totalItems = 0,
+    this.unattributed = const UnattributedHistory(),
+  });
+
+  factory StaffSummary.fromJson(Map<String, dynamic> json) => StaffSummary(
+    trackedRevenue: _double(json['trackedRevenue']),
+    trackedItems: _int(json['trackedItems']),
+    totalRevenue: _double(json['totalRevenue']),
+    totalItems: _int(json['totalItems']),
+    unattributed: UnattributedHistory.fromJson(_map(json['unattributed'])),
+  );
+
+  /// Delivered by someone on record.
+  final double trackedRevenue;
+  final int trackedItems;
+
+  /// Including [unattributed]; the base of every share.
+  final double totalRevenue;
+  final int totalItems;
+  final UnattributedHistory unattributed;
 }
 
 class ShopAnalyticsReport {
@@ -307,8 +423,9 @@ class ShopAnalyticsReport {
     required this.shopName,
     required this.range,
     required this.summary,
-    this.unattributedOrders = 0,
+    this.staff = const StaffSummary(),
     this.captains = const [],
+    this.staffRecorded = true,
   });
 
   factory ShopAnalyticsReport.fromJson(
@@ -319,15 +436,14 @@ class ShopAnalyticsReport {
     final range = _map(json['range']);
     final from = DateTime.tryParse('${range['from'] ?? ''}');
     final to = DateTime.tryParse('${range['to'] ?? ''}');
-    final summary = _map(json['summary']);
     return ShopAnalyticsReport(
       shopKey: '${shop['shopKey'] ?? ''}',
       shopName: '${shop['name'] ?? ''}',
       range: from != null && to != null
           ? AnalyticsDateRange(from, to)
           : requested,
-      summary: ShopSalesFigures.fromJson(summary),
-      unattributedOrders: _int(summary['unattributedOrders']),
+      summary: ShopSalesFigures.fromJson(_map(json['summary'])),
+      staff: StaffSummary.fromJson(_map(json['staffSummary'])),
       captains: _list(json['captains'])
           .map((value) => CaptainPerformance.fromJson(_map(value)))
           .toList(growable: false),
@@ -338,20 +454,23 @@ class ShopAnalyticsReport {
   final String shopName;
   final AnalyticsDateRange range;
   final ShopSalesFigures summary;
-
-  /// Orders nobody has touched yet (still pending).
-  final int unattributedOrders;
+  final StaffSummary staff;
   final List<CaptainPerformance> captains;
+
+  /// False when the figures come from orders on the device, which carry no
+  /// record of who handled which item.
+  final bool staffRecorded;
 }
 
-/// One day of a staff member's range.
+/// One day of a staff member's range: exactly what they recorded that day.
 class CaptainDailyPoint {
   const CaptainDailyPoint({
     required this.date,
-    this.orders = 0,
-    this.completedOrders = 0,
+    this.itemsDelivered = 0,
+    this.ordersDelivered = 0,
     this.revenue = 0,
-    this.profit = 0,
+    this.itemsPrepared = 0,
+    this.actions = 0,
   });
 
   factory CaptainDailyPoint.fromJson(Map<String, dynamic> json) {
@@ -360,31 +479,109 @@ class CaptainDailyPoint {
       date: date == null
           ? DateTime.fromMillisecondsSinceEpoch(0)
           : DateTime(date.year, date.month, date.day),
-      orders: _int(json['orders']),
-      completedOrders: _int(json['completedOrders']),
+      itemsDelivered: _int(json['itemsDelivered']),
+      ordersDelivered: _int(json['ordersDelivered']),
       revenue: _double(json['revenue']),
-      profit: _double(json['profit']),
+      itemsPrepared: _int(json['itemsPrepared']),
+      actions: _int(json['actions']),
     );
   }
 
   final DateTime date;
-  final int orders;
-  final int completedOrders;
+  final int itemsDelivered;
+  final int ordersDelivered;
   final double revenue;
-  final double profit;
+  final int itemsPrepared;
+  final int actions;
+}
+
+/// What a recorded action did.
+enum CaptainAction {
+  accepted,
+  preparing,
+  ready,
+  delivered,
+  rejected,
+  cancelled;
+
+  static CaptainAction? parse(Object? value) =>
+      CaptainAction.values.where((action) => action.name == value).firstOrNull;
+}
+
+/// One recorded action of a staff member: an item moved, or a whole order
+/// accepted or rejected.
+class CaptainActivity {
+  const CaptainActivity({
+    required this.id,
+    required this.occurredAt,
+    required this.action,
+    required this.orderId,
+    this.source = 'item',
+    this.orderNumber,
+    this.lineIndex,
+    this.itemName,
+    this.quantity = 0,
+    this.amount = 0,
+    this.countsAsSale = false,
+    this.order,
+  });
+
+  factory CaptainActivity.fromJson(Map<String, dynamic> json) {
+    final order = json['order'];
+    return CaptainActivity(
+      id: '${json['id'] ?? ''}',
+      occurredAt:
+          _time(json['occurredAt']) ?? DateTime.fromMillisecondsSinceEpoch(0),
+      action: CaptainAction.parse(json['action']) ?? CaptainAction.accepted,
+      source: '${json['source'] ?? 'item'}',
+      orderId: '${json['orderId'] ?? ''}',
+      orderNumber: json['orderNumber'] == null
+          ? null
+          : '${json['orderNumber']}',
+      lineIndex: json['lineIndex'] == null ? null : _int(json['lineIndex']),
+      itemName: json['itemName'] is String ? json['itemName'] as String : null,
+      quantity: _int(json['quantity']),
+      amount: _double(json['amount']),
+      countsAsSale: json['countsAsSale'] == true,
+      order: order is Map
+          ? ShopAnalyticsOrder.fromJson(Map<String, dynamic>.from(order))
+          : null,
+    );
+  }
+
+  final String id;
+  final DateTime occurredAt;
+  final CaptainAction action;
+
+  /// `item` (one item swiped), `order` (the whole order) or `scan`.
+  final String source;
+  final String orderId;
+  final String? orderNumber;
+
+  /// The item's position in the order; null for whole-order actions.
+  final int? lineIndex;
+  final String? itemName;
+  final int quantity;
+
+  /// The item's line total, or the refunded total of a rejection.
+  final double amount;
+
+  /// A hand-over that is still a sale (its order was not refunded since).
+  final bool countsAsSale;
+  final ShopAnalyticsOrder? order;
 }
 
 /// One staff member over a range: their figures, a day-by-day series and a
-/// page of the orders they handled, newest first.
+/// page of their actions, newest first.
 class CaptainPerformanceDetail {
   const CaptainPerformanceDetail({
     required this.captain,
     required this.range,
     this.daily = const [],
-    this.orders = const [],
+    this.activity = const [],
     this.page = 1,
     this.pageSize = 20,
-    this.totalOrders = 0,
+    this.totalActivity = 0,
     this.totalPages = 1,
   });
 
@@ -405,12 +602,12 @@ class CaptainPerformanceDetail {
       daily: _list(detail['daily'])
           .map((value) => CaptainDailyPoint.fromJson(_map(value)))
           .toList(growable: false),
-      orders: _list(detail['orders'])
-          .map((value) => ShopAnalyticsOrder.fromJson(_map(value)))
+      activity: _list(detail['activity'])
+          .map((value) => CaptainActivity.fromJson(_map(value)))
           .toList(growable: false),
       page: detail['page'] == null ? 1 : _int(detail['page']),
       pageSize: detail['pageSize'] == null ? 20 : _int(detail['pageSize']),
-      totalOrders: _int(detail['totalOrders']),
+      totalActivity: _int(detail['totalActivity']),
       totalPages: detail['totalPages'] == null ? 1 : _int(detail['totalPages']),
     );
   }
@@ -418,92 +615,20 @@ class CaptainPerformanceDetail {
   final CaptainPerformance captain;
   final AnalyticsDateRange range;
   final List<CaptainDailyPoint> daily;
-  final List<ShopAnalyticsOrder> orders;
+  final List<CaptainActivity> activity;
   final int page;
   final int pageSize;
-  final int totalOrders;
+  final int totalActivity;
   final int totalPages;
 
   bool get hasMore => page < totalPages;
 }
 
-/// A staff member's detail rolled up from orders on the device, for
-/// repositories without the analytics endpoint. Offline, staff are named by
-/// the orders, so [captainId] is the name [localShopAnalytics] used.
-CaptainPerformanceDetail localCaptainDetail({
-  required List<CanteenOrder> orders,
-  required AnalyticsDateRange range,
-  required String captainId,
-  int page = 1,
-  int pageSize = 20,
-}) {
-  final report = localShopAnalytics(orders: orders, range: range);
-  final captain =
-      report.captains.where((c) => c.userId == captainId).firstOrNull ??
-      CaptainPerformance(
-        userId: captainId,
-        name: captainId,
-        role: 'captain',
-        figures: const ShopSalesFigures(),
-      );
-  bool sameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-  bool inRange(DateTime at) {
-    final day = DateTime(at.year, at.month, at.day);
-    return !day.isBefore(range.from) && !day.isAfter(range.to);
-  }
-
-  final mine =
-      orders
-          .where(
-            (order) =>
-                order.effectiveCaptainName == captainId &&
-                inRange(order.createdAt.toLocal()),
-          )
-          .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-  final daily = <CaptainDailyPoint>[];
-  for (var i = 0; i < range.days; i++) {
-    final day = DateTime(range.from.year, range.from.month, range.from.day + i);
-    final those = [
-      for (final order in mine)
-        if (sameDay(order.createdAt.toLocal(), day)) order,
-    ];
-    final done = those.where(
-      (order) => order.status == CanteenOrderStatus.completed,
-    );
-    daily.add(
-      CaptainDailyPoint(
-        date: day,
-        orders: those.length,
-        completedOrders: done.length,
-        revenue: done.fold(0, (sum, order) => sum + order.total),
-        profit: done.fold(0, (sum, order) => sum + order.totalProfit),
-      ),
-    );
-  }
-  final size = pageSize < 1 ? 1 : pageSize;
-  final totalPages = mine.isEmpty ? 1 : (mine.length / size).ceil();
-  final current = page.clamp(1, totalPages);
-  return CaptainPerformanceDetail(
-    captain: captain,
-    range: range,
-    daily: daily,
-    orders: mine
-        .skip((current - 1) * size)
-        .take(size)
-        .map(ShopAnalyticsOrder.fromOrder)
-        .toList(growable: false),
-    page: current,
-    pageSize: size,
-    totalOrders: mine.length,
-    totalPages: totalPages,
-  );
-}
-
-/// The same report rolled up from orders already on the device, for
-/// repositories without the analytics endpoint (the offline demo). Staff are
-/// whoever the orders name; there is no assignment list to add idle ones from.
+/// The shop summary rolled up from orders already on the device, for
+/// repositories without the analytics endpoint (the offline demo). Orders on
+/// the device carry no record of who handled which item, so no one is
+/// credited with anything: [ShopAnalyticsReport.staffRecorded] is false and
+/// every delivered order counts as unattributed.
 ShopAnalyticsReport localShopAnalytics({
   required List<CanteenOrder> orders,
   required AnalyticsDateRange range,
@@ -515,50 +640,25 @@ ShopAnalyticsReport localShopAnalytics({
     return !day.isBefore(range.from) && !day.isAfter(range.to);
   }
 
-  final scoped =
-      orders.where((order) => inRange(order.createdAt.toLocal())).toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-  final summary = _figures(scoped, 0);
-  final byStaff = <String, List<CanteenOrder>>{};
-  for (final order in scoped) {
-    byStaff.putIfAbsent(order.effectiveCaptainName, () => []).add(order);
-  }
-  final captains =
-      byStaff.entries
-          .map(
-            (entry) => CaptainPerformance(
-              userId: entry.key,
-              name: entry.key,
-              role: 'captain',
-              figures: _figures(entry.value, summary.revenue),
-              recentOrders: entry.value
-                  .take(10)
-                  .map(ShopAnalyticsOrder.fromOrder)
-                  .toList(growable: false),
-            ),
-          )
-          .toList()
-        ..sort((a, b) => b.figures.revenue.compareTo(a.figures.revenue));
-  return ShopAnalyticsReport(
-    shopKey: shopKey,
-    shopName: shopName,
-    range: range,
-    summary: summary,
-    unattributedOrders: 0,
-    captains: captains,
-  );
-}
-
-ShopSalesFigures _figures(List<CanteenOrder> orders, double shopRevenue) {
   var revenue = 0.0, cost = 0.0, activeValue = 0.0, refunded = 0.0;
   var completed = 0, active = 0, rejected = 0, cancelled = 0, items = 0;
-  for (final order in orders) {
+  var uncosted = 0, total = 0;
+  for (final order in orders.where((o) => inRange(o.createdAt.toLocal()))) {
+    total++;
     switch (order.status) {
       case CanteenOrderStatus.completed:
         completed++;
-        items += order.itemCount;
         revenue += order.total;
-        cost += order.totalCost;
+        items += order.itemCount;
+        if (order.lines.isEmpty) uncosted++;
+        for (final line in order.lines) {
+          final lineCost = line.recordedCostTotal;
+          if (lineCost == null) {
+            uncosted += line.quantity;
+          } else {
+            cost += lineCost;
+          }
+        }
       case CanteenOrderStatus.rejected:
         rejected++;
         refunded += order.total;
@@ -569,23 +669,39 @@ ShopSalesFigures _figures(List<CanteenOrder> orders, double shopRevenue) {
         activeValue += order.total;
     }
   }
+  final costed = uncosted == 0;
   final profit = revenue - cost;
-  final share = shopRevenue > 0 ? revenue / shopRevenue * 100 : 0.0;
-  return ShopSalesFigures(
-    orders: orders.length,
-    completedOrders: completed,
-    activeOrders: active,
-    rejectedOrders: rejected,
-    cancelledOrders: cancelled,
-    itemsSold: items,
-    revenue: revenue,
-    cost: cost,
-    profit: profit,
-    marginPercent: revenue > 0 ? profit / revenue * 100 : 0,
-    averageOrderValue: completed > 0 ? revenue / completed : 0,
-    activeValue: activeValue,
-    refunded: refunded,
-    revenueShare: shopRevenue > 0 ? share : 0,
+  return ShopAnalyticsReport(
+    shopKey: shopKey,
+    shopName: shopName,
+    range: range,
+    staffRecorded: false,
+    summary: ShopSalesFigures(
+      orders: total,
+      completedOrders: completed,
+      activeOrders: active,
+      rejectedOrders: rejected,
+      cancelledOrders: cancelled,
+      itemsSold: items,
+      revenue: revenue,
+      cost: costed ? cost : null,
+      profit: costed ? profit : null,
+      marginPercent: costed && revenue > 0 ? profit / revenue * 100 : null,
+      uncostedItems: uncosted,
+      averageOrderValue: completed > 0 ? revenue / completed : 0,
+      activeValue: activeValue,
+      refunded: refunded,
+    ),
+    staff: StaffSummary(
+      totalRevenue: revenue,
+      totalItems: items,
+      unattributed: UnattributedHistory(
+        orders: completed,
+        items: items,
+        revenue: revenue,
+        revenueShare: revenue > 0 ? 100 : 0,
+      ),
+    ),
   );
 }
 
@@ -596,7 +712,7 @@ abstract interface class ShopAnalyticsRepository {
     required AnalyticsDateRange range,
   });
 
-  /// One staff member's figures, daily series and a page of their orders.
+  /// One staff member's figures, daily series and a page of their actions.
   Future<CaptainPerformanceDetail> loadCaptainPerformance({
     required String shopKey,
     required String captainId,
@@ -611,10 +727,15 @@ Map<String, dynamic> _map(Object? value) =>
 
 List<dynamic> _list(Object? value) => value is List ? value : const [];
 
-double _double(Object? value) => switch (value) {
+DateTime? _time(Object? value) =>
+    value == null ? null : DateTime.tryParse('$value')?.toLocal();
+
+double _double(Object? value) => _maybeDouble(value) ?? 0;
+
+double? _maybeDouble(Object? value) => switch (value) {
   final num number => number.toDouble(),
-  final String text => double.tryParse(text) ?? 0,
-  _ => 0,
+  final String text => double.tryParse(text),
+  _ => null,
 };
 
 int _int(Object? value) => switch (value) {

@@ -16,7 +16,7 @@ typedef ShopAnalyticsLoader =
     );
 
 /// Loads one staff member's detail — figures, daily series and a page of
-/// their orders — for a shop and date range.
+/// their actions — for a shop and date range.
 typedef CaptainDetailLoader =
     Future<CaptainPerformanceDetail> Function(
       String shopKey,
@@ -46,12 +46,17 @@ extension SalesRangePresetRange on SalesRangePreset {
   };
 }
 
+/// What a figure that was never recorded shows instead of a guess.
+const notRecorded = 'Not recorded';
+
 /// The owner workspace's Sales destination: one shop's revenue, cost and
-/// profit over a chosen range, and how each of its captains performed. Each
+/// profit over a chosen range, and what each of its captains did. Each
 /// captain is a card that opens their own page for the same range.
 ///
 /// With [loadAnalytics] and a [shopKey] every figure comes from the server
-/// for the selected range; otherwise it is rolled up from [store]'s orders.
+/// for the selected range. Without the endpoint (the offline demo) the shop
+/// summary is rolled up from [store]'s orders and no one is credited, since
+/// the device has no record of who handled which item.
 class OwnerCaptainSalesAnalytics extends StatefulWidget {
   const OwnerCaptainSalesAnalytics({
     super.key,
@@ -72,8 +77,7 @@ class OwnerCaptainSalesAnalytics extends StatefulWidget {
   final String? shopName;
   final ShopAnalyticsLoader? loadAnalytics;
 
-  /// Loads a captain's own page; without it the page is rolled up from
-  /// [store]'s orders.
+  /// Loads a captain's own page.
   final CaptainDetailLoader? loadCaptainDetail;
 
   /// Overrides the device's date, for tests.
@@ -172,6 +176,9 @@ class _OwnerCaptainSalesAnalyticsState
 
   ShopAnalyticsReport? get _visibleReport {
     if (_remote) return _report;
+    // Connected to the server but no shop chosen: there is nothing real to
+    // show, and the device's orders are no stand-in for the server's record.
+    if (widget.loadAnalytics != null) return null;
     return localShopAnalytics(
       orders: widget.store.orders,
       range: _range,
@@ -180,10 +187,11 @@ class _OwnerCaptainSalesAnalyticsState
     );
   }
 
-  Future<void> _openCaptain(CaptainPerformance captain) {
+  Future<void> _openCaptain(CaptainPerformance captain) async {
     final shopKey = widget.shopKey;
     final loader = widget.loadCaptainDetail;
-    return Navigator.of(context).push<void>(
+    if (loader == null || shopKey == null) return;
+    await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => CaptainPerformancePage(
           captain: captain,
@@ -191,17 +199,7 @@ class _OwnerCaptainSalesAnalyticsState
           preset: _preset,
           range: _range,
           today: _today,
-          load: (range, page) async {
-            if (loader != null && shopKey != null && _remote) {
-              return loader(shopKey, captain.userId, range, page);
-            }
-            return localCaptainDetail(
-              orders: widget.store.orders,
-              range: range,
-              captainId: captain.userId,
-              page: page,
-            );
-          },
+          load: (range, page) => loader(shopKey, captain.userId, range, page),
           // The list follows a range picked on the captain's page, so going
           // back shows the same days.
           onRangeChanged: (preset, range) {
@@ -216,6 +214,7 @@ class _OwnerCaptainSalesAnalyticsState
   Widget build(BuildContext context) {
     final p = context.palette;
     final report = _visibleReport;
+    final noShop = !_remote && widget.loadAnalytics != null;
 
     return RefreshIndicator(
       onRefresh: _refresh,
@@ -244,7 +243,13 @@ class _OwnerCaptainSalesAnalyticsState
             onCustom: _pickCustom,
           ),
           const SizedBox(height: 16),
-          if (_loading && report == null)
+          if (noShop)
+            const _Message(
+              key: ValueKey('sales-no-shop'),
+              icon: Icons.storefront_outlined,
+              body: 'Choose a shop to see its sales.',
+            )
+          else if (_loading && report == null)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 48),
               child: Center(child: CircularProgressIndicator()),
@@ -263,10 +268,7 @@ class _OwnerCaptainSalesAnalyticsState
             if (_loading) const LinearProgressIndicator(minHeight: 2),
             _SummaryGrid(summary: report.summary),
             const SizedBox(height: 12),
-            _OutcomeCard(
-              summary: report.summary,
-              waiting: report.unattributedOrders,
-            ),
+            _OutcomeCard(summary: report.summary),
             const SizedBox(height: 28),
             Text(
               'Performance by Captain',
@@ -276,25 +278,35 @@ class _OwnerCaptainSalesAnalyticsState
             ),
             const SizedBox(height: 2),
             Text(
-              'Orders are credited to whoever last moved them at the counter.',
+              report.staffRecorded
+                  ? 'Each item is credited to whoever prepared it or handed '
+                        'it over, by when they did it.'
+                  : 'Who handled each item is recorded by the campus server; '
+                        'this device has no such record.',
               style: TextStyle(fontSize: 12, color: p.inkSecondary),
             ),
             const SizedBox(height: 12),
-            if (report.captains.isEmpty)
-              const _Message(
-                key: ValueKey('captains-empty'),
-                icon: Icons.badge_outlined,
-                body: noCaptainsAssignedMessage,
-              )
-            else
-              for (final captain in report.captains)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _CaptainCard(
-                    captain: captain,
-                    onOpen: () => _openCaptain(captain),
+            if (report.staffRecorded) ...[
+              _DeliveredTotal(staff: report.staff),
+              const SizedBox(height: 10),
+              if (report.captains.isEmpty)
+                const _Message(
+                  key: ValueKey('captains-empty'),
+                  icon: Icons.badge_outlined,
+                  body: noCaptainsAssignedMessage,
+                )
+              else
+                for (final captain in report.captains)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _CaptainCard(
+                      captain: captain,
+                      onOpen: () => _openCaptain(captain),
+                    ),
                   ),
-                ),
+              if (report.staff.unattributed.orders > 0)
+                _UnattributedCard(history: report.staff.unattributed),
+            ],
           ],
         ],
       ),
@@ -323,14 +335,33 @@ String shortSalesRange(AnalyticsDateRange range) {
       : '${day(range.from)} – ${day(range.to)}';
 }
 
-/// Minutes as "12 min" or "1 h 5 min"; a dash when there is nothing to time.
-String formatHandlingMinutes(double? minutes) {
-  if (minutes == null) return '—';
-  if (minutes < 60) return '${minutes.round()} min';
-  final hours = minutes ~/ 60;
-  final rest = (minutes % 60).round();
-  return rest == 0 ? '$hours h' : '$hours h $rest min';
+/// Minutes as "12 min" or "1 h 5 min"; [missing] when nothing was timed.
+String formatHandlingMinutes(double? minutes, {String missing = '—'}) {
+  if (minutes == null) return missing;
+  return formatDurationSeconds(minutes * 60, missing: missing);
 }
+
+/// Seconds as "45 s", "4 min 10 s" or "1 h 5 min"; [missing] when nothing
+/// was timed.
+String formatDurationSeconds(double? seconds, {String missing = '—'}) {
+  if (seconds == null) return missing;
+  final total = seconds.round();
+  if (total < 60) return '$total s';
+  if (total < 3600) {
+    final rest = total % 60;
+    return rest == 0 ? '${total ~/ 60} min' : '${total ~/ 60} min $rest s';
+  }
+  final hours = total ~/ 3600;
+  final minutes = (total % 3600) ~/ 60;
+  return minutes == 0 ? '$hours h' : '$hours h $minutes min';
+}
+
+/// [amount] as currency, or [missing] when it was not recorded.
+String formatRecordedCurrency(double? amount, {String missing = notRecorded}) =>
+    amount == null ? missing : formatCurrency(amount);
+
+/// "1 item" / "3 items".
+String itemCountLabel(int count) => '$count item${count == 1 ? '' : 's'}';
 
 /// The quick ranges and the custom-range chip.
 class SalesRangeBar extends StatelessWidget {
@@ -392,8 +423,13 @@ class _SummaryGrid extends StatelessWidget {
     final fulfilled = summary.orders > 0
         ? (summary.completedOrders / summary.orders * 100).round()
         : 0;
+    final uncosted = summary.uncostedItems > 0
+        ? '${itemCountLabel(summary.uncostedItems)} without a cost price'
+        : null;
+    final margin = summary.marginPercent;
     final tiles = [
       _KpiCard(
+        key: const ValueKey('summary-sales'),
         title: 'Sales',
         value: formatCurrency(summary.revenue),
         subtitle: '${summary.completedOrders} delivered orders',
@@ -401,20 +437,25 @@ class _SummaryGrid extends StatelessWidget {
         color: p.info,
       ),
       _KpiCard(
+        key: const ValueKey('summary-profit'),
         title: 'Net profit',
-        value: formatCurrency(summary.profit),
-        subtitle: '${summary.marginPercent.toStringAsFixed(1)}% margin',
+        value: formatRecordedCurrency(summary.profit),
+        subtitle:
+            uncosted ??
+            (margin == null ? '—' : '${margin.toStringAsFixed(1)}% margin'),
         icon: Icons.trending_up_rounded,
         color: p.success,
       ),
       _KpiCard(
+        key: const ValueKey('summary-cost'),
         title: 'Cost',
-        value: formatCurrency(summary.cost),
+        value: formatRecordedCurrency(summary.cost),
         subtitle: '${summary.itemsSold} items sold',
         icon: Icons.inventory_2_outlined,
         color: p.warning,
       ),
       _KpiCard(
+        key: const ValueKey('summary-orders'),
         title: 'Orders',
         value: '${summary.orders}',
         subtitle:
@@ -447,13 +488,13 @@ class _SummaryGrid extends StatelessWidget {
 
 /// Where the range's orders ended up, as one grouped card.
 class _OutcomeCard extends StatelessWidget {
-  const _OutcomeCard({required this.summary, required this.waiting});
+  const _OutcomeCard({required this.summary});
 
   final ShopSalesFigures summary;
-  final int waiting;
 
   @override
   Widget build(BuildContext context) {
+    final waiting = summary.waitingOrders;
     return CanteenSurface(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Column(
@@ -476,8 +517,17 @@ class _OutcomeCard extends StatelessWidget {
           ],
           const Divider(height: 1),
           _Line(
+            key: const ValueKey('summary-handling'),
             label: 'Avg. time to deliver',
-            value: formatHandlingMinutes(summary.averageHandlingMinutes),
+            value: formatHandlingMinutes(
+              summary.averageHandlingMinutes,
+              missing: notRecorded,
+            ),
+            detail: summary.timedOrders > 0
+                ? 'Placed → last item handed over · '
+                      '${summary.timedOrders} of ${summary.completedOrders} '
+                      'delivered orders timed'
+                : null,
           ),
         ],
       ),
@@ -486,7 +536,12 @@ class _OutcomeCard extends StatelessWidget {
 }
 
 class _Line extends StatelessWidget {
-  const _Line({required this.label, required this.value, this.detail});
+  const _Line({
+    super.key,
+    required this.label,
+    required this.value,
+    this.detail,
+  });
 
   final String label;
   final String value;
@@ -512,6 +567,7 @@ class _Line extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             value,
             style: TextStyle(
@@ -526,8 +582,30 @@ class _Line extends StatelessWidget {
   }
 }
 
-/// A captain at a glance: who, how many orders, how much, their share of
-/// the shop and how quickly they deliver. Tapping opens their page.
+/// Everything handed over in the range — the base of every captain's share.
+class _DeliveredTotal extends StatelessWidget {
+  const _DeliveredTotal({required this.staff});
+
+  final StaffSummary staff;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Text(
+      'Handed over in this range: ${formatCurrency(staff.totalRevenue)} · '
+      '${itemCountLabel(staff.totalItems)}',
+      key: const ValueKey('staff-delivered-total'),
+      style: TextStyle(
+        fontSize: 13,
+        color: p.inkSecondary,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
+
+/// A captain at a glance: who, what they handed over, their share of the
+/// range's deliveries and how quickly. Tapping opens their page.
 class _CaptainCard extends StatelessWidget {
   const _CaptainCard({required this.captain, required this.onOpen});
 
@@ -538,14 +616,20 @@ class _CaptainCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     final f = captain.figures;
-    final idle = f.orders == 0;
     final role = captainRoleLabel(captain.role);
+    final summary = f.idle
+        ? '$role · no activity in this range'
+        : [
+            role,
+            '${itemCountLabel(f.itemsDelivered)} handed over',
+            if (f.itemsPrepared > 0) '${f.itemsPrepared} prepared',
+          ].join(' · ');
 
     return Semantics(
       button: true,
       label:
-          '${captain.name}, $role, ${f.orders} orders, '
-          '${formatCurrency(f.revenue)}. Opens their performance.',
+          '${captain.name}, $summary, ${formatCurrency(f.revenue)}. '
+          'Opens their performance.',
       excludeSemantics: true,
       child: CanteenSurface(
         key: ValueKey('captain-${captain.userId}'),
@@ -573,10 +657,7 @@ class _CaptainCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        idle
-                            ? '$role · no orders in this range'
-                            : '$role · ${f.orders} orders · '
-                                  '${f.completedOrders} delivered',
+                        summary,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 12, color: p.inkSecondary),
@@ -597,29 +678,121 @@ class _CaptainCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: (f.revenueShare / 100).clamp(0.0, 1.0),
-                minHeight: 6,
-                backgroundColor: p.surfaceSunken,
-                valueColor: AlwaysStoppedAnimation<Color>(p.brandInk),
-              ),
-            ),
+            _ShareBar(share: f.revenueShare),
             const SizedBox(height: 12),
             Row(
               children: [
-                _Stat(label: 'Orders', value: '${f.orders}'),
-                _Stat(label: 'Share', value: '${f.revenueShare.round()}%'),
+                _Stat(label: 'Orders', value: '${f.ordersDelivered}'),
+                _Stat(label: 'Share', value: formatShare(f.revenueShare)),
                 _Stat(
-                  label: 'Avg. time',
-                  value: formatHandlingMinutes(f.averageHandlingMinutes),
+                  label: 'Hand-over',
+                  value: formatDurationSeconds(f.averageHandoverSeconds),
                 ),
-                _Stat(label: 'Profit', value: formatCurrency(f.profit)),
+                _Stat(
+                  label: 'Profit',
+                  value: formatRecordedCurrency(f.profit, missing: '—'),
+                ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A share as "52%" or "4.8%".
+String formatShare(double share) =>
+    '${share.toStringAsFixed(share % 1 == 0 ? 0 : 1)}%';
+
+class _ShareBar extends StatelessWidget {
+  const _ShareBar({required this.share, this.muted = false});
+
+  final double share;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: LinearProgressIndicator(
+        value: (share / 100).clamp(0.0, 1.0),
+        minHeight: 6,
+        backgroundColor: p.surfaceSunken,
+        valueColor: AlwaysStoppedAnimation<Color>(
+          muted ? p.inkTertiary : p.brandInk,
+        ),
+      ),
+    );
+  }
+}
+
+/// Deliveries from before the counter recorded who handled each item: shown
+/// as they are rather than credited to whoever last touched the order.
+class _UnattributedCard extends StatelessWidget {
+  const _UnattributedCard({required this.history});
+
+  final UnattributedHistory history;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return CanteenSurface(
+      key: const ValueKey('unattributed-history'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: p.surfaceSunken,
+                foregroundColor: p.inkSecondary,
+                child: const Icon(Icons.history_rounded, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Unattributed',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${history.orders} '
+                      'order${history.orders == 1 ? '' : 's'} · '
+                      '${itemCountLabel(history.items)} · '
+                      '${formatShare(history.revenueShare)}',
+                      style: TextStyle(fontSize: 12, color: p.inkSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                formatCurrency(history.revenue),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _ShareBar(share: history.revenueShare, muted: true),
+          const SizedBox(height: 10),
+          Text(
+            'Handed over before the counter recorded who handled each item, '
+            'so they are not credited to anyone.',
+            style: TextStyle(fontSize: 12, color: p.inkSecondary),
+          ),
+        ],
       ),
     );
   }
@@ -657,7 +830,7 @@ class CaptainAvatar extends StatelessWidget {
 String captainRoleLabel(String? role) => switch (role) {
   'captain' => 'Captain',
   'owner' => 'Owner',
-  null => 'No longer assigned',
+  null => 'Not assigned here',
   final other => other,
 };
 
@@ -689,6 +862,7 @@ class _Stat extends StatelessWidget {
 
 class _KpiCard extends StatelessWidget {
   const _KpiCard({
+    super.key,
     required this.title,
     required this.value,
     required this.subtitle,

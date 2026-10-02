@@ -9,7 +9,6 @@ import '../../../../core/widgets/module_navigation_buttons.dart';
 import '../../data/shop_analytics.dart';
 import 'canteen_order_detail_page.dart';
 import 'canteen_surface.dart';
-import 'order_status_badge.dart';
 import 'owner_captain_sales_analytics.dart';
 
 /// Loads a page of one staff member's detail for a range.
@@ -19,8 +18,8 @@ typedef CaptainPageLoader =
       int page,
     );
 
-/// One captain's performance over the Sales page's range: who they are, the
-/// figures, a day-by-day trend and every order they handled.
+/// One captain's performance over the Sales page's range: who they are,
+/// their recorded figures, a day-by-day trend and every action they took.
 ///
 /// The range is the one the Sales page had selected; changing it here changes
 /// it there too ([onRangeChanged]), so going back shows the same days.
@@ -52,18 +51,18 @@ class CaptainPerformancePage extends StatefulWidget {
   State<CaptainPerformancePage> createState() => _CaptainPerformancePageState();
 }
 
-enum _TrendMetric { orders, revenue }
+enum _TrendMetric { items, revenue }
 
 class _CaptainPerformancePageState extends State<CaptainPerformancePage> {
   late SalesRangePreset _preset = widget.preset;
   late AnalyticsDateRange _range = widget.range;
   CaptainPerformanceDetail? _detail;
-  var _orders = <ShopAnalyticsOrder>[];
+  var _activity = <CaptainActivity>[];
   var _loading = false;
   var _loadingMore = false;
   Object? _error;
   var _request = 0;
-  var _metric = _TrendMetric.orders;
+  var _metric = _TrendMetric.items;
 
   DateTime get _today {
     final now = widget.today ?? DateTime.now();
@@ -87,7 +86,7 @@ class _CaptainPerformancePageState extends State<CaptainPerformancePage> {
       if (!mounted || request != _request) return;
       setState(() {
         _detail = detail;
-        _orders = [...detail.orders];
+        _activity = [...detail.activity];
         _loading = false;
       });
     } catch (error) {
@@ -109,7 +108,7 @@ class _CaptainPerformancePageState extends State<CaptainPerformancePage> {
       if (!mounted || request != _request) return;
       setState(() {
         _detail = next;
-        _orders = [..._orders, ...next.orders];
+        _activity = [..._activity, ...next.activity];
         _loadingMore = false;
       });
     } catch (error) {
@@ -128,7 +127,7 @@ class _CaptainPerformancePageState extends State<CaptainPerformancePage> {
       // Figures from the previous range must not pass for the new one.
       if (_detail?.range != range) {
         _detail = null;
-        _orders = [];
+        _activity = [];
       }
     });
     widget.onRangeChanged?.call(preset, range);
@@ -166,7 +165,7 @@ class _CaptainPerformancePageState extends State<CaptainPerformancePage> {
           name: widget.captain.name,
           email: widget.captain.email,
           role: widget.captain.role,
-          figures: const ShopSalesFigures(),
+          figures: const StaffFigures(),
         );
     final name = captain.name.isEmpty ? widget.captain.name : captain.name;
 
@@ -218,7 +217,7 @@ class _CaptainPerformancePageState extends State<CaptainPerformancePage> {
                   if (_error != null && detail == null)
                     _ErrorCard(error: _error!, onRetry: _load)
                   else ...[
-                    _KpiGrid(captain: captain),
+                    _KpiGrid(captain: captain, today: _today),
                     const SizedBox(height: 28),
                     Row(
                       children: [
@@ -237,8 +236,8 @@ class _CaptainPerformancePageState extends State<CaptainPerformancePage> {
                           ),
                           segments: const [
                             ButtonSegment(
-                              value: _TrendMetric.orders,
-                              label: Text('Orders'),
+                              value: _TrendMetric.items,
+                              label: Text('Items'),
                             ),
                             ButtonSegment(
                               value: _TrendMetric.revenue,
@@ -250,6 +249,11 @@ class _CaptainPerformancePageState extends State<CaptainPerformancePage> {
                               setState(() => _metric = value.first),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Items they handed over, and those items’ value.',
+                      style: TextStyle(fontSize: 12, color: p.inkSecondary),
                     ),
                     const SizedBox(height: 10),
                     CanteenSurface(
@@ -265,14 +269,15 @@ class _CaptainPerformancePageState extends State<CaptainPerformancePage> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Orders handled',
+                            'Activity',
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(fontWeight: FontWeight.w700),
                           ),
                         ),
                         if (detail != null)
                           Text(
-                            '${detail.totalOrders}',
+                            '${detail.totalActivity}',
+                            key: const ValueKey('captain-activity-count'),
                             style: TextStyle(
                               color: p.inkSecondary,
                               fontWeight: FontWeight.w600,
@@ -282,22 +287,22 @@ class _CaptainPerformancePageState extends State<CaptainPerformancePage> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Newest first. Tap an order for its details.',
+                      'Everything they did, newest first. Tap one for its order.',
                       style: TextStyle(fontSize: 12, color: p.inkSecondary),
                     ),
                     const SizedBox(height: 10),
-                    if (detail != null && _orders.isEmpty)
+                    if (detail != null && _activity.isEmpty)
                       CanteenSurface(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           child: Text(
-                            'No orders handled in this range.',
+                            'Nothing recorded in this range.',
                             style: TextStyle(color: p.inkSecondary),
                           ),
                         ),
                       )
-                    else if (_orders.isNotEmpty)
-                      _OrdersGroup(orders: _orders),
+                    else if (_activity.isNotEmpty)
+                      _ActivityGroup(activity: _activity, today: _today),
                     if (detail != null && detail.hasMore) ...[
                       const SizedBox(height: 12),
                       Center(
@@ -312,11 +317,11 @@ class _CaptainPerformancePageState extends State<CaptainPerformancePage> {
                                 ),
                               )
                             : TextButton(
-                                key: const ValueKey('captain-orders-more'),
+                                key: const ValueKey('captain-activity-more'),
                                 onPressed: _loadMore,
                                 child: Text(
                                   'Show more · '
-                                  '${detail.totalOrders - _orders.length} left',
+                                  '${detail.totalActivity - _activity.length} left',
                                 ),
                               ),
                       ),
@@ -424,11 +429,8 @@ class _Pill extends StatelessWidget {
   }
 }
 
-/// When someone was last seen doing something: the last order they moved in
-/// the range, otherwise their last sign-in.
-String _lastActive(CaptainPerformance captain, DateTime today) {
-  final at = captain.lastHandledAt ?? captain.lastSeenAt;
-  if (at == null) return '—';
+/// A moment as "Today, 10:42", "Yesterday, 9:05" or "12 Sep 2026, 9:05".
+String _moment(DateTime at, DateTime today) {
   final local = at.toLocal();
   final day = isSameDay(local, today)
       ? 'Today'
@@ -438,88 +440,131 @@ String _lastActive(CaptainPerformance captain, DateTime today) {
   return '$day, ${formatTime(local)}';
 }
 
-/// Ten figures, two to a row.
+/// Their recorded figures, two to a row.
 class _KpiGrid extends StatelessWidget {
-  const _KpiGrid({required this.captain});
+  const _KpiGrid({required this.captain, required this.today});
 
   final CaptainPerformance captain;
+  final DateTime today;
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     final f = captain.figures;
-    final now = DateTime.now();
+    String timed(int count) =>
+        count == 0 ? '' : '${itemCountLabel(count)} timed';
+    final uncosted = f.uncostedItems > 0
+        ? '${itemCountLabel(f.uncostedItems)} without a cost price'
+        : '';
+    final first = f.firstActivityAt;
+    final last = f.lastActivityAt;
     final tiles = <Widget>[
       _Kpi(
-        key: const ValueKey('kpi-orders'),
-        label: 'Orders handled',
-        value: '${f.orders}',
-        icon: Icons.receipt_long_rounded,
-        color: p.brandInk,
-      ),
-      _Kpi(
-        key: const ValueKey('kpi-completed'),
-        label: 'Completed',
-        value: '${f.completedOrders}',
-        icon: Icons.check_circle_rounded,
-        color: p.success,
-      ),
-      _Kpi(
-        key: const ValueKey('kpi-rejected'),
-        label: 'Rejected / cancelled',
-        value: '${f.rejectedOrders + f.cancelledOrders}',
-        icon: Icons.cancel_rounded,
-        color: p.danger,
-      ),
-      _Kpi(
         key: const ValueKey('kpi-items'),
-        label: 'Items',
-        value: '${f.itemsSold}',
+        label: 'Items handed over',
+        value: '${f.itemsDelivered}',
+        detail:
+            '${f.ordersDelivered} order${f.ordersDelivered == 1 ? '' : 's'}',
         icon: Icons.shopping_basket_rounded,
         color: p.info,
       ),
       _Kpi(
         key: const ValueKey('kpi-revenue'),
-        label: 'Revenue',
+        label: 'Revenue handed over',
         value: formatCurrency(f.revenue),
+        detail: '${formatShare(f.revenueShare)} of the shop',
         icon: Icons.payments_rounded,
         color: p.info,
       ),
       _Kpi(
+        key: const ValueKey('kpi-prepared'),
+        label: 'Items prepared',
+        value: '${f.itemsPrepared}',
+        detail: 'Moved to preparing or ready',
+        icon: Icons.soup_kitchen_rounded,
+        color: p.warning,
+      ),
+      _Kpi(
+        key: const ValueKey('kpi-touched'),
+        label: 'Orders worked on',
+        value: '${f.ordersTouched}',
+        detail: '${f.actions} action${f.actions == 1 ? '' : 's'}',
+        icon: Icons.receipt_long_rounded,
+        color: p.brandInk,
+      ),
+      _Kpi(
         key: const ValueKey('kpi-cost'),
         label: 'Cost',
-        value: formatCurrency(f.cost),
+        value: formatRecordedCurrency(f.cost),
+        detail: uncosted,
         icon: Icons.inventory_2_rounded,
         color: p.warning,
       ),
       _Kpi(
         key: const ValueKey('kpi-profit'),
         label: 'Profit',
-        value: formatCurrency(f.profit),
+        value: formatRecordedCurrency(f.profit),
+        detail: uncosted,
         icon: Icons.trending_up_rounded,
         color: p.success,
       ),
       _Kpi(
-        key: const ValueKey('kpi-share'),
-        label: 'Share of shop',
-        value:
-            '${f.revenueShare.toStringAsFixed(f.revenueShare % 1 == 0 ? 0 : 1)}%',
-        icon: Icons.pie_chart_rounded,
-        color: p.brandInk,
-      ),
-      _Kpi(
-        key: const ValueKey('kpi-time'),
-        label: 'Avg. time to deliver',
-        value: formatHandlingMinutes(f.averageHandlingMinutes),
+        key: const ValueKey('kpi-prep-time'),
+        label: 'Avg. prep time',
+        value: formatDurationSeconds(
+          f.averagePrepSeconds,
+          missing: notRecorded,
+        ),
+        detail: timed(f.prepTimedItems),
         icon: Icons.timer_rounded,
         color: p.warning,
       ),
       _Kpi(
+        key: const ValueKey('kpi-handover-time'),
+        label: 'Avg. hand-over time',
+        value: formatDurationSeconds(
+          f.averageHandoverSeconds,
+          missing: notRecorded,
+        ),
+        detail: timed(f.handoverTimedItems),
+        icon: Icons.timer_outlined,
+        color: p.warning,
+      ),
+      _Kpi(
+        key: const ValueKey('kpi-rejected'),
+        label: 'Rejected',
+        value: '${f.rejectedOrders}',
+        detail: f.rejectedOrders == 0
+            ? ''
+            : '${formatCurrency(f.refunded)} refunded',
+        icon: Icons.cancel_rounded,
+        color: p.danger,
+      ),
+      _Kpi(
+        key: const ValueKey('kpi-active-days'),
+        label: 'Days active',
+        value: '${f.activeDays}',
+        detail: first == null ? '' : 'First ${_moment(first, today)}',
+        icon: Icons.calendar_today_rounded,
+        color: p.brandInk,
+      ),
+      _Kpi(
         key: const ValueKey('kpi-last-active'),
-        label: 'Last active',
-        value: _lastActive(captain, DateTime(now.year, now.month, now.day)),
+        label: 'Last action',
+        value: last == null ? 'None in range' : _moment(last, today),
+        detail: captain.lastSeenAt == null
+            ? ''
+            : 'Signed in ${_moment(captain.lastSeenAt!, today)}',
         icon: Icons.schedule_rounded,
         color: p.inkSecondary,
+      ),
+      _Kpi(
+        key: const ValueKey('kpi-share'),
+        label: 'Share of hand-overs',
+        value: formatShare(f.revenueShare),
+        detail: 'Of everything handed over',
+        icon: Icons.pie_chart_rounded,
+        color: p.brandInk,
       ),
     ];
     return Column(
@@ -527,6 +572,7 @@ class _KpiGrid extends StatelessWidget {
         for (var i = 0; i < tiles.length; i += 2) ...[
           if (i > 0) const SizedBox(height: 10),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(child: tiles[i]),
               const SizedBox(width: 10),
@@ -548,10 +594,12 @@ class _Kpi extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
+    this.detail = '',
   });
 
   final String label;
   final String value;
+  final String detail;
   final IconData icon;
   final Color color;
 
@@ -559,7 +607,7 @@ class _Kpi extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     return Semantics(
-      label: '$label: $value',
+      label: detail.isEmpty ? '$label: $value' : '$label: $value, $detail',
       excludeSemantics: true,
       child: CanteenSurface(
         padding: const EdgeInsets.all(12),
@@ -595,6 +643,14 @@ class _Kpi extends StatelessWidget {
                 letterSpacing: -0.2,
               ),
             ),
+            const SizedBox(height: 2),
+            Text(
+              // Keeps the tiles of a row the same height.
+              detail.isEmpty ? ' ' : detail,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, color: p.inkSecondary),
+            ),
           ],
         ),
       ),
@@ -602,12 +658,13 @@ class _Kpi extends StatelessWidget {
   }
 }
 
-/// A bucket of the trend: a day, or a week or month on longer ranges.
+/// A bucket of the trend: a day, or a week or month on longer ranges. Its
+/// values are the plain sums of its days.
 class _Bucket {
   _Bucket(this.start);
 
   final DateTime start;
-  var orders = 0;
+  var items = 0;
   var revenue = 0.0;
 }
 
@@ -629,7 +686,7 @@ List<_Bucket> _buckets(List<CaptainDailyPoint> points) {
       buckets.add(_Bucket(start));
     }
     buckets.last
-      ..orders += point.orders
+      ..items += point.itemsDelivered
       ..revenue += point.revenue;
   }
   return buckets;
@@ -669,13 +726,11 @@ class _TrendChart extends StatelessWidget {
     final buckets = _buckets(points);
     final values = [
       for (final bucket in buckets)
-        metric == _TrendMetric.orders
-            ? bucket.orders.toDouble()
-            : bucket.revenue,
+        metric == _TrendMetric.items ? bucket.items.toDouble() : bucket.revenue,
     ];
     final peak = values.fold<double>(0, math.max);
     final total = values.fold<double>(0, (sum, v) => sum + v);
-    String show(double value) => metric == _TrendMetric.orders
+    String show(double value) => metric == _TrendMetric.items
         ? '${value.round()}'
         : formatCurrency(value);
     final unit = points.length <= 31
@@ -687,8 +742,8 @@ class _TrendChart extends StatelessWidget {
 
     return Semantics(
       label:
-          '${metric == _TrendMetric.orders ? 'Orders' : 'Revenue'} per $unit: '
-          'total ${show(total)}, busiest ${show(peak)}.',
+          '${metric == _TrendMetric.items ? 'Items handed over' : 'Revenue'} '
+          'per $unit: total ${show(total)}, busiest ${show(peak)}.',
       excludeSemantics: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -696,7 +751,8 @@ class _TrendChart extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Per $unit',
+                'Per $unit · total ${show(total)}',
+                key: const ValueKey('captain-trend-total'),
                 style: TextStyle(fontSize: 12, color: p.inkSecondary),
               ),
               const Spacer(),
@@ -761,11 +817,12 @@ class _TrendChart extends StatelessWidget {
   }
 }
 
-/// The orders as an inset-grouped list.
-class _OrdersGroup extends StatelessWidget {
-  const _OrdersGroup({required this.orders});
+/// The actions as an inset-grouped list.
+class _ActivityGroup extends StatelessWidget {
+  const _ActivityGroup({required this.activity, required this.today});
 
-  final List<ShopAnalyticsOrder> orders;
+  final List<CaptainActivity> activity;
+  final DateTime today;
 
   @override
   Widget build(BuildContext context) {
@@ -779,9 +836,9 @@ class _OrdersGroup extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          for (var i = 0; i < orders.length; i++) ...[
-            if (i > 0) Divider(height: 1, indent: 16, color: p.divider),
-            _OrderRow(order: orders[i]),
+          for (var i = 0; i < activity.length; i++) ...[
+            if (i > 0) Divider(height: 1, indent: 60, color: p.divider),
+            _ActivityRow(entry: activity[i], today: today),
           ],
         ],
       ),
@@ -789,37 +846,76 @@ class _OrdersGroup extends StatelessWidget {
   }
 }
 
-class _OrderRow extends StatelessWidget {
-  const _OrderRow({required this.order});
+/// What an action did, in words: "Handed over 2 × Masala Dosa".
+String activityTitle(CaptainActivity entry) {
+  final item = entry.itemName?.trim();
+  final what = item == null || item.isEmpty
+      ? 'an item'
+      : entry.quantity > 1
+      ? '${entry.quantity} × $item'
+      : item;
+  return switch (entry.action) {
+    CaptainAction.accepted => 'Accepted the order',
+    CaptainAction.preparing => 'Started preparing $what',
+    CaptainAction.ready => 'Marked $what ready',
+    CaptainAction.delivered => 'Handed over $what',
+    CaptainAction.rejected => 'Rejected the order',
+    CaptainAction.cancelled => 'Cancelled the order',
+  };
+}
 
-  final ShopAnalyticsOrder order;
+class _ActivityRow extends StatelessWidget {
+  const _ActivityRow({required this.entry, required this.today});
+
+  final CaptainActivity entry;
+  final DateTime today;
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final full = order.toCanteenOrder();
-    final placed = order.createdAt.toLocal();
-    final items = order.lines
-        .map(
-          (line) => line.quantity > 1
-              ? '${line.quantity} × ${line.item.name}'
-              : line.item.name,
-        )
-        .join(', ');
+    final (icon, color) = switch (entry.action) {
+      CaptainAction.accepted => (Icons.thumb_up_alt_rounded, p.brandInk),
+      CaptainAction.preparing => (Icons.soup_kitchen_rounded, p.warning),
+      CaptainAction.ready => (Icons.notifications_active_rounded, p.info),
+      CaptainAction.delivered => (Icons.check_circle_rounded, p.success),
+      CaptainAction.rejected ||
+      CaptainAction.cancelled => (Icons.cancel_rounded, p.danger),
+    };
+    final order = entry.order;
+    final number = order?.toCanteenOrder().displayId ?? entry.orderNumber;
+    final how = switch (entry.source) {
+      'scan' => 'QR scan',
+      'order' => 'Whole order',
+      _ => null,
+    };
+    final amount = switch (entry.action) {
+      CaptainAction.delivered =>
+        entry.countsAsSale ? formatCurrency(entry.amount) : 'Refunded',
+      CaptainAction.rejected => '−${formatCurrency(entry.amount)}',
+      _ => null,
+    };
     return InkWell(
-      key: ValueKey('captain-order-${order.id}'),
-      onTap: () => openCanteenOrderDetail(context, full),
+      key: ValueKey('captain-activity-${entry.id}'),
+      onTap: order == null
+          ? null
+          : () => openCanteenOrderDetail(context, order.toCanteenOrder()),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 10, 12),
+        padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
         child: Row(
           children: [
+            CircleAvatar(
+              radius: 17,
+              backgroundColor: color.withValues(alpha: 0.12),
+              foregroundColor: color,
+              child: Icon(icon, size: 18),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '#${full.displayId} · '
-                    '${order.customerName.isEmpty ? 'Campus user' : order.customerName}',
+                    activityTitle(entry),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontWeight: FontWeight.w600, color: p.ink),
@@ -827,11 +923,9 @@ class _OrderRow extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     [
-                      if (items.isNotEmpty)
-                        items
-                      else
-                        '${order.itemCount} item${order.itemCount == 1 ? '' : 's'}',
-                      '${formatShortDate(placed)}, ${formatTime(placed)}',
+                      if (number != null && number.isNotEmpty) '#$number',
+                      _moment(entry.occurredAt, today),
+                      if (how != null) how,
                     ].join(' · '),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -840,26 +934,22 @@ class _OrderRow extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  formatCurrency(order.total),
-                  style: TextStyle(fontWeight: FontWeight.w700, color: p.ink),
+            if (amount != null) ...[
+              const SizedBox(width: 8),
+              Text(
+                amount,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color:
+                      entry.action == CaptainAction.delivered &&
+                          entry.countsAsSale
+                      ? p.ink
+                      : p.inkSecondary,
                 ),
-                const SizedBox(height: 4),
-                OrderStatusGradientBadge(
-                  status: order.orderStatus,
-                  fontSize: 10,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2.5,
-                  ),
-                ),
-              ],
-            ),
-            Icon(Icons.chevron_right_rounded, size: 20, color: p.inkTertiary),
+              ),
+            ],
+            if (order != null)
+              Icon(Icons.chevron_right_rounded, size: 20, color: p.inkTertiary),
           ],
         ),
       ),

@@ -21,6 +21,9 @@ class VendorShop {
     this.sortOrder,
     this.operators = const [],
     this.parentShopKey,
+    this.hasCategories = false,
+    this.uncategorizedItemCount = 0,
+    this.parentStaffRemoved = const [],
   });
 
   final String id;
@@ -41,9 +44,21 @@ class VendorShop {
   /// Owner and captains assigned to run this shop.
   final List<ShopStaffAssignment> operators;
 
-  /// The canteen this shop is a counter of (Meals, Snacks …). A counter has
+  /// The canteen this shop is a category of (Bites, Mess …). A category has
   /// its own staff, menu and orders; its canteen holds the wallet.
   final String? parentShopKey;
+
+  /// A canteen split into categories: it has no owner, captain or menu of
+  /// its own — its categories do.
+  final bool hasCategories;
+
+  /// Items still on this canteen itself while it has categories; students
+  /// cannot order them until they are moved into a category.
+  final int uncategorizedItemCount;
+
+  /// Who the server retired from the canteen when this category was saved:
+  /// a canteen with categories keeps no staff of its own.
+  final List<ShopStaffAssignment> parentStaffRemoved;
 
   bool get isCounter =>
       parentShopKey != null && parentShopKey!.trim().isNotEmpty;
@@ -78,6 +93,8 @@ class VendorShop {
         sortOrder: sortOrder ?? this.sortOrder,
         operators: operators ?? this.operators,
         parentShopKey: parentShopKey,
+        hasCategories: hasCategories,
+        uncategorizedItemCount: uncategorizedItemCount,
       );
 
   factory VendorShop.fromJson(Map<String, dynamic> json) {
@@ -108,8 +125,70 @@ class VendorShop {
       parentShopKey: (json['parentShopKey']?.toString().trim().isEmpty ?? true)
           ? null
           : json['parentShopKey'].toString().trim(),
+      hasCategories: json['hasCategories'] == true,
+      uncategorizedItemCount: json['uncategorizedItemCount'] is num
+          ? (json['uncategorizedItemCount'] as num).toInt()
+          : 0,
+      parentStaffRemoved: [
+        for (final item in (json['parentStaffRemoved'] as List? ?? const []))
+          if (item is Map)
+            ShopStaffAssignment.fromJson(Map<String, dynamic>.from(item)),
+      ],
     );
   }
+}
+
+/// Whether [shop] is a canteen split into categories: the server says so, or
+/// an active category of it is listed.
+bool isSplitIntoCategories(VendorShop shop, List<VendorShop> shops) =>
+    !shop.isCounter &&
+    (shop.hasCategories ||
+        shops.any(
+          (other) => other.isActive && other.parentShopKey == shop.shopKey,
+        ));
+
+/// One item a canteen still holds itself, as the move tool lists it.
+class ShopMenuItemSummary {
+  const ShopMenuItemSummary({
+    required this.id,
+    required this.name,
+    required this.category,
+    required this.price,
+    this.isAvailable = true,
+  });
+
+  factory ShopMenuItemSummary.fromJson(Map<String, dynamic> json) =>
+      ShopMenuItemSummary(
+        id: json['id']?.toString() ?? '',
+        name: json['name']?.toString() ?? 'Item',
+        category: json['category']?.toString() ?? '',
+        price: json['price'] is num ? (json['price'] as num).toDouble() : 0,
+        isAvailable: json['isAvailable'] != false,
+      );
+
+  final String id;
+  final String name;
+
+  /// The owner's menu section (Snacks, Meals …), not a shop category.
+  final String category;
+  final double price;
+  final bool isAvailable;
+}
+
+/// Moving a canteen's own items into its categories, where the repository
+/// offers it. Screens leave the move tool out otherwise.
+abstract interface class CategoryMenuAdministration {
+  /// The items [shopKey] holds itself (not its categories').
+  Future<List<ShopMenuItemSummary>> listShopItems(String shopKey);
+
+  /// Moves [itemIds] from [parentShopKey] into its category
+  /// [targetShopKey]. All or none; returns how many items are still on the
+  /// canteen afterwards.
+  Future<int> moveItemsToCategory({
+    required String parentShopKey,
+    required List<String> itemIds,
+    required String targetShopKey,
+  });
 }
 
 /// The register in display order with each canteen's counters right under
@@ -279,7 +358,7 @@ abstract interface class VendorRepository {
 }
 
 class BackendVendorRepository
-    implements VendorRepository, ShopAdministration {
+    implements VendorRepository, ShopAdministration, CategoryMenuAdministration {
   BackendVendorRepository({
     required String baseUrl,
     String? accessToken,
@@ -408,6 +487,46 @@ class BackendVendorRepository
         .whereType<Map>()
         .map((item) => VendorShop.fromJson(Map<String, dynamic>.from(item)))
         .toList(growable: false);
+  }
+
+  @override
+  Future<List<ShopMenuItemSummary>> listShopItems(String shopKey) async {
+    final response = await _request(
+      (headers) => _client.get(
+        _uri(
+          '/api/v1/operations/canteen/shops/${Uri.encodeComponent(shopKey)}/menu',
+        ),
+        headers: headers,
+      ),
+    );
+    final items = _data(response)['items'];
+    if (items is! List) return const [];
+    return items
+        .whereType<Map>()
+        .map(
+          (item) =>
+              ShopMenuItemSummary.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<int> moveItemsToCategory({
+    required String parentShopKey,
+    required List<String> itemIds,
+    required String targetShopKey,
+  }) async {
+    final response = await _request(
+      (headers) => _client.post(
+        _uri(
+          '/api/v1/operations/canteen/shops/${Uri.encodeComponent(parentShopKey)}/menu/move',
+        ),
+        headers: {...headers, 'content-type': 'application/json'},
+        body: jsonEncode({'itemIds': itemIds, 'targetShopKey': targetShopKey}),
+      ),
+    );
+    final remaining = _data(response)['remaining'];
+    return remaining is num ? remaining.toInt() : 0;
   }
 
   @override

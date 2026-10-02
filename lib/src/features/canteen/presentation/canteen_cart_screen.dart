@@ -118,14 +118,15 @@ class _CanteenCartScreenState extends State<CanteenCartScreen> {
         widget.shops,
       );
 
-  /// "₹100 Snacks-only + ₹20 canteen credit" for one counter's debits.
+  /// "₹30 Bites-only credit + ₹10 Let's eat! credit" for one category's
+  /// debits: the general credit is named after its canteen.
   String _paidWith(String shop, List<WalletDebit> debits) {
     if (debits.isEmpty) return 'Nothing to pay';
     return debits
         .map(
           (debit) => debit.bucket == shop
               ? '${formatCurrency(debit.amount)} ${_shopName(shop)}-only credit'
-              : '${formatCurrency(debit.amount)} canteen credit',
+              : '${formatCurrency(debit.amount)} ${_shopName(debit.bucket)} credit',
         )
         .join(' + ');
   }

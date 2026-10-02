@@ -141,16 +141,20 @@ class _StudentCanteenHomeState extends State<StudentCanteenHome> {
     return countersOf(key, widget.store.shops);
   }
 
-  /// Shops whose items the open storefront lists: the storefront itself and
-  /// its counters, or only the counter the student picked.
+  /// Shops whose items the open storefront lists: the storefront itself, or
+  /// — for a canteen split into categories (All · Bites · Mess) — every
+  /// category ("All") or only the one the student picked. Items still on
+  /// the canteen itself wait to be moved into a category and are never
+  /// listed: no one would make them.
   Set<String> get _storefrontKeys {
     final key = _selectedShopKey;
     if (key == null) return const {};
     final counters = _counters;
+    if (counters.isEmpty) return {key};
     if (_counter != null && counters.any((c) => c.shopKey == _counter)) {
       return {_counter!};
     }
-    return {key, for (final counter in counters) counter.shopKey};
+    return {for (final counter in counters) counter.shopKey};
   }
 
   /// A canteen with counters takes orders while any of them is open.

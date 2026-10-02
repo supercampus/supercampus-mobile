@@ -163,14 +163,19 @@ class ShopCounterChoice {
     required this.category,
     this.role,
     this.parentShopKey,
+    this.hasCategories = false,
   });
 
   final String shopKey;
   final String name;
   final String category;
 
-  /// The canteen this shop is a counter of, when it is one.
+  /// The canteen this shop is a category of, when it is one.
   final String? parentShopKey;
+
+  /// A canteen split into categories: staff work its categories, never the
+  /// canteen itself, so it is not offered.
+  final bool hasCategories;
 
   /// `owner`, `captain` or null.
   final String? role;
@@ -300,6 +305,7 @@ class AdminStudentRepository {
               (shop['parentShopKey']?.toString().trim().isEmpty ?? true)
               ? null
               : shop['parentShopKey'].toString().trim(),
+          hasCategories: shop['hasCategories'] == true,
           role: switch (shop['assignmentRole']) {
             'owner' => 'owner',
             'captain' => 'captain',

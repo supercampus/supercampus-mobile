@@ -52,6 +52,10 @@ class ShopCounterSheet extends StatefulWidget {
 class _ShopCounterSheetState extends State<ShopCounterSheet> {
   List<ShopCounterChoice>? _shops;
 
+  /// Every listed shop's name by key, so a category names its canteen even
+  /// though the canteen itself is not offered.
+  Map<String, String> _parentNames = const {};
+
   /// Shop key to `owner` / `captain` for every ticked shop.
   final Map<String, String> _chosen = {};
   String? _error;
@@ -66,9 +70,18 @@ class _ShopCounterSheetState extends State<ShopCounterSheet> {
   Future<void> _load() async {
     setState(() => _error = null);
     try {
-      final shops = await widget.repository.loadShopCounters(widget.userId);
+      final loaded = await widget.repository.loadShopCounters(widget.userId);
+      // A canteen split into categories takes no owner or captain of its
+      // own; its categories are offered instead.
+      final shops = [
+        for (final shop in loaded)
+          if (!shop.hasCategories &&
+              !loaded.any((other) => other.parentShopKey == shop.shopKey))
+            shop,
+      ];
       if (!mounted) return;
       setState(() {
+        _parentNames = {for (final shop in loaded) shop.shopKey: shop.name};
         _shops = shops;
         _chosen
           ..clear()
@@ -158,10 +171,7 @@ class _ShopCounterSheetState extends State<ShopCounterSheet> {
                   for (final shop in shops)
                     _CounterRow(
                       shop: shop,
-                      parentName: [
-                        for (final other in shops)
-                          if (other.shopKey == shop.parentShopKey) other.name,
-                      ].firstOrNull,
+                      parentName: _parentNames[shop.parentShopKey],
                       role: _chosen[shop.shopKey],
                       onToggle: (on) => setState(() {
                         if (on) {
@@ -222,7 +232,7 @@ class _CounterRow extends StatelessWidget {
 
   final ShopCounterChoice shop;
 
-  /// The canteen [shop] is a counter of, by name.
+  /// The canteen [shop] is a category of, by name.
   final String? parentName;
 
   /// Null when this shop is not ticked.
@@ -253,7 +263,7 @@ class _CounterRow extends StatelessWidget {
                   Text(
                     parentName == null
                         ? shop.category
-                        : 'Counter of $parentName',
+                        : 'Category of $parentName',
                     style: TextStyle(fontSize: 12.5, color: p.inkSecondary),
                   ),
                 ],

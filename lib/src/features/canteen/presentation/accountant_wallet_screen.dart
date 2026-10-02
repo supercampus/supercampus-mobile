@@ -1588,8 +1588,8 @@ class _RechargeSheetState extends State<_RechargeSheet> {
               ChoiceChip(
                 key: const ValueKey('wallet-scope-all'),
                 label: Text(
-                  'Whole canteen · '
-                  '${_money(widget.account.balanceFor(selected!.shopKey))}',
+                  'Whole ${selected!.name} · '
+                  '${_money(widget.account.balanceFor(selected.shopKey))}',
                 ),
                 selected: _scope == null,
                 onSelected: _submitting
@@ -1619,7 +1619,7 @@ class _RechargeSheetState extends State<_RechargeSheet> {
           const SizedBox(height: 6),
           Text(
             _scope == null
-                ? 'General credit: any counter of ${selected.name} accepts it.'
+                ? 'General credit: every category of ${selected.name} accepts it.'
                 : 'Only ${_scope!.name} accepts it. Orders there use it before general credit.',
             key: const ValueKey('wallet-scope-hint'),
             style: TextStyle(color: palette.inkSecondary, fontSize: 12),
@@ -1939,7 +1939,7 @@ class _ConfirmWalletChangeDialog extends StatelessWidget {
                         : 'Spendable $scopeLabel.')
                   : (deducting
                         ? 'From the general credit.'
-                        : 'Spendable at every counter.'),
+                        : 'Spendable in every category.'),
               key: const ValueKey('wallet-confirm-scope'),
               style: TextStyle(color: palette.inkSecondary, fontSize: 13),
             ),

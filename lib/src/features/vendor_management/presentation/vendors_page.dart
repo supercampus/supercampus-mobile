@@ -44,10 +44,18 @@ class _VendorsPageState extends State<_VendorsPage> {
     _ => null,
   };
 
+  /// Moving a canteen's own items into its categories, where offered.
+  CategoryMenuAdministration? get _menuAdministration =>
+      switch (widget.repository) {
+        final CategoryMenuAdministration administration => administration,
+        _ => null,
+      };
+
+  bool _isSplit(VendorShop shop) =>
+      isSplitIntoCategories(shop, _shops ?? const <VendorShop>[]);
+
   bool get _canArrange =>
-      widget.canUpdate &&
-      _administration != null &&
-      (_shops?.length ?? 0) > 1;
+      widget.canUpdate && _administration != null && (_shops?.length ?? 0) > 1;
 
   void _startArranging() => setState(() => _arranging = [...?_shops]);
 
@@ -155,14 +163,15 @@ class _VendorsPageState extends State<_VendorsPage> {
     return null;
   }
 
-  /// [canteen]'s counters, in the administrator's order.
+  /// [canteen]'s categories, in the administrator's order.
   List<VendorShop> _countersOf(VendorShop canteen) => [
     for (final shop in _shops ?? const <VendorShop>[])
       if (shop.parentShopKey == canteen.shopKey) shop,
   ];
 
-  /// Adds a counter (Meals, Beverages, Snacks …) under [canteen]: a shop of
-  /// its own for staff, menu and orders that students find in the canteen.
+  /// Adds a category (Bites, Mess …) under [canteen]: a shop of its own for
+  /// staff, menu and orders that students find in the canteen. The first
+  /// category retires the canteen's own staff; the server says who.
   Future<void> _addCounter(VendorShop canteen) async {
     final draft = await showModalBottomSheet<VendorShopDraft>(
       context: context,
@@ -180,7 +189,16 @@ class _VendorsPageState extends State<_VendorsPage> {
       final created = await widget.repository.createVendor(draft);
       if (!mounted) return;
       setState(() => _shops = [...?_shops, created]);
-      _toast('${created.name} counter added to ${canteen.name}.');
+      final removed = created.parentStaffRemoved.length;
+      _toast(
+        removed == 0
+            ? '${created.name} added to ${canteen.name}.'
+            : '${created.name} added to ${canteen.name}. '
+                  '$removed staff no longer work ${canteen.name} itself — '
+                  'assign them to its categories.',
+      );
+      // The canteen's staff and flags changed on the server.
+      _load();
     } catch (error) {
       if (mounted) _toast(userFacingError(error), error: true);
     }
@@ -196,6 +214,7 @@ class _VendorsPageState extends State<_VendorsPage> {
         parent: _parentOf(shop),
         suggestedCategories: _categories,
         loadStaffCandidates: _staffLoader,
+        splitIntoCategories: _isSplit(shop),
       ),
     );
     if (draft == null || !mounted) return;
@@ -232,6 +251,28 @@ class _VendorsPageState extends State<_VendorsPage> {
     return administration.listShopStaffCandidates;
   }
 
+  /// Opens the tool that moves [canteen]'s own items into its categories,
+  /// then refreshes the register's "not in a category" count.
+  Future<void> _moveItems(VendorShop canteen) async {
+    final administration = _menuAdministration;
+    if (administration == null) return;
+    final moved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => MoveItemsToCategoriesSheet(
+        canteen: canteen,
+        categories: [
+          for (final category in _countersOf(canteen))
+            if (category.isActive) category,
+        ],
+        administration: administration,
+      ),
+    );
+    // A drag-to-dismiss returns null even after a move, so refresh anyway.
+    if (mounted && moved != false) await _load();
+  }
+
   void _replace(String id, VendorShop shop) => setState(() {
     _shops = [
       for (final s in _shops ?? const <VendorShop>[]) s.id == id ? shop : s,
@@ -250,11 +291,19 @@ class _VendorsPageState extends State<_VendorsPage> {
         canCreate: widget.canCreate,
         parent: _parentOf(shop),
         counters: _countersOf(shop),
+        splitIntoCategories: _isSplit(shop),
         salesFor: _salesFor,
         onAddCounter: () {
           Navigator.pop(sheet);
           _addCounter(shop);
         },
+        onMoveItems:
+            widget.canUpdate && _menuAdministration != null && _isSplit(shop)
+            ? () {
+                Navigator.pop(sheet);
+                _moveItems(shop);
+              }
+            : null,
         onOpenCounter: (counter) {
           Navigator.pop(sheet);
           _showShop(counter);
@@ -398,6 +447,11 @@ class _VendorsPageState extends State<_VendorsPage> {
                     _ShopRow(
                       shop: visible[i],
                       parent: _parentOf(visible[i]),
+                      categoryCount: _isSplit(visible[i])
+                          ? _countersOf(
+                              visible[i],
+                            ).where((c) => c.isActive).length
+                          : null,
                       sales: _salesFor(visible[i]),
                       busy: _busy.contains(visible[i].id),
                       onTap: () => _showShop(visible[i]),
@@ -436,12 +490,17 @@ class _ShopRow extends StatelessWidget {
     required this.busy,
     required this.onTap,
     this.parent,
+    this.categoryCount,
   });
 
   final VendorShop shop;
 
-  /// The canteen this row is a counter of; the row is then indented under it.
+  /// The canteen this row is a category of; the row is then indented under it.
   final VendorShop? parent;
+
+  /// How many categories [shop] is split into; null when it is not split.
+  /// A split canteen has no staff of its own to list.
+  final int? categoryCount;
   final StoreSales? sales;
   final bool busy;
   final VoidCallback onTap;
@@ -492,7 +551,8 @@ class _ShopRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${parent == null ? _titleCase(shop.category) : 'Counter of ${parent.name}'} · ${_staffLine(sales?.operators ?? const [])}',
+                    '${parent == null ? _titleCase(shop.category) : 'Category of ${parent.name}'} · '
+                    '${categoryCount != null ? '$categoryCount categor${categoryCount == 1 ? 'y' : 'ies'}' : _staffLine(sales?.operators ?? const [])}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 12.5, color: p.inkSecondary),
@@ -539,6 +599,8 @@ class _ShopDetailSheet extends StatelessWidget {
     this.salesFor,
     this.onAddCounter,
     this.onOpenCounter,
+    this.splitIntoCategories = false,
+    this.onMoveItems,
   });
 
   final VendorShop shop;
@@ -546,16 +608,23 @@ class _ShopDetailSheet extends StatelessWidget {
   final bool canUpdate;
   final bool canCreate;
 
-  /// The canteen [shop] is a counter of, when it is one.
+  /// The canteen [shop] is a category of, when it is one.
   final VendorShop? parent;
 
-  /// [shop]'s counters, when it is a canteen that has them.
+  /// [shop]'s categories, when it is a canteen that has them.
   final List<VendorShop> counters;
   final StoreSales? Function(VendorShop shop)? salesFor;
   final VoidCallback? onAddCounter;
   final ValueChanged<VendorShop>? onOpenCounter;
 
-  /// A canteen can be split into counters; a counter cannot.
+  /// [shop] is a canteen with active categories: owners and captains belong
+  /// to the categories, never to the canteen itself.
+  final bool splitIntoCategories;
+
+  /// Opens the tool that moves the canteen's own items into its categories.
+  final VoidCallback? onMoveItems;
+
+  /// A canteen can be split into categories; a category cannot.
   bool get _takesCounters =>
       !shop.isCounter &&
       shop.isActive &&
@@ -638,6 +707,32 @@ class _ShopDetailSheet extends StatelessWidget {
               ],
             ),
           ],
+          if (splitIntoCategories && shop.uncategorizedItemCount > 0) ...[
+            const SizedBox(height: 16),
+            Container(
+              key: const ValueKey('uncategorized-items-banner'),
+              padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+              decoration: BoxDecoration(
+                color: p.warningSoft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 20, color: p.warning),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '${shop.uncategorizedItemCount} '
+                      '${shop.uncategorizedItemCount == 1 ? "item isn't" : "items aren't"} '
+                      'in a category yet. Students can’t order '
+                      '${shop.uncategorizedItemCount == 1 ? 'it' : 'them'} until moved.',
+                      style: TextStyle(fontSize: 13, color: p.ink),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Text(
             'Staff',
@@ -648,7 +743,17 @@ class _ShopDetailSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          if (operators.isEmpty)
+          if (splitIntoCategories)
+            Padding(
+              key: const ValueKey('staff-per-category'),
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text(
+                'Staff are assigned per category. ${shop.name} has no '
+                'owner or captain of its own.',
+                style: TextStyle(fontSize: 13.5, color: p.inkSecondary),
+              ),
+            )
+          else if (operators.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Text(
@@ -686,7 +791,7 @@ class _ShopDetailSheet extends StatelessWidget {
           if (_takesCounters && (counters.isNotEmpty || canCreate)) ...[
             const SizedBox(height: 12),
             Text(
-              'Counters',
+              'Categories',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -695,9 +800,9 @@ class _ShopDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              'Each counter has its own staff, menu and order queue. '
-              'Students order from them inside ${shop.name}, and its wallet '
-              'pays at every counter.',
+              'Each category has its own owner, captains, menu and order '
+              'queue. Students see them inside ${shop.name} as All and each '
+              'category, and its wallet pays in every category.',
               style: TextStyle(fontSize: 12.5, color: p.inkSecondary),
             ),
             for (final counter in counters)
@@ -720,8 +825,7 @@ class _ShopDetailSheet extends StatelessWidget {
                             ),
                             Text(
                               _staffLine(
-                                salesFor?.call(counter)?.operators ??
-                                    const [],
+                                salesFor?.call(counter)?.operators ?? const [],
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -750,15 +854,26 @@ class _ShopDetailSheet extends StatelessWidget {
                   key: const ValueKey('add-counter'),
                   onPressed: onAddCounter,
                   icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Add counter'),
+                  label: const Text('Add category'),
+                ),
+              ),
+            if (onMoveItems != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const ValueKey('move-items'),
+                  onPressed: onMoveItems,
+                  icon: const Icon(Icons.drive_file_move_outline, size: 18),
+                  label: const Text('Move items to categories'),
                 ),
               ),
           ],
           const SizedBox(height: 8),
-          if (parent != null) _DetailRow('Counter of', parent!.name),
+          if (parent != null) _DetailRow('Category of', parent!.name),
           _DetailRow('Shop key', shop.shopKey),
           _DetailRow('Wallet QR', shop.qrPayments ? 'Accepted' : 'Off'),
-          if (shop.mealCompliance) const _DetailRow('Meal plan', 'Counts toward hostel meals'),
+          if (shop.mealCompliance)
+            const _DetailRow('Meal plan', 'Counts toward hostel meals'),
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: onOrders,
@@ -1194,10 +1309,7 @@ class _StaffPickerSheetState extends State<_StaffPickerSheet> {
                       subtitle: Text(c.email),
                       trailing: Text(
                         c.suggestedRole == 'owner' ? 'Owner' : 'Captain',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: p.inkSecondary,
-                        ),
+                        style: TextStyle(fontSize: 12.5, color: p.inkSecondary),
                       ),
                       onTap: () => Navigator.of(context).pop(c),
                     ),
@@ -1218,16 +1330,20 @@ class _ShopFormSheet extends StatefulWidget {
     this.loadStaffCandidates,
     this.parent,
     this.nextPosition,
+    this.splitIntoCategories = false,
   });
 
   final VendorShop? shop;
 
-  /// The canteen the shop is (or becomes) a counter of. A counter takes its
-  /// canteen's category, so the form asks for a position instead.
+  /// The canteen the shop is (or becomes) a category of. A category takes
+  /// its canteen's shop type, so the form asks for a position instead.
   final VendorShop? parent;
 
-  /// Where a new counter goes among its canteen's counters.
+  /// Where a new category goes among its canteen's categories.
   final int? nextPosition;
+
+  /// The shop is a canteen with categories: it takes no staff of its own.
+  final bool splitIntoCategories;
   final List<String> suggestedCategories;
 
   /// Present when the viewer may choose counter staff here.
@@ -1241,7 +1357,8 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
   late final _name = TextEditingController(text: widget.shop?.name);
   late final _key = TextEditingController(text: widget.shop?.shopKey);
   late final _category = TextEditingController(
-    text: widget.shop?.category ??
+    text:
+        widget.shop?.category ??
         (widget.suggestedCategories.isNotEmpty
             ? widget.suggestedCategories.first
             : 'Canteen'),
@@ -1297,7 +1414,9 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
     final key = _key.text.trim().toLowerCase();
     if (name.isEmpty) {
       setState(
-        () => _problem = _counter ? 'Enter a counter name.' : 'Enter a shop name.',
+        () => _problem = _counter
+            ? 'Enter a category name.'
+            : 'Enter a shop name.',
       );
       return;
     }
@@ -1327,10 +1446,12 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
         qrPayments: _qrPayments,
         mealCompliance: widget.shop?.mealCompliance ?? false,
         // Only a changed list is sent; otherwise the staff stay as they are.
-        operators: _staffChanged ? _staff : null,
-        // A new counter names its canteen; an edit leaves it where it is.
+        operators: _staffChanged && !widget.splitIntoCategories ? _staff : null,
+        // A new category names its canteen; an edit leaves it where it is.
         parentShopKey: _counter && !_editing ? widget.parent!.shopKey : null,
-        sortOrder: _counter && position.isNotEmpty ? int.tryParse(position) : null,
+        sortOrder: _counter && position.isNotEmpty
+            ? int.tryParse(position)
+            : null,
       ),
     );
   }
@@ -1355,7 +1476,7 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
               _editing
                   ? 'Edit ${widget.shop!.name}'
                   : _counter
-                  ? 'Add counter to ${widget.parent!.name}'
+                  ? 'Add category to ${widget.parent!.name}'
                   : 'Add shop',
               style: TextStyle(
                 fontSize: 20,
@@ -1375,15 +1496,16 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                     .toLowerCase()
                     .replaceAll(RegExp(r'[^a-z0-9_-]+'), '-')
                     .replaceAll(RegExp(r'^-+|-+$'), '');
-                // A counter's key starts with its canteen's, so it reads as
-                // part of it in QR codes and reports.
+                // A category's key starts with its canteen's, so it reads as
+                // part of it in QR codes and reports. Only a-z, 0-9 and -
+                // survive, so "Let's eat!" keys as let-s-eat.
                 _key.text = _counter && slug.isNotEmpty
                     ? '${widget.parent!.shopKey}-$slug'
                     : slug;
               },
               decoration: InputDecoration(
-                labelText: _counter ? 'Counter name' : 'Shop name',
-                hintText: _counter ? 'Meals, Beverages, Snacks …' : null,
+                labelText: _counter ? 'Category name' : 'Shop name',
+                hintText: _counter ? 'Bites, Mess, Snacks …' : null,
               ),
             ),
             const SizedBox(height: 12),
@@ -1393,7 +1515,8 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
               onChanged: (_) => _autoKey = false,
               decoration: const InputDecoration(
                 labelText: 'Shop key',
-                helperText: 'Used in QR codes and reports. Cannot change later.',
+                helperText:
+                    'Used in QR codes and reports. Cannot change later.',
               ),
             ),
             if (_counter) ...[
@@ -1404,7 +1527,7 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: 'Position in ${widget.parent!.name} (optional)',
-                  helperText: 'Students see counters in this order.',
+                  helperText: 'Students see categories in this order.',
                 ),
               ),
             ],
@@ -1424,7 +1547,8 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                   for (final category in widget.suggestedCategories)
                     ActionChip(
                       label: Text(category),
-                      onPressed: () => setState(() => _category.text = category),
+                      onPressed: () =>
+                          setState(() => _category.text = category),
                     ),
                 ],
               ),
@@ -1452,7 +1576,24 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                 value: _isActive,
                 onChanged: (v) => setState(() => _isActive = v),
               ),
-            if (widget.loadStaffCandidates != null) ...[
+            if (widget.splitIntoCategories) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Staff are assigned per category',
+                key: const ValueKey('form-staff-per-category'),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: p.ink,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${widget.shop?.name ?? 'This canteen'} has no owner or '
+                'captain of its own. Open a category to choose its staff.',
+                style: TextStyle(fontSize: 12.5, color: p.inkSecondary),
+              ),
+            ] else if (widget.loadStaffCandidates != null) ...[
               const SizedBox(height: 12),
               _ShopStaffEditor(
                 staff: _staff,
@@ -1475,12 +1616,295 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                 _editing
                     ? 'Save changes'
                     : _counter
-                    ? 'Add counter'
+                    ? 'Add category'
                     : 'Add shop',
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Moves the items a canteen still holds itself into its categories. Once a
+/// canteen is split into categories its own items have no staff to make them,
+/// so students cannot order them until they are moved.
+///
+/// Pick items (or all of them), pick the category, move. The sheet stays open
+/// with whatever is left, and resolves to true when anything moved.
+class MoveItemsToCategoriesSheet extends StatefulWidget {
+  const MoveItemsToCategoriesSheet({
+    super.key,
+    required this.canteen,
+    required this.categories,
+    required this.administration,
+  });
+
+  final VendorShop canteen;
+
+  /// The canteen's active categories, in the administrator's order.
+  final List<VendorShop> categories;
+  final CategoryMenuAdministration administration;
+
+  @override
+  State<MoveItemsToCategoriesSheet> createState() =>
+      _MoveItemsToCategoriesSheetState();
+}
+
+class _MoveItemsToCategoriesSheetState
+    extends State<MoveItemsToCategoriesSheet> {
+  List<ShopMenuItemSummary>? _items;
+  final Set<String> _selected = {};
+  late String? _target = widget.categories.isEmpty
+      ? null
+      : widget.categories.first.shopKey;
+  String? _error;
+  String? _notice;
+  var _moving = false;
+  var _movedAny = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _error = null);
+    try {
+      final items = await widget.administration.listShopItems(
+        widget.canteen.shopKey,
+      );
+      if (!mounted) return;
+      setState(() {
+        _items = items;
+        _selected.retainAll({for (final item in items) item.id});
+      });
+    } catch (error) {
+      if (mounted) setState(() => _error = userFacingError(error));
+    }
+  }
+
+  String _categoryName(String key) {
+    for (final category in widget.categories) {
+      if (category.shopKey == key) return category.name;
+    }
+    return key;
+  }
+
+  Future<void> _move() async {
+    final target = _target;
+    if (target == null || _selected.isEmpty || _moving) return;
+    final count = _selected.length;
+    setState(() {
+      _moving = true;
+      _error = null;
+      _notice = null;
+    });
+    try {
+      await widget.administration.moveItemsToCategory(
+        parentShopKey: widget.canteen.shopKey,
+        itemIds: _selected.toList(),
+        targetShopKey: target,
+      );
+      if (!mounted) return;
+      _movedAny = true;
+      _selected.clear();
+      _notice =
+          'Moved $count item${count == 1 ? '' : 's'} to ${_categoryName(target)}.';
+      await _load();
+    } catch (error) {
+      if (mounted) setState(() => _error = userFacingError(error));
+    } finally {
+      if (mounted) setState(() => _moving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final items = _items;
+    final allSelected =
+        items != null &&
+        items.isNotEmpty &&
+        items.every((item) => _selected.contains(item.id));
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _SheetHandle(),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Move items to categories',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.4,
+                    color: p.ink,
+                  ),
+                ),
+              ),
+              TextButton(
+                key: const ValueKey('move-items-done'),
+                onPressed: _moving
+                    ? null
+                    : () => Navigator.of(context).pop(_movedAny),
+                child: const Text('Done'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'These items are still on ${widget.canteen.name} itself. Students '
+            'can’t order them until they’re in a category.',
+            style: TextStyle(fontSize: 13.5, color: p.inkSecondary),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Move to',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: p.inkSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (widget.categories.isEmpty)
+            Text(
+              'Add a category to ${widget.canteen.name} first.',
+              style: TextStyle(fontSize: 13.5, color: p.inkSecondary),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final category in widget.categories)
+                  ChoiceChip(
+                    key: ValueKey('move-target-${category.shopKey}'),
+                    label: Text(category.name),
+                    selected: _target == category.shopKey,
+                    onSelected: _moving
+                        ? null
+                        : (_) => setState(() => _target = category.shopKey),
+                  ),
+              ],
+            ),
+          const SizedBox(height: 12),
+          if (_notice != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                _notice!,
+                key: const ValueKey('move-items-notice'),
+                style: TextStyle(fontSize: 13, color: p.success),
+              ),
+            ),
+          if (items == null && _error == null)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (items != null && items.isEmpty)
+            Padding(
+              key: const ValueKey('move-items-empty'),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'Every item is in a category.',
+                style: TextStyle(fontSize: 14, color: p.inkSecondary),
+              ),
+            )
+          else if (items != null) ...[
+            CheckboxListTile.adaptive(
+              key: const ValueKey('move-items-select-all'),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              value: allSelected,
+              onChanged: _moving
+                  ? null
+                  : (on) => setState(() {
+                      if (on ?? false) {
+                        _selected.addAll(items.map((item) => item.id));
+                      } else {
+                        _selected.clear();
+                      }
+                    }),
+              title: Text(
+                'All ${items.length} item${items.length == 1 ? '' : 's'}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: p.ink,
+                ),
+              ),
+            ),
+            Divider(height: 1, color: p.divider),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final item in items)
+                    CheckboxListTile.adaptive(
+                      key: ValueKey('move-item-${item.id}'),
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      value: _selected.contains(item.id),
+                      onChanged: _moving
+                          ? null
+                          : (on) => setState(() {
+                              if (on ?? false) {
+                                _selected.add(item.id);
+                              } else {
+                                _selected.remove(item.id);
+                              }
+                            }),
+                      title: Text(
+                        item.name,
+                        style: TextStyle(fontSize: 14.5, color: p.ink),
+                      ),
+                      subtitle: Text(
+                        [
+                          if (item.category.trim().isNotEmpty) item.category,
+                          formatRupees(item.price),
+                          if (!item.isAvailable) 'Hidden',
+                        ].join(' · '),
+                        style: TextStyle(fontSize: 12.5, color: p.inkSecondary),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(_error!, style: TextStyle(color: p.danger, fontSize: 13)),
+          ],
+          const SizedBox(height: 14),
+          FilledButton(
+            key: const ValueKey('move-items-submit'),
+            onPressed: _moving || _selected.isEmpty || _target == null
+                ? null
+                : _move,
+            child: _moving
+                ? const SizedBox.square(
+                    dimension: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    _selected.isEmpty || _target == null
+                        ? 'Choose items to move'
+                        : 'Move ${_selected.length} '
+                              'item${_selected.length == 1 ? '' : 's'} to '
+                              '${_categoryName(_target!)}',
+                  ),
+          ),
+        ],
       ),
     );
   }

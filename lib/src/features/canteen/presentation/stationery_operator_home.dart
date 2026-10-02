@@ -626,7 +626,7 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                           Text(
                             mode == CanteenStaffMode.work
                                 ? 'Work runs this counter: orders, inventory and pickups.'
-                                : 'Shop lets you buy from Campus Canteen, Stationery and Laundry with your own wallet.',
+                                : 'Shop lets you buy from the canteen, stationery and laundry with your own wallet.',
                             style: TextStyle(
                               fontSize: 12,
                               color: context.palette.inkSecondary,

@@ -679,7 +679,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Work is your job. Shop lets you buy from Campus Canteen, Stationery and Laundry like any student.',
+                  'Work is your job. Shop lets you buy from the canteen, stationery and laundry like any student.',
                   style: TextStyle(
                     fontSize: 13,
                     color: mutedColor,

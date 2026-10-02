@@ -113,17 +113,23 @@ class _CanteenOwnerHomeState extends State<CanteenOwnerHome> {
   var _busy = false;
   String? _selectedShopKey;
 
+  /// The shops this workspace runs. A canteen split into categories (Let's
+  /// eat! → Bites, Mess) is never one of them: its categories hold the
+  /// menus and queues, so the menu editor only offers categories.
   List<CanteenShop> get _assignedShops {
     final assigned = widget.store.assignedShopKeys.toSet();
-    final filtered = widget.store.shops
+    final shops = widget.store.shops;
+    bool runnable(CanteenShop shop) =>
+        shop.isActive && countersOf(shop.shopKey, shops).isEmpty;
+    final filtered = shops
         .where(
           (shop) =>
-              shop.isActive &&
+              runnable(shop) &&
               (assigned.isEmpty || assigned.contains(shop.shopKey)),
         )
         .toList();
     if (filtered.isNotEmpty) return filtered;
-    return widget.store.shops.where((shop) => shop.isActive).toList();
+    return shops.where(runnable).toList();
   }
 
   String? get _activeShopKey {

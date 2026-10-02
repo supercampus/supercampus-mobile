@@ -71,6 +71,10 @@ class CanteenMenuItem {
 
   final double? actualPrice;
   double get effectiveActualPrice => actualPrice ?? cost ?? price;
+
+  /// The cost price the shop recorded for the item; null when it recorded
+  /// none. Sales figures use this, never [effectiveCost]'s estimate.
+  double? get recordedCost => actualPrice ?? cost;
   final bool isVegetarian;
   final bool isPopular;
   final bool isAvailable;
@@ -385,6 +389,12 @@ class CartLine {
   double get total => item.price * quantity;
   double get costTotal => item.effectiveCost * quantity;
   double get profitTotal => total - costTotal;
+
+  /// [quantity] at the item's recorded cost price; null when none is recorded.
+  double? get recordedCostTotal {
+    final cost = item.recordedCost;
+    return cost == null ? null : cost * quantity;
+  }
 }
 
 enum CanteenOrderStatus {
@@ -670,12 +680,25 @@ class CanteenOrder {
   bool get isInstantOnly =>
       lines.isNotEmpty && lines.every((line) => line.item.isInstant);
 
-  double get totalCost =>
-      lines.fold<double>(0, (sum, line) => sum + line.costTotal);
+  /// What the items cost the shop, from each item's recorded cost price;
+  /// null when any item has none (or the order carries no item details) —
+  /// never an estimate.
+  double? get recordedCost {
+    if (lines.isEmpty) return null;
+    var sum = 0.0;
+    for (final line in lines) {
+      final cost = line.recordedCostTotal;
+      if (cost == null) return null;
+      sum += cost;
+    }
+    return sum;
+  }
 
-  double get totalProfit => lines.isEmpty
-      ? total * 0.3
-      : lines.fold<double>(0, (sum, line) => sum + line.profitTotal);
+  /// [total] less [recordedCost]; null when the cost is not recorded.
+  double? get recordedProfit {
+    final cost = recordedCost;
+    return cost == null ? null : total - cost;
+  }
 }
 
 enum WalletTransactionType { credit, debit }
@@ -1082,7 +1105,7 @@ extension CanteenStaffModeLabel on CanteenStaffMode {
   String get description => switch (this) {
     CanteenStaffMode.work => 'Run your counter, menu and sales',
     CanteenStaffMode.eat =>
-      'Buy from Campus Canteen, Stationery and Laundry with your wallet',
+      'Buy from the canteen, stationery and laundry with your wallet',
   };
 }
 
