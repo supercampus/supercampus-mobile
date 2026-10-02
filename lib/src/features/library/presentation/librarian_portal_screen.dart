@@ -15,6 +15,7 @@ import '../data/library_lending_repository.dart';
 import 'librarian_lending_screen.dart';
 import '../../../core/utils/user_facing_error.dart';
 import '../../../core/widgets/attachment_viewer.dart';
+import '../../../core/widgets/sign_out_confirmation.dart';
 
 class LibrarianPortalScreen extends StatefulWidget {
   const LibrarianPortalScreen({
@@ -566,7 +567,7 @@ class _LibrarianPortalScreenState extends State<LibrarianPortalScreen> {
       ),
       const SizedBox(height: 14),
       OutlinedButton.icon(
-        onPressed: widget.onSignOut,
+        onPressed: () => signOutWithConfirmation(context, widget.onSignOut),
         icon: const Icon(Icons.logout),
         label: const Text('Sign out'),
       ),

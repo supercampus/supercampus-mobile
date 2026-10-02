@@ -816,22 +816,6 @@ class _ModuleDashboardScreenState extends State<ModuleDashboardScreen> {
                   _openSettings();
                 },
               ),
-              // Sign out row
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  Icons.logout,
-                  color: Theme.of(ctx).colorScheme.error,
-                ),
-                title: Text(
-                  'Sign out',
-                  style: TextStyle(color: Theme.of(ctx).colorScheme.error),
-                ),
-                onTap: () {
-                  Navigator.of(ctx).pop();
-                  widget.onSignOut();
-                },
-              ),
             ],
           ),
         ),

@@ -10,6 +10,7 @@ import '../../../insights/data/insight.dart';
 import '../../../settings/data/support_repository.dart';
 import '../../../settings/presentation/help_center_page.dart';
 import '../../../settings/presentation/profile_details_page.dart';
+import '../../../../core/widgets/sign_out_confirmation.dart';
 
 /// Shared chrome: rounded top, grab handle, title.
 Future<T?> showHomeSheet<T>({
@@ -566,8 +567,9 @@ class SettingsSheet extends StatelessWidget {
         title: 'Sign out',
         subtitle: 'Sign out of this device and end your session',
         destructive: true,
-        onTap: () {
-          Navigator.of(context).pop();
+        onTap: () async {
+          if (!await confirmSignOut(context)) return;
+          if (context.mounted) Navigator.of(context).pop();
           onSignOut();
         },
       ),

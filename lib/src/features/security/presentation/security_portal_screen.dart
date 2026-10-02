@@ -11,6 +11,7 @@ import 'gate_movement_detail_screen.dart';
 import 'gate_movement_tile.dart';
 import 'gate_scan_result_sheet.dart';
 import 'walk_in_visitor_screen.dart';
+import '../../../core/widgets/sign_out_confirmation.dart';
 
 /// The gate desk: the whole app for an account whose job is the gate.
 ///
@@ -522,7 +523,9 @@ class _SecurityPortalScreenState extends State<SecurityPortalScreen> {
       tooltip: 'Account',
       position: PopupMenuPosition.under,
       onSelected: (value) {
-        if (value == 'sign_out') widget.onSignOut();
+        if (value == 'sign_out') {
+          signOutWithConfirmation(context, widget.onSignOut);
+        }
       },
       itemBuilder: (_) => [
         PopupMenuItem<String>(

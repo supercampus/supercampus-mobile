@@ -15,6 +15,7 @@ import 'widgets/menu_item_art.dart';
 import 'widgets/order_status_badge.dart';
 import 'widgets/shop_mode_switch.dart';
 import '../../../core/utils/user_facing_error.dart';
+import '../../../core/widgets/sign_out_confirmation.dart';
 
 /// A stationery-only workspace. It deliberately does not reuse the food
 /// captain labels or screens: inventory is the primary job at this counter.
@@ -668,8 +669,11 @@ class _StationeryOperatorHomeState extends State<StationeryOperatorHome> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () {
-                          Navigator.of(sheetContext).pop();
+                        onPressed: () async {
+                          if (!await confirmSignOut(sheetContext)) return;
+                          if (sheetContext.mounted) {
+                            Navigator.of(sheetContext).pop();
+                          }
                           widget.onSignOut();
                         },
                         icon: const Icon(Icons.logout_rounded),

@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/access/effective_permissions.dart';
 import '../../../../core/access/module_catalog.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/sign_out_confirmation.dart';
 import '../../../authentication/data/auth_repository.dart';
 import '../../../canteen/data/backend_canteen_repository.dart';
 import '../../../canteen/data/canteen_models.dart';
@@ -600,6 +601,44 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
           ),
+
+          const SizedBox(height: 24),
+
+          // Sign out, last on the page, behind a confirmation.
+          _buildCard(
+            color: cardColor,
+            shadowColor: shadowColor,
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                key: const ValueKey('settings-sign-out'),
+                onTap: () => _signOut(context),
+                child: SizedBox(
+                  height: 54,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.logout_rounded,
+                        size: 20,
+                        color: context.palette.danger,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Sign out',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: context.palette.danger,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -946,6 +985,13 @@ class _SettingsPageState extends State<SettingsPage> {
         builder: (_) => AboutAppPage(accountRepository: _accountRepository),
       ),
     );
+  }
+
+  Future<void> _signOut(BuildContext context) async {
+    if (!await confirmSignOut(context)) return;
+    if (!context.mounted) return;
+    Navigator.of(context).pop();
+    widget.onSignOut();
   }
 
   void _confirmDeactivate(BuildContext context) {

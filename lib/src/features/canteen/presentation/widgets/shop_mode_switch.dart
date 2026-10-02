@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/canteen_models.dart';
 import 'counter_open_tile.dart';
+import '../../../../core/widgets/sign_out_confirmation.dart';
 
 /// Work / Shop, for anyone whose job is in the campus shops or offices.
 ///
@@ -184,15 +185,21 @@ Future<void> showShopAccountSheet(
                     onOpenSettings();
                   },
                 ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.logout, color: palette.danger),
-                title: Text('Sign out', style: TextStyle(color: palette.danger)),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  onSignOut();
-                },
-              ),
+              // With Settings here, Sign out lives at the end of Settings.
+              if (onOpenSettings == null)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.logout, color: palette.danger),
+                  title: Text(
+                    'Sign out',
+                    style: TextStyle(color: palette.danger),
+                  ),
+                  onTap: () async {
+                    if (!await confirmSignOut(sheetContext)) return;
+                    if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+                    onSignOut();
+                  },
+                ),
             ],
           ),
         ),
